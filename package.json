@@ -1,0 +1,25 @@
+{
+  "name": "tealscript",
+  "version": "0.0.1",
+  "description": "编译 EcmaScript 7 和 TypeScript 到 JavaScript。| Compile EcmaScript 7 And TypeScript to javascript.",
+  "keywords": [
+    "js",
+    "ts",
+    "typescript",
+    "babel",
+    "tealscript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Teal/TealScript"
+  },
+  "bugs": {
+    "url": "https://github.com/Teal/TealScript/issues",
+    "email": "xuld@vip.qq.com"
+  },
+  "author": {
+    "name": "xuld",
+    "email": "xuld@vip.qq.com"
+  },
+  "license": "MIT"
+}
