@@ -807,7 +807,7 @@
         "members": [
             {
                 "name": "name",
-                "type": "Identifer",
+                "type": "Identifier",
                 "summary": "获取当前对象字面量项的键部分。"
             },
             {
@@ -879,12 +879,12 @@
         "members": [
             {
                 "name": "typeParameters",
-                "type": "NodeList<TypeParameter>",
+                "type": "NodeList<TypeParameterDeclaration>",
                 "summary": "获取当前箭头函数的所有泛型参数。"
             },
             {
                 "name": "parameters",
-                "type": "NodeList<Parameter>",
+                "type": "NodeList<ParameterDeclaration>",
                 "summary": "获取当前箭头函数的所有参数。"
             },
             {
@@ -1023,7 +1023,7 @@
     },
     {
         "name": "IndexCallExpression",
-        "extends": "FuncCallExpression",
+        "extends": "CallLikeExpression",
         "summary": "表示一个索引调用表达式(x[...])。",
         "members": [
             {
