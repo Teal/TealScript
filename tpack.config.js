@@ -2,7 +2,7 @@
 
 tpack.task("gen", function () {
 
-    tpack.src("src/parser/nodes.json").copy().pipe(function (file) {
+    tpack.src("src/parser/nodes.json").pipe(function (file) {
         var data = JSON.parse(file.content);
 
         var result = `/**
@@ -40,11 +40,6 @@ ${type.members ? type.members.map(x => member(x)).join("") : ""}
 
         file.content = result;
 
-    }).extension(".ts");
-
-    tpack.src("src/parser/nodes.json").copy().pipe(function (file) {
-        var data = JSON.parse(file.content);
-
         var result = `/**
  * @fileOverview 节点访问器
  * @generated $ tpack gen
@@ -60,13 +55,13 @@ export abstract class NodeVisitor {
         for (var index in data) {
             var type = data[index];
 
-            
+
             result += `
     /**
      * 访问一个${type.summary.replace(/表示一个|。|\(.*?\)|（.*?）/, "")}。
      */
     visit${type.name}() {
-${getNodeMembers(type).map(t=>"        this." +t.name + ".accept(this);").join("\n")}
+${getNodeMembers(type).map(t=>"        this." + t.name + ".accept(this);").join("\n")}
 }
 `
 
@@ -76,14 +71,14 @@ ${getNodeMembers(type).map(t=>"        this." +t.name + ".accept(this);").join("
 
         }
 
-result += `
+        result += `
 
 
 
 
-}`;
+        }`;
+        
+        tpack.createFile("src/parser/nodeVisitor.ts", result).save();
 
-        file.content = result;
-
-    }).dest("src/parser/nodeVisitor.ts");
+    }).extension(".ts");
 });
