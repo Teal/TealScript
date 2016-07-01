@@ -3,7 +3,8 @@
  * @generated $ tpack gen
  */
 
-import {TokenType} from './tokenType';
+import {TokenType, tokenToString} from './tokenType';
+import {NodeVisitor} from './nodeVisitor';
 
 /**
  * 表示一个语法树节点。
@@ -20,6 +21,12 @@ export abstract class Node {
      */
     end: number;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    abstract accept(vistior: NodeVisitor);
+                
 }
 
 /**
@@ -42,6 +49,14 @@ export class SourceFile extends Node {
      */
     statements: Statement[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitSourceFile(this);
+    }
+                
 }
 
 /**
@@ -82,7 +97,7 @@ export class NodeList<T extends Node> extends Array<T> {
     /**
      * 判断当前列表是否包含尾随的数组。
      */
-    get hasTrailingComma() { return this.seperators.length === this.length; }
+    get hasTrailingComma() { return this.seperatorStarts.length === this.length; }
 
 }
 
@@ -96,6 +111,14 @@ export abstract class Statement extends Node {
      */
     get hasSemicolon() { return false; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitStatement(this);
+    }
+                
 }
 
 /**
@@ -113,6 +136,14 @@ export class EmptyStatement extends Statement {
      */
     get hasSemicolon() { return true; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitEmptyStatement(this);
+    }
+                
 }
 
 /**
@@ -125,6 +156,14 @@ export class Block extends Statement {
      */
     statements: Statement[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitBlock(this);
+    }
+                
 }
 
 /**
@@ -147,6 +186,14 @@ export class VariableStatement extends Statement {
      */
     get hasSemicolon() { return this.end > this.variables[this.variables.length - 1].end; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitVariableStatement(this);
+    }
+                
 }
 
 /**
@@ -216,6 +263,14 @@ export class VariableDeclaration extends Node {
      */
     initializer: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitVariableDeclaration(this);
+    }
+                
 }
 
 /**
@@ -228,6 +283,14 @@ export abstract class BindingPattern extends Node {
      */
     elements: NodeList<BindingElement>;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitBindingPattern(this);
+    }
+                
 }
 
 /**
@@ -240,6 +303,14 @@ export abstract class BindingElement extends Node {
      */
     name: Identifier | BindingPattern;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitBindingElement(this);
+    }
+                
 }
 
 /**
@@ -252,6 +323,14 @@ export class ArrayBindingPattern extends BindingPattern {
      */
     elements: NodeList<ArrayBindingElement>;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrayBindingPattern(this);
+    }
+                
 }
 
 /**
@@ -284,6 +363,14 @@ export class ArrayBindingElement extends BindingElement {
      */
     initializer: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrayBindingElement(this);
+    }
+                
 }
 
 /**
@@ -296,6 +383,14 @@ export class ObjectBindingPattern extends BindingPattern {
      */
     elements: NodeList<ObjectBindingElement>;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitObjectBindingPattern(this);
+    }
+                
 }
 
 /**
@@ -318,6 +413,14 @@ export class ObjectBindingElement extends BindingElement {
      */
     get colonEnd() { return this.colonEnd != undefined ? this.colonEnd + 1 : undefined; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitObjectBindingElement(this);
+    }
+                
 }
 
 /**
@@ -335,6 +438,14 @@ export class LabeledStatement extends Statement {
      */
     body: Statement;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitLabeledStatement(this);
+    }
+                
 }
 
 /**
@@ -352,6 +463,14 @@ export class ExpressionStatement extends Statement {
      */
     get hasSemicolon() { return this.end > this.body.end; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitExpressionStatement(this);
+    }
+                
 }
 
 /**
@@ -379,6 +498,14 @@ export class IfStatement extends Statement {
      */
     get end() { return (this.else || this.then).end; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitIfStatement(this);
+    }
+                
 }
 
 /**
@@ -396,6 +523,14 @@ export class SwitchStatement extends Statement {
      */
     cases: CaseClause[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitSwitchStatement(this);
+    }
+                
 }
 
 /**
@@ -423,6 +558,14 @@ export class CaseClause extends Node {
      */
     statements: Statement[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitCaseClause(this);
+    }
+                
 }
 
 /**
@@ -470,6 +613,14 @@ export class ForStatement extends Statement {
      */
     body: Statement;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitForStatement(this);
+    }
+                
 }
 
 /**
@@ -497,6 +648,14 @@ export class ForInStatement extends Statement {
      */
     body: Statement;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitForInStatement(this);
+    }
+                
 }
 
 /**
@@ -524,6 +683,14 @@ export class ForOfStatement extends Statement {
      */
     body: Statement;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitForOfStatement(this);
+    }
+                
 }
 
 /**
@@ -546,6 +713,14 @@ export class WhileStatement extends Statement {
      */
     get end() { return this.body.end; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitWhileStatement(this);
+    }
+                
 }
 
 /**
@@ -568,6 +743,14 @@ export class DoWhileStatement extends Statement {
      */
     get hasSemicolon() { return this.end > this.condition.end; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitDoWhileStatement(this);
+    }
+                
 }
 
 /**
@@ -585,6 +768,14 @@ export class ContinueStatement extends Statement {
      */
     get hasSemicolon() { return this.end > this.start + 8/*'continue'.length*/; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitContinueStatement(this);
+    }
+                
 }
 
 /**
@@ -602,6 +793,14 @@ export class BreakStatement extends Statement {
      */
     get hasSemicolon() { return this.end > this.start + 5/*'break'.length*/; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitBreakStatement(this);
+    }
+                
 }
 
 /**
@@ -619,6 +818,14 @@ export class ReturnStatement extends Statement {
      */
     get hasSemicolon() { return this.end > (this.value ? this.value.end : this.start + 6/*'return'.length*/); }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitReturnStatement(this);
+    }
+                
 }
 
 /**
@@ -636,6 +843,14 @@ export class ThrowStatement extends Statement {
      */
     get hasSemicolon() { return this.end > (this.value ? this.value.end : this.start + 6/*'return'.length*/); }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitThrowStatement(this);
+    }
+                
 }
 
 /**
@@ -658,6 +873,14 @@ export class TryStatement extends Statement {
      */
     finally: FinallyClause;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitTryStatement(this);
+    }
+                
 }
 
 /**
@@ -695,6 +918,14 @@ export class CatchClause extends Node {
      */
     body: Statement;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitCatchClause(this);
+    }
+                
 }
 
 /**
@@ -707,6 +938,14 @@ export class FinallyClause extends Node {
      */
     body: Statement;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitFinallyClause(this);
+    }
+                
 }
 
 /**
@@ -724,6 +963,14 @@ export class WithStatement extends Statement {
      */
     body: Statement;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitWithStatement(this);
+    }
+                
 }
 
 /**
@@ -731,6 +978,14 @@ export class WithStatement extends Statement {
  */
 export abstract class Expression extends Node {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitExpression(this);
+    }
+                
 }
 
 /**
@@ -743,6 +998,14 @@ export class Identifier extends Expression {
      */
     value: string;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitIdentifier(this);
+    }
+                
 }
 
 /**
@@ -750,6 +1013,14 @@ export class Identifier extends Expression {
  */
 export class NullLiteral extends Expression {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitNullLiteral(this);
+    }
+                
 }
 
 /**
@@ -757,6 +1028,14 @@ export class NullLiteral extends Expression {
  */
 export class TrueLiteral extends Expression {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitTrueLiteral(this);
+    }
+                
 }
 
 /**
@@ -764,6 +1043,14 @@ export class TrueLiteral extends Expression {
  */
 export class FalseLiteral extends Expression {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitFalseLiteral(this);
+    }
+                
 }
 
 /**
@@ -776,6 +1063,14 @@ export class NumericLiteral extends Expression {
      */
     value: number;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitNumericLiteral(this);
+    }
+                
 }
 
 /**
@@ -788,6 +1083,14 @@ export class StringLiteral extends Expression {
      */
     value: string;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitStringLiteral(this);
+    }
+                
 }
 
 /**
@@ -800,6 +1103,14 @@ export class ArrayLiteral extends Expression {
      */
     elements: NodeList<Expression>;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrayLiteral(this);
+    }
+                
 }
 
 /**
@@ -812,6 +1123,14 @@ export class ObjectLiteral extends Expression {
      */
     elements: NodeList<ObjectLiteralElement>;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitObjectLiteral(this);
+    }
+                
 }
 
 /**
@@ -839,6 +1158,14 @@ export class ObjectLiteralElement extends Node {
      */
     value: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitObjectLiteralElement(this);
+    }
+                
 }
 
 /**
@@ -846,6 +1173,14 @@ export class ObjectLiteralElement extends Node {
  */
 export class ThisLiteral extends Expression {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitThisLiteral(this);
+    }
+                
 }
 
 /**
@@ -853,6 +1188,14 @@ export class ThisLiteral extends Expression {
  */
 export class SuperLiteral extends Expression {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitSuperLiteral(this);
+    }
+                
 }
 
 /**
@@ -865,6 +1208,14 @@ export class ParenthesizedExpression extends Expression {
      */
     body: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitParenthesizedExpression(this);
+    }
+                
 }
 
 /**
@@ -887,6 +1238,14 @@ export class ConditionalExpression extends Expression {
      */
     else: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitConditionalExpression(this);
+    }
+                
 }
 
 /**
@@ -897,7 +1256,7 @@ export class LambdaLiteral extends Expression {
     /**
      * 获取当前箭头函数的所有泛型参数。
      */
-    typeParameters: NodeList<TypeParameterDeclaration>;
+    typeParameters: NodeList<GenericParameterDeclaration>;
 
     /**
      * 获取当前箭头函数的所有参数。
@@ -919,6 +1278,14 @@ export class LambdaLiteral extends Expression {
      */
     body: Block | Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitLambdaLiteral(this);
+    }
+                
 }
 
 /**
@@ -946,6 +1313,14 @@ export class YieldExpression extends Statement {
      */
     get end() { return this.body ? this.body.end : this.start + 5/*'yield'.length*/; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitYieldExpression(this);
+    }
+                
 }
 
 /**
@@ -983,6 +1358,14 @@ export class CastExpression extends Expression {
      */
     body: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitCastExpression(this);
+    }
+                
 }
 
 /**
@@ -1010,6 +1393,14 @@ export class MemberCallExpression extends Expression {
      */
     get end() { return this.argument.end; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitMemberCallExpression(this);
+    }
+                
 }
 
 /**
@@ -1027,6 +1418,14 @@ export abstract class CallLikeExpression extends Expression {
      */
     arguments: NodeList<Expression>;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitCallLikeExpression(this);
+    }
+                
 }
 
 /**
@@ -1034,6 +1433,14 @@ export abstract class CallLikeExpression extends Expression {
  */
 export class CallExpression extends CallLikeExpression {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitCallExpression(this);
+    }
+                
 }
 
 /**
@@ -1041,6 +1448,14 @@ export class CallExpression extends CallLikeExpression {
  */
 export class NewExpression extends CallLikeExpression {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitNewExpression(this);
+    }
+                
 }
 
 /**
@@ -1053,6 +1468,14 @@ export class IndexCallExpression extends CallLikeExpression {
      */
     get start() { return this.target.start; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitIndexCallExpression(this);
+    }
+                
 }
 
 /**
@@ -1075,6 +1498,14 @@ export class UnaryExpression extends Expression {
      */
     get isPostfix() { return this.end > this.operand.end; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitUnaryExpression(this);
+    }
+                
 }
 
 /**
@@ -1117,6 +1548,14 @@ export class BinaryExpression extends Expression {
      */
     get end() { return this.rightOperand.end; }
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitBinaryExpression(this);
+    }
+                
 }
 
 /**
@@ -1129,6 +1568,14 @@ export class PredefinedTypeLiteral extends Expression {
      */
     type: TokenType;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitPredefinedTypeLiteral(this);
+    }
+                
 }
 
 /**
@@ -1146,6 +1593,14 @@ export class GenericTypeExpression extends Expression {
      */
     genericArguments: NodeList<Expression>;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitGenericTypeExpression(this);
+    }
+                
 }
 
 /**
@@ -1158,6 +1613,14 @@ export class ArrayTypeExpression extends Expression {
      */
     element: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrayTypeExpression(this);
+    }
+                
 }
 
 /**
@@ -1178,8 +1641,16 @@ export class TypeDefinition extends MemberContainerDefinition {
     /**
      * 获取当前类型定义的泛型形参列表。如果当前定义不是泛型则返回 undefined。
      */
-    genericParameters: NodeList<GenericParameter>;
+    genericParameters: NodeList<GenericParameterDeclaration>;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitTypeDefinition(this);
+    }
+                
 }
 
 /**
@@ -1190,7 +1661,7 @@ export class MemberDefinition extends Node {
     /**
      * undefined
      */
-    annotations: FuncCallExpression[];
+    annotations: Annotation[];
 
     /**
      * 获取当前成员的修饰符。
@@ -1202,6 +1673,14 @@ export class MemberDefinition extends Node {
      */
     name: Identifier;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitMemberDefinition(this);
+    }
+                
 }
 
 /**
@@ -1209,6 +1688,14 @@ export class MemberDefinition extends Node {
  */
 export class Annotation extends CallLikeExpression {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitAnnotation(this);
+    }
+                
 }
 
 /**
@@ -1293,6 +1780,14 @@ export class ParameterDeclaration extends Node {
      */
     annotations: Annotation[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitParameterDeclaration(this);
+    }
+                
 }
 
 /**
@@ -1310,6 +1805,14 @@ export class GenericParameterDeclaration extends Node {
      */
     constraint: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitGenericParameterDeclaration(this);
+    }
+                
 }
 
 /**
@@ -1322,6 +1825,14 @@ export class MemberContainerDefinition extends MemberDefinition {
      */
     members: MemberDefinition;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitMemberContainerDefinition(this);
+    }
+                
 }
 
 /**
@@ -1329,6 +1840,14 @@ export class MemberContainerDefinition extends MemberDefinition {
  */
 export class ClassDefinition extends TypeDefinition {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitClassDefinition(this);
+    }
+                
 }
 
 /**
@@ -1336,6 +1855,14 @@ export class ClassDefinition extends TypeDefinition {
  */
 export class StructDefinition extends TypeDefinition {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitStructDefinition(this);
+    }
+                
 }
 
 /**
@@ -1343,6 +1870,14 @@ export class StructDefinition extends TypeDefinition {
  */
 export class InterfaceDefinition extends TypeDefinition {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitInterfaceDefinition(this);
+    }
+                
 }
 
 /**
@@ -1350,6 +1885,14 @@ export class InterfaceDefinition extends TypeDefinition {
  */
 export class EnumDefinition extends TypeDefinition {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitEnumDefinition(this);
+    }
+                
 }
 
 /**
@@ -1367,6 +1910,14 @@ export class ExtensionDefinition extends MemberContainerDefinition {
      */
     baseTypes: Expression[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitExtensionDefinition(this);
+    }
+                
 }
 
 /**
@@ -1379,6 +1930,14 @@ export class NamespaceDefinition extends MemberContainerDefinition {
      */
     names: Identifier[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitNamespaceDefinition(this);
+    }
+                
 }
 
 /**
@@ -1401,6 +1960,14 @@ export class ImportDirective extends Node {
      */
     value: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitImportDirective(this);
+    }
+                
 }
 
 /**
@@ -1408,6 +1975,14 @@ export class ImportDirective extends Node {
  */
 export class ModuleDefinition extends MemberContainerDefinition {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitModuleDefinition(this);
+    }
+                
 }
 
 /**
@@ -1415,6 +1990,14 @@ export class ModuleDefinition extends MemberContainerDefinition {
  */
 export class TypeMemberDefinition extends MemberDefinition {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitTypeMemberDefinition(this);
+    }
+                
 }
 
 /**
@@ -1425,8 +2008,16 @@ export class FieldDefinition extends TypeMemberDefinition {
     /**
      * 获取当前字段的所有变量。
      */
-    variables: Variable[];
+    variables: VariableDeclaration[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitFieldDefinition(this);
+    }
+                
 }
 
 /**
@@ -1444,6 +2035,14 @@ export class MethodOrPropertyDefinition extends TypeMemberDefinition {
      */
     explicitType: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitMethodOrPropertyDefinition(this);
+    }
+                
 }
 
 /**
@@ -1456,6 +2055,14 @@ export class PropertyOrIndexerDefinition extends MethodOrPropertyDefinition {
      */
     body: Block;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitPropertyOrIndexerDefinition(this);
+    }
+                
 }
 
 /**
@@ -1463,6 +2070,14 @@ export class PropertyOrIndexerDefinition extends MethodOrPropertyDefinition {
  */
 export class PropertyDefinition extends MemberDefinition {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitPropertyDefinition(this);
+    }
+                
 }
 
 /**
@@ -1473,8 +2088,16 @@ export class IndexerDefinition extends PropertyOrIndexerDefinition {
     /**
      * 获取当前定义的参数列表。
      */
-    parameters: Parameter;
+    parameters: ParameterDeclaration;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitIndexerDefinition(this);
+    }
+                
 }
 
 /**
@@ -1485,13 +2108,21 @@ export class MethodOrConstructorDefinition extends MethodOrPropertyDefinition {
     /**
      * 获取当前函数定义的参数列表。
      */
-    parameters: Parameter;
+    parameters: ParameterDeclaration;
 
     /**
      * 获取当前函数定义的主体。
      */
     body: Block;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitMethodOrConstructorDefinition(this);
+    }
+                
 }
 
 /**
@@ -1502,8 +2133,16 @@ export class MethodDefinition extends MethodOrConstructorDefinition {
     /**
      * 获取成员的泛型参数。
      */
-    genericParameters: GenericParameter[];
+    genericParameters: GenericParameterDeclaration[];
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitMethodDefinition(this);
+    }
+                
 }
 
 /**
@@ -1511,6 +2150,14 @@ export class MethodDefinition extends MethodOrConstructorDefinition {
  */
 export class ConstructorDefinition extends MethodOrConstructorDefinition {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitConstructorDefinition(this);
+    }
+                
 }
 
 /**
@@ -1523,6 +2170,14 @@ export class EnumMemberDefinition extends TypeMemberDefinition {
      */
     initializer: Expression;
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitEnumMemberDefinition(this);
+    }
+                
 }
 
 /**
@@ -1530,4 +2185,12 @@ export class EnumMemberDefinition extends TypeMemberDefinition {
  */
 export class JsDocComment extends Node {
 
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitJsDocComment(this);
+    }
+                
 }

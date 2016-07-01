@@ -71,6 +71,7 @@
             },
             {
                 "name": "closeEnd",
+                "BindingPattern": null,
                 "type": "number",
                 "summary": "获取当前节点开始标记的结束位置。"
             },
@@ -78,7 +79,7 @@
                 "name": "hasTrailingComma",
                 "type": "boolean",
                 "summary": "判断当前列表是否包含尾随的数组。",
-                "body": "return this.seperators.length === this.length;"
+                "body": "return this.seperatorStarts.length === this.length;"
             }
         ]
     },
@@ -879,7 +880,7 @@
         "members": [
             {
                 "name": "typeParameters",
-                "type": "NodeList<TypeParameterDeclaration>",
+                "type": "NodeList<GenericParameterDeclaration>",
                 "summary": "获取当前箭头函数的所有泛型参数。"
             },
             {
@@ -1153,7 +1154,7 @@
             },
             {
                 "name": "genericParameters",
-                "type": "NodeList<GenericParameter>",
+                "type": "NodeList<GenericParameterDeclaration>",
                 "summary": "获取当前类型定义的泛型形参列表。如果当前定义不是泛型则返回 undefined。"
             }
         ]
@@ -1165,7 +1166,7 @@
         "members": [
             {
                 "name": "annotations",
-                "type": "FuncCallExpression[]",
+                "type": "Annotation[]",
                 "summary": ""
             },
             {
@@ -1382,7 +1383,7 @@
         "members": [
             {
                 "name": "variables",
-                "type": "Variable[]",
+                "type": "VariableDeclaration[]",
                 "summary": "获取当前字段的所有变量。"
             }
         ]
@@ -1429,7 +1430,7 @@
         "members": [
             {
                 "name": "parameters",
-                "type": "Parameter",
+                "type": "ParameterDeclaration",
                 "summary": "获取当前定义的参数列表。"
             }
         ]
@@ -1441,7 +1442,7 @@
         "members": [
             {
                 "name": "parameters",
-                "type": "Parameter",
+                "type": "ParameterDeclaration",
                 "summary": "获取当前函数定义的参数列表。"
             },
             {
@@ -1458,7 +1459,7 @@
         "members": [
             {
                 "name": "genericParameters",
-                "type": "GenericParameter[]",
+                "type": "GenericParameterDeclaration[]",
                 "summary": "获取成员的泛型参数。"
             }
         ]
