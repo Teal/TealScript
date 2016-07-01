@@ -7,28 +7,78 @@
             {
                 "name": "start",
                 "type": "number",
-                "summary": "获取当前节点在源码中的开始位置。如果当前节点是生成的则返回 undefined。"
+                "summary": "获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。"
             },
             {
                 "name": "end",
                 "type": "number",
-                "summary": "获取当前节点在源码中的结束位置。如果当前节点是生成的则返回 undefined。"
+                "summary": "获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。"
             }
         ]
     },
     {
-        "name": "Module",
-        "summary": "表示一个模块(即一个源文件)。",
+        "name": "SourceFile",
+        "extends": "Node",
+        "summary": "表示一个源文件。",
         "members": [
             {
-                "name": "text",
+                "name": "path",
                 "type": "string",
-                "summary": "获取或设置当前模块的源码。"
+                "summary": "获取或设置当前源文件的路径。如果当前文件不是从硬盘载入则返回 undefined。"
+            },
+            {
+                "name": "content",
+                "type": "string",
+                "summary": "获取或设置当前源文件的内容。"
             },
             {
                 "name": "statements",
                 "type": "Statement[]",
-                "summary": "获取当前模块的所有语句。"
+                "summary": "获取当前源文件的所有语句。"
+            }
+        ]
+    },
+    {
+        "name": "NodeList<T extends Node>",
+        "extends": "Array<T>",
+        "summary": "表示一个逗号隔开的节点列表(<..., ...>。",
+        "members": [
+            {
+                "name": "openStart",
+                "type": "number",
+                "summary": "获取当前节点开始标记的开始位置。"
+            },
+            {
+                "name": "openEnd",
+                "type": "number",
+                "summary": "获取当前节点开始标记的结束位置。"
+            },
+            {
+                "name": "seperatorStarts",
+                "type": "number[]",
+                "summary": "获取当前节点的分割标记的所有开始位置。"
+            },
+            {
+                "name": "seperatorEnds",
+                "type": "number[]",
+                "summary": "获取当前节点的分割标记的所有结束位置。",
+                "body": "return this.seperatorStarts.map(p => p + 1);"
+            },
+            {
+                "name": "closeStart",
+                "type": "number",
+                "summary": "获取当前节点开始标记的开始位置。"
+            },
+            {
+                "name": "closeEnd",
+                "type": "number",
+                "summary": "获取当前节点开始标记的结束位置。"
+            },
+            {
+                "name": "hasTrailingComma",
+                "type": "boolean",
+                "summary": "判断当前列表是否包含尾随的数组。",
+                "body": "return this.seperators.length === this.length;"
             }
         ]
     },
@@ -36,7 +86,15 @@
         "name": "Statement",
         "modifiers": "abstract",
         "extends": "Node",
-        "summary": "表示一个语句。"
+        "summary": "表示一个语句。",
+        "members": [
+            {
+                "name": "hasSemicolon",
+                "type": "boolean",
+                "summary": "判断当前语句是否以分号结尾。",
+                "body": "return false;"
+            }
+        ]
     },
     {
         "name": "EmptyStatement",
@@ -46,6 +104,10 @@
             {
                 "name": "end",
                 "body": "return this.start + 1;"
+            },
+            {
+                "name": "hasSemicolon",
+                "body": "return true;"
             }
         ]
     },
@@ -57,24 +119,28 @@
             {
                 "name": "statements",
                 "type": "Statement[]",
-                "summary": "获取当前块内的所有语句。"
+                "summary": "获取当前语句块内的所有语句。"
             }
         ]
     },
     {
         "name": "VariableStatement",
         "extends": "Statement",
-        "summary": "表示一个变量语句(var xx = ...)。",
+        "summary": "表示一个变量声明语句(var xx = ...)。",
         "members": [
             {
                 "name": "type",
                 "type": "VariableType",
-                "summary": "获取当前变量语句声明的格式。"
+                "summary": "获取当前变量声明语句的格式。"
             },
             {
                 "name": "variables",
                 "type": "VariableDeclaration[]",
-                "summary": "获取当前变量语句声明的所有变量。"
+                "summary": "获取当前变量声明语句的所有变量。"
+            },
+            {
+                "name": "hasSemicolon",
+                "body": "return this.end > this.variables[this.variables.length - 1].end;"
             }
         ]
     },
@@ -83,6 +149,10 @@
         "type": "enum",
         "summary": "表示变量的声明格式。",
         "members": [
+            {
+                "name": "none",
+                "summary": "变量未声明。"
+            },
             {
                 "name": "var",
                 "summary": "使用 var 声明。"
@@ -135,9 +205,9 @@
                 "body": "return this.equalStart != undefined ? this.equalStart + 1 : undefined;"
             },
             {
-                "name": "initialiser",
+                "name": "initializer",
                 "type": "Expression",
-                "summary": "获取当前变量定义的初始值。"
+                "summary": "获取当前变量的初始值。"
             }
         ]
     },
@@ -145,12 +215,12 @@
         "name": "BindingPattern",
         "modifiers": "abstract",
         "extends": "Node",
-        "summary": "表示一个绑定表达式([xx, ...]/{xx, ...})",
+        "summary": "表示一个绑定模式([xx, ...])",
         "members": [
             {
                 "name": "elements",
-                "type": "BindingElement[]",
-                "summary": "获取当前变量定义的初始值。"
+                "type": "NodeList<BindingElement>",
+                "summary": "获取当前绑定模式的元素列表。"
             }
         ]
     },
@@ -158,82 +228,80 @@
         "name": "BindingElement",
         "modifiers": "abstract",
         "extends": "Node",
-        "summary": "表示一个绑定表达式项(xx, ..)",
+        "summary": "表示一个绑定模式项(xx, ..)",
         "members": [
             {
                 "name": "name",
                 "type": "Identifier | BindingPattern",
-                "summary": "获取当前绑定项的名字。"
+                "summary": "获取当前绑定模式项的名字。"
             }
         ]
     },
     {
         "name": "ArrayBindingPattern",
         "extends": "BindingPattern",
-        "summary": "表示一个数组绑定表达式([xx, ...])",
+        "summary": "表示一个数组绑定模式([xx, ...])",
         "members": [
             {
                 "name": "elements",
-                "type": "ArrayBindingElement[]",
-                "summary": "获取当前变量定义的初始值。"
+                "type": "NodeList<ArrayBindingElement>"
             }
         ]
     },
     {
         "name": "ArrayBindingElement",
         "extends": "BindingElement",
-        "summary": "表示一个数组绑定项(xx, ..)",
+        "summary": "表示一个数组绑定模式项(xx, ..)",
         "members": [
             {
                 "name": "dotDotDotStart",
                 "type": "number",
-                "summary": "获取当前绑定项的点点点开始位置。如果当前绑定项不含点点点则返回 undefined。"
+                "summary": "获取当前绑定模式项的点点点开始位置。如果当前绑定模式项不含点点点则返回 undefined。"
             },
             {
                 "name": "dotDotDotEnd",
                 "type": "number",
-                "summary": "获取当前绑定项的点点点结束位置。如果当前绑定项不含点点点则返回 undefined。",
+                "summary": "获取当前绑定模式项的点点点结束位置。如果当前绑定模式项不含点点点则返回 undefined。",
                 "body": "return this.dotDotDotStart != undefined ? this.dotDotDotStart + 3 : undefined;"
             },
             {
                 "name": "equalStart",
                 "type": "number",
-                "summary": "获取当前绑定项的等号开始位置。如果当前绑定项不含等号则返回 undefined。"
+                "summary": "获取当前绑定模式项的等号开始位置。如果当前绑定模式项不含等号则返回 undefined。"
             },
             {
                 "name": "equalEnd",
                 "type": "number",
-                "summary": "获取当前绑定项的等号结束位置。如果当前绑定项不含等号则返回 undefined。",
+                "summary": "获取当前绑定模式项的等号结束位置。如果当前绑定模式项不含等号则返回 undefined。",
                 "body": "return this.equalEnd != undefined ? this.equalStart + 1 : undefined;"
             },
             {
                 "name": "initializer",
                 "type": "Expression",
-                "summary": "获取当前绑定项的初始值。"
+                "summary": "获取当前绑定模式项的初始值。"
             }
         ]
     },
     {
         "name": "ObjectBindingPattern",
         "extends": "BindingPattern",
-        "summary": "表示一个对象绑定表达式({xx, ...})",
+        "summary": "表示一个对象绑定模式({xx, ...})",
         "members": [
             {
                 "name": "elements",
-                "type": "ObjectBindingElement[]",
-                "summary": "获取当前变量定义的初始值。"
+                "type": "NodeList<ObjectBindingElement>"
             }
         ]
     },
     {
         "name": "ObjectBindingElement",
         "extends": "BindingElement",
-        "summary": "表示一个对象绑定表达式项(xx: y)",
+        "summary": "表示一个对象绑定模式项(xx: y)",
         "members": [
             {
                 "name": "propertyName",
                 "type": "Expression",
-                "summary": "获取当前变量的属性名。"
+                "summary": "获取对象绑定模式项的属性名。"
             },
             {
                 "name": "colonStart",
@@ -274,28 +342,32 @@
                 "name": "body",
                 "type": "Expression",
                 "summary": "获取当前表达式语句的主体部分。"
+            },
+            {
+                "name": "hasSemicolon",
+                "body": "return this.end > this.body.end;"
             }
         ]
     },
     {
         "name": "IfStatement",
         "extends": "Statement",
-        "summary": "表示一个 if 判断语句(if(...) {...})。",
+        "summary": "表示一个 if 语句(if(...) {...})。",
         "members": [
             {
                 "name": "condition",
                 "type": "Expression",
-                "summary": "获取当前 if 判断语句的条件部分。"
+                "summary": "获取当前 if 语句的条件部分。"
             },
             {
                 "name": "then",
                 "type": "Statement",
-                "summary": "获取当前 if 判断语句的则部分。"
+                "summary": "获取当前 if 语句的则部分。"
             },
             {
                 "name": "else",
                 "type": "Statement",
-                "summary": "获取当前 if 判断语句的否则部分。如果当前 if 判断语句不含否则部分则返回 undefined。"
+                "summary": "获取当前 if 语句的否则部分。如果当前 if 语句不含否则部分则返回 undefined。"
             },
             {
                 "name": "end",
@@ -306,57 +378,57 @@
     {
         "name": "SwitchStatement",
         "extends": "Statement",
-        "summary": "表示一个 switch 分支语句(switch(...){...})。",
+        "summary": "表示一个 switch 语句(switch(...){...})。",
         "members": [
             {
                 "name": "condition",
                 "type": "Expression",
-                "summary": "获取当前 switch 分支语句的条件部分。"
+                "summary": "获取当前 switch 语句的条件部分。"
             },
             {
                 "name": "cases",
                 "type": "CaseClause[]",
-                "summary": "获取当前 switch 分支语句的所有分支。"
+                "summary": "获取当前 switch 语句的所有分支。"
             }
         ]
     },
     {
         "name": "CaseClause",
         "extends": "Node",
-        "summary": "表示一个 case 分支(case ...:{...})。",
+        "summary": "表示一个 switch 语句的 case 分支(case ...:{...})。",
         "members": [
             {
                 "name": "label",
                 "type": "Expression",
-                "summary": "获取当前分支分句的标签部分。如果当前分支是 default 分支则返回 undefined。"
-            },
-            {
-                "name": "statements",
-                "type": "Statement[]",
-                "summary": "获取当前分支分句的所有语句。"
+                "summary": "获取当前分支的标签部分。如果当前分支是 default 分支则返回 undefined。"
             },
             {
                 "name": "colonStart",
                 "type": "number",
-                "summary": "获取当前变量名后冒号的开始位置。"
+                "summary": "获取当前标签名后冒号的开始位置。"
             },
             {
                 "name": "colonEnd",
                 "type": "number",
-                "summary": "获取当前变量名后冒号的结束位置。",
+                "summary": "获取当前标签名后冒号的结束位置。",
                 "body": "return this.colonEnd + 1;"
+            },
+            {
+                "name": "statements",
+                "type": "Statement[]",
+                "summary": "获取当前分支的所有语句。"
             }
         ]
     },
     {
         "name": "ForStatement",
         "extends": "Statement",
-        "summary": "表示一个 for 循环语句(for(...; ...; ...) {...})。",
+        "summary": "表示一个 for 语句(for(...; ...; ...) {...})。",
         "members": [
             {
                 "name": "initializer",
                 "type": "VariableStatement | Expression",
-                "summary": "获取当前 for 循环语句的初始化部分。如果不存在初始化语句则返回 undefined。"
+                "summary": "获取当前 for 语句的初始化部分。如果当前 for 语句不存在初始化语句则返回 undefined。"
             },
             {
                 "name": "firstSemicolonStart",
@@ -372,7 +444,7 @@
             {
                 "name": "condition",
                 "type": "Expression",
-                "summary": "获取当前 for 循环语句的条件部分。如果不存在条件部分则返回 undefined。"
+                "summary": "获取当前 for 语句的条件部分。如果当前 for 语句不存在条件部分则返回 undefined。"
             },
             {
                 "name": "secondSemicolonStart",
@@ -388,83 +460,83 @@
             {
                 "name": "iterator",
                 "type": "Expression",
-                "summary": "获取当前 for 循环语句的迭代器部分。如果不存在迭代器部分则返回 undefined。"
+                "summary": "获取当前 for 语句的迭代器部分。如果当前 for 语句不存在迭代器部分则返回 undefined。"
             },
             {
                 "name": "body",
                 "type": "Statement",
-                "summary": "获取当前 for 循环语句的主体部分。"
+                "summary": "获取当前 for 语句的主体部分。"
             }
         ]
     },
     {
         "name": "ForInStatement",
         "extends": "Statement",
-        "summary": "表示一个 for..in 循环语句(for(var xx in ...) {...})。",
+        "summary": "表示一个 for..in 语句(for(var xx in ...) {...})。",
         "members": [
             {
                 "name": "variableType",
                 "type": "VariableType",
-                "summary": "获取当前变量的声明格式。如果当前变量无声明格式则返回 undefined。"
+                "summary": "获取当前 for..in 语句的变量声明格式。如果未声明变量则返回 undefined。"
             },
             {
                 "name": "variable",
                 "type": "Identifier | BindingPattern",
-                "summary": "获取当前 for..in 循环语句的变量部分。"
+                "summary": "获取当前 for..in 语句的变量名。"
             },
             {
                 "name": "iterator",
                 "type": "Expression",
-                "summary": "获取当前 for..in 循环语句的迭代器部分。"
+                "summary": "获取当前 for..in 语句的迭代部分。"
             },
             {
                 "name": "body",
                 "type": "Statement",
-                "summary": "获取当前 for..in 循环语句的主体部分。"
+                "summary": "获取当前 for..in 语句的主体部分。"
             }
         ]
     },
     {
         "name": "ForOfStatement",
         "extends": "Statement",
-        "summary": "表示一个 for..of 循环语句(for(var xx of ...) {...})。",
+        "summary": "表示一个 for..of 语句(for(var xx of ...) {...})。",
         "members": [
             {
                 "name": "variableType",
                 "type": "VariableType",
-                "summary": "获取当前变量的声明格式。如果当前变量无声明格式则返回 undefined。"
+                "summary": "获取当前 for..of 语句的变量声明格式。如果未声明变量则返回 undefined。"
             },
             {
                 "name": "variable",
                 "type": "Identifier | BindingPattern",
-                "summary": "获取当前 for..of 循环语句的变量部分。"
+                "summary": "获取当前 for..of 语句的变量部分。"
             },
             {
                 "name": "iterator",
                 "type": "Expression",
-                "summary": "获取当前 for..of 循环语句的迭代器部分。"
+                "summary": "获取当前 for..of 语句的迭代部分。"
             },
             {
                 "name": "body",
                 "type": "Statement",
-                "summary": "获取当前 for..of 循环语句的主体部分。"
+                "summary": "获取当前 for..of 语句的主体部分。"
             }
         ]
     },
     {
         "name": "WhileStatement",
         "extends": "Statement",
-        "summary": "表示一个 while 循环语句(while(...) {...})。",
+        "summary": "表示一个 while 语句(while(...) {...})。",
         "members": [
             {
                 "name": "condition",
                 "type": "Expression",
-                "summary": "获取当前 while 循环语句的条件部分。"
+                "summary": "获取当前 while 语句的条件部分。"
             },
             {
                 "name": "body",
                 "type": "Statement",
-                "summary": "获取当前 while 循环语句的主体部分。"
+                "summary": "获取当前 while 语句的主体部分。"
             },
             {
                 "name": "end",
@@ -475,65 +547,85 @@
     {
         "name": "DoWhileStatement",
         "extends": "Statement",
-        "summary": "表示一个 do..while 循环语句(do {...} while(...);)。",
+        "summary": "表示一个 do..while 语句(do {...} while(...);)。",
         "members": [
             {
                 "name": "condition",
                 "type": "Expression",
-                "summary": "获取条件部分。"
+                "summary": "获取当前 do..while 语句的条件部分。"
             },
             {
                 "name": "body",
                 "type": "Statement",
-                "summary": "获取主体部分。"
+                "summary": "获取当前 do..while 语句的主体部分。"
+            },
+            {
+                "name": "hasSemicolon",
+                "body": "return this.end > this.condition.end;"
             }
         ]
     },
     {
         "name": "ContinueStatement",
         "extends": "Statement",
-        "summary": "表示一个 continue 跳转语句(continue;)。",
+        "summary": "表示一个 continue 语句(continue;)。",
         "members": [
             {
                 "name": "label",
                 "type": "Identifier",
-                "summary": "获取当前 continue 跳转语句的标签部分。如果不存在标签则返回 undefined。"
+                "summary": "获取当前 continue 语句的标签部分。如果不存在标签则返回 undefined。"
+            },
+            {
+                "name": "hasSemicolon",
+                "body": "return this.end > this.start + 8/*'continue'.length*/;"
             }
         ]
     },
     {
         "name": "BreakStatement",
         "extends": "Statement",
-        "summary": "表示一个 break 跳转语句(break;)。",
+        "summary": "表示一个 break 语句(break;)。",
         "members": [
             {
                 "name": "label",
                 "type": "Identifier",
-                "summary": "获取当前 break 跳转语句的标签部分。如果不存在标签部分则返回 undefined。"
+                "summary": "获取当前 break 语句的标签部分。如果不存在标签部分则返回 undefined。"
+            },
+            {
+                "name": "hasSemicolon",
+                "body": "return this.end > this.start + 5/*'break'.length*/;"
             }
         ]
     },
     {
         "name": "ReturnStatement",
         "extends": "Statement",
-        "summary": "表示一个 return 跳转语句(return ...;)。",
+        "summary": "表示一个 return 语句(return ...;)。",
         "members": [
             {
                 "name": "value",
                 "type": "Expression",
-                "summary": "获取当前 return 跳转语句的返回值部分。如果不存在返回值部分则返回 undefined。"
+                "summary": "获取当前 return 语句的返回值部分。如果不存在返回值部分则返回 undefined。"
+            },
+            {
+                "name": "hasSemicolon",
+                "body": "return this.end > (this.value ? this.value.end : this.start + 6/*'return'.length*/);"
             }
         ]
     },
     {
         "name": "ThrowStatement",
         "extends": "Statement",
-        "summary": "表示一个 throw 跳转语句(throw ...;)。",
+        "summary": "表示一个 throw 语句(throw ...;)。",
         "members": [
             {
                 "name": "value",
                 "type": "Expression",
-                "summary": "获取当前 throw 跳转语句的参数部分。"
+                "summary": "获取当前 throw 语句的参数部分。"
+            },
+            {
+                "name": "hasSemicolon",
+                "body": "return this.end > (this.value ? this.value.end : this.start + 6/*'return'.length*/);"
             }
         ]
     },
@@ -545,7 +637,7 @@
             {
                 "name": "try",
                 "type": "Statement",
-                "summary": "获取当前 try 捕获语句的捕获部分。"
+                "summary": "获取当前 try 语句的 try 部分。"
             },
             {
                 "name": "catch",
@@ -566,40 +658,35 @@
         "members": [
             {
                 "name": "openParanStart",
-                "type": "Identifier",
-                "summary": "获取当前捕获的异常变量名"
-            },
-            {
-                "name": "openParanStart",
                 "type": "number",
-                "summary": "获取条件部分中开括号的开始位置。"
+                "summary": "获取异常变量的开括号的开始位置。"
             },
             {
                 "name": "openParanEnd",
                 "type": "number",
-                "summary": "获取条件部分中开括号的结束位置。",
+                "summary": "获取异常变量的开括号的结束位置。",
                 "body": "return this.openParanStart + 1;"
             },
             {
                 "name": "variable",
                 "type": "Identifier",
-                "summary": "获取当前捕获的异常变量名"
+                "summary": "获取当前 catch 部分的变量名"
             },
             {
                 "name": "closeParanStart",
                 "type": "number",
-                "summary": "获取条件部分中闭括号的开始位置。"
+                "summary": "获取异常变量的闭括号的开始位置。"
             },
             {
                 "name": "closeParanEnd",
                 "type": "number",
-                "summary": "获取条件部分中闭括号的结束位置。",
+                "summary": "获取异常变量的闭括号的结束位置。",
                 "body": "return this.closeParanStart + 1;"
             },
             {
                 "name": "body",
                 "type": "Statement",
-                "summary": "获取当前捕获的主体部分。"
+                "summary": "获取当前 catch 部分的主体部分。"
             }
         ]
     },
@@ -611,7 +698,7 @@
             {
                 "name": "body",
                 "type": "Statement",
-                "summary": "获取当前捕获的主体部分。"
+                "summary": "获取当前 finally 部分的主体部分。"
             }
         ]
     },
@@ -651,18 +738,6 @@
         ]
     },
     {
-        "name": "PredefinedTypeLiteral",
-        "extends": "Expression",
-        "summary": "表示内置类型字面量(number)。",
-        "members": [
-            {
-                "name": "type",
-                "type": "TokenType",
-                "summary": "获取常量的类型。可能的标记为 void、number、string、boolean、any。"
-            }
-        ]
-    },
-    {
         "name": "NullLiteral",
         "extends": "Expression",
         "summary": "表示 null 字面量(null)。"
@@ -684,8 +759,8 @@
         "members": [
             {
                 "name": "value",
-                "type": "string",
-                "summary": "获取或设置当前浮点数的内容。"
+                "type": "number",
+                "summary": "获取或设置当前浮点数的值。"
             }
         ]
     },
@@ -707,9 +782,9 @@
         "summary": "表示一个数组字面量([...])。",
         "members": [
             {
-                "name": "values",
-                "type": "Expression[]",
-                "summary": "获取当前数组字面量的所有值。"
+                "name": "elements",
+                "type": "NodeList<Expression>",
+                "summary": "获取当前数组字面量的所有项。"
             }
         ]
     },
@@ -719,9 +794,9 @@
         "summary": "表示一个对象字面量({x: ...})。",
         "members": [
             {
-                "name": "values",
-                "type": "{\r\n\r\n        /**\r\n         * 获取属性的键。\r\n         */\r\n        key: Expression;\r\n\r\n        /**\r\n         * 获取属性的值。\r\n         */\r\n        value: Expression;\r\n\r\n    }[]",
-                "summary": "获取当前对象字面量的所有值。"
+                "name": "elements",
+                "type": "NodeList<ObjectLiteralElement>",
+                "summary": "获取当前对象字面量的所有项。"
             }
         ]
     },
@@ -764,268 +839,231 @@
         "summary": "表示 super 字面量(super)。"
     },
     {
-        "name": "LambdaLiteral",
-        "extends": "Expression",
-        "summary": "表示一个箭头函数(x=>{...})。",
-        "members": [
-            {
-                "name": "parameters",
-                "type": "Parameter[]",
-                "summary": "获取当前函数定义的参数列表。"
-            },
-            {
-                "name": "returnBody",
-                "type": "Expression",
-                "summary": "获取当前函数的主体表达式部分。"
-            },
-            {
-                "name": "body",
-                "type": "Block",
-                "summary": "获取当前函数的主体部分。"
-            }
-        ]
-    },
-    {
         "name": "ParenthesizedExpression",
         "extends": "Expression",
-        "summary": "表示一个括号表达式。",
+        "summary": "表示一个括号表达式((...))。",
         "members": [
             {
                 "name": "body",
                 "type": "Expression",
-                "summary": "获取当前表达式的主体。"
-            }
-        ]
-    },
-    {
-        "name": "CommaExpression",
-        "extends": "Expression",
-        "summary": "表示一组逗号隔开的表达式。",
-        "members": [
-            {
-                "name": "left",
-                "type": "Expression",
-                "summary": "获取左边部分的表达式。"
-            },
-            {
-                "name": "right",
-                "type": "Expression",
-                "summary": "获取右边部分的表达式。"
-            }
-        ]
-    },
-    {
-        "name": "YieldExpression",
-        "extends": "Statement",
-        "summary": "表示一个 yield 表达式。",
-        "members": [
-            {
-                "name": "value",
-                "type": "Expression",
-                "summary": "获取返回的表达式。"
-            },
-            {
-                "name": "end",
-                "summary": "获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。",
-                "body": "return this.value ? this.value.end : this.start + 5;"
-            },
-            {
-                "name": "asterisk",
-                "summary": "",
-                "body": "return this.asteriskStart != undefined;"
-            },
-            {
-                "name": "asteriskStart",
-                "type": "number",
-                "summary": ""
-            },
-            {
-                "name": "asteriskEnd",
-                "summary": "",
-                "body": "return this.asteriskStart != undefined ? this.asteriskStart + 1 : undefined;"
-            },
-            {
-                "summary": ""
+                "summary": "获取当前括号表达式的主体部分。"
             }
         ]
     },
     {
         "name": "ConditionalExpression",
         "extends": "Expression",
-        "summary": "表示一个三元条件表达式。",
+        "summary": "表示一个条件表达式(... ? ... : ...)。",
         "members": [
             {
                 "name": "condition",
                 "type": "Expression",
-                "summary": "获取当前表达式的条件。"
+                "summary": "获取当前条件表达式的条件部分。"
             },
             {
-                "name": "thenExpression",
+                "name": "then",
                 "type": "Expression",
-                "summary": "获取当前表达式的则部分。"
+                "summary": "获取当前条件表达式的则部分。"
             },
             {
-                "name": "elseExpression",
+                "name": "else",
                 "type": "Expression",
-                "summary": "获取当前表达式的否则部分。"
+                "summary": "获取当前条件表达式的否则部分。"
+            }
+        ]
+    },
+    {
+        "name": "LambdaLiteral",
+        "extends": "Expression",
+        "summary": "表示一个箭头函数(x => ...)。",
+        "members": [
+            {
+                "name": "typeParameters",
+                "type": "NodeList<TypeParameter>",
+                "summary": "获取当前箭头函数的所有泛型参数。"
+            },
+            {
+                "name": "parameters",
+                "type": "NodeList<Parameter>",
+                "summary": "获取当前箭头函数的所有参数。"
+            },
+            {
+                "name": "arrowStart",
+                "type": "number",
+                "summary": "获取当前表达式的箭头开始位置。"
+            },
+            {
+                "name": "arrowEnd",
+                "summary": "获取当前表达式的箭头结束位置。",
+                "body": "return this.arrowStart + 1;"
+            },
+            {
+                "name": "body",
+                "type": "Block | Expression",
+                "summary": "获取当前箭头函数的主体部分。"
+            }
+        ]
+    },
+    {
+        "name": "YieldExpression",
+        "extends": "Statement",
+        "summary": "表示一个 yield 表达式(yield xx)。",
+        "members": [
+            {
+                "name": "asteriskStart",
+                "type": "number",
+                "summary": "获取当前表达式的 * 的开始位置。如果当前表达式无 * 则返回 undefined。"
+            },
+            {
+                "name": "asteriskEnd",
+                "summary": "获取当前表达式的 * 的结束位置。如果当前表达式无 * 则返回 undefined。",
+                "body": "return this.asteriskStart != undefined ? this.asteriskStart + 1 : undefined;"
+            },
+            {
+                "name": "body",
+                "type": "Expression",
+                "summary": "获取 yield 表达式的主体部分。"
+            },
+            {
+                "name": "end",
+                "summary": "获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。",
+                "body": "return this.body ? this.body.end : this.start + 5/*'yield'.length*/;"
             }
         ]
     },
     {
         "name": "CastExpression",
         "extends": "Expression",
-        "summary": "表示一个类型分析表达式。",
+        "summary": "表示一个类型转换表达式(<T>xx)。",
         "members": [
             {
-                "name": "targetType",
+                "name": "lessThanStart",
+                "type": "number",
+                "summary": "获取当前表达式的 < 的开始位置。"
+            },
+            {
+                "name": "lessThanEnd",
+                "summary": "获取当前表达式的 < 的结束位置。",
+                "body": "return this.lessThanStart + 1;"
+            },
+            {
+                "name": "type",
                 "type": "Expression",
-                "summary": "获取当前表达式的主体。"
+                "summary": "获取当前类型转换表达式的类型部分。"
+            },
+            {
+                "name": "greaterThanStart",
+                "type": "number",
+                "summary": "获取当前表达式的 > 的开始位置。"
+            },
+            {
+                "name": "greaterThanEnd",
+                "summary": "获取当前表达式的 > 的结束位置。",
+                "body": "return this.greaterThanStart + 1;"
             },
             {
                 "name": "body",
                 "type": "Expression",
-                "summary": "获取当前表达式的主体。"
-            }
-        ]
-    },
-    {
-        "name": "GenericTypeExpression",
-        "extends": "Expression",
-        "summary": "表示一个泛型表达式。",
-        "members": [
-            {
-                "name": "elementType",
-                "type": "Identifier",
-                "summary": "获取当前泛型表达式的基础部分。"
-            },
-            {
-                "name": "genericArguments",
-                "type": "Expression[]",
-                "summary": "获取当前泛型表达式的泛型参数。"
-            }
-        ]
-    },
-    {
-        "name": "ArrayTypeExpression",
-        "extends": "Expression",
-        "summary": "表示一个数组类型表达式。",
-        "members": [
-            {
-                "name": "elementType",
-                "type": "Expression",
-                "summary": "获取当前类型的基础类型。"
+                "summary": "获取当前类型转换表达式的主体部分。"
             }
         ]
     },
     {
         "name": "MemberCallExpression",
         "extends": "Expression",
-        "summary": "表示一个成员调用表达式。",
+        "summary": "表示一个成员调用表达式(x.y)。",
         "members": [
             {
                 "name": "target",
                 "type": "Expression",
-                "summary": "获取当前调用的目标表达式。"
+                "summary": "获取当前调用的目标部分。"
             },
             {
                 "name": "argument",
                 "type": "Expression",
-                "summary": "获取当前调用的参数表达式。"
+                "summary": "获取当前调用的参数部分。"
+            },
+            {
+                "name": "start",
+                "body": "return this.target.start;"
+            },
+            {
+                "name": "end",
+                "body": "return this.argument.end;"
             }
         ]
     },
     {
-        "name": "FuncCallExpression",
+        "name": "CallLikeExpression",
+        "modifiers": "abstract",
         "extends": "Expression",
-        "summary": "表示一个函数调用表达式。",
+        "summary": "表示一个类调用表达式(x(...))。",
         "members": [
             {
+                "name": "target",
+                "type": "Expression",
+                "summary": "获取当前调用的目标部分。"
+            },
+            {
                 "name": "arguments",
-                "type": "Expression[]",
-                "summary": "获取当前调用的参数列表。"
+                "type": "NodeList<Expression>",
+                "summary": "获取当前表达式的所有参数。"
             }
         ]
+    },
+    {
+        "name": "CallExpression",
+        "extends": "CallLikeExpression",
+        "summary": "表示一个函数调用表达式(x(...))。"
     },
     {
         "name": "NewExpression",
-        "extends": "FuncCallExpression",
-        "summary": "表示一个 new 表达式。",
-        "members": [
-            {
-                "name": "initializer",
-                "type": "Expression",
-                "summary": "获取当前表达式的初始化项。"
-            }
-        ]
+        "extends": "CallLikeExpression",
+        "summary": "表示一个 new 表达式(new x(...))。"
     },
     {
         "name": "IndexCallExpression",
         "extends": "FuncCallExpression",
-        "summary": "表示一个索引调用表达式。",
-        "members": [ ]
-    },
-    {
-        "name": "ChainCallExpression",
-        "extends": "MemberCallExpression",
-        "summary": "表示一个链式成员访问表达式。",
-        "members": [ ]
+        "summary": "表示一个索引调用表达式(x[...])。",
+        "members": [
+            {
+                "name": "start",
+                "body": "return this.target.start;"
+            }
+        ]
     },
     {
         "name": "UnaryExpression",
         "extends": "Expression",
-        "summary": "表示一个一元运算表达式。",
+        "summary": "表示一个一元运算表达式(+x)。",
         "members": [
             {
                 "name": "operator",
                 "type": "TokenType",
-                "summary": "获取当前表达式的运算符。可能的合法值是：+ - ! ^~ &amp; typeof await 。"
+                "summary": "获取当前表达式的运算符。可能的值有：+、-、++、--、!、~、typeof、await。"
             },
             {
                 "name": "operand",
                 "type": "Expression",
                 "summary": "获取当前表达式的运算数。"
-            }
-        ]
-    },
-    {
-        "name": "TypeOrSizeOfExpression",
-        "extends": "Expression",
-        "summary": "表示一个 typeof 或 sizeof 表达式。",
-        "members": [
+            },
             {
-                "name": "operand",
-                "type": "Expression",
-                "summary": "获取当前表达式的运算数。"
-            }
-        ]
-    },
-    {
-        "name": "TypeOfExpression",
-        "extends": "TypeOrSizeOfExpression",
-        "summary": "表示一个 typeof 表达式。",
-        "members": [ ]
-    },
-    {
-        "name": "MutatorExpression",
-        "extends": "UnaryExpression",
-        "summary": "表示一个 ++ 或 -- 运算表达式。",
-        "members": [
-            {
-                "name": "prefix",
+                "name": "isPostfix",
                 "type": "boolean",
-                "summary": "判断当前表达式是否是前缀表达式。"
+                "summary": "判断当前表达式是否是后缀表达式。",
+                "body": "return this.end > this.operand.end;"
             }
         ]
     },
     {
         "name": "BinaryExpression",
         "extends": "Expression",
-        "summary": "表示一个二元运算表达式。",
+        "summary": "表示一个二元运算表达式(x + y)。",
         "members": [
             {
                 "name": "leftOperand",
                 "type": "Expression",
-                "summary": "获取当前表达式的左值。"
+                "summary": "获取当前表达式的左值部分。"
             },
             {
                 "name": "operator",
@@ -1033,60 +1071,92 @@
                 "summary": "获取当前表达式的运算符。合法的值为 +、-、*、/、**、^、%、&、|、&&、||、<<、>>、>>>、is、as、instanceof。"
             },
             {
-                "name": "rightOperand",
-                "type": "Expression",
-                "summary": "获取当前表达式的右值。"
-            },
-            {
                 "name": "operatorStart",
                 "type": "number",
-                "summary": "获取运算符的开始位置。如果当前节点是生成的则返回 undefined。"
+                "summary": "获取运算符的开始位置。"
             },
             {
                 "name": "operatorEnd",
-                "summary": "获取运算符的结束位置。如果当前节点是生成的则返回 undefined。",
+                "summary": "获取运算符的结束位置。",
                 "body": "return this.operatorStart + tokenToString(this.operator).length;"
             },
             {
+                "name": "rightOperand",
+                "type": "Expression",
+                "summary": "获取当前表达式的右值部分。"
+            },
+            {
                 "name": "start",
-                "summary": "获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。",
                 "body": "return this.leftOperand.start;"
             },
             {
                 "name": "end",
-                "summary": "获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。",
                 "body": "return this.rightOperand.end;"
             }
         ]
     },
     {
-        "name": "IsOrAsExpression",
+        "name": "PredefinedTypeLiteral",
         "extends": "Expression",
-        "summary": "表示一个 is 或 as 表达式。",
+        "summary": "表示内置类型字面量(number)。",
         "members": [
             {
-                "name": "leftOperand",
-                "type": "Expression",
-                "summary": "获取当前表达式的左值。"
-            },
-            {
-                "name": "rightOperand",
-                "type": "Expression",
-                "summary": "获取当前表达式的右值。"
+                "name": "type",
+                "type": "TokenType",
+                "summary": "获取字面量所表示的类型。可能的返回值有 void、number、string、boolean、any。"
             }
         ]
     },
     {
-        "name": "InstanceofExpression",
-        "extends": "IsOrAsExpression",
-        "summary": "表示一个 instanceof 表达式。",
-        "members": [ ]
+        "name": "GenericTypeExpression",
+        "extends": "Expression",
+        "summary": "表示一个泛型表达式(Array<T>)。",
+        "members": [
+            {
+                "name": "element",
+                "type": "Expression",
+                "summary": "获取当前泛型表达式的元素部分。"
+            },
+            {
+                "name": "genericArguments",
+                "type": "NodeList<Expression>",
+                "summary": "获取当前泛型表达式的所有参数。"
+            }
+        ]
     },
     {
-        "name": "AsExpression",
-        "extends": "IsOrAsExpression",
-        "summary": "表示一个 as 表达式。",
-        "members": [ ]
+        "name": "ArrayTypeExpression",
+        "extends": "Expression",
+        "summary": "表示一个数组类型表达式(T[])。",
+        "members": [
+            {
+                "name": "element",
+                "type": "Expression",
+                "summary": "获取当前数组类型的基础类型。"
+            }
+        ]
+    },
+    {
+        "name": "TypeDefinition",
+        "extends": "MemberContainerDefinition",
+        "summary": "表示一个类型（如类、结构、接口）定义。",
+        "members": [
+            {
+                "name": "extends",
+                "type": "NodeList<Expression>",
+                "summary": "获取当前类型的继承列表。"
+            },
+            {
+                "name": "implements",
+                "type": "NodeList<Expression>",
+                "summary": "获取当前类型的实现列表。"
+            },
+            {
+                "name": "genericParameters",
+                "type": "NodeList<GenericParameter>",
+                "summary": "获取当前类型定义的泛型形参列表。如果当前定义不是泛型则返回 undefined。"
+            }
+        ]
     },
     {
         "name": "MemberDefinition",
@@ -1110,6 +1180,12 @@
             }
         ]
     },
+    {
+        "name": "Annotation",
+        "extends": "CallLikeExpression",
+        "summary": "表示一个注解(@xx(...))。"
+    },
+
     {
         "name": "Modifiers",
         "summary": "表示成员修饰符的枚举。",
@@ -1165,14 +1241,26 @@
             }
         ]
     },
+
     {
-        "name": "Parameter",
-        "extends": "Variable",
-        "summary": "表示一个函数参数。",
-        "members": [ ]
+        "name": "ParameterDeclaration",
+        "extends": "Node",
+        "summary": "表示一个参数声明。",
+        "members": [
+            {
+                "name": "modifiers",
+                "type": "Modifiers",
+                "summary": "获取当前参数的修饰符。"
+            },
+            {
+                "name": "annotations",
+                "type": "Annotation[]",
+                "summary": "获取当前参数的注解。"
+            }
+        ]
     },
     {
-        "name": "GenericParameter",
+        "name": "GenericParameterDeclaration",
         "extends": "Node",
         "summary": "表示一个泛型参数。",
         "members": [
@@ -1197,23 +1285,6 @@
                 "name": "members",
                 "type": "MemberDefinition",
                 "summary": "获取当前容器内的所有成员。"
-            }
-        ]
-    },
-    {
-        "name": "TypeDefinition",
-        "extends": "MemberContainerDefinition",
-        "summary": "表示一个类型（如类、结构、接口）定义。",
-        "members": [
-            {
-                "name": "baseTypes",
-                "type": "Expression[]",
-                "summary": "获取当前类型的基类型列表。"
-            },
-            {
-                "name": "genericParameters",
-                "type": "GenericParameter",
-                "summary": "获取当前类型的泛型形参列表。非泛型则返回 null 。"
             }
         ]
     },
