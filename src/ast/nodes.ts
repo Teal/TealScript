@@ -1,6 +1,6 @@
 /**
  * @fileOverview 语法树节点
- * @generated $ tpack gen
+ * @generated partial $ tpack gen
  */
 
 import {TokenType, tokenToString} from './tokenType';
@@ -26,7 +26,19 @@ export abstract class Node {
      * @param vistior 要使用的节点访问器。
      */
     abstract accept(vistior: NodeVisitor);
-                
+
+    /**
+     * 遍历当前节点的所有直接和间接子节点，并对每一项执行 *callback*。
+     * @param callback 对每一项执行的回调函数。
+     * * param value 当前项的值。
+     * * param key 当前项的索引或键。
+     * * param target 当前正在遍历的目标对象。
+     * * returns 函数可以返回 false 以终止循环。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    abstract walk(callback: (node: Node, key, target) => boolean | void, scope?: any): boolean;
+
 }
 
 /**
@@ -56,7 +68,7 @@ export class SourceFile extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitSourceFile(this);
     }
-                
+
 }
 
 /**
@@ -118,7 +130,7 @@ export abstract class Statement extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitStatement(this);
     }
-                
+
 }
 
 /**
@@ -143,7 +155,7 @@ export class EmptyStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitEmptyStatement(this);
     }
-                
+
 }
 
 /**
@@ -163,7 +175,7 @@ export class Block extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitBlock(this);
     }
-                
+
 }
 
 /**
@@ -193,7 +205,7 @@ export class VariableStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitVariableStatement(this);
     }
-                
+
 }
 
 /**
@@ -270,7 +282,7 @@ export class VariableDeclaration extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitVariableDeclaration(this);
     }
-                
+
 }
 
 /**
@@ -290,7 +302,7 @@ export abstract class BindingPattern extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitBindingPattern(this);
     }
-                
+
 }
 
 /**
@@ -310,7 +322,7 @@ export abstract class BindingElement extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitBindingElement(this);
     }
-                
+
 }
 
 /**
@@ -330,7 +342,7 @@ export class ArrayBindingPattern extends BindingPattern {
     accept(vistior: NodeVisitor) {
         return vistior.visitArrayBindingPattern(this);
     }
-                
+
 }
 
 /**
@@ -370,7 +382,7 @@ export class ArrayBindingElement extends BindingElement {
     accept(vistior: NodeVisitor) {
         return vistior.visitArrayBindingElement(this);
     }
-                
+
 }
 
 /**
@@ -390,7 +402,7 @@ export class ObjectBindingPattern extends BindingPattern {
     accept(vistior: NodeVisitor) {
         return vistior.visitObjectBindingPattern(this);
     }
-                
+
 }
 
 /**
@@ -420,7 +432,7 @@ export class ObjectBindingElement extends BindingElement {
     accept(vistior: NodeVisitor) {
         return vistior.visitObjectBindingElement(this);
     }
-                
+
 }
 
 /**
@@ -445,7 +457,7 @@ export class LabeledStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitLabeledStatement(this);
     }
-                
+
 }
 
 /**
@@ -470,7 +482,7 @@ export class ExpressionStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitExpressionStatement(this);
     }
-                
+
 }
 
 /**
@@ -505,7 +517,7 @@ export class IfStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitIfStatement(this);
     }
-                
+
 }
 
 /**
@@ -530,7 +542,7 @@ export class SwitchStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitSwitchStatement(this);
     }
-                
+
 }
 
 /**
@@ -565,7 +577,7 @@ export class CaseClause extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitCaseClause(this);
     }
-                
+
 }
 
 /**
@@ -620,7 +632,7 @@ export class ForStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitForStatement(this);
     }
-                
+
 }
 
 /**
@@ -655,7 +667,7 @@ export class ForInStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitForInStatement(this);
     }
-                
+
 }
 
 /**
@@ -690,7 +702,7 @@ export class ForOfStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitForOfStatement(this);
     }
-                
+
 }
 
 /**
@@ -720,7 +732,7 @@ export class WhileStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitWhileStatement(this);
     }
-                
+
 }
 
 /**
@@ -750,7 +762,7 @@ export class DoWhileStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitDoWhileStatement(this);
     }
-                
+
 }
 
 /**
@@ -775,7 +787,7 @@ export class ContinueStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitContinueStatement(this);
     }
-                
+
 }
 
 /**
@@ -800,7 +812,7 @@ export class BreakStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitBreakStatement(this);
     }
-                
+
 }
 
 /**
@@ -825,7 +837,7 @@ export class ReturnStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitReturnStatement(this);
     }
-                
+
 }
 
 /**
@@ -850,7 +862,7 @@ export class ThrowStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitThrowStatement(this);
     }
-                
+
 }
 
 /**
@@ -880,7 +892,7 @@ export class TryStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitTryStatement(this);
     }
-                
+
 }
 
 /**
@@ -925,7 +937,7 @@ export class CatchClause extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitCatchClause(this);
     }
-                
+
 }
 
 /**
@@ -945,7 +957,7 @@ export class FinallyClause extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitFinallyClause(this);
     }
-                
+
 }
 
 /**
@@ -970,7 +982,7 @@ export class WithStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitWithStatement(this);
     }
-                
+
 }
 
 /**
@@ -985,7 +997,7 @@ export abstract class Expression extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitExpression(this);
     }
-                
+
 }
 
 /**
@@ -1005,7 +1017,7 @@ export class Identifier extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitIdentifier(this);
     }
-                
+
 }
 
 /**
@@ -1020,7 +1032,7 @@ export class NullLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitNullLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1035,7 +1047,7 @@ export class TrueLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitTrueLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1050,7 +1062,7 @@ export class FalseLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitFalseLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1070,7 +1082,7 @@ export class NumericLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitNumericLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1090,7 +1102,7 @@ export class StringLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitStringLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1110,7 +1122,7 @@ export class ArrayLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitArrayLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1130,7 +1142,7 @@ export class ObjectLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitObjectLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1165,7 +1177,7 @@ export class ObjectLiteralElement extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitObjectLiteralElement(this);
     }
-                
+
 }
 
 /**
@@ -1180,7 +1192,7 @@ export class ThisLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitThisLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1195,7 +1207,7 @@ export class SuperLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitSuperLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1215,7 +1227,7 @@ export class ParenthesizedExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitParenthesizedExpression(this);
     }
-                
+
 }
 
 /**
@@ -1245,7 +1257,7 @@ export class ConditionalExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitConditionalExpression(this);
     }
-                
+
 }
 
 /**
@@ -1285,7 +1297,7 @@ export class LambdaLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitLambdaLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1320,7 +1332,7 @@ export class YieldExpression extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitYieldExpression(this);
     }
-                
+
 }
 
 /**
@@ -1365,7 +1377,7 @@ export class CastExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitCastExpression(this);
     }
-                
+
 }
 
 /**
@@ -1400,7 +1412,7 @@ export class MemberCallExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitMemberCallExpression(this);
     }
-                
+
 }
 
 /**
@@ -1425,7 +1437,7 @@ export abstract class CallLikeExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitCallLikeExpression(this);
     }
-                
+
 }
 
 /**
@@ -1440,7 +1452,7 @@ export class CallExpression extends CallLikeExpression {
     accept(vistior: NodeVisitor) {
         return vistior.visitCallExpression(this);
     }
-                
+
 }
 
 /**
@@ -1455,7 +1467,7 @@ export class NewExpression extends CallLikeExpression {
     accept(vistior: NodeVisitor) {
         return vistior.visitNewExpression(this);
     }
-                
+
 }
 
 /**
@@ -1475,7 +1487,7 @@ export class IndexCallExpression extends CallLikeExpression {
     accept(vistior: NodeVisitor) {
         return vistior.visitIndexCallExpression(this);
     }
-                
+
 }
 
 /**
@@ -1505,7 +1517,7 @@ export class UnaryExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitUnaryExpression(this);
     }
-                
+
 }
 
 /**
@@ -1555,7 +1567,7 @@ export class BinaryExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitBinaryExpression(this);
     }
-                
+
 }
 
 /**
@@ -1575,7 +1587,7 @@ export class PredefinedTypeLiteral extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitPredefinedTypeLiteral(this);
     }
-                
+
 }
 
 /**
@@ -1600,7 +1612,7 @@ export class GenericTypeExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitGenericTypeExpression(this);
     }
-                
+
 }
 
 /**
@@ -1620,7 +1632,7 @@ export class ArrayTypeExpression extends Expression {
     accept(vistior: NodeVisitor) {
         return vistior.visitArrayTypeExpression(this);
     }
-                
+
 }
 
 /**
@@ -1650,7 +1662,7 @@ export class TypeDefinition extends MemberContainerDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitTypeDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1680,7 +1692,7 @@ export class MemberDefinition extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitMemberDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1695,7 +1707,7 @@ export class Annotation extends CallLikeExpression {
     accept(vistior: NodeVisitor) {
         return vistior.visitAnnotation(this);
     }
-                
+
 }
 
 /**
@@ -1787,7 +1799,7 @@ export class ParameterDeclaration extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitParameterDeclaration(this);
     }
-                
+
 }
 
 /**
@@ -1812,7 +1824,7 @@ export class GenericParameterDeclaration extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitGenericParameterDeclaration(this);
     }
-                
+
 }
 
 /**
@@ -1832,7 +1844,7 @@ export class MemberContainerDefinition extends MemberDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitMemberContainerDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1847,7 +1859,7 @@ export class ClassDefinition extends TypeDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitClassDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1862,7 +1874,7 @@ export class StructDefinition extends TypeDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitStructDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1877,7 +1889,7 @@ export class InterfaceDefinition extends TypeDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitInterfaceDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1892,7 +1904,7 @@ export class EnumDefinition extends TypeDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitEnumDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1917,7 +1929,7 @@ export class ExtensionDefinition extends MemberContainerDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitExtensionDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1937,7 +1949,7 @@ export class NamespaceDefinition extends MemberContainerDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitNamespaceDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1967,7 +1979,7 @@ export class ImportDirective extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitImportDirective(this);
     }
-                
+
 }
 
 /**
@@ -1982,7 +1994,7 @@ export class ModuleDefinition extends MemberContainerDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitModuleDefinition(this);
     }
-                
+
 }
 
 /**
@@ -1997,7 +2009,7 @@ export class TypeMemberDefinition extends MemberDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitTypeMemberDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2017,7 +2029,7 @@ export class FieldDefinition extends TypeMemberDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitFieldDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2042,7 +2054,7 @@ export class MethodOrPropertyDefinition extends TypeMemberDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitMethodOrPropertyDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2062,7 +2074,7 @@ export class PropertyOrIndexerDefinition extends MethodOrPropertyDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitPropertyOrIndexerDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2077,7 +2089,7 @@ export class PropertyDefinition extends MemberDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitPropertyDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2097,7 +2109,7 @@ export class IndexerDefinition extends PropertyOrIndexerDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitIndexerDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2122,7 +2134,7 @@ export class MethodOrConstructorDefinition extends MethodOrPropertyDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitMethodOrConstructorDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2142,7 +2154,7 @@ export class MethodDefinition extends MethodOrConstructorDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitMethodDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2157,7 +2169,7 @@ export class ConstructorDefinition extends MethodOrConstructorDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitConstructorDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2177,7 +2189,7 @@ export class EnumMemberDefinition extends TypeMemberDefinition {
     accept(vistior: NodeVisitor) {
         return vistior.visitEnumMemberDefinition(this);
     }
-                
+
 }
 
 /**
@@ -2192,5 +2204,5 @@ export class JsDocComment extends Node {
     accept(vistior: NodeVisitor) {
         return vistior.visitJsDocComment(this);
     }
-                
+
 }
