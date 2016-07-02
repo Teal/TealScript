@@ -4,6 +4,7 @@ var tpack = require("tpack");
 var ts = require("typescript");
 // nodes.ts => nodes.ts & nodeVisitor.ts
 tpack.task("gen-nodes", function () {
+    tpack.allowOverwriting = true;
     tpack.src("src/ast/nodes.ts").pipe(function (file, options) {
         // 第一步：语法解析。
         var program = ts.createProgram([file.path], options);
@@ -68,22 +69,40 @@ tpack.task("gen-nodes", function () {
         }
         // 第五步：修复类型信息。
         var acceptSummary = getDocComment(getMember(nodes["Node"].node, "accept"), false);
-        var walkSummary = getDocComment(getMember(nodes["Node"].node, "walk"), false);
+        var eachSummary = getDocComment(getMember(nodes["Node"].node, "each"), false);
         var changes = [];
         for (var name_3 in nodes) {
             var type = nodes[name_3];
-            if (type.isAbstract)
+            if (type.isAbstract) {
                 continue;
-            //// 添加 
-            //if (type.missingWalk) {
-            //    const content = "";
-            //    changes.push({
-            //        pos: type.pos,
-            //        content: content
-            //    });
-            //}
-            // 修复 Accept。 
-            var accept = getMember(nodes["Node"].node, "accept");
+            }
+            var each = getMember(type.node, "each");
+            if (each) {
+                changes.push({
+                    remove: true,
+                    pos: each.pos,
+                    end: each.end,
+                });
+            }
+            var eachContentItems = [];
+            for (var member in type.members) {
+                var memberType = type.members[member];
+                if (isArrayType(memberType)) {
+                    eachContentItems.push("this." + member + ".each(callback, scope)");
+                }
+                else {
+                    eachContentItems.push("callback.call(scope, this." + member + ", \"" + member + "\", this) !== false");
+                }
+            }
+            if (eachContentItems.length) {
+                var eachContent = "\n\n    " + eachSummary + "\n    each(callback: (node: Node, key, target) => boolean | void, scope?: any) {\n        return " + eachContentItems.join(" &&\n            ") + ";\n    }";
+                changes.push({
+                    insert: true,
+                    pos: each ? each.pos : type.node.members.end,
+                    content: eachContent
+                });
+            }
+            var accept = getMember(type.node, "accept");
             if (accept) {
                 changes.push({
                     remove: true,
@@ -91,17 +110,16 @@ tpack.task("gen-nodes", function () {
                     end: accept.end,
                 });
             }
-            var content = "\n\n    " + acceptSummary + "\n    accept(vistior: NodeVisitor) {\n        return vistior.visit" + type.name + "(this);\n    }\n";
+            var content = "\n\n    " + acceptSummary + "\n    accept(vistior: NodeVisitor) {\n        return vistior.visit" + type.name + "(this);\n    }";
             changes.push({
                 insert: true,
-                pos: type.pos,
+                pos: accept ? accept.pos : type.node.members.end,
                 content: content
             });
-            break;
         }
         // 第六步：应用修复。
         var source = sourceFile.text;
-        changes.sort(function (x, y) { return y.pos - x.pos; });
+        changes.sort(function (x, y) { return y.pos > x.pos ? 1 : y.pos < x.pos ? -1 : y.remove ? 1 : -1; });
         for (var _d = 0, changes_1 = changes; _d < changes_1.length; _d++) {
             var change = changes_1[_d];
             if (change.remove) {
@@ -112,6 +130,25 @@ tpack.task("gen-nodes", function () {
             }
         }
         file.content = source;
+        // 第七步：生成 NodeVistior。
+        var result = "/**\n * @fileOverview \u8282\u70B9\u8BBF\u95EE\u5668\n * @generated $ tpack gen\n */\n\nimport * as nodes from './nodes';\n\n/**\n * \u8868\u793A\u4E00\u4E2A\u8282\u70B9\u8BBF\u95EE\u5668\u3002\n */\nexport abstract class NodeVisitor {\n\n    /**\n     * \u8BBF\u95EE\u4E00\u4E2A\u9017\u53F7\u9694\u5F00\u7684\u8282\u70B9\u5217\u8868(<..., ...>\u3002\n     * @param nodes \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u5217\u8868\u3002\n     */\n    visitNodeList<T extends nodes.Node>(nodes: nodes.NodeList<T>) {\n        for(const node of nodes) {\n            node.accept(this);\n        }\n    }\n";
+        for (var name_4 in nodes) {
+            var type = nodes[name_4];
+            if (type.isAbstract) {
+                continue;
+            }
+            var memberList = [];
+            for (var member in type.members) {
+                memberList.push("        node." + member + ".accept(this);");
+            }
+            result += "\n    /**\n     * " + type.summary.replace("表示", "访问") + "\n     * @param node \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u3002\n     */\n    visit" + type.name + "(node: nodes." + type.name + ") {\n" + memberList.join("\n") + "\n    }\n";
+            function getNodeMembers(type) {
+                var r = [];
+                return r;
+            }
+        }
+        result += "\n}";
+        require("fs").writeFileSync("src/ast/nodeVisitor.ts", result);
         function getDocComment(node, removeSpace) {
             if (removeSpace === void 0) { removeSpace = true; }
             var comments = ts.getJsDocComments(node, sourceFile);
@@ -125,7 +162,9 @@ tpack.task("gen-nodes", function () {
             return node.members.filter(function (x) { return x.name.text == name; })[0];
         }
         function isNodeType(type) {
-            var p = nodes[type.replace(/\s*\|.*$|<.*>|\[\]/g, "")];
+            if (/^NodeList</.test(type))
+                return true;
+            var p = nodes[type.replace(/\s*\|.*$/, "")];
             while (p) {
                 if (p.name === "Node")
                     return true;
@@ -140,33 +179,6 @@ tpack.task("gen-nodes", function () {
 });
 tpack.task("gen", function () {
     tpack.src("src/parser/nodes.json").pipe(function (file) {
-        var data = JSON.parse(file.content);
-        var result = "/**\n * @fileOverview \u8BED\u6CD5\u6811\u8282\u70B9\n * @generated $ tpack gen\n */\n\nimport {TokenType, tokenToString} from './tokenType';\nimport {NodeVisitor} from './nodeVisitor';\n";
-        for (var index in data) {
-            var type = data[index];
-            var accA = "\n    /**\n     * \u4F7F\u7528\u6307\u5B9A\u7684\u8282\u70B9\u8BBF\u95EE\u5668\u5904\u7406\u5F53\u524D\u8282\u70B9\u3002\n     * @param vistior \u8981\u4F7F\u7528\u7684\u8282\u70B9\u8BBF\u95EE\u5668\u3002\n     */\n    abstract accept(vistior: NodeVisitor);\n                ";
-            var acc = "\n    /**\n     * \u4F7F\u7528\u6307\u5B9A\u7684\u8282\u70B9\u8BBF\u95EE\u5668\u5904\u7406\u5F53\u524D\u8282\u70B9\u3002\n     * @param vistior \u8981\u4F7F\u7528\u7684\u8282\u70B9\u8BBF\u95EE\u5668\u3002\n     */\n    accept(vistior: NodeVisitor) {\n        return vistior.visit" + type.name + "(this);\n    }\n                ";
-            result += "\n/**\n * " + type.summary + "\n */\nexport " + (type.modifiers ? type.modifiers + " " : "") + (type.type || "class") + " " + type.name + (type.extends ? " extends " + type.extends : "") + " {\n" + (type.members ? type.members.map(function (x) { return member(x); }).join("") : "") + (isType(type.name) ? type.name === "Node" ? accA : acc : "") + "\n}\n";
-        }
-        function member(x) {
-            var pp = data.find(function (t) { return t.name == type.extends; });
-            x.summary = x.summary || pp && pp.members && (pp.members.find(function (t) { return t.name == x.name; }) || {}).summary;
-            x.type = x.type || pp && pp.members && (pp.members.find(function (t) { return t.name == x.name; }) || {}).type;
-            return "\n    /**\n     * " + x.summary + "\n     */\n    " + (x.body ? "get " : "") + x.name + (x.body ? "()" : "") + (x.type && !x.body ? ": " + x.type : "") + (x.body ? " { " + x.body + " }" : type.type == "enum" ? "," : ";") + "\n";
-        }
-        file.content = result;
-        var result = "/**\n * @fileOverview \u8282\u70B9\u8BBF\u95EE\u5668\n * @generated $ tpack gen\n */\n\nimport * as nodes from './nodes';\n\n/**\n * \u8868\u793A\u4E00\u4E2A\u8282\u70B9\u8BBF\u95EE\u5668\u3002\n */\nexport abstract class NodeVisitor {\n\n    /**\n     * \u8BBF\u95EE\u4E00\u4E2A\u591A\u4E2A\u8282\u70B9\u6570\u7EC4\u3002\n     * @param nodes \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u6570\u7EC4\u3002\n     */\n    visitList<T extends nodes.Node>(nodes: T[]) {\n        for(const node of nodes) {\n            node.accept(this);\n        }\n    }\n\n    /**\n     * \u8BBF\u95EE\u4E00\u4E2A\u9017\u53F7\u9694\u5F00\u7684\u8282\u70B9\u5217\u8868(<..., ...>\u3002\n     * @param nodes \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u5217\u8868\u3002\n     */\n    visitNodeList<T extends nodes.Node>(nodes: nodes.NodeList<T>) {\n        this.visitList(nodes);\n    }\n";
-        for (var index in data) {
-            var type = data[index];
-            if (!isType(type.name) || type.modifiers == "abstract")
-                continue;
-            result += "\n    /**\n     * " + type.summary.replace("表示", "访问") + "\n     * @param node \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u3002\n     */\n    visit" + type.name.replace("Node>", "nodes.Node>") + "(node: nodes." + type.name.replace(/<T.*>/, "<T>") + ") {\n" + getNodeMembers(type).map(function (t) { return t.type.startsWith("NodeList") ? "        this.visitNodeList(node." + t.name + ");" : t.type.endsWith("[]") ? "        this.visitList(node." + t.name + ");" : "        node." + t.name + ".accept(this);"; }).join("\n") + "\n    }\n";
-            function getNodeMembers(x) {
-                return x.members && x.members.filter(function (t) { return ((t.type + "").endsWith("[]") || (t.type + "").startsWith("NodeList") || isType(t.type)); }) || [];
-            }
-        }
-        result += "\n}";
-        require("fs").writeFileSync("src/parser/nodeVisitor.ts", result);
         function isType(t) {
             while (t) {
                 t = t.replace(/\s*\|.*$/, "");
