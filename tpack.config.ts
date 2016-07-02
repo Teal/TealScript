@@ -20,6 +20,7 @@ tpack.task("gen-nodes", function () {
             const clazz = <ts.ClassDeclaration>statement;
             const baseClazzType = clazz.heritageClauses && clazz.heritageClauses.length && clazz.heritageClauses[0].types[0];
             let members = {};
+            let optional = {};
             for (const member of clazz.members) {
                 if (member.kind !== ts.SyntaxKind.PropertyDeclaration) {
                     continue;
@@ -30,6 +31,9 @@ tpack.task("gen-nodes", function () {
                 }
                 members = members || {};
                 members[(<ts.Identifier>prop.name).text] = sourceFile.text.substring(prop.type.pos, prop.type.end).trim();
+                if (getDocComment(prop, false).indexOf("undefined") >= 0) {
+                    optional[(<ts.Identifier>prop.name).text] = true;
+                }
             }
 
             nodes[clazz.name.text] = {
@@ -38,6 +42,7 @@ tpack.task("gen-nodes", function () {
                 name: clazz.name.text,
                 extends: baseClazzType && sourceFile.text.substring(baseClazzType.pos, baseClazzType.end).trim() || null,
                 members,
+                optional,
                 node: clazz,
             };
         }
@@ -67,6 +72,11 @@ tpack.task("gen-nodes", function () {
                         type.members[m] = p.members[m];
                     }
                 }
+                for (const m in p.optional) {
+                    if (!type.optional[m]) {
+                        type.optional[m] = p.optional[m];
+                    }
+                }
             }
         }
 
@@ -94,11 +104,11 @@ tpack.task("gen-nodes", function () {
             const eachContentItems = [];
             for (const member in type.members) {
                 const memberType = type.members[member];
-                if (isArrayType(memberType)) {
-                    eachContentItems.push(`this.${member}.each(callback, scope)`);
-                } else {
-                    eachContentItems.push(`callback.call(scope, this.${member}, "${member}", this) !== false`);
+                let tpl = isArrayType(memberType) ? `this.${member}.each(callback, scope)` : `callback.call(scope, this.${member}, "${member}", this) !== false`;
+                if (type.optional[member]) {
+                    tpl = `(!this.${member} || ${tpl})`;
                 }
+                eachContentItems.push(tpl);
             }
 
             if (eachContentItems.length) {
@@ -106,7 +116,7 @@ tpack.task("gen-nodes", function () {
                 const eachContent = `
 
     ${eachSummary}
-    each(callback: (node: Node, key, target) => boolean | void, scope?: any) {
+    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
         return ${eachContentItems.join(" &&\n            ")};
     }`;
 
@@ -157,7 +167,7 @@ tpack.task("gen-nodes", function () {
 
         var result = `/**
  * @fileOverview 节点访问器
- * @generated $ tpack gen
+ * @generated 此文件可使用 \`$ tpack gen-nodes\` 命令生成。
  */
 
 import * as nodes from './nodes';
@@ -186,7 +196,7 @@ export abstract class NodeVisitor {
 
             let memberList = [];
             for (const member in type.members) {
-                memberList.push(`        node.${member}.accept(this);`);
+                memberList.push(`        ${type.optional[member] ? "node." + member + " && " : ""}node.${member}.accept(this);`);
             }
 
             result += `

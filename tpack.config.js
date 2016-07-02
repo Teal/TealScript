@@ -19,6 +19,7 @@ tpack.task("gen-nodes", function () {
             var clazz = statement;
             var baseClazzType = clazz.heritageClauses && clazz.heritageClauses.length && clazz.heritageClauses[0].types[0];
             var members = {};
+            var optional = {};
             for (var _b = 0, _c = clazz.members; _b < _c.length; _b++) {
                 var member = _c[_b];
                 if (member.kind !== ts.SyntaxKind.PropertyDeclaration) {
@@ -30,6 +31,9 @@ tpack.task("gen-nodes", function () {
                 }
                 members = members || {};
                 members[prop.name.text] = sourceFile.text.substring(prop.type.pos, prop.type.end).trim();
+                if (getDocComment(prop, false).indexOf("undefined") >= 0) {
+                    optional[prop.name.text] = true;
+                }
             }
             nodes[clazz.name.text] = {
                 summary: getDocComment(clazz),
@@ -37,6 +41,7 @@ tpack.task("gen-nodes", function () {
                 name: clazz.name.text,
                 extends: baseClazzType && sourceFile.text.substring(baseClazzType.pos, baseClazzType.end).trim() || null,
                 members: members,
+                optional: optional,
                 node: clazz,
             };
         }
@@ -65,6 +70,11 @@ tpack.task("gen-nodes", function () {
                         type.members[m] = p.members[m];
                     }
                 }
+                for (var m in p.optional) {
+                    if (!type.optional[m]) {
+                        type.optional[m] = p.optional[m];
+                    }
+                }
             }
         }
         // 第五步：修复类型信息。
@@ -87,15 +97,14 @@ tpack.task("gen-nodes", function () {
             var eachContentItems = [];
             for (var member in type.members) {
                 var memberType = type.members[member];
-                if (isArrayType(memberType)) {
-                    eachContentItems.push("this." + member + ".each(callback, scope)");
+                var tpl = isArrayType(memberType) ? "this." + member + ".each(callback, scope)" : "callback.call(scope, this." + member + ", \"" + member + "\", this) !== false";
+                if (type.optional[member]) {
+                    tpl = "(!this." + member + " || " + tpl + ")";
                 }
-                else {
-                    eachContentItems.push("callback.call(scope, this." + member + ", \"" + member + "\", this) !== false");
-                }
+                eachContentItems.push(tpl);
             }
             if (eachContentItems.length) {
-                var eachContent = "\n\n    " + eachSummary + "\n    each(callback: (node: Node, key, target) => boolean | void, scope?: any) {\n        return " + eachContentItems.join(" &&\n            ") + ";\n    }";
+                var eachContent = "\n\n    " + eachSummary + "\n    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {\n        return " + eachContentItems.join(" &&\n            ") + ";\n    }";
                 changes.push({
                     insert: true,
                     pos: each ? each.pos : type.node.members.end,
@@ -131,7 +140,7 @@ tpack.task("gen-nodes", function () {
         }
         file.content = source;
         // 第七步：生成 NodeVistior。
-        var result = "/**\n * @fileOverview \u8282\u70B9\u8BBF\u95EE\u5668\n * @generated $ tpack gen\n */\n\nimport * as nodes from './nodes';\n\n/**\n * \u8868\u793A\u4E00\u4E2A\u8282\u70B9\u8BBF\u95EE\u5668\u3002\n */\nexport abstract class NodeVisitor {\n\n    /**\n     * \u8BBF\u95EE\u4E00\u4E2A\u9017\u53F7\u9694\u5F00\u7684\u8282\u70B9\u5217\u8868(<..., ...>\u3002\n     * @param nodes \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u5217\u8868\u3002\n     */\n    visitNodeList<T extends nodes.Node>(nodes: nodes.NodeList<T>) {\n        for(const node of nodes) {\n            node.accept(this);\n        }\n    }\n";
+        var result = "/**\n * @fileOverview \u8282\u70B9\u8BBF\u95EE\u5668\n * @generated \u6B64\u6587\u4EF6\u53EF\u4F7F\u7528 `$ tpack gen-nodes` \u547D\u4EE4\u751F\u6210\u3002\n */\n\nimport * as nodes from './nodes';\n\n/**\n * \u8868\u793A\u4E00\u4E2A\u8282\u70B9\u8BBF\u95EE\u5668\u3002\n */\nexport abstract class NodeVisitor {\n\n    /**\n     * \u8BBF\u95EE\u4E00\u4E2A\u9017\u53F7\u9694\u5F00\u7684\u8282\u70B9\u5217\u8868(<..., ...>\u3002\n     * @param nodes \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u5217\u8868\u3002\n     */\n    visitNodeList<T extends nodes.Node>(nodes: nodes.NodeList<T>) {\n        for(const node of nodes) {\n            node.accept(this);\n        }\n    }\n";
         for (var name_4 in nodes) {
             var type = nodes[name_4];
             if (type.isAbstract) {
@@ -139,7 +148,7 @@ tpack.task("gen-nodes", function () {
             }
             var memberList = [];
             for (var member in type.members) {
-                memberList.push("        node." + member + ".accept(this);");
+                memberList.push("        " + (type.optional[member] ? "node." + member + " && " : "") + "node." + member + ".accept(this);");
             }
             result += "\n    /**\n     * " + type.summary.replace("表示", "访问") + "\n     * @param node \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u3002\n     */\n    visit" + type.name + "(node: nodes." + type.name + ") {\n" + memberList.join("\n") + "\n    }\n";
             function getNodeMembers(type) {
