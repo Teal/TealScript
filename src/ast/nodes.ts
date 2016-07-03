@@ -275,6 +275,11 @@ export class Block extends Statement {
 export class VariableStatement extends Statement {
 
     /**
+     *
+     */
+    decorators: NodeList<Decorator>;
+
+    /**
      * 获取当前变量声明语句的格式。
      */
     type: VariableType;
@@ -308,7 +313,8 @@ export class VariableStatement extends Statement {
      * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.variables.each(callback, scope);
+        return this.decorators.each(callback, scope) &&
+            this.variables.each(callback, scope);
     }
 
 }
@@ -349,6 +355,16 @@ export class LabeledStatement extends Statement {
      * 获取当前标签语句的标签部分。
      */
     label: Identifier;
+
+    /**
+     * 获取当前标签名后冒号的开始位置。
+     */
+    colonStart: number;
+
+    /**
+     * 获取当前标签名后冒号的结束位置。
+     */
+    get colonEnd() { return this.colonEnd + 1; }
 
     /**
      * 获取当前标签语句的主体部分。
@@ -476,7 +492,7 @@ export class IfStatement extends Statement {
 export class SwitchStatement extends Statement {
 
     /**
-     * 获取当前 switch 语句的条件部分。
+     * 获取当前 switch 语句的条件部分。如果当前语句无条件部分则返回 undefined。
      */
     condition: Expression;
 
@@ -484,6 +500,11 @@ export class SwitchStatement extends Statement {
      * 获取当前 switch 语句的所有分支。
      */
     cases: NodeList<CaseClause>;
+
+    /**
+     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     */
+    get end() { return this.cases.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2091,12 +2112,12 @@ export abstract class MemberDefinition extends Statement {
     /**
      * 获取当前成员的所有注解。
      */
-    annotations: NodeList<Annotation>;
+    decorators: NodeList<Decorator>;
 
     /**
      * 获取当前成员的修饰符。
      */
-    modifiers: Modifiers;
+    modifiers: NodeList<Modifier>;
 
     /**
      * 获取当前成员的名字。如果当前成员是匿名的则返回 undefined。
@@ -2106,16 +2127,26 @@ export abstract class MemberDefinition extends Statement {
 }
 
 /**
- * 表示一个注解(@xx(...))。
+ * 表示一个描述器(@xx(...))。
  */
-export class Annotation extends CallLikeExpression {
+export class Decorator extends Node {
+
+    /**
+     * 获取当前描述器的主体部分。
+     */
+    body: Expression;
+
+    /**
+     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     */
+    get end() { return this.body.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitAnnotation(this);
+        return vistior.visitDecorator(this);
     }
 
     /**
@@ -2129,76 +2160,33 @@ export class Annotation extends CallLikeExpression {
      * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.target, "target", this) !== false &&
-            this.arguments.each(callback, scope);
+        return callback.call(scope, this.body, "body", this) !== false;
     }
 
 }
 
 /**
- * 表示成员修饰符的枚举。
+ * 表示一个修饰符(public)。
  */
-export enum Modifiers {
+export class Modifier extends Node {
 
     /**
-     * 无修饰符。
+     * 获取当前修饰符的类型。可能的值有：static、abstract、public、protected、private。
      */
-    none,
+    type: TokenType;
 
     /**
-     * 表示静态的成员。
+     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
      */
-    static,
+    get end() { return this.start + tokenToString(this.type).length; }
 
     /**
-     * 表示最终的成员。标记当前类不可被继承、函数不可被重写、字段不可被改变。
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
      */
-    final,
-
-    /**
-     * 表示覆盖的成员。
-     */
-    new,
-
-    /**
-     * 表示抽象的成员。
-     */
-    abstract,
-
-    /**
-     * 表示虚成员。
-     */
-    virtual,
-
-    /**
-     * 表示重写的成员。
-     */
-    override,
-
-    /**
-     * 表示外部的成员。
-     */
-    declare,
-
-    /**
-     * 表示公开的成员。
-     */
-    public,
-
-    /**
-     * 表示保护的成员。
-     */
-    protected,
-
-    /**
-     * 表示私有的成员。
-     */
-    private,
-
-    /**
-     * 表示访问修饰符。
-     */
-    accessibility,
+    accept(vistior: NodeVisitor) {
+        return vistior.visitModifier(this);
+    }
 
 }
 
@@ -2264,7 +2252,8 @@ export class ClassDefinition extends TypeDefinition {
             this.implements.each(callback, scope) &&
             (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
             this.members.each(callback, scope) &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2298,7 +2287,8 @@ export class InterfaceDefinition extends TypeDefinition {
             this.implements.each(callback, scope) &&
             (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
             this.members.each(callback, scope) &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2337,7 +2327,8 @@ export class EnumDefinition extends TypeDefinition {
             this.extends.each(callback, scope) &&
             this.implements.each(callback, scope) &&
             (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2380,7 +2371,8 @@ export class ExtensionDefinition extends MemberContainerDefinition {
         return callback.call(scope, this.targetType, "targetType", this) !== false &&
             this.implements.each(callback, scope) &&
             this.members.each(callback, scope) &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2417,7 +2409,8 @@ export class NamespaceDefinition extends MemberContainerDefinition {
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
         return this.names.each(callback, scope) &&
             this.members.each(callback, scope) &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2448,7 +2441,8 @@ export class ModuleDefinition extends MemberContainerDefinition {
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
         return this.members.each(callback, scope) &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2478,7 +2472,8 @@ export class TypeMemberDefinition extends MemberDefinition {
      * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.annotations.each(callback, scope) &&
+        return this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2514,7 +2509,8 @@ export class FieldDefinition extends TypeMemberDefinition {
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
         return this.variables.each(callback, scope) &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2556,7 +2552,8 @@ export class MethodOrPropertyDefinition extends TypeMemberDefinition {
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
         return callback.call(scope, this.returnType, "returnType", this) !== false &&
             callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2594,7 +2591,8 @@ export class PropertyOrIndexerDefinition extends MethodOrPropertyDefinition {
         return callback.call(scope, this.body, "body", this) !== false &&
             callback.call(scope, this.returnType, "returnType", this) !== false &&
             callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2624,7 +2622,8 @@ export class PropertyDefinition extends MemberDefinition {
      * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.annotations.each(callback, scope) &&
+        return this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2663,7 +2662,8 @@ export class IndexerDefinition extends PropertyOrIndexerDefinition {
             callback.call(scope, this.body, "body", this) !== false &&
             callback.call(scope, this.returnType, "returnType", this) !== false &&
             callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2707,7 +2707,8 @@ export class MethodOrConstructorDefinition extends MethodOrPropertyDefinition {
             callback.call(scope, this.body, "body", this) !== false &&
             callback.call(scope, this.returnType, "returnType", this) !== false &&
             callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2747,7 +2748,8 @@ export class MethodDefinition extends MethodOrConstructorDefinition {
             callback.call(scope, this.body, "body", this) !== false &&
             callback.call(scope, this.returnType, "returnType", this) !== false &&
             callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2781,7 +2783,8 @@ export class ConstructorDefinition extends MethodOrConstructorDefinition {
             callback.call(scope, this.body, "body", this) !== false &&
             callback.call(scope, this.returnType, "returnType", this) !== false &&
             callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -2817,7 +2820,8 @@ export class EnumMemberDefinition extends TypeMemberDefinition {
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
         return callback.call(scope, this.initializer, "initializer", this) !== false &&
-            this.annotations.each(callback, scope) &&
+            this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
     }
 
@@ -3122,12 +3126,12 @@ export class ParameterDeclaration extends Declaration {
     /**
      * 获取当前参数的所有注解。
      */
-    annotations: NodeList<Annotation>;
+    decorators: NodeList<Decorator>;
 
     /**
      * 获取当前参数的修饰符。
      */
-    modifiers: Modifiers;
+    modifiers: NodeList<Modifier>;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3148,7 +3152,8 @@ export class ParameterDeclaration extends Declaration {
      * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.annotations.each(callback, scope) &&
+        return this.decorators.each(callback, scope) &&
+            this.modifiers.each(callback, scope) &&
             callback.call(scope, this.name, "name", this) !== false;
     }
 

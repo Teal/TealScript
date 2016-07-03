@@ -51,6 +51,7 @@ export abstract class NodeVisitor {
      * @param node 要访问的节点。
      */
     visitVariableStatement(node: nodes.VariableStatement) {
+        node.decorators.accept(this);
         node.variables.accept(this);
     }
 
@@ -429,12 +430,19 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个注解(@xx(...))。
+     * 访问一个描述器(@xx(...))。
      * @param node 要访问的节点。
      */
-    visitAnnotation(node: nodes.Annotation) {
-        node.target.accept(this);
-        node.arguments.accept(this);
+    visitDecorator(node: nodes.Decorator) {
+        node.body.accept(this);
+    }
+
+    /**
+     * 访问一个修饰符(public)。
+     * @param node 要访问的节点。
+     */
+    visitModifier(node: nodes.Modifier) {
+
     }
 
     /**
@@ -446,7 +454,8 @@ export abstract class NodeVisitor {
         node.implements.accept(this);
         node.genericParameters && node.genericParameters.accept(this);
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -459,7 +468,8 @@ export abstract class NodeVisitor {
         node.implements.accept(this);
         node.genericParameters && node.genericParameters.accept(this);
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -472,7 +482,8 @@ export abstract class NodeVisitor {
         node.extends.accept(this);
         node.implements.accept(this);
         node.genericParameters && node.genericParameters.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -484,7 +495,8 @@ export abstract class NodeVisitor {
         node.targetType.accept(this);
         node.implements.accept(this);
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -495,7 +507,8 @@ export abstract class NodeVisitor {
     visitNamespaceDefinition(node: nodes.NamespaceDefinition) {
         node.names.accept(this);
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -505,7 +518,8 @@ export abstract class NodeVisitor {
      */
     visitModuleDefinition(node: nodes.ModuleDefinition) {
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -514,7 +528,8 @@ export abstract class NodeVisitor {
      * @param node 要访问的节点。
      */
     visitTypeMemberDefinition(node: nodes.TypeMemberDefinition) {
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -524,7 +539,8 @@ export abstract class NodeVisitor {
      */
     visitFieldDefinition(node: nodes.FieldDefinition) {
         node.variables.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -535,7 +551,8 @@ export abstract class NodeVisitor {
     visitMethodOrPropertyDefinition(node: nodes.MethodOrPropertyDefinition) {
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -547,7 +564,8 @@ export abstract class NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -556,7 +574,8 @@ export abstract class NodeVisitor {
      * @param node 要访问的节点。
      */
     visitPropertyDefinition(node: nodes.PropertyDefinition) {
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -569,7 +588,8 @@ export abstract class NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -582,7 +602,8 @@ export abstract class NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -596,7 +617,8 @@ export abstract class NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -609,7 +631,8 @@ export abstract class NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -619,7 +642,8 @@ export abstract class NodeVisitor {
      */
     visitEnumMemberDefinition(node: nodes.EnumMemberDefinition) {
         node.initializer.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -682,7 +706,8 @@ export abstract class NodeVisitor {
      * @param node 要访问的节点。
      */
     visitParameterDeclaration(node: nodes.ParameterDeclaration) {
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name.accept(this);
     }
 

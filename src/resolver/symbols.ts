@@ -81,6 +81,73 @@ export class MemberSymbol extends Symbol {
 }
 
 /**
+ * 表示成员修饰符的枚举。
+ */
+export enum Modifiers {
+
+    /**
+     * 无修饰符。
+     */
+    none,
+
+    /**
+     * 表示静态的成员。
+     */
+    static,
+
+    /**
+     * 表示最终的成员。标记当前类不可被继承、函数不可被重写、字段不可被改变。
+     */
+    final,
+
+    /**
+     * 表示覆盖的成员。
+     */
+    new,
+
+    /**
+     * 表示抽象的成员。
+     */
+    abstract,
+
+    /**
+     * 表示虚成员。
+     */
+    virtual,
+
+    /**
+     * 表示重写的成员。
+     */
+    override,
+
+    /**
+     * 表示外部的成员。
+     */
+    declare,
+
+    /**
+     * 表示公开的成员。
+     */
+    public,
+
+    /**
+     * 表示保护的成员。
+     */
+    protected,
+
+    /**
+     * 表示私有的成员。
+     */
+    private,
+
+    /**
+     * 表示访问修饰符。
+     */
+    accessibility,
+
+}
+
+/**
  * 表示一个方法标识。
  */
 export class MethodSymbol extends MemberSymbol {

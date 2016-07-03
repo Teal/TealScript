@@ -1,4 +1,5 @@
 "use strict";
+/// <reference path="typings/node/node.d.ts" />
 /// <reference path="typings/tpack/tpack.d.ts" />
 var tpack = require("tpack");
 var ts = require("typescript");
@@ -185,20 +186,4 @@ tpack.task("gen-nodes", function () {
             return /<.*>|\[\]/.test(type);
         }
     });
-});
-tpack.task("gen", function () {
-    tpack.src("src/parser/nodes.json").pipe(function (file) {
-        function isType(t) {
-            while (t) {
-                t = t.replace(/\s*\|.*$/, "");
-                if (t === "Node")
-                    return true;
-                t = data.find(function (tt) { return tt.name == t; });
-                if (!t)
-                    break;
-                t = t.extends;
-            }
-            return false;
-        }
-    }).extension(".ts");
 });

@@ -1,4 +1,5 @@
-﻿/// <reference path="typings/tpack/tpack.d.ts" />
+﻿/// <reference path="typings/node/node.d.ts" />
+/// <reference path="typings/tpack/tpack.d.ts" />
 import * as tpack from "tpack";
 import * as ts from "typescript";
 
@@ -252,22 +253,4 @@ ${memberList.join("\n")}
 
     });
 
-});
-
-tpack.task("gen", function () {
-
-    tpack.src("src/parser/nodes.json").pipe(function (file) {
-
-        function isType(t) {
-            while (t) {
-                t = t.replace(/\s*\|.*$/, "");
-                if (t === "Node") return true;
-                t = data.find(tt => tt.name == t);
-                if (!t) break;
-                t = t.extends;
-            }
-            return false;
-        }
-
-    }).extension(".ts");
 });
