@@ -7,7 +7,7 @@ import * as symbols from './symbols';
 /**
  * 表示一个语义分析器。
  */
-export class Resolver extends NodeVisitor {
+export class Resolver {
 
     /**
      * 获取当前
@@ -17,6 +17,11 @@ export class Resolver extends NodeVisitor {
     anyType = new symbols.PrimaryTypeSymbol("any");
 
     nullType = new symbols.PrimaryTypeSymbol("null");
+
+    /**
+     * 获取内置的 boolean 类型。
+     */
+    booleanType = new symbols.PrimaryTypeSymbol("boolean");
 
     /**
      * 初始化新的语义分析器。
@@ -43,15 +48,14 @@ export class Resolver extends NodeVisitor {
 
     }
 
+    typeResolver = new TypeResolver(this);
+
     /**
-     * 获取指定表达式的类型。
+     * 解析指定表达式的返回类型。
      * @param node 要获取的节点。
      */
     resolveTypeOfExpression(node: nodes.Expression) {
-        switch (node.constructor) {
-            case nodes.NullLiteral:
-                return this.nullType;
-        }
+        return <symbols.TypeSymbol>node.accept(this.typeResolver);
     }
 
     /**
@@ -79,7 +83,69 @@ export class Resolver extends NodeVisitor {
 
     //}
 
+}
+
+declare module '../ast/nodes' {
+
+    interface Node {
+
+        /**
+         * 获取或设置当前节点语义解析的结果。
+         * @internal
+         */
+        _resolveCache: ResolveCache;
+
+    }
+
+}
+
+/**
+ * 缓存一个节点语义解析的结果。
+ */
+interface ResolveCache {
+
+    /**
+     * 获取当前节点的父节点。
+     */
+    parent: Node;
+
+    /**
+     * 获取当前表达式或函数定义的解析类型。
+     */
+    type: symbols.TypeSymbol;
+
+}
+
+/**
+ * 表示一个类型解析器。
+ */
+class TypeResolver extends NodeVisitor {
+
+    /**
+     * 当前使用的解析器。
+     */
+    resovler: Resolver;
+
+    /**
+     * 初始化新的类型解析器。
+     * @param resovler 当前使用的解析器。
+     */
+    constructor(resovler: Resolver) {
+        super();
+        this.resovler = resovler;
+    }
+
     // #region 节点访问器
+
+    /**
+     * 访问一个逗号隔开的节点列表(<..., ...>。
+     * @param nodes 要访问的节点列表。
+     */
+    visitNodeList<T extends nodes.Node>(nodes: nodes.NodeList<T>) {
+        for (const node of nodes) {
+            node.accept(this);
+        }
+    }
 
     /**
      * 访问一个源文件。
@@ -112,6 +178,7 @@ export class Resolver extends NodeVisitor {
      * @param node 要访问的节点。
      */
     visitVariableStatement(node: nodes.VariableStatement) {
+        node.decorators.accept(this);
         node.variables.accept(this);
     }
 
@@ -147,7 +214,7 @@ export class Resolver extends NodeVisitor {
      * @param node 要访问的节点。
      */
     visitSwitchStatement(node: nodes.SwitchStatement) {
-        node.condition.accept(this);
+        node.condition && node.condition.accept(this);
         node.cases.accept(this);
     }
 
@@ -187,6 +254,17 @@ export class Resolver extends NodeVisitor {
      */
     visitForOfStatement(node: nodes.ForOfStatement) {
         node.variable.accept(this);
+        node.iterator.accept(this);
+        node.body.accept(this);
+    }
+
+    /**
+     * 访问一个 for..to 语句(for(var xx = ... to ...) {...})。
+     * @param node 要访问的节点。
+     */
+    visitForToStatement(node: nodes.ForToStatement) {
+        node.variable.accept(this);
+        node.initializer && node.initializer.accept(this);
         node.iterator.accept(this);
         node.body.accept(this);
     }
@@ -269,6 +347,14 @@ export class Resolver extends NodeVisitor {
     }
 
     /**
+     * 访问一个 debugger 语句(debugger;)。
+     * @param node 要访问的节点。
+     */
+    visitDebuggerStatement(node: nodes.DebuggerStatement) {
+
+    }
+
+    /**
      * 访问一个 with 语句(with(...) {...})。
      * @param node 要访问的节点。
      */
@@ -323,6 +409,22 @@ export class Resolver extends NodeVisitor {
      */
     visitStringLiteral(node: nodes.StringLiteral) {
 
+    }
+
+    /**
+     * 访问一个正则表达式字面量(/.../)。
+     * @param node 要访问的节点。
+     */
+    visitRegExpLiteral(node: nodes.RegExpLiteral) {
+        node.flags && node.flags.accept(this);
+    }
+
+    /**
+     * 访问一个模板字符串字面量(`...`)。
+     * @param node 要访问的节点。
+     */
+    visitTemplateStringLiteral(node: nodes.TemplateStringLiteral) {
+        node.tag && node.tag.accept(this);
     }
 
     /**
@@ -490,12 +592,62 @@ export class Resolver extends NodeVisitor {
     }
 
     /**
-     * 访问一个注解(@xx(...))。
+     * 访问一个 JSX 标签（<div>...</div>)。
      * @param node 要访问的节点。
      */
-    visitAnnotation(node: nodes.Annotation) {
-        node.target.accept(this);
-        node.arguments.accept(this);
+    visitJsxElement(node: nodes.JsxElement) {
+        node.tagName.accept(this);
+        node.attributes.accept(this);
+        node.children.accept(this);
+    }
+
+    /**
+     * 访问一个 JSX 标签属性（id="a")。
+     * @param node 要访问的节点。
+     */
+    visitJsxAttribute(node: nodes.JsxAttribute) {
+        node.name.accept(this);
+        node.value && node.value.accept(this);
+    }
+
+    /**
+     * 访问一个 JSX 表达式（{...})。
+     * @param node 要访问的节点。
+     */
+    visitJsxExpression(node: nodes.JsxExpression) {
+        node.body.accept(this);
+    }
+
+    /**
+     * 访问一个 JSX 文本（{...})。
+     * @param node 要访问的节点。
+     */
+    visitJsxText(node: nodes.JsxText) {
+
+    }
+
+    /**
+     * 访问一个 JSX 文本（{...})。
+     * @param node 要访问的节点。
+     */
+    visitJsxClosingElement(node: nodes.JsxClosingElement) {
+        node.tagName.accept(this);
+    }
+
+    /**
+     * 访问一个描述器(@xx(...))。
+     * @param node 要访问的节点。
+     */
+    visitDecorator(node: nodes.Decorator) {
+        node.body.accept(this);
+    }
+
+    /**
+     * 访问一个修饰符(public)。
+     * @param node 要访问的节点。
+     */
+    visitModifier(node: nodes.Modifier) {
+
     }
 
     /**
@@ -507,7 +659,8 @@ export class Resolver extends NodeVisitor {
         node.implements.accept(this);
         node.genericParameters && node.genericParameters.accept(this);
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -520,7 +673,8 @@ export class Resolver extends NodeVisitor {
         node.implements.accept(this);
         node.genericParameters && node.genericParameters.accept(this);
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -533,7 +687,8 @@ export class Resolver extends NodeVisitor {
         node.extends.accept(this);
         node.implements.accept(this);
         node.genericParameters && node.genericParameters.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -545,7 +700,8 @@ export class Resolver extends NodeVisitor {
         node.targetType.accept(this);
         node.implements.accept(this);
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -556,7 +712,8 @@ export class Resolver extends NodeVisitor {
     visitNamespaceDefinition(node: nodes.NamespaceDefinition) {
         node.names.accept(this);
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -566,7 +723,8 @@ export class Resolver extends NodeVisitor {
      */
     visitModuleDefinition(node: nodes.ModuleDefinition) {
         node.members.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -575,7 +733,8 @@ export class Resolver extends NodeVisitor {
      * @param node 要访问的节点。
      */
     visitTypeMemberDefinition(node: nodes.TypeMemberDefinition) {
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -585,7 +744,8 @@ export class Resolver extends NodeVisitor {
      */
     visitFieldDefinition(node: nodes.FieldDefinition) {
         node.variables.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -596,7 +756,8 @@ export class Resolver extends NodeVisitor {
     visitMethodOrPropertyDefinition(node: nodes.MethodOrPropertyDefinition) {
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -608,7 +769,8 @@ export class Resolver extends NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -617,7 +779,8 @@ export class Resolver extends NodeVisitor {
      * @param node 要访问的节点。
      */
     visitPropertyDefinition(node: nodes.PropertyDefinition) {
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -630,7 +793,8 @@ export class Resolver extends NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -643,7 +807,8 @@ export class Resolver extends NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -657,7 +822,8 @@ export class Resolver extends NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -670,7 +836,8 @@ export class Resolver extends NodeVisitor {
         node.body.accept(this);
         node.returnType.accept(this);
         node.explicitType.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -680,7 +847,8 @@ export class Resolver extends NodeVisitor {
      */
     visitEnumMemberDefinition(node: nodes.EnumMemberDefinition) {
         node.initializer.accept(this);
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name && node.name.accept(this);
     }
 
@@ -689,8 +857,50 @@ export class Resolver extends NodeVisitor {
      * @param node 要访问的节点。
      */
     visitImportDirective(node: nodes.ImportDirective) {
+        node.elements.accept(this);
         node.from.accept(this);
+    }
+
+    /**
+     * 访问一个 import = 指令(import xx = require("");)。
+     * @param node 要访问的节点。
+     */
+    visitImportEqualsDirective(node: nodes.ImportEqualsDirective) {
+        node.variable.accept(this);
+        node.value.accept(this);
+    }
+
+    /**
+     * 访问一个名字导入声明项(a as b)。
+     * @param node 要访问的节点。
+     */
+    visitNameImportClause(node: nodes.NameImportClause) {
+        node.name && node.name.accept(this);
         node.alias.accept(this);
+    }
+
+    /**
+     * 访问一个命名空间导入声明项({a as b})。
+     * @param node 要访问的节点。
+     */
+    visitNamespaceImportClause(node: nodes.NamespaceImportClause) {
+        node.elements.accept(this);
+    }
+
+    /**
+     * 访问一个 export 指令(export xx from '...';)。
+     * @param node 要访问的节点。
+     */
+    visitExportDirective(node: nodes.ExportDirective) {
+        node.elements.accept(this);
+        node.from.accept(this);
+    }
+
+    /**
+     * 访问一个 export = 指令(export = 1;)。
+     * @param node 要访问的节点。
+     */
+    visitExportEqualsDirective(node: nodes.ExportEqualsDirective) {
         node.value.accept(this);
     }
 
@@ -743,7 +953,8 @@ export class Resolver extends NodeVisitor {
      * @param node 要访问的节点。
      */
     visitParameterDeclaration(node: nodes.ParameterDeclaration) {
-        node.annotations.accept(this);
+        node.decorators.accept(this);
+        node.modifiers.accept(this);
         node.name.accept(this);
     }
 
@@ -773,36 +984,5 @@ export class Resolver extends NodeVisitor {
     }
 
     // #endregion
-
-}
-
-declare module '../ast/nodes' {
-
-    interface Node {
-
-        /**
-         * 获取或设置当前节点语义解析的结果。
-         * @internal
-         */
-        _resolveCache: ResolveCache;
-
-    }
-
-}
-
-/**
- * 缓存一个节点语义解析的结果。
- */
-interface ResolveCache {
-
-    /**
-     * 获取当前节点的父节点。
-     */
-    parent: Node;
-
-    /**
-     * 获取当前表达式或函数定义的解析类型。
-     */
-    type: symbols.TypeSymbol;
 
 }

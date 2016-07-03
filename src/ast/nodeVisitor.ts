@@ -87,7 +87,7 @@ export abstract class NodeVisitor {
      * @param node 要访问的节点。
      */
     visitSwitchStatement(node: nodes.SwitchStatement) {
-        node.condition.accept(this);
+        node.condition && node.condition.accept(this);
         node.cases.accept(this);
     }
 
@@ -127,6 +127,17 @@ export abstract class NodeVisitor {
      */
     visitForOfStatement(node: nodes.ForOfStatement) {
         node.variable.accept(this);
+        node.iterator.accept(this);
+        node.body.accept(this);
+    }
+
+    /**
+     * 访问一个 for..to 语句(for(var xx = ... to ...) {...})。
+     * @param node 要访问的节点。
+     */
+    visitForToStatement(node: nodes.ForToStatement) {
+        node.variable.accept(this);
+        node.initializer && node.initializer.accept(this);
         node.iterator.accept(this);
         node.body.accept(this);
     }
@@ -209,6 +220,14 @@ export abstract class NodeVisitor {
     }
 
     /**
+     * 访问一个 debugger 语句(debugger;)。
+     * @param node 要访问的节点。
+     */
+    visitDebuggerStatement(node: nodes.DebuggerStatement) {
+
+    }
+
+    /**
      * 访问一个 with 语句(with(...) {...})。
      * @param node 要访问的节点。
      */
@@ -263,6 +282,22 @@ export abstract class NodeVisitor {
      */
     visitStringLiteral(node: nodes.StringLiteral) {
 
+    }
+
+    /**
+     * 访问一个正则表达式字面量(/.../)。
+     * @param node 要访问的节点。
+     */
+    visitRegExpLiteral(node: nodes.RegExpLiteral) {
+        node.flags && node.flags.accept(this);
+    }
+
+    /**
+     * 访问一个模板字符串字面量(`...`)。
+     * @param node 要访问的节点。
+     */
+    visitTemplateStringLiteral(node: nodes.TemplateStringLiteral) {
+        node.tag && node.tag.accept(this);
     }
 
     /**
@@ -427,6 +462,49 @@ export abstract class NodeVisitor {
      */
     visitArrayTypeExpression(node: nodes.ArrayTypeExpression) {
         node.element.accept(this);
+    }
+
+    /**
+     * 访问一个 JSX 标签（<div>...</div>)。
+     * @param node 要访问的节点。
+     */
+    visitJsxElement(node: nodes.JsxElement) {
+        node.tagName.accept(this);
+        node.attributes.accept(this);
+        node.children.accept(this);
+    }
+
+    /**
+     * 访问一个 JSX 标签属性（id="a")。
+     * @param node 要访问的节点。
+     */
+    visitJsxAttribute(node: nodes.JsxAttribute) {
+        node.name.accept(this);
+        node.value && node.value.accept(this);
+    }
+
+    /**
+     * 访问一个 JSX 表达式（{...})。
+     * @param node 要访问的节点。
+     */
+    visitJsxExpression(node: nodes.JsxExpression) {
+        node.body.accept(this);
+    }
+
+    /**
+     * 访问一个 JSX 文本（{...})。
+     * @param node 要访问的节点。
+     */
+    visitJsxText(node: nodes.JsxText) {
+
+    }
+
+    /**
+     * 访问一个 JSX 文本（{...})。
+     * @param node 要访问的节点。
+     */
+    visitJsxClosingElement(node: nodes.JsxClosingElement) {
+        node.tagName.accept(this);
     }
 
     /**
@@ -652,8 +730,50 @@ export abstract class NodeVisitor {
      * @param node 要访问的节点。
      */
     visitImportDirective(node: nodes.ImportDirective) {
+        node.elements.accept(this);
         node.from.accept(this);
+    }
+
+    /**
+     * 访问一个 import = 指令(import xx = require("");)。
+     * @param node 要访问的节点。
+     */
+    visitImportEqualsDirective(node: nodes.ImportEqualsDirective) {
+        node.variable.accept(this);
+        node.value.accept(this);
+    }
+
+    /**
+     * 访问一个名字导入声明项(a as b)。
+     * @param node 要访问的节点。
+     */
+    visitNameImportClause(node: nodes.NameImportClause) {
+        node.name && node.name.accept(this);
         node.alias.accept(this);
+    }
+
+    /**
+     * 访问一个命名空间导入声明项({a as b})。
+     * @param node 要访问的节点。
+     */
+    visitNamespaceImportClause(node: nodes.NamespaceImportClause) {
+        node.elements.accept(this);
+    }
+
+    /**
+     * 访问一个 export 指令(export xx from '...';)。
+     * @param node 要访问的节点。
+     */
+    visitExportDirective(node: nodes.ExportDirective) {
+        node.elements.accept(this);
+        node.from.accept(this);
+    }
+
+    /**
+     * 访问一个 export = 指令(export = 1;)。
+     * @param node 要访问的节点。
+     */
+    visitExportEqualsDirective(node: nodes.ExportEqualsDirective) {
         node.value.accept(this);
     }
 
