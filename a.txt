@@ -1,0 +1,279 @@
+[36m[16:08:18]Start Building 'F:\Teal\TealScript'...[0m
+[32m[16:08:18]M src/ast/nodes.ts[0m
+// !, !=, !==
+case CharCode.exclamation:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.exclamationEquals:
+		this.sourceStart++;
+		result.type = TokenType.exclamationEquals;
+		break;
+	case CharCode.exclamationEqualsEquals:
+		this.sourceStart++;
+		result.type = TokenType.exclamationEqualsEquals;
+		break;
+	default:
+		result.type = TokenType.exclamation;
+		break;
+}
+break;
+
+// %, %=
+case CharCode.percent:
+if(this.sourceText.charCodeAt(this.sourceStart) === TokenType.percentEquals) {	this.sourceStart++;	result.type = TokenType.percentEquals;
+	break;
+}result.type = TokenType.percent;
+break;
+
+// &, &&, &=
+case CharCode.ampersand:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.ampersandAmpersand:
+		this.sourceStart++;
+		result.type = TokenType.ampersandAmpersand;
+		break;
+	case CharCode.ampersandEquals:
+		this.sourceStart++;
+		result.type = TokenType.ampersandEquals;
+		break;
+	default:
+		result.type = TokenType.ampersand;
+		break;
+}
+break;
+
+// (
+case CharCode.openParen:
+result.type = TokenType.openParen;
+break;
+
+// )
+case CharCode.closeParen:
+result.type = TokenType.closeParen;
+break;
+
+// *, **, **=, *=
+case CharCode.asterisk:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.asteriskAsterisk:
+		this.sourceStart++;
+		result.type = TokenType.asteriskAsterisk;
+		break;
+	case CharCode.asteriskAsteriskEquals:
+		this.sourceStart++;
+		result.type = TokenType.asteriskAsteriskEquals;
+		break;
+	case CharCode.asteriskEquals:
+		this.sourceStart++;
+		result.type = TokenType.asteriskEquals;
+		break;
+	default:
+		result.type = TokenType.asterisk;
+		break;
+}
+break;
+
+// +, ++, +=
+case CharCode.plus:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.plusPlus:
+		this.sourceStart++;
+		result.type = TokenType.plusPlus;
+		break;
+	case CharCode.plusEquals:
+		this.sourceStart++;
+		result.type = TokenType.plusEquals;
+		break;
+	default:
+		result.type = TokenType.plus;
+		break;
+}
+break;
+
+// ,
+case CharCode.comma:
+result.type = TokenType.comma;
+break;
+
+// -, --, -=
+case CharCode.minus:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.minusMinus:
+		this.sourceStart++;
+		result.type = TokenType.minusMinus;
+		break;
+	case CharCode.minusEquals:
+		this.sourceStart++;
+		result.type = TokenType.minusEquals;
+		break;
+	default:
+		result.type = TokenType.minus;
+		break;
+}
+break;
+
+// ., .., ...
+case CharCode.dot:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.dotDot:
+		this.sourceStart++;
+		result.type = TokenType.dotDot;
+		break;
+	case CharCode.dotDotDot:
+		this.sourceStart++;
+		result.type = TokenType.dotDotDot;
+		break;
+	default:
+		result.type = TokenType.dot;
+		break;
+}
+break;
+
+// /, /=
+case CharCode.slash:
+if(this.sourceText.charCodeAt(this.sourceStart) === TokenType.slashEquals) {	this.sourceStart++;	result.type = TokenType.slashEquals;
+	break;
+}result.type = TokenType.slash;
+break;
+
+// :
+case CharCode.colon:
+result.type = TokenType.colon;
+break;
+
+// ;
+case CharCode.semicolon:
+result.type = TokenType.semicolon;
+break;
+
+// <, <<, <<=, <=
+case CharCode.lessThan:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.lessThanLessThan:
+		this.sourceStart++;
+		result.type = TokenType.lessThanLessThan;
+		break;
+	case CharCode.lessThanLessThanEquals:
+		this.sourceStart++;
+		result.type = TokenType.lessThanLessThanEquals;
+		break;
+	case CharCode.lessThanEquals:
+		this.sourceStart++;
+		result.type = TokenType.lessThanEquals;
+		break;
+	default:
+		result.type = TokenType.lessThan;
+		break;
+}
+break;
+
+// =, ==, ===, =>
+case CharCode.equals:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.equalsEquals:
+		this.sourceStart++;
+		result.type = TokenType.equalsEquals;
+		break;
+	case CharCode.equalsEqualsEquals:
+		this.sourceStart++;
+		result.type = TokenType.equalsEqualsEquals;
+		break;
+	case CharCode.equalsGreaterThan:
+		this.sourceStart++;
+		result.type = TokenType.equalsGreaterThan;
+		break;
+	default:
+		result.type = TokenType.equals;
+		break;
+}
+break;
+
+// >, >=, >>, >>=, >>>, >>>=
+case CharCode.greaterThan:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.greaterThanEquals:
+		this.sourceStart++;
+		result.type = TokenType.greaterThanEquals;
+		break;
+	case CharCode.greaterThanGreaterThan:
+		this.sourceStart++;
+		result.type = TokenType.greaterThanGreaterThan;
+		break;
+	case CharCode.greaterThanGreaterThanEquals:
+		this.sourceStart++;
+		result.type = TokenType.greaterThanGreaterThanEquals;
+		break;
+	case CharCode.greaterThanGreaterThanGreaterThan:
+		this.sourceStart++;
+		result.type = TokenType.greaterThanGreaterThanGreaterThan;
+		break;
+	case CharCode.greaterThanGreaterThanGreaterThanEquals:
+		this.sourceStart++;
+		result.type = TokenType.greaterThanGreaterThanGreaterThanEquals;
+		break;
+	default:
+		result.type = TokenType.greaterThan;
+		break;
+}
+break;
+
+// ?
+case CharCode.question:
+result.type = TokenType.question;
+break;
+
+// @
+case CharCode.at:
+result.type = TokenType.at;
+break;
+
+// [
+case CharCode.openBracket:
+result.type = TokenType.openBracket;
+break;
+
+// ]
+case CharCode.closeBracket:
+result.type = TokenType.closeBracket;
+break;
+
+// ^, ^=
+case CharCode.caret:
+if(this.sourceText.charCodeAt(this.sourceStart) === TokenType.caretEquals) {	this.sourceStart++;	result.type = TokenType.caretEquals;
+	break;
+}result.type = TokenType.caret;
+break;
+
+// {
+case CharCode.openBrace:
+result.type = TokenType.openBrace;
+break;
+
+// |, |=, ||
+case CharCode.bar:
+ switch (this.sourceText.charCodeAt(this.sourceStart)) {
+	case CharCode.barEquals:
+		this.sourceStart++;
+		result.type = TokenType.barEquals;
+		break;
+	case CharCode.barBar:
+		this.sourceStart++;
+		result.type = TokenType.barBar;
+		break;
+	default:
+		result.type = TokenType.bar;
+		break;
+}
+break;
+
+// }
+case CharCode.closeBrace:
+result.type = TokenType.closeBrace;
+break;
+
+// ~
+case CharCode.tilde:
+result.type = TokenType.tilde;
+break;
+
+
+[1m[32m[16:08:19]Build Success! (491ms elapsed, 1 file(s) saved, without errors)[0m

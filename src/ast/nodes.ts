@@ -1883,7 +1883,7 @@ export class IndexCallExpression extends CallLikeExpression {
 export class UnaryExpression extends Expression {
 
     /**
-     * 获取当前表达式的运算符。可能的值有：+、-、++、--、!、~、typeof、await。
+     * 获取当前表达式的运算符。可能的值有：+、-、!、~、typeof、await、delete、void。
      */
     operator: TokenType;
 
@@ -1891,6 +1891,35 @@ export class UnaryExpression extends Expression {
      * 获取当前表达式的运算数。
      */
     operand: Expression;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitUnaryExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每一项执行的回调函数。
+     * * param value 当前项的值。
+     * * param key 当前项的索引或键。
+     * * param target 当前正在遍历的目标对象。
+     * * returns 函数可以返回 false 以终止循环。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+        return callback.call(scope, this.operand, "operand", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个增量表达式(x++)。
+ */
+export class IncrementExpression extends UnaryExpression {
 
     /**
      * 判断当前表达式是否是后缀表达式。
@@ -1902,7 +1931,7 @@ export class UnaryExpression extends Expression {
      * @param vistior 要使用的节点访问器。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitUnaryExpression(this);
+        return vistior.visitIncrementExpression(this);
     }
 
     /**

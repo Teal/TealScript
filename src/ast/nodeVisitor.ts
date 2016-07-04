@@ -404,6 +404,14 @@ export abstract class NodeVisitor {
     }
 
     /**
+     * 访问一个增量表达式(x++)。
+     * @param node 要访问的节点。
+     */
+    visitIncrementExpression(node: nodes.IncrementExpression) {
+        node.operand.accept(this);
+    }
+
+    /**
      * 访问一个二元运算表达式(x + y)。
      * @param node 要访问的节点。
      */

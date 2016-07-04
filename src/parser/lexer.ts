@@ -1,14 +1,19 @@
 ﻿/**
  * @fileOverview 词法解析器
+ * @author xuld@vip.qq.com
  */
 
-import {TokenType} from './tokenType';
+import {TokenType} from '../ast/tokenType';
+import {options, error, ErrorType, LanguageVersion} from '../compiler/compiler';
 import {CharCode} from './charCode';
+import * as Unicode from './unicode';
 
 /**
  * 表示一个词法解析器。
  */
 export class Lexer {
+
+    // #region 接口
 
     /**
      * 获取正在解析的源码。
@@ -35,449 +40,1018 @@ export class Lexer {
         this.sourceText = text;
         this.sourceStart = start;
         this.sourceEnd = end;
+
+        // 预读第一个标记。
+        this.current = {
+            type: null,
+            next: this.scan(),
+            start: start,
+            end: start,
+            onNewLine: true,
+            buffer: null,
+        };
+        this.current.next.onNewLine = true;
     }
 
     /**
-     * 获取当前的标记类型。
+     * 获取所有注释。如果未启用注释解析则返回 undefined。
      */
-    tokenType: TokenType;
+    comments: {
 
-    /**
-     * 获取当前的标记开始位置。
-     */
-    tokenStart: number;
+        /**
+         * 获取当前注释的开始位置。
+         */
+        start: number,
 
-    /**
-     * 获取当前的标记结束位置。
-     */
-    tokenEnd: number;
+        /**
+         * 获取当前注释的结束位置。
+         */
+        end: number
 
-    /**
-     * 判断当前标记之前是否存在换行符。
-     */
-    hasLineTerminatorBeforeTokenStart: boolean;
+    }[];
 
     /**
      * 获取当前的标记。
      */
-    currentToken: Token;
-
-    /**
-     * 获取当前的标记。
-     */
-    peekToken: Token;
-
-    /**
-     * 读取下一个标记。
-     */
-    read() {
-        return this.currentToken;
-    }
+    current: Token;
 
     /**
      * 预览下一个标记。
+     * @returns 返回一个标记对象。
      */
     peek() {
-        return this.peekToken;
+        return this.current.next;
     }
+
+    /**
+     * 读取下一个标记。
+     * @returns 返回一个标记对象。
+     */
+    read() {
+        const next = this.current.next;
+        if (next.next == null) {
+            next.next = this.scan();
+        }
+        return this.current = next;
+    }
+
+    /**
+     * 存储临时缓存的标记。
+     */
+    private stash: Token;
 
     /**
      * 保存当前读取的进度。
      */
     stashSave() {
-
+        this.stash = this.current;
     }
 
     /**
      * 恢复当前读取的进度。
      */
     stashRestore() {
-
+        this.current = this.stash;
     }
 
-    private scan() {
-        startPos = pos;
-        hasExtendedUnicodeEscape = false;
-        precedingLineBreak = false;
-        tokenIsUnterminated = false;
-        while (true) {
-            tokenPos = pos;
-            if (pos >= end) {
-                return token = SyntaxKind.EndOfFileToken;
-            }
-            let ch = text.charCodeAt(pos);
+    // #endregion
 
-            // Special handling for shebang
-            if (ch === CharCode.hash && pos === 0 && isShebangTrivia(text, pos)) {
-                pos = scanShebangTrivia(text, pos);
-                if (skipTrivia) {
-                    continue;
-                }
-                else {
-                    return token = SyntaxKind.ShebangTrivia;
-                }
+    // #region 解析
+
+    /**
+     * 报告一个词法错误。
+     * @param message 错误的信息。
+     * @param args 格式化错误的参数。
+     */
+    error(message: string, ...args: any[]) {
+        error(ErrorType.lexical, message, ...args);
+    }
+
+    /**
+     * 从源中扫描下一个标记的数据并存放在 result。
+     */
+    private scan() {
+
+        console.assert(this.sourceText != null, "应先调用“setSource()”设置源。");
+
+        const result = {
+            onNewLine: false
+        } as Token;
+
+        while (this.sourceStart < this.sourceEnd) {
+            let ch = this.sourceText.charCodeAt(result.start = this.sourceStart++);
+
+            // 标识符或关键字。
+            if (ch >= CharCode.a && ch <= CharCode.z) {
+                result.buffer = this.scanIdentifier();
+                // todo
+                //StringBuilder buffer = result.buffer;
+                //buffer.Length = 1;
+                //buffer[0] = (char)_currentChar;
+                //scanIdentifierBody();
             }
 
             switch (ch) {
-                case CharCode.lineFeed:
-                case CharCode.carriageReturn:
-                    precedingLineBreak = true;
-                    if (skipTrivia) {
-                        pos++;
-                        continue;
-                    }
-                    else {
-                        if (ch === CharCode.carriageReturn && pos + 1 < end && text.charCodeAt(pos + 1) === CharCode.lineFeed) {
-                            // consume both CR and LF
-                            pos += 2;
-                        }
-                        else {
-                            pos++;
-                        }
-                        return token = SyntaxKind.NewLineTrivia;
-                    }
-                case CharCode.tab:
-                case CharCode.verticalTab:
-                case CharCode.formFeed:
+
+                // \s, \t
                 case CharCode.space:
-                    if (skipTrivia) {
-                        pos++;
-                        continue;
-                    }
-                    else {
-                        while (pos < end && isWhiteSpace(text.charCodeAt(pos))) {
-                            pos++;
-                        }
-                        return token = SyntaxKind.WhitespaceTrivia;
-                    }
-                case CharCode.exclamation:
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                            return pos += 3, token = SyntaxKind.ExclamationEqualsEqualsToken;
-                        }
-                        return pos += 2, token = SyntaxKind.ExclamationEqualsToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.ExclamationToken;
-                case CharCode.doubleQuote:
-                case CharCode.singleQuote:
-                    tokenValue = scanString();
-                    return token = SyntaxKind.StringLiteral;
-                case CharCode.backtick:
-                    return token = scanTemplateAndSetTokenValue();
-                case CharCode.percent:
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.PercentEqualsToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.PercentToken;
-                case CharCode.ampersand:
-                    if (text.charCodeAt(pos + 1) === CharCode.ampersand) {
-                        return pos += 2, token = SyntaxKind.AmpersandAmpersandToken;
-                    }
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.AmpersandEqualsToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.AmpersandToken;
-                case CharCode.openParen:
-                    pos++;
-                    return token = SyntaxKind.OpenParenToken;
-                case CharCode.closeParen:
-                    pos++;
-                    return token = SyntaxKind.CloseParenToken;
-                case CharCode.asterisk:
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.AsteriskEqualsToken;
-                    }
-                    if (text.charCodeAt(pos + 1) === CharCode.asterisk) {
-                        if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                            return pos += 3, token = SyntaxKind.AsteriskAsteriskEqualsToken;
-                        }
-                        return pos += 2, token = SyntaxKind.AsteriskAsteriskToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.AsteriskToken;
-                case CharCode.plus:
-                    if (text.charCodeAt(pos + 1) === CharCode.plus) {
-                        return pos += 2, token = SyntaxKind.PlusPlusToken;
-                    }
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.PlusEqualsToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.PlusToken;
-                case CharCode.comma:
-                    pos++;
-                    return token = SyntaxKind.CommaToken;
-                case CharCode.minus:
-                    if (text.charCodeAt(pos + 1) === CharCode.minus) {
-                        return pos += 2, token = SyntaxKind.MinusMinusToken;
-                    }
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.MinusEqualsToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.MinusToken;
-                case CharCode.dot:
-                    if (isDigit(text.charCodeAt(pos + 1))) {
-                        tokenValue = scanNumber();
-                        return token = SyntaxKind.NumericLiteral;
-                    }
-                    if (text.charCodeAt(pos + 1) === CharCode.dot && text.charCodeAt(pos + 2) === CharCode.dot) {
-                        return pos += 3, token = SyntaxKind.DotDotDotToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.DotToken;
+                case CharCode.horizontalTab:
+                    continue;
+
+                // \r, \n
+                case CharCode.carriageReturn:
+                case CharCode.lineFeed:
+                    result.onNewLine = true;
+                    continue;
+
+                // /  // /* /=
                 case CharCode.slash:
-                    // Single-line comment
-                    if (text.charCodeAt(pos + 1) === CharCode.slash) {
-                        pos += 2;
-
-                        while (pos < end) {
-                            if (isLineBreak(text.charCodeAt(pos))) {
-                                break;
+                    switch (this.sourceText.charCodeAt(this.sourceStart++)) {
+                        case CharCode.slash:
+                            const singleCommentStart = this.sourceStart;
+                            while (this.sourceStart < this.sourceEnd && !Unicode.isLineTerminator(this.sourceText.charCodeAt(this.sourceStart))) {
+                                this.sourceStart++;
                             }
-                            pos++;
-
-                        }
-
-                        if (skipTrivia) {
-                            continue;
-                        }
-                        else {
-                            return token = SyntaxKind.SingleLineCommentTrivia;
-                        }
-                    }
-                    // Multi-line comment
-                    if (text.charCodeAt(pos + 1) === CharCode.asterisk) {
-                        pos += 2;
-
-                        let commentClosed = false;
-                        while (pos < end) {
-                            const ch = text.charCodeAt(pos);
-
-                            if (ch === CharCode.asterisk && text.charCodeAt(pos + 1) === CharCode.slash) {
-                                pos += 2;
-                                commentClosed = true;
-                                break;
+                            if (options.parseComments) {
+                                this.comments.push({ start: singleCommentStart, end: this.sourceStart });
                             }
-
-                            if (isLineBreak(ch)) {
-                                precedingLineBreak = true;
+                            continue;
+                        case CharCode.asterisk:
+                            const multiCommentStart = this.sourceStart;
+                            let multiCommentEnd: number;
+                            while (this.sourceStart < this.sourceEnd) {
+                                ch = this.sourceText.charCodeAt(this.sourceStart);
+                                if (Unicode.isLineTerminator(ch)) {
+                                    result.onNewLine = true;
+                                } else if (ch === CharCode.asterisk && this.sourceText.charCodeAt(this.sourceStart + 1) === CharCode.slash) {
+                                    multiCommentEnd = this.sourceStart;
+                                    this.sourceStart += 2;
+                                    break;
+                                }
+                                this.sourceStart++;
                             }
-                            pos++;
-                        }
-
-                        if (!commentClosed) {
-                            error(Diagnostics.Asterisk_Slash_expected);
-                        }
-
-                        if (skipTrivia) {
+                            if (multiCommentEnd == null && options.languageVersion) {
+                                this.error("多行注释未关闭；应输入“*/”。");
+                            }
+                            if (options.parseComments) {
+                                this.comments.push({ start: multiCommentStart, end: multiCommentEnd });
+                            }
                             continue;
-                        }
-                        else {
-                            tokenIsUnterminated = !commentClosed;
-                            return token = SyntaxKind.MultiLineCommentTrivia;
-                        }
+                        case CharCode.equals:
+                            result.type = TokenType.slashEquals;
+                            break;
+                        default:
+                            this.sourceStart--;
+                            result.type = TokenType.slash;
+                            break;
                     }
 
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.SlashEqualsToken;
-                    }
+                // ', "
+                case CharCode.singleQuote:
+                case CharCode.doubleQuote:
+                    result.type = TokenType.stringLiteral;
+                    result.buffer = this.scanStringLiteral(ch);
+                    break;
 
-                    pos++;
-                    return token = SyntaxKind.SlashToken;
+                // `
+                case CharCode.backtick:
+                    // todo
+                    //    result.type = TokenType.stringLiteral;
+                    // scanVerbatimString();
+                    return result;
 
-                case CharCode._0:
-                    if (pos + 2 < end && (text.charCodeAt(pos + 1) === CharCode.X || text.charCodeAt(pos + 1) === CharCode.x)) {
-                        pos += 2;
-                        let value = scanMinimumNumberOfHexDigits(1);
-                        if (value < 0) {
-                            error(Diagnostics.Hexadecimal_digit_expected);
-                            value = 0;
-                        }
-                        tokenValue = "" + value;
-                        return token = SyntaxKind.NumericLiteral;
-                    }
-                    else if (pos + 2 < end && (text.charCodeAt(pos + 1) === CharCode.B || text.charCodeAt(pos + 1) === CharCode.b)) {
-                        pos += 2;
-                        let value = scanBinaryOrOctalDigits(/* base */ 2);
-                        if (value < 0) {
-                            error(Diagnostics.Binary_digit_expected);
-                            value = 0;
-                        }
-                        tokenValue = "" + value;
-                        return token = SyntaxKind.NumericLiteral;
-                    }
-                    else if (pos + 2 < end && (text.charCodeAt(pos + 1) === CharCode.O || text.charCodeAt(pos + 1) === CharCode.o)) {
-                        pos += 2;
-                        let value = scanBinaryOrOctalDigits(/* base */ 8);
-                        if (value < 0) {
-                            error(Diagnostics.Octal_digit_expected);
-                            value = 0;
-                        }
-                        tokenValue = "" + value;
-                        return token = SyntaxKind.NumericLiteral;
-                    }
-                    // Try to parse as an octal
-                    if (pos + 1 < end && isOctalDigit(text.charCodeAt(pos + 1))) {
-                        tokenValue = "" + scanOctalDigits();
-                        return token = SyntaxKind.NumericLiteral;
-                    }
-                // This fall-through is a deviation from the EcmaScript grammar. The grammar says that a leading zero
-                // can only be followed by an octal digit, a dot, or the end of the number literal. However, we are being
-                // permissive and allowing decimal digits of the form 08* and 09* (which many browsers also do).
-                case CharCode._1:
-                case CharCode._2:
-                case CharCode._3:
-                case CharCode._4:
-                case CharCode._5:
-                case CharCode._6:
-                case CharCode._7:
-                case CharCode._8:
-                case CharCode._9:
-                    tokenValue = scanNumber();
-                    return token = SyntaxKind.NumericLiteral;
-                case CharCode.colon:
-                    pos++;
-                    return token = SyntaxKind.ColonToken;
-                case CharCode.semicolon:
-                    pos++;
-                    return token = SyntaxKind.SemicolonToken;
-                case CharCode.lessThan:
-                    if (isConflictMarkerTrivia(text, pos)) {
-                        pos = scanConflictMarkerTrivia(text, pos, error);
-                        if (skipTrivia) {
-                            continue;
-                        }
-                        else {
-                            return token = SyntaxKind.ConflictMarkerTrivia;
-                        }
-                    }
-
-                    if (text.charCodeAt(pos + 1) === CharCode.lessThan) {
-                        if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                            return pos += 3, token = SyntaxKind.LessThanLessThanEqualsToken;
-                        }
-                        return pos += 2, token = SyntaxKind.LessThanLessThanToken;
-                    }
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.LessThanEqualsToken;
-                    }
-                    if (languageVariant === LanguageVariant.JSX &&
-                        text.charCodeAt(pos + 1) === CharCode.slash &&
-                        text.charCodeAt(pos + 2) !== CharCode.asterisk) {
-                        return pos += 2, token = SyntaxKind.LessThanSlashToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.LessThanToken;
+                // =, ==, =>
                 case CharCode.equals:
-                    if (isConflictMarkerTrivia(text, pos)) {
-                        pos = scanConflictMarkerTrivia(text, pos, error);
-                        if (skipTrivia) {
-                            continue;
-                        }
-                        else {
-                            return token = SyntaxKind.ConflictMarkerTrivia;
-                        }
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.equals:
+                            this.sourceStart++;
+                            if (this.sourceText.charCodeAt(this.sourceStart) === CharCode.equals) {
+                                this.sourceStart++;
+                                result.type = TokenType.equalsEqualsEquals;
+                                break;
+                            }
+                            result.type = TokenType.equalsEquals;
+                        case CharCode.greaterThan:
+                            this.sourceStart++;
+                            result.type = TokenType.equalsGreaterThan;
+                            break;
+                        default:
+                            result.type = TokenType.equals;
+                            break;
                     }
+                    break;
 
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                            return pos += 3, token = SyntaxKind.EqualsEqualsEqualsToken;
+                // .1, .., ...
+                case CharCode.dot:
+                    if (Unicode.isDecimalDigit(this.sourceStart)) {
+                        // todo
+                        break;
+                        //result.type = TokenType.;
+                        //result.buffer.Length = 0;
+                        //scanFloatLiteral();
+                        //goto end;
+                    }
+                    if (this.sourceText.charCodeAt(this.sourceStart++) === CharCode.dot) {
+                        if (this.sourceText.charCodeAt(this.sourceStart) === CharCode.dot) {
+                            this.sourceStart++;
+                            result.type = TokenType.dotDotDot;
+                            break;
                         }
-                        return pos += 2, token = SyntaxKind.EqualsEqualsToken;
+                        result.type = TokenType.dotDot;
+                        break;
                     }
-                    if (text.charCodeAt(pos + 1) === CharCode.greaterThan) {
-                        return pos += 2, token = SyntaxKind.EqualsGreaterThanToken;
+                    result.type = TokenType.dot;
+                    break;
+
+                // !, !=, !==
+                case CharCode.exclamation:
+                    if (this.sourceText.charCodeAt(this.sourceStart) === CharCode.equals) {
+                        if (this.sourceText.charCodeAt(this.sourceStart++) === CharCode.equals) {
+                            this.sourceStart++;
+                            result.type = TokenType.exclamationEqualsEquals;
+                            break;
+                        }
+                        result.type = TokenType.exclamationEquals;
+                        break;
                     }
-                    pos++;
-                    return token = SyntaxKind.EqualsToken;
+                    result.type = TokenType.exclamation;
+                    break;
+
+                // %, %=
+                case CharCode.percent:
+                    if (this.sourceText.charCodeAt(this.sourceStart) === TokenType.equals) {
+                        this.sourceStart++;
+                        result.type = TokenType.percentEquals;
+                        break;
+                    }
+                    result.type = TokenType.percent;
+                    break;
+
+                // &, &&, &=
+                case CharCode.ampersand:
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.ampersand:
+                            this.sourceStart++;
+                            result.type = TokenType.ampersandAmpersand;
+                            break;
+                        case CharCode.equals:
+                            this.sourceStart++;
+                            result.type = TokenType.ampersandEquals;
+                            break;
+                        default:
+                            result.type = TokenType.ampersand;
+                            break;
+                    }
+                    break;
+
+                // (
+                case CharCode.openParen:
+                    result.type = TokenType.openParen;
+                    break;
+
+                // )
+                case CharCode.closeParen:
+                    result.type = TokenType.closeParen;
+                    break;
+
+                // *, **, **=, *=
+                case CharCode.asterisk:
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.asterisk:
+                            if (this.sourceText.charCodeAt(this.sourceStart++) === CharCode.equals) {
+                                this.sourceStart++;
+                                result.type = TokenType.asteriskAsteriskEquals;
+                                break;
+                            }
+                            result.type = TokenType.asteriskAsterisk;
+                            break;
+                        case CharCode.equals:
+                            this.sourceStart++;
+                            result.type = TokenType.asteriskEquals;
+                            break;
+                        default:
+                            result.type = TokenType.asterisk;
+                            break;
+                    }
+                    break;
+
+                // +, ++, +=
+                case CharCode.plus:
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.plus:
+                            this.sourceStart++;
+                            result.type = TokenType.plusPlus;
+                            break;
+                        case CharCode.equals:
+                            this.sourceStart++;
+                            result.type = TokenType.plusEquals;
+                            break;
+                        default:
+                            result.type = TokenType.plus;
+                            break;
+                    }
+                    break;
+
+                // ,
+                case CharCode.comma:
+                    result.type = TokenType.comma;
+                    break;
+
+                // -, --, -=
+                case CharCode.minus:
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.minus:
+                            this.sourceStart++;
+                            result.type = TokenType.minusMinus;
+                            break;
+                        case CharCode.equals:
+                            this.sourceStart++;
+                            result.type = TokenType.minusEquals;
+                            break;
+                        default:
+                            result.type = TokenType.minus;
+                            break;
+                    }
+                    break;
+
+                // /, /=
+                case CharCode.slash:
+                    if (this.sourceText.charCodeAt(this.sourceStart) === TokenType.equals) {
+                        this.sourceStart++;
+                        result.type = TokenType.slashEquals;
+                        break;
+                    }
+                    result.type = TokenType.slash;
+                    break;
+
+                // :
+                case CharCode.colon:
+                    result.type = TokenType.colon;
+                    break;
+
+                // ;
+                case CharCode.semicolon:
+                    result.type = TokenType.semicolon;
+                    break;
+
+                // <, <<, <<=, <=
+                case CharCode.lessThan:
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.lessThan:
+                            if (this.sourceText.charCodeAt(this.sourceStart++) === CharCode.equals) {
+                                this.sourceStart++;
+                                result.type = TokenType.lessThanLessThanEquals;
+                                break;
+                            }
+                            result.type = TokenType.lessThanLessThan;
+                            break;
+                        case CharCode.equals:
+                            this.sourceStart++;
+                            result.type = TokenType.lessThanEquals;
+                            break;
+                        default:
+                            result.type = TokenType.lessThan;
+                            break;
+                    }
+                    break;
+
+                // =, ==, ===, =>
+                case CharCode.equals:
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.equals:
+                            if (this.sourceText.charCodeAt(this.sourceStart++) === CharCode.equals) {
+                                this.sourceStart++;
+                                result.type = TokenType.equalsEqualsEquals;
+                                break;
+                            }
+                            result.type = TokenType.equalsEquals;
+                            break;
+                        case CharCode.greaterThan:
+                            this.sourceStart++;
+                            result.type = TokenType.equalsGreaterThan;
+                            break;
+                        default:
+                            result.type = TokenType.equals;
+                            break;
+                    }
+                    break;
+
+                // >, >=, >>, >>=, >>>, >>>=
                 case CharCode.greaterThan:
-                    if (isConflictMarkerTrivia(text, pos)) {
-                        pos = scanConflictMarkerTrivia(text, pos, error);
-                        if (skipTrivia) {
-                            continue;
-                        }
-                        else {
-                            return token = SyntaxKind.ConflictMarkerTrivia;
-                        }
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.equals:
+                            this.sourceStart++;
+                            result.type = TokenType.greaterThanEquals;
+                            break;
+                        case CharCode.greaterThan:
+                            switch (this.sourceText.charCodeAt(this.sourceStart++)) {
+                                case CharCode.equals:
+                                    this.sourceStart++;
+                                    result.type = TokenType.greaterThanGreaterThanEquals;
+                                    break;
+                                case CharCode.greaterThan:
+                                    if (this.sourceText.charCodeAt(this.sourceStart++) === CharCode.equals) {
+                                        this.sourceStart++;
+                                        result.type = TokenType.greaterThanGreaterThanGreaterThanEquals;
+                                        break;
+                                    }
+                                    result.type = TokenType.greaterThanGreaterThanGreaterThan;
+                                    break;
+                                default:
+                                    result.type = TokenType.greaterThanGreaterThan;
+                                    break;
+                            }
+                            break;
+                        default:
+                            result.type = TokenType.greaterThan;
+                            break;
+                    }
+                    break;
+
+                // ?
+                case CharCode.question:
+                    result.type = TokenType.question;
+                    break;
+
+                // @
+                case CharCode.at:
+                    result.type = TokenType.at;
+                    break;
+
+                // [
+                case CharCode.openBracket:
+                    result.type = TokenType.openBracket;
+                    break;
+
+                // ]
+                case CharCode.closeBracket:
+                    result.type = TokenType.closeBracket;
+                    break;
+
+                // ^, ^=
+                case CharCode.caret:
+                    if (this.sourceText.charCodeAt(this.sourceStart) === TokenType.caretEquals) {
+                        this.sourceStart++;
+                        result.type = TokenType.caretEquals;
+                        break;
+                    }
+                    result.type = TokenType.caret;
+                    break;
+
+                // {
+                case CharCode.openBrace:
+                    result.type = TokenType.openBrace;
+                    break;
+
+                // |, |=, ||
+                case CharCode.bar:
+                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                        case CharCode.equals:
+                            this.sourceStart++;
+                            result.type = TokenType.barEquals;
+                            break;
+                        case CharCode.bar:
+                            this.sourceStart++;
+                            result.type = TokenType.barBar;
+                            break;
+                        default:
+                            result.type = TokenType.bar;
+                            break;
+                    }
+                    break;
+
+                // }
+                case CharCode.closeBrace:
+                    result.type = TokenType.closeBrace;
+                    break;
+
+                // ~
+                case CharCode.tilde:
+                    result.type = TokenType.tilde;
+                    break;
+
+                default:
+
+                    // 数字。
+                    if (Unicode.isDecimalDigit(ch)) {
+
+                        //result.buffer.Length = 0;
+
+                        //// 0x...
+                        //if (_currentChar == '0' && (_input.Peek() | 0x20) == 'x') {
+
+                        //    // 读取 0x
+                        //    _input.Read();
+
+                        //    // 读取十六进制。
+                        //    while (Unicode.isHexDigit(_currentChar = _input.Read())) {
+                        //        result.buffer.Append((char)_currentChar);
+                        //    }
+                        //    currentLocation.column += 2 + result.buffer.Length;
+
+                        //    // 至少应读到一个数字。
+                        //    if (result.buffer.Length == 0) {
+                        //        Compiler.error(ErrorCode.invalidHexNumber, "语法错误：无效的数字；应输入十六进制数字", result.startLocation, currentLocation);
+                        //    }
+
+                        //    result.type = TokenType.hexIntLiteral;
+                        //    goto end;
+                        //}
+
+                        //// 整数部分。
+                        //readDecimalDigits();
+
+                        //// 小数部分。
+                        //if (_currentChar == '.' && Unicode.isDecimalDigit(_input.Peek())) {
+                        //    _currentChar = _input.Read();
+                        //    scanFloatLiteral();
+                        //    result.type = TokenType.floatLiteral;
+                        //    goto end;
+                        //}
+
+                        //currentLocation.column += result.buffer.Length;
+                        //result.type = TokenType.intLiteral;
+                        //goto end;
+
                     }
 
-                    pos++;
-                    return token = SyntaxKind.GreaterThanToken;
-                case CharCode.question:
-                    pos++;
-                    return token = SyntaxKind.QuestionToken;
-                case CharCode.openBracket:
-                    pos++;
-                    return token = SyntaxKind.OpenBracketToken;
-                case CharCode.closeBracket:
-                    pos++;
-                    return token = SyntaxKind.CloseBracketToken;
-                case CharCode.caret:
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.CaretEqualsToken;
+                    // 标识符。
+                    if (Unicode.isIdentifierStart(ch)) {
+                        result.type = TokenType.identifier;
+                        result.buffer = this.scanIdentifier(ch);
+                        break;
                     }
-                    pos++;
-                    return token = SyntaxKind.CaretToken;
-                case CharCode.openBrace:
-                    pos++;
-                    return token = SyntaxKind.OpenBraceToken;
-                case CharCode.bar:
-                    if (text.charCodeAt(pos + 1) === CharCode.bar) {
-                        return pos += 2, token = SyntaxKind.BarBarToken;
-                    }
-                    if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = SyntaxKind.BarEqualsToken;
-                    }
-                    pos++;
-                    return token = SyntaxKind.BarToken;
-                case CharCode.closeBrace:
-                    pos++;
-                    return token = SyntaxKind.CloseBraceToken;
-                case CharCode.tilde:
-                    pos++;
-                    return token = SyntaxKind.TildeToken;
-                case CharCode.at:
-                    pos++;
-                    return token = SyntaxKind.AtToken;
-                case CharCode.backslash:
-                    let cookedChar = peekUnicodeEscape();
-                    if (cookedChar >= 0 && isIdentifierStart(cookedChar, languageVersion)) {
-                        pos += 6;
-                        tokenValue = String.fromCharCode(cookedChar) + scanIdentifierParts();
-                        return token = getIdentifierToken();
-                    }
-                    error(Diagnostics.Invalid_character);
-                    pos++;
-                    return token = SyntaxKind.Unknown;
-                default:
-                    if (isIdentifierStart(ch, languageVersion)) {
-                        pos++;
-                        while (pos < end && isIdentifierPart(ch = text.charCodeAt(pos), languageVersion)) pos++;
-                        tokenValue = text.substring(tokenPos, pos);
-                        if (ch === CharCode.backslash) {
-                            tokenValue += scanIdentifierParts();
-                        }
-                        return token = getIdentifierToken();
-                    }
-                    else if (isWhiteSpace(ch)) {
-                        pos++;
+
+                    // 空白。
+                    if (Unicode.isWhiteSpace(ch)) {
                         continue;
                     }
-                    else if (isLineBreak(ch)) {
-                        precedingLineBreak = true;
-                        pos++;
+                    if (Unicode.isLineTerminator(ch)) {
+                        result.onNewLine = true;
                         continue;
                     }
-                    error(Diagnostics.Invalid_character);
-                    pos++;
-                    return token = SyntaxKind.Unknown;
+
+                    // 剩下的字符为不支持的字符。
+                    this.error("意外的字符：“{0}”。", String.fromCharCode(ch));
+                    continue;
+
+            }
+
+        }
+
+        result.end = this.sourceStart;
+        return result;
+
+    }
+
+    // #endregion
+
+    /**
+     * 扫描紧跟的标识符主体部分。
+     */
+    private scanIdentifierBody() {
+        const identifierStart = this.sourceStart - 1;
+        while (Unicode.isIdentifierPart(this.sourceStart)) {
+            this.sourceStart++;
+        }
+        return this.sourceText.substring(identifierStart, this.sourceStart);
+    }
+
+    /**
+     * 用于标记当前正在处理的字符串内置表达式。如果值为 0，说明未在处理字符串表达式。如果值为 -1，说明禁止处理字符串表达式。否则，值为正在处理的表达式所在字符串的引号字符。
+     */
+    int _parsingStringVarableChar;
+
+    /**
+     * 扫描紧跟的转义字符串部分。忽略 _currentChar 值。
+     */
+    private void scanRegularString(int currentChar) {
+
+    // 在解析字符串变量时不能再次解析到字符串。
+    if (_parsingStringVarableChar == currentChar) {
+        Compiler.error(ErrorCode.expectedStringLiteralExpressionEnd, "语法错误：字符串内联表达式未关闭；应输入“}”", currentLocation, currentLocation + 1);
+        result.type = TokenType.rBrace;
+        return;
+    }
+
+    currentLocation.column++; // 引号。
+
+    // 用于读取变量表达式时存储原始标记。
+    Token orignalScanTargetToken = result;
+
+    result.buffer.Length = 0;
+    while (true) {
+        _currentChar = _input.Read();
+        parseCurrent:
+        switch (_currentChar) {
+            case '"':
+            case '\'':
+                // 允许在 "" 字符串中不转义 ' 字符。反之亦然。
+                if (_currentChar != currentChar) {
+                    goto default;
+        }
+
+        _currentChar = _input.Read();
+        currentLocation.column++;
+        goto end;
+
+        #region 转义
+                    case '\\':
+        switch (_currentChar = _input.Read()) {
+            case 'n':
+                _currentChar = '\n';
+                goto default;
+            case 'r':
+                _currentChar = '\r';
+                goto default;
+            case 't':
+                _currentChar = '\t';
+                goto default;
+            case 'u':
+                _currentChar = readUnicodeChar(4);
+                goto default;
+            case 'x':
+                _currentChar = readUnicodeChar(2);
+                goto default;
+            case '\r':
+                if (_input.Peek() == '\n') {
+                    _input.Read();
+                }
+                goto case '\n';
+            case '\n':
+                newLine();
+                continue;
+            case 'b':
+                _currentChar = '\b';
+                goto default;
+            case 'f':
+                _currentChar = '\f';
+                goto default;
+            case 'v':
+                _currentChar = '\v';
+                goto default;
+            case '0':
+                _currentChar = '\0';
+                goto default;
+            case -1:
+                orignalScanTargetToken.buffer.Append('\\');
+                currentLocation.column++;
+                continue;
+            default:
+                orignalScanTargetToken.buffer.Append((char)_currentChar);
+                currentLocation.column += 2;
+                continue;
+        }
+        #endregion
+
+                    case '\r':
+        result.buffer.Append('\r');
+        if (_input.Peek() == '\n') {
+            _input.Read();
+            goto case '\n';
+        }
+        newLine();
+        continue;
+                    case '\n':
+        result.buffer.Append('\n');
+        newLine();
+        continue;
+                    case -1:
+        Compiler.error(ErrorCode.expectedStringLiteralEnd, String.Format("语法错误：字符串未关闭；应输入“{0}”", (char)currentChar), result.startLocation, currentLocation);
+        goto end;
+
+        #region 变量字符串
+                    case '$':
+
+        // $xxx, ${xx}
+        if (_parsingStringVarableChar >= 0 && (Unicode.isIdentifierPart(_input.Peek()) || _input.Peek() == '{')) {
+
+            // 标记之前的字符串已读取完毕。
+            result.endLocation = currentLocation;
+
+            // 第一次发现变量，生成 ("之前的字符串" + <表达式> + "之后的字符串") 标记序列。
+            // 在 result 后插入变量。
+            if (orignalScanTargetToken == result) {
+                result.next = result.clone();
+                result.type = TokenType.lParam;
+                result.endLocation = result.startLocation + 1;
+                result = result.next;
+                result.startLocation++;
+            }
+
+            // 插入 + 。
+            result = result.next = new Token() {
+                type = TokenType.add,
+                    startLocation = currentLocation,
+                    endLocation = currentLocation,
+                            };
+
+            // $abc
+            if (_input.Peek() != '{') {
+
+                // 插入字符串。
+                result = result.next = new Token();
+                scan();
+
+                // 插入 +。
+                result = result.next = new Token() {
+                    type = TokenType.add,
+                        startLocation = currentLocation,
+                        endLocation = currentLocation,
+                                };
+
+            } else {
+
+                // 插入 (
+                result = result.next = new Token() {
+                    type = TokenType.lParam,
+                        startLocation = currentLocation + 1,
+                        endLocation = currentLocation + 2,
+                                };
+
+                // 读取 ${
+                _input.Read(); // {
+                _currentChar = _input.Read();
+                currentLocation.column += 2;
+
+                bool foundSomething = false;
+                _parsingStringVarableChar = currentChar;
+
+                // 插入 } 之前的所有标记。
+                while (true) {
+                    result = result.next = new Token();
+                    scan();
+                    if (result.type == TokenType.rBrace) {
+                        break;
+                    }
+                    if (result.type == TokenType.eof) {
+                        goto end;
+                    }
+                    foundSomething = true;
+                }
+
+                _parsingStringVarableChar = 0;
+
+                if (!foundSomething) {
+                    result.type = TokenType.@null;
+
+                    // 插入 )
+                    result = result.next = new Token() {
+                        type = TokenType.rParam,
+                            startLocation = currentLocation - 1,
+                            endLocation = currentLocation
+                    };
+
+                } else {
+                    // 插入 )
+                    result.type = TokenType.rParam;
+                }
+
+                // 插入 + 。
+                result = result.next = new Token() {
+                    type = TokenType.add,
+                        startLocation = result.startLocation,
+                        endLocation = result.startLocation
+                };
+
+            }
+
+            // 插入后续字符串。
+            result = result.next = new Token() {
+                type = TokenType.stringLiteral,
+                    startLocation = currentLocation,
+                            };
+            goto parseCurrent;
+
+        }
+
+        goto default;
+        #endregion
+
+                    default:
+        result.buffer.Append((char)_currentChar);
+        currentLocation.column++;
+        continue;
+
+    }
+}
+
+end:
+
+// 如果之前解析了变量字符串，则重定位开头。
+if (orignalScanTargetToken != result) {
+    result.endLocation = currentLocation - 1;
+    result.next = new Token() {
+        type = TokenType.rParam,
+            startLocation = currentLocation - 1,
+            endLocation = currentLocation,
+                };
+    result = orignalScanTargetToken;
+    return;
+}
+
+orignalScanTargetToken.endLocation = currentLocation;
+        }
+
+        /**
+         * 扫描紧跟的无转义字符串部分。忽略 _currentChar 值。
+         */
+        private void scanVerbatimString() {
+
+    // 读取引号。
+    currentLocation.column++;
+
+    result.buffer.Length = 0;
+    while (true) {
+        switch (_currentChar = _input.Read()) {
+            case '`':
+                _currentChar = _input.Read();
+                currentLocation.column++;
+                if (_currentChar == '`') {
+                    goto default;
+        }
+        return;
+                    case '\r':
+        result.buffer.Append('\r');
+        if (_input.Peek() == '\n') {
+            _input.Read();
+            goto case '\n';
+        }
+        newLine();
+        continue;
+                    case '\n':
+        result.buffer.Append('\n');
+        newLine();
+        continue;
+                    case -1:
+        result.endLocation = currentLocation;
+        Compiler.error(ErrorCode.expectedStringLiteralEnd, String.Format("语法错误：字符串未关闭；应输入“{0}”", (char)'`'), result.startLocation, currentLocation);
+        return;
+                    default:
+        result.buffer.Append((char)_currentChar);
+        currentLocation.column++;
+        continue;
+    }
+}
+
+        }
+
+        /**
+         * 扫描紧跟的小数部分。从 _currentChar 开始判断。
+         */
+        private void scanFloatLiteral() {
+    result.buffer.Append('.');
+    readDecimalDigits();
+    currentLocation.column += result.buffer.Length;
+}
+
+        /**
+         * 扫描紧跟的空白字符。从 _currentChar 开始判断。
+         */
+        private void scanWhiteSpace() {
+    while (Unicode.isWhiteSpace(_currentChar)) {
+        _currentChar = _input.Read();
+        currentLocation.column++;
+    }
+}
+
+        /**
+         * 忽略当前行剩下的所有内容。从 _currentChar 开始判断。
+         */
+        private void skipLine() {
+    while (Unicode.isNonTerminator(_currentChar)) {
+        _currentChar = _input.Read();
+    }
+}
+
+        /**
+         * 读取接下来的所有数字。从 _currentChar 开始判断。
+         */
+        private void readDecimalDigits() {
+    do {
+        result.buffer.Append((char)_currentChar);
+    } while (Unicode.isDecimalDigit(_currentChar = _input.Read()));
+}
+
+        /**
+         * 读取接下来的所有十六进制数字组成的字符。忽略 _currentChar 值。
+         */
+         * <param name="length" > </param>
+    * <returns></returns>
+        private int readUnicodeChar(int length) {
+
+    int result = 0;
+
+    while (--length >= 0) {
+        _currentChar = _input.Read();
+        currentLocation.column++;
+        int value = _currentChar - '0';
+        if (value < 0 || value > 9) {
+            value = (_currentChar | 0x20) - 'a';
+            if (value < 0 || value > 5) {
+                Compiler.error(ErrorCode.expectedHexDight, "语法错误：应输入十六进制数字", currentLocation, currentLocation + 1);
+                return result;
+            }
+
+            value += 10;
+        }
+
+        result = (result << 4) | value;
+    }
+
+    return result;
+}
+
+        /**
+         * 报告当前标记不是标识符的错误。
+         */
+        private void reportIsNotIdentifierError() {
+    Compiler.error(ErrorCode.expectedIdentifier, result.type.isKeyword() ? String.Format("语法错误：应输入标识符；“{0}”是关键字，请改为“${0}”", result.type.getName()) : "语法错误：应输入标识符", result.startLocation, result.endLocation);
+}
+
+        /**
+         * 扫描紧跟的一行字符。从 _currentChar 开始判断。
+         */
+        private void scanLine() {
+
+    // 读取非换行符。
+    while (Unicode.isNonTerminator(_currentChar)) {
+        result.buffer.Append((char)_currentChar);
+        _currentChar = _input.Read();
+        currentLocation.column++;
+    }
+
+    // 忽略末尾空白。
+    while (result.buffer.Length > 0 && Unicode.isWhiteSpace(result.buffer[result.buffer.Length - 1])) {
+        result.buffer.Length--;
+        currentLocation.column--;
+    }
+
+}
+
+        /**
+         * 解析指定标记中表示的整数。
+         */
+         * <param name="token" > </param>
+    * <returns></returns>
+        public static long parseLongToken(Token token) {
+    long result = 0;
+    try {
+        for (int i = 0; i < token.buffer.Length; i++) {
+            result = checked(result * 10 + token.buffer[i] - '0');
+        }
+    } catch (OverflowException) {
+        Compiler.error(ErrorCode.decimalNumberTooLarge, "整数常量值太大", token.startLocation, token.endLocation);
+        result = long.MaxValue;
+    }
+
+    return result;
+}
+
+        /**
+         * 解析指定标记中表示的十六进制整数。
+         */
+         * <param name="token" > </param>
+    * <returns></returns>
+        public static long parseHexIntToken(Token token) {
+    long result = 0;
+    try {
+        for (int i = 0; i < token.buffer.Length; i++) {
+            if (Unicode.isDecimalDigit(token.buffer[i])) {
+                result = checked(result * 16 + token.buffer[i] - '0');
+            } else {
+                result = checked(result * 16 + 10 + (token.buffer[i] | 0x20) - 'a');
             }
         }
+    } catch (OverflowException) {
+        Compiler.error(ErrorCode.hexNumberTooLarge, "整数常量值太大", token.startLocation, token.endLocation);
+        result = long.MaxValue;
     }
+    return result;
+}
+
+        /**
+         * 解析指定标记中表示的浮点数。
+         */
+         * <param name="token" > </param>
+    * <returns></returns>
+        public static double parseFloatToken(Token token) {
+    double num = 0;
+    int i = 0;
+    for (; i < token.buffer.Length; i++) {
+        if (token.buffer[i] == '.') {
+            break;
+        }
+        num = num * 10 + token.buffer[i] - '0';
+    }
+    i++;
+    for (int p = 10; i < token.buffer.Length; i++ , p *= 10) {
+        num += ((double)(token.buffer[i] - '0')) / p;
+    }
+    return num;
+}
+
+#endregion
 
 }
 
@@ -514,11 +1088,6 @@ interface Token {
     /**
      * 判断当前标识之前是否存在换行符。
      */
-    hasLineTerminatorBeforeStart: boolean;
-
-    ///**
-    // * 获取当前标识之前的文档注释。
-    // */
-    //docComment: DocComment;
+    onNewLine: boolean;
 
 }

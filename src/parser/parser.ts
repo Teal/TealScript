@@ -2,7 +2,7 @@
  * @fileOverview 语法解析器
  */
 
-import {TokenType, tokenToString, isNonReservedWord} from '../ast/tokenType';
+import {TokenType, tokenToString, isNonReservedWord, isUnaryOperator} from '../ast/tokenType';
 import * as nodes from '../ast/nodes';
 import {Lexer} from './lexer';
 import * as Compiler from '../compiler/compiler';
@@ -643,6 +643,315 @@ export class Parser {
     // #endregion
 
     // #region 表达式
+
+    /**
+     * 解析一个表达式。
+     * @param minPrecedence 当前解析的最低操作符优先级。
+     */
+    private parseExpression(minPrecedence?: number) {
+
+        // Expression[in]:
+        //      AssignmentExpression[in]
+        //      Expression[in] , AssignmentExpression[in]
+
+        //  AssignmentExpression[in,yield]:
+        //      ConditionalExpression[?in,?yield]
+        //      LeftHandSideExpression = AssignmentExpression[?in,?yield]
+        //      LeftHandSideExpression AssignmentOperator AssignmentExpression[?in,?yield]
+        //      ArrowFunctionExpression[?in,?yield]
+        //      AsyncArrowFunctionExpression[in,yield,await]
+        //      [+Yield] YieldExpression[?In]
+
+        // UnaryExpression :
+        //   PostfixExpression
+        //   ++ UnaryExpression
+        //   -- UnaryExpression
+        //   + UnaryExpression
+        //   - UnaryExpression
+        //   ! UnaryExpression
+        //   await UnaryExpression
+        //   async UnaryExpression
+        //   new Type FuncCallArguments? NewInitilizer?
+        //   typeof Type
+        //   sizeof Type
+        //   -> Expression
+
+        const type = this.lexer.peek().type;
+        let parsed: nodes.Expression;
+        switch (type) {
+
+            // Identifier, Identifier<T>, Identifier[]
+            case TokenType.identifier:
+                parsed = this.parseTypeExprssion(this.parseIdentifier());
+                break;
+
+            // (Expr)
+            case TokenType.openParen:
+                parsed = this.parseParenthesizedExpression();
+                break;
+
+            // new Expr
+            case TokenType.new:
+                parsed = this.parseNewExpression();
+                break;
+
+            // ""
+            case TokenType.stringLiteral:
+                parsed = this.parseStringLiteral();
+                break;
+
+            // 0
+            case TokenType.numericLiteral:
+                parsed = this.parseNumericLiteral();
+                break;
+
+            // [Expr, ...]
+            case TokenType.lBrack:
+                parsed = parseListOrDictLiteral(TokenType.rBrack, ErrorCode.expectedRBrack);
+                break;
+
+            // {key: Expr, ...}
+            case TokenType.lBrace:
+                parsed = parseListOrDictLiteral(TokenType.rBrace, ErrorCode.expectedRBrack);
+                break;
+
+            // @ Identifier
+            case TokenType.at:
+                parsed = this.parseAtExpression();
+                break;
+
+            case TokenType.null:
+                parsed = this.parentNullLiteral();
+                break;
+
+            case TokenType.true:
+                parsed = this.parentTrueLiteral();
+                break;
+
+            case TokenType.false:
+                parsed = this.parentFalseLiteral();
+                break;
+
+            case TokenType.this:
+                parsed = this.parentThisLiteral();
+                break;
+
+            case TokenType.super:
+                parsed = this.parentSuperLiteral();
+                break;
+
+            case TokenType.plusPlus:
+            case TokenType.minusMinus:
+                parsed = this.IncrementExpression();
+                break;
+
+            case TokenType.lambda:
+                parsed = parseLambdaLiteral(null);
+                break;
+
+            default:
+
+                // +Expr
+                if (isUnaryOperator(type)) {
+                    parsed = this.parseUnaryExpression(null);
+                    break;
+                }
+
+                #region 错误
+
+                if (type.isUsedInGlobal()) {
+                    Compiler.error(ErrorCode.invalidExpression, "不能在函数主体内嵌其它成员定义", lexer.peek());
+                    skipToNextLine();
+                } else if (type == TokenType.rParam) {
+                    Compiler.error(ErrorCode.unexpectedRParam, "语法错误：多余的“)”", lexer.read());
+                } else if (type == TokenType.rBrack) {
+                    Compiler.error(ErrorCode.unexpectedRBrack, "语法错误：多余的“]”", lexer.read());
+                } else if (type == TokenType.rBrace) {
+                    Compiler.error(ErrorCode.unexpectedRBrace, "语法错误：多余的“}”", lexer.read());
+                } else if (type.isStatementStart()) {
+                    Compiler.error(ErrorCode.invalidExpression, String.Format("语法错误：“{0}”只能出现在每行语句的最前面位置", lexer.peek().ToString()), lexer.peek());
+                    // 这里不处理当前标记，等接下来继续处理其它语句。
+                } else {
+                    Compiler.error(ErrorCode.invalidExpression, String.Format("语法错误：无效的表达式项“{0}”", lexer.peek().ToString()), lexer.peek());
+                    skipToNextLine();
+                }
+
+                return Expression.empty;
+
+                #endregion
+
+        }
+
+        return parseExpression(parsed, minPrecedence);
+
+    }
+
+    /**
+     * 在解析一个表达式之后，继续解析剩下的后缀表达式。
+     * @pram parsed 已解析的表达式。
+     * @param minPrecedence 当前解析的最低操作符优先级。
+     */
+    private parseRestExpression(parsed: Expression, minPrecedence?: number) {
+
+        // PostfixExpression :
+        //   MemberExpression
+        //   MemberExpression [no LineTerminator here] ++
+        //   MemberExpression [no LineTerminator here] --
+
+        // MemberExpression :
+        //   CallExpression
+        //   PrimaryExpression
+        //   LambdaLiteral
+        //   MemberExpression [ Expression ]
+        //   MemberExpression . Identifier
+        //   MemberExpression .. Identifier
+
+        TokenType type;
+        int precedence;
+
+        while ((precedence = (type = lexer.peek().type).getPrecedence()) >= minPrecedence) {
+
+            // Exper = Val
+            if (type.isAssignOperator()) {
+                lexer.read();
+                parsed = new BinaryExpression() {
+                    leftOperand = parsed,
+                        @operator = type,
+                        rightOperand = parseExpression(precedence)
+                };
+                continue;
+            }
+
+            switch (type) {
+
+                // Expr.call
+                case TokenType.period: {
+                    var current = new MemberCallExpression();
+                    current.target = parsed;
+                    lexer.read();
+                    current.argument = parseGenericTypeExpression(expectIdentifier(), TypeUsage.expression);
+                    parsed = current;
+                    continue;
+                }
+
+                // Expr()
+                case TokenType.lParam: {
+                    var current = new FuncCallExpression();
+                    current.target = parsed;
+                    current.arguments = parseArgumentList(TokenType.rParam, ErrorCode.expectedRParam);
+                    current.endLocation = lexer.current.endLocation;
+                    parsed = current;
+                    continue;
+                }
+
+                // Expr ->
+                case TokenType.lambda:
+                    parsed = parseLambdaLiteral(toIdentifier(parsed));
+                    continue;
+
+                // Expr[]
+                case TokenType.lBrack: {
+                    var current = new IndexCallExpression();
+                    current.target = parsed;
+                    current.arguments = parseArgumentList(TokenType.rBrack, ErrorCode.expectedRBrack);
+                    current.endLocation = lexer.current.endLocation;
+                    parsed = current;
+                    continue;
+                }
+
+                // Expr ? A : B
+                case TokenType.conditional: {
+                    var current = new ConditionalExpression();
+                    current.condition = parsed;
+                    lexer.read();
+                    current.thenExpression = parseExpression();
+                    expectToken(TokenType.colon, ErrorCode.expectedColon);
+                    current.elseExpression = parseExpression();
+                    parsed = current;
+                    continue;
+                }
+
+                // Expr++, Exper--
+                case TokenType.inc:
+                case TokenType.dec:
+                    // 如果 ++ 和 -- 在新行出现，则不继续解析。
+                    if (lexer.peek().hasLineTerminatorBeforeStart) {
+                        return parsed;
+                    }
+                    parsed = new MutatorExpression {
+                        operand = parsed,
+                            @operator = type,
+                            endLocation = lexer.read().endLocation
+                    };
+                    continue;
+
+                // Expr..A
+                case TokenType.periodChain: {
+                    var current = new ChainCallExpression();
+                    current.target = parsed;
+                    lexer.read(); // ..
+                    current.argument = expectIdentifier();
+                    parsed = new ChainExpression() {
+                        chainCallExpression = current,
+                              //  body = parseExpression(current, precedence + 1)
+                            };
+                    continue;
+                }
+
+                case TokenType.@is:
+                    lexer.read();
+                    parsed = new IsExpression() {
+                        leftOperand = parsed,
+                            rightOperand = parseExpression(precedence + 1)
+                    };
+                    continue;
+
+                case TokenType.@as:
+                    lexer.read();
+                    parsed = new AsExpression() {
+                        leftOperand = parsed,
+                            rightOperand = parseExpression(precedence + 1)
+                    };
+                    continue;
+
+                case TokenType.rangeTo: {
+                    var current = new RangeLiteral();
+                    current.start = parsed;
+                    lexer.read();
+                    current.end = parseExpression(precedence + 1);
+                    parsed = current;
+                    continue;
+                }
+
+                default:
+
+                    // Exper + Val
+                    if (type.isBinaryOperator()) {
+                        lexer.read();
+                        parsed = new BinaryExpression() {
+                            leftOperand = parsed,
+                                @operator = type,
+                                rightOperand = parseExpression(precedence + 1)
+                        };
+                        continue;
+                    }
+
+                    return parsed;
+            }
+        }
+
+        return parsed;
+    }
+
+    private parseExpression() {
+
+        let result = this.parseAssignmentExpressionOrHigher();
+        while (this.readToken(TokenType.comma)) {
+            result = this.makeBinaryExpression(result, TokenType.comma, this.lexer.tokenStart - 1, this.parseAssignmentExpressionOrHigher());
+        }
+
+        return result;
+    }
 
     // #endregion
 
@@ -2123,358 +2432,9 @@ if (target.members == null) {
 #region 解析表达式
 
     /**
-     * 解析一个表达式。
+     * 解析一个标识符。
      */
-    * <param name="minPrecedence" > 当前解析的最低操作符优先级。</param>
-        * <returns></returns>
-        private Expression parseExpression(int minPrecedence = 0) {
-
-    // Expression :
-    //   UnaryExpression
-
-    // UnaryExpression :
-    //   PostfixExpression
-    //   ++ UnaryExpression
-    //   -- UnaryExpression
-    //   + UnaryExpression
-    //   - UnaryExpression
-    //   ! UnaryExpression
-    //   await UnaryExpression
-    //   async UnaryExpression
-    //   new Type FuncCallArguments? NewInitilizer?
-    //   typeof Type
-    //   sizeof Type
-    //   -> Expression
-
-    TokenType type = lexer.peek().type;
-    Expression parsed;
-    switch (type) {
-
-        // Identifier, Identifier<T>, Identifier[], Identifier*
-        case TokenType.identifier:
-            parsed = parseTypeExpression(parseIdentifier(), TypeUsage.expression);
-            break;
-
-        // (Expr)
-        case TokenType.lParam:
-            parsed = parseParenthesizedExpression();
-            break;
-
-        // new Expr
-        case TokenType.@new:
-            parsed = parseNewExpression();
-            break;
-
-        // ""
-        case TokenType.stringLiteral:
-            parsed = new StringLiteral() {
-                startLocation = lexer.read().startLocation,
-                    value = lexer.current.buffer.ToString(),
-                    endLocation = lexer.current.endLocation
-            };
-            break;
-
-        // 0
-        case TokenType.intLiteral:
-            parsed = parseIntOrLongLiteral(Lexer.parseLongToken(lexer.peek()));
-            break;
-
-        // 0x0
-        case TokenType.hexIntLiteral:
-            parsed = parseIntOrLongLiteral(Lexer.parseHexIntToken(lexer.peek()));
-            break;
-
-        // .0
-        case TokenType.floatLiteral:
-            parsed = new FloatLiteral() {
-                startLocation = lexer.read().startLocation,
-                    value = Lexer.parseFloatToken(lexer.current),
-                    endLocation = lexer.current.endLocation
-            };
-            break;
-
-        // [Expr, ...]
-        case TokenType.lBrack:
-            parsed = parseListOrDictLiteral(TokenType.rBrack, ErrorCode.expectedRBrack);
-            break;
-
-        // {key: Expr, ...}
-        case TokenType.lBrace:
-            parsed = parseListOrDictLiteral(TokenType.rBrace, ErrorCode.expectedRBrack);
-            break;
-
-        // @ Identifier
-        case TokenType.at:
-            parsed = parseMagicVariable();
-            break;
-
-        case TokenType.@null:
-            parsed = new NullLiteral() {
-                startLocation = lexer.read().startLocation
-            };
-            break;
-
-        case TokenType.@true:
-            parsed = new TrueLiteral() {
-                startLocation = lexer.read().startLocation
-            };
-            break;
-
-        case TokenType.@false:
-            parsed = new FalseLiteral() {
-                startLocation = lexer.read().startLocation
-            };
-            break;
-
-        case TokenType.@this:
-            parsed = new ThisLiteral() {
-                startLocation = lexer.read().startLocation
-            };
-            break;
-
-        case TokenType.@base:
-            parsed = new BaseLiteral() {
-                startLocation = lexer.read().startLocation
-            };
-            break;
-
-        case TokenType.inc:
-        case TokenType.dec:
-            parsed = new MutatorExpression {
-                prefix = true,
-                    startLocation = lexer.read().startLocation,
-                        @operator = type,
-                    operand = parseExpression(type.getPrecedence()),
-                    };
-            break;
-
-        case TokenType.lambda:
-            parsed = parseLambdaLiteral(null);
-            break;
-
-        case TokenType.@typeof:
-            parsed = new TypeOfExpression() {
-                startLocation = lexer.read().startLocation,
-                    operand = parseExpression(type.getPrecedence()),
-                    };
-            break;
-
-        case TokenType.@sizeof:
-            parsed = new SizeOfExpression() {
-                startLocation = lexer.read().startLocation,
-                    operand = parseExpression(type.getPrecedence()),
-                    };
-            break;
-
-        default:
-
-            // +Expr
-            if (type.isUnaryOperator()) {
-                parsed = new UnaryExpression() {
-                    startLocation = lexer.read().startLocation,
-                        operand = parseExpression(type.getPrecedence()),
-                            @operator = type
-                };
-                break;
-            }
-
-            // int
-            if (type.isPredefinedType()) {
-                parsed = parsePredefinedType();
-                break;
-            }
-
-            #region 错误
-
-            if (type.isUsedInGlobal()) {
-                Compiler.error(ErrorCode.invalidExpression, "不能在函数主体内嵌其它成员定义", lexer.peek());
-                skipToNextLine();
-            } else if (type == TokenType.rParam) {
-                Compiler.error(ErrorCode.unexpectedRParam, "语法错误：多余的“)”", lexer.read());
-            } else if (type == TokenType.rBrack) {
-                Compiler.error(ErrorCode.unexpectedRBrack, "语法错误：多余的“]”", lexer.read());
-            } else if (type == TokenType.rBrace) {
-                Compiler.error(ErrorCode.unexpectedRBrace, "语法错误：多余的“}”", lexer.read());
-            } else if (type.isStatementStart()) {
-                Compiler.error(ErrorCode.invalidExpression, String.Format("语法错误：“{0}”只能出现在每行语句的最前面位置", lexer.peek().ToString()), lexer.peek());
-                // 这里不处理当前标记，等接下来继续处理其它语句。
-            } else {
-                Compiler.error(ErrorCode.invalidExpression, String.Format("语法错误：无效的表达式项“{0}”", lexer.peek().ToString()), lexer.peek());
-                skipToNextLine();
-            }
-
-            return Expression.empty;
-
-            #endregion
-
-    }
-
-    return parseExpression(parsed, minPrecedence);
-
-}
-
-        /**
-         * 在解析一个表达式之后，继续解析剩下的后缀表达式。
-         */
-         * <param name="parsed" > 已解析的表达式。</param>
-    * <param name="minPrecedence" > 当前解析的最低操作符优先级。</param>
-        * <returns></returns>
-        private Expression parseExpression(Expression parsed, int minPrecedence = 0) {
-
-    // PostfixExpression :
-    //   MemberExpression
-    //   MemberExpression [no LineTerminator here] ++
-    //   MemberExpression [no LineTerminator here] --
-
-    // MemberExpression :
-    //   CallExpression
-    //   PrimaryExpression
-    //   LambdaLiteral
-    //   MemberExpression [ Expression ]
-    //   MemberExpression . Identifier
-    //   MemberExpression .. Identifier
-
-    TokenType type;
-    int precedence;
-
-    while ((precedence = (type = lexer.peek().type).getPrecedence()) >= minPrecedence) {
-
-        // Exper = Val
-        if (type.isAssignOperator()) {
-            lexer.read();
-            parsed = new BinaryExpression() {
-                leftOperand = parsed,
-                        @operator = type,
-                    rightOperand = parseExpression(precedence)
-            };
-            continue;
-        }
-
-        switch (type) {
-
-            // Expr.call
-            case TokenType.period: {
-                var current = new MemberCallExpression();
-                current.target = parsed;
-                lexer.read();
-                current.argument = parseGenericTypeExpression(expectIdentifier(), TypeUsage.expression);
-                parsed = current;
-                continue;
-            }
-
-            // Expr()
-            case TokenType.lParam: {
-                var current = new FuncCallExpression();
-                current.target = parsed;
-                current.arguments = parseArgumentList(TokenType.rParam, ErrorCode.expectedRParam);
-                current.endLocation = lexer.current.endLocation;
-                parsed = current;
-                continue;
-            }
-
-            // Expr ->
-            case TokenType.lambda:
-                parsed = parseLambdaLiteral(toIdentifier(parsed));
-                continue;
-
-            // Expr[]
-            case TokenType.lBrack: {
-                var current = new IndexCallExpression();
-                current.target = parsed;
-                current.arguments = parseArgumentList(TokenType.rBrack, ErrorCode.expectedRBrack);
-                current.endLocation = lexer.current.endLocation;
-                parsed = current;
-                continue;
-            }
-
-            // Expr ? A : B
-            case TokenType.conditional: {
-                var current = new ConditionalExpression();
-                current.condition = parsed;
-                lexer.read();
-                current.thenExpression = parseExpression();
-                expectToken(TokenType.colon, ErrorCode.expectedColon);
-                current.elseExpression = parseExpression();
-                parsed = current;
-                continue;
-            }
-
-            // Expr++, Exper--
-            case TokenType.inc:
-            case TokenType.dec:
-                // 如果 ++ 和 -- 在新行出现，则不继续解析。
-                if (lexer.peek().hasLineTerminatorBeforeStart) {
-                    return parsed;
-                }
-                parsed = new MutatorExpression {
-                    operand = parsed,
-                            @operator = type,
-                        endLocation = lexer.read().endLocation
-                };
-                continue;
-
-            // Expr..A
-            case TokenType.periodChain: {
-                var current = new ChainCallExpression();
-                current.target = parsed;
-                lexer.read(); // ..
-                current.argument = expectIdentifier();
-                parsed = new ChainExpression() {
-                    chainCallExpression = current,
-                              //  body = parseExpression(current, precedence + 1)
-                            };
-                continue;
-            }
-
-            case TokenType.@is:
-                lexer.read();
-                parsed = new IsExpression() {
-                    leftOperand = parsed,
-                        rightOperand = parseExpression(precedence + 1)
-                };
-                continue;
-
-            case TokenType.@as:
-                lexer.read();
-                parsed = new AsExpression() {
-                    leftOperand = parsed,
-                        rightOperand = parseExpression(precedence + 1)
-                };
-                continue;
-
-            case TokenType.rangeTo: {
-                var current = new RangeLiteral();
-                current.start = parsed;
-                lexer.read();
-                current.end = parseExpression(precedence + 1);
-                parsed = current;
-                continue;
-            }
-
-            default:
-
-                // Exper + Val
-                if (type.isBinaryOperator()) {
-                    lexer.read();
-                    parsed = new BinaryExpression() {
-                        leftOperand = parsed,
-                                @operator = type,
-                            rightOperand = parseExpression(precedence + 1)
-                    };
-                    continue;
-                }
-
-                return parsed;
-        }
-    }
-
-    return parsed;
-}
-
-        /**
-         * 解析一个标识符。
-         */
-         * <returns></returns>
+    * <returns></returns>
         private Identifier parseIdentifier() {
     return new Identifier() {
         startLocation = lexer.read().startLocation,
@@ -5959,20 +5919,6 @@ return members;
         token !== TokenType.ClassKeyword &&
         token !== TokenType.AtToken &&
         fallowsExpression();
-}
-
-    private parseExpression() {
-
-    // Expression[in]:
-    //      AssignmentExpression[in]
-    //      Expression[in] , AssignmentExpression[in]
-
-    let result = this.parseAssignmentExpressionOrHigher();
-    while (this.readToken(TokenType.comma)) {
-        result = this.makeBinaryExpression(result, TokenType.comma, this.lexer.tokenStart - 1, this.parseAssignmentExpressionOrHigher());
-    }
-
-    return result;
 }
 
     private parseInitializer(inParameter: boolean): Expression {

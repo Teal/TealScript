@@ -186,4 +186,105 @@ tpack.task("gen-nodes", function () {
             return /<.*>|\[\]/.test(type);
         }
     });
+    tpack.src("src/ast/tokenType.ts").pipe(function (file, options) {
+        // 第一步：语法解析。
+        var program = ts.createProgram([file.path], options);
+        var sourceFile = program.getSourceFiles()[program.getSourceFiles().length - 1];
+        // 第二步：提取类型信息。
+        var data = {};
+        var tokenType = sourceFile.statements.filter(function (t) { return t.kind === ts.SyntaxKind.EnumDeclaration && t.name.text === "TokenType"; })[0];
+        var val = 0;
+        for (var _i = 0, _a = tokenType.members; _i < _a.length; _i++) {
+            var member = _a[_i];
+            var summary = getDocComment(member);
+            var string = (/关键字\s*(\w+)|\((.+?)\)/.exec(summary) || []).slice(1).join("");
+            var info = {
+                summary: summary,
+                string: string,
+                keyword: /关键字/.test(summary) || /0x0|EOF|\}\.|xx|.\.\.\./.test(string) || !string,
+                value: val++
+            };
+            data[member.name.text] = info;
+        }
+        generateKeywordLexer(data, 0);
+        // 第三步：生成优先级数组。
+        // 第四步：生成优先级数组。
+        function getDocComment(node, removeSpace) {
+            if (removeSpace === void 0) { removeSpace = true; }
+            var comments = ts.getJsDocComments(node, sourceFile);
+            if (!comments || !comments.length)
+                return;
+            var comment = comments[comments.length - 1];
+            var commentText = sourceFile.text.substring(comment.pos, comment.end);
+            return removeSpace ? commentText.substring(3, commentText.length - 2).replace(/^\s*\*\s*/gm, "").trim() : commentText;
+        }
+        function generateKeywordLexer(data, indent) {
+            var names = {};
+            var items = [];
+            for (var name_5 in data) {
+                var info = data[name_5];
+                if (info.keyword) {
+                    continue;
+                }
+                names[info.string] = name_5;
+                items.push(info.string);
+            }
+            items.sort();
+            var result = '';
+            for (var i = 0; i < items.length;) {
+                var c = items[i];
+                var hasSameCount = 0;
+                for (var j_1 = i + 1; j_1 < items.length; j_1++) {
+                    if (items[j_1].charAt(0) === c.charAt(0)) {
+                        hasSameCount++;
+                    }
+                }
+                result += genIndents(indent) + "// " + c;
+                for (var j = 0; j < hasSameCount; j++) {
+                    result += ", " + items[i + j + 1];
+                }
+                result += "\n";
+                result += genIndents(indent) + 'case CharCode.' + names[c] + ':\n';
+                if (hasSameCount === 0) {
+                    result += 'result.type = TokenType.' + names[c] + ';\n';
+                    result += 'break;\n';
+                    i++;
+                }
+                if (hasSameCount === 1) {
+                    result += genIndents(indent) + 'if(this.sourceText.charCodeAt(this.sourceStart) === TokenType.' + names[items[i + 1]] + ') {';
+                    result += genIndents(indent + 1) + 'this.sourceStart++;';
+                    result += genIndents(indent + 1) + 'result.type = TokenType.' + names[items[i + 1]] + ';\n';
+                    result += genIndents(indent + 1) + 'break;\n';
+                    result += genIndents(indent) + '}';
+                    result += genIndents(indent) + 'result.type = TokenType.' + names[c] + ';\n';
+                    result += genIndents(indent) + 'break;\n';
+                    i += 2;
+                }
+                if (hasSameCount >= 2) {
+                    result += genIndents(indent) + ' switch (this.sourceText.charCodeAt(this.sourceStart)) {\n';
+                    for (var j_2 = 0; j_2 < hasSameCount; j_2++) {
+                        result += genIndents(indent + 1) + 'case CharCode.' + names[items[i + j_2 + 1]] + ':\n';
+                        result += genIndents(indent + 2) + 'this.sourceStart++;\n';
+                        result += genIndents(indent + 2) + 'result.type = TokenType.' + names[items[i + j_2 + 1]] + ';\n';
+                        result += genIndents(indent + 2) + 'break;\n';
+                    }
+                    result += genIndents(indent + 1) + 'default:\n';
+                    result += genIndents(indent + 2) + 'result.type = TokenType.' + names[c] + ';\n';
+                    result += genIndents(indent + 2) + 'break;\n';
+                    result += genIndents(indent) + '}\n';
+                    i += hasSameCount + 1;
+                    result += genIndents(indent) + 'break;\n';
+                }
+                result += genIndents(indent) + '\n';
+            }
+            console.log(result);
+            function genIndents(indent) {
+                var result = '';
+                while (indent-- > 0)
+                    result += '\t';
+                return result;
+            }
+            return result;
+        }
+    });
 });
