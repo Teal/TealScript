@@ -907,7 +907,6 @@ export class Lexer {
 
         //// 0x...
         //if (_currentChar == '0' && (_input.Peek() | 0x20) == 'x') {
-
         //    // 读取 0x
         //    _input.Read();
 
