@@ -3,7 +3,7 @@
  * @author xuld@vip.qq.com
  */
 
-import {TokenType} from '../ast/tokenType';
+import {TokenType, identifierToKeyword} from '../ast/tokenType';
 import {options, error, ErrorType, LanguageVersion} from '../compiler/compiler';
 import {CharCode} from './charCode';
 import * as Unicode from './unicode';
@@ -143,12 +143,9 @@ export class Lexer {
 
             // 标识符或关键字。
             if (ch >= CharCode.a && ch <= CharCode.z) {
-                result.buffer = this.scanIdentifier();
-                // todo
-                //StringBuilder buffer = result.buffer;
-                //buffer.Length = 1;
-                //buffer[0] = (char)_currentChar;
-                //scanIdentifierBody();
+                result.buffer = this.scanIdentifierBody(ch);
+                result.type = identifierToKeyword(result.buffer);
+                break;
             }
 
             switch (ch) {
@@ -209,8 +206,8 @@ export class Lexer {
                 // ', "
                 case CharCode.singleQuote:
                 case CharCode.doubleQuote:
+                    result.buffer = this.scanStringLiteralBody(ch);
                     result.type = TokenType.stringLiteral;
-                    result.buffer = this.scanStringLiteral(ch);
                     break;
 
                 // `
@@ -534,51 +531,15 @@ export class Lexer {
 
                     // 数字。
                     if (Unicode.isDecimalDigit(ch)) {
-
-                        //result.buffer.Length = 0;
-
-                        //// 0x...
-                        //if (_currentChar == '0' && (_input.Peek() | 0x20) == 'x') {
-
-                        //    // 读取 0x
-                        //    _input.Read();
-
-                        //    // 读取十六进制。
-                        //    while (Unicode.isHexDigit(_currentChar = _input.Read())) {
-                        //        result.buffer.Append((char)_currentChar);
-                        //    }
-                        //    currentLocation.column += 2 + result.buffer.Length;
-
-                        //    // 至少应读到一个数字。
-                        //    if (result.buffer.Length == 0) {
-                        //        Compiler.error(ErrorCode.invalidHexNumber, "语法错误：无效的数字；应输入十六进制数字", result.startLocation, currentLocation);
-                        //    }
-
-                        //    result.type = TokenType.hexIntLiteral;
-                        //    goto end;
-                        //}
-
-                        //// 整数部分。
-                        //readDecimalDigits();
-
-                        //// 小数部分。
-                        //if (_currentChar == '.' && Unicode.isDecimalDigit(_input.Peek())) {
-                        //    _currentChar = _input.Read();
-                        //    scanFloatLiteral();
-                        //    result.type = TokenType.floatLiteral;
-                        //    goto end;
-                        //}
-
-                        //currentLocation.column += result.buffer.Length;
-                        //result.type = TokenType.intLiteral;
-                        //goto end;
-
+                        result.buffer = this.scanNumericLiteralBody(ch);
+                        result.type = TokenType.numericLiteral;
+                        break;
                     }
 
                     // 标识符。
                     if (Unicode.isIdentifierStart(ch)) {
+                        result.buffer = this.scanIdentifierBody(ch);
                         result.type = TokenType.identifier;
-                        result.buffer = this.scanIdentifier(ch);
                         break;
                     }
 
@@ -608,8 +569,9 @@ export class Lexer {
 
     /**
      * 扫描紧跟的标识符主体部分。
+     * @param ch 当前已读取的字符。
      */
-    private scanIdentifierBody() {
+    private scanIdentifierBody(ch: number) {
         const identifierStart = this.sourceStart - 1;
         while (Unicode.isIdentifierPart(this.sourceStart)) {
             this.sourceStart++;
@@ -618,402 +580,458 @@ export class Lexer {
     }
 
     /**
-     * 用于标记当前正在处理的字符串内置表达式。如果值为 0，说明未在处理字符串表达式。如果值为 -1，说明禁止处理字符串表达式。否则，值为正在处理的表达式所在字符串的引号字符。
-     */
-    int _parsingStringVarableChar;
-
-    /**
      * 扫描紧跟的转义字符串部分。忽略 _currentChar 值。
      */
-    private void scanRegularString(int currentChar) {
+    private scanStringLiteralBody() {
 
-    // 在解析字符串变量时不能再次解析到字符串。
-    if (_parsingStringVarableChar == currentChar) {
-        Compiler.error(ErrorCode.expectedStringLiteralExpressionEnd, "语法错误：字符串内联表达式未关闭；应输入“}”", currentLocation, currentLocation + 1);
-        result.type = TokenType.rBrace;
-        return;
+        //        // 在解析字符串变量时不能再次解析到字符串。
+        //        if (_parsingStringVarableChar == currentChar) {
+        //            this.error("字符串内联表达式未关闭；应输入“}”");
+        //            result.type = TokenType.rBrace;
+        //            return;
+        //        }
+
+        //        currentLocation.column++; // 引号。
+
+        //        // 用于读取变量表达式时存储原始标记。
+        //        Token orignalScanTargetToken = result;
+
+        //        result.buffer.Length = 0;
+        //        while (true) {
+        //            _currentChar = _input.Read();
+        //            parseCurrent:
+        //            switch (_currentChar) {
+        //                case '"':
+        //                case '\'':
+        //                    // 允许在 "" 字符串中不转义 ' 字符。反之亦然。
+        //                    if (_currentChar != currentChar) {
+        //                        goto default;
+        //            }
+
+        //            _currentChar = _input.Read();
+        //            currentLocation.column++;
+        //            goto end;
+
+        //            #region 转义
+        //                    case '\\':
+        //            switch (_currentChar = _input.Read()) {
+        //                case 'n':
+        //                    _currentChar = '\n';
+        //                    goto default;
+        //                case 'r':
+        //                    _currentChar = '\r';
+        //                    goto default;
+        //                case 't':
+        //                    _currentChar = '\t';
+        //                    goto default;
+        //                case 'u':
+        //                    _currentChar = readUnicodeChar(4);
+        //                    goto default;
+        //                case 'x':
+        //                    _currentChar = readUnicodeChar(2);
+        //                    goto default;
+        //                case '\r':
+        //                    if (_input.Peek() == '\n') {
+        //                        _input.Read();
+        //                    }
+        //                    goto case '\n';
+        //                case '\n':
+        //                    newLine();
+        //                    continue;
+        //                case 'b':
+        //                    _currentChar = '\b';
+        //                    goto default;
+        //                case 'f':
+        //                    _currentChar = '\f';
+        //                    goto default;
+        //                case 'v':
+        //                    _currentChar = '\v';
+        //                    goto default;
+        //                case '0':
+        //                    _currentChar = '\0';
+        //                    goto default;
+        //                case -1:
+        //                    orignalScanTargetToken.buffer.Append('\\');
+        //                    currentLocation.column++;
+        //                    continue;
+        //                default:
+        //                    orignalScanTargetToken.buffer.Append((char)_currentChar);
+        //                    currentLocation.column += 2;
+        //                    continue;
+        //            }
+        //            #endregion
+
+        //                    case '\r':
+        //            result.buffer.Append('\r');
+        //            if (_input.Peek() == '\n') {
+        //                _input.Read();
+        //                goto case '\n';
+        //            }
+        //            newLine();
+        //            continue;
+        //                    case '\n':
+        //            result.buffer.Append('\n');
+        //            newLine();
+        //            continue;
+        //                    case -1:
+        //            Compiler.error(ErrorCode.expectedStringLiteralEnd, String.Format("语法错误：字符串未关闭；应输入“{0}”", (char)currentChar), result.startLocation, currentLocation);
+        //            goto end;
+
+        //            #region 变量字符串
+        //                    case '$':
+
+        //            // $xxx, ${xx}
+        //            if (_parsingStringVarableChar >= 0 && (Unicode.isIdentifierPart(_input.Peek()) || _input.Peek() == '{')) {
+
+        //                // 标记之前的字符串已读取完毕。
+        //                result.endLocation = currentLocation;
+
+        //                // 第一次发现变量，生成 ("之前的字符串" + <表达式> + "之后的字符串") 标记序列。
+        //                // 在 result 后插入变量。
+        //                if (orignalScanTargetToken == result) {
+        //                    result.next = result.clone();
+        //                    result.type = TokenType.lParam;
+        //                    result.endLocation = result.startLocation + 1;
+        //                    result = result.next;
+        //                    result.startLocation++;
+        //                }
+
+        //                // 插入 + 。
+        //                result = result.next = new Token() {
+        //                    type = TokenType.add,
+        //                        startLocation = currentLocation,
+        //                        endLocation = currentLocation,
+        //                            };
+
+        //                // $abc
+        //                if (_input.Peek() != '{') {
+
+        //                    // 插入字符串。
+        //                    result = result.next = new Token();
+        //                    scan();
+
+        //                    // 插入 +。
+        //                    result = result.next = new Token() {
+        //                        type = TokenType.add,
+        //                            startLocation = currentLocation,
+        //                            endLocation = currentLocation,
+        //                                };
+
+        //                } else {
+
+        //                    // 插入 (
+        //                    result = result.next = new Token() {
+        //                        type = TokenType.lParam,
+        //                            startLocation = currentLocation + 1,
+        //                            endLocation = currentLocation + 2,
+        //                                };
+
+        //                    // 读取 ${
+        //                    _input.Read(); // {
+        //                    _currentChar = _input.Read();
+        //                    currentLocation.column += 2;
+
+        //                    bool foundSomething = false;
+        //                    _parsingStringVarableChar = currentChar;
+
+        //                    // 插入 } 之前的所有标记。
+        //                    while (true) {
+        //                        result = result.next = new Token();
+        //                        scan();
+        //                        if (result.type == TokenType.rBrace) {
+        //                            break;
+        //                        }
+        //                        if (result.type == TokenType.eof) {
+        //                            goto end;
+        //                        }
+        //                        foundSomething = true;
+        //                    }
+
+        //                    _parsingStringVarableChar = 0;
+
+        //                    if (!foundSomething) {
+        //                        result.type = TokenType.@null;
+
+        //                        // 插入 )
+        //                        result = result.next = new Token() {
+        //                            type = TokenType.rParam,
+        //                                startLocation = currentLocation - 1,
+        //                                endLocation = currentLocation
+        //                        };
+
+        //                    } else {
+        //                        // 插入 )
+        //                        result.type = TokenType.rParam;
+        //                    }
+
+        //                    // 插入 + 。
+        //                    result = result.next = new Token() {
+        //                        type = TokenType.add,
+        //                            startLocation = result.startLocation,
+        //                            endLocation = result.startLocation
+        //                    };
+
+        //                }
+
+        //                // 插入后续字符串。
+        //                result = result.next = new Token() {
+        //                    type = TokenType.stringLiteral,
+        //                        startLocation = currentLocation,
+        //                            };
+        //                goto parseCurrent;
+
+        //            }
+
+        //            goto default;
+        //    #endregion
+
+        //    default:
+        //    result.buffer.Append((char)_currentChar);
+        //    currentLocation.column++;
+        //    continue;
+
+        //}
+        //}
+
+        //end:
+
+        //// 如果之前解析了变量字符串，则重定位开头。
+        //if (orignalScanTargetToken != result) {
+        //    result.endLocation = currentLocation - 1;
+        //    result.next = new Token() {
+        //        type = TokenType.rParam,
+        //            startLocation = currentLocation - 1,
+        //            endLocation = currentLocation,
+        //                };
+        //    result = orignalScanTargetToken;
+        //    return;
+        //}
+
+        //orignalScanTargetToken.endLocation = currentLocation;
+        //        }
+
+        //        /**
+        //         * 扫描紧跟的无转义字符串部分。忽略 _currentChar 值。
+        //         */
+        //        private void scanVerbatimString() {
+
+        //    // 读取引号。
+        //    currentLocation.column++;
+
+        //    result.buffer.Length = 0;
+        //    while (true) {
+        //        switch (_currentChar = _input.Read()) {
+        //            case '`':
+        //                _currentChar = _input.Read();
+        //                currentLocation.column++;
+        //                if (_currentChar == '`') {
+        //                    goto default;
+        //        }
+        //        return;
+        //                    case '\r':
+        //        result.buffer.Append('\r');
+        //        if (_input.Peek() == '\n') {
+        //            _input.Read();
+        //            goto case '\n';
+        //        }
+        //        newLine();
+        //        continue;
+        //                    case '\n':
+        //        result.buffer.Append('\n');
+        //        newLine();
+        //        continue;
+        //                    case -1:
+        //        result.endLocation = currentLocation;
+        //        Compiler.error(ErrorCode.expectedStringLiteralEnd, String.Format("语法错误：字符串未关闭；应输入“{0}”", (char)'`'), result.startLocation, currentLocation);
+        //        return;
+        //                    default:
+        //        result.buffer.Append((char)_currentChar);
+        //        currentLocation.column++;
+        //        continue;
+        //    }
+        //}
+
     }
 
-    currentLocation.column++; // 引号。
+    /**
+     * 扫描紧跟的数字部分。
+     * @param ch 当前已读取的字符。
+     */
+    private scanNumericLiteralBody(ch: number) {
 
-    // 用于读取变量表达式时存储原始标记。
-    Token orignalScanTargetToken = result;
+        let result = 0;
 
-    result.buffer.Length = 0;
-    while (true) {
-        _currentChar = _input.Read();
-        parseCurrent:
-        switch (_currentChar) {
-            case '"':
-            case '\'':
-                // 允许在 "" 字符串中不转义 ' 字符。反之亦然。
-                if (_currentChar != currentChar) {
-                    goto default;
-        }
-
-        _currentChar = _input.Read();
-        currentLocation.column++;
-        goto end;
-
-        #region 转义
-                    case '\\':
-        switch (_currentChar = _input.Read()) {
-            case 'n':
-                _currentChar = '\n';
-                goto default;
-            case 'r':
-                _currentChar = '\r';
-                goto default;
-            case 't':
-                _currentChar = '\t';
-                goto default;
-            case 'u':
-                _currentChar = readUnicodeChar(4);
-                goto default;
-            case 'x':
-                _currentChar = readUnicodeChar(2);
-                goto default;
-            case '\r':
-                if (_input.Peek() == '\n') {
-                    _input.Read();
-                }
-                goto case '\n';
-            case '\n':
-                newLine();
-                continue;
-            case 'b':
-                _currentChar = '\b';
-                goto default;
-            case 'f':
-                _currentChar = '\f';
-                goto default;
-            case 'v':
-                _currentChar = '\v';
-                goto default;
-            case '0':
-                _currentChar = '\0';
-                goto default;
-            case -1:
-                orignalScanTargetToken.buffer.Append('\\');
-                currentLocation.column++;
-                continue;
-            default:
-                orignalScanTargetToken.buffer.Append((char)_currentChar);
-                currentLocation.column += 2;
-                continue;
-        }
-        #endregion
-
-                    case '\r':
-        result.buffer.Append('\r');
-        if (_input.Peek() == '\n') {
-            _input.Read();
-            goto case '\n';
-        }
-        newLine();
-        continue;
-                    case '\n':
-        result.buffer.Append('\n');
-        newLine();
-        continue;
-                    case -1:
-        Compiler.error(ErrorCode.expectedStringLiteralEnd, String.Format("语法错误：字符串未关闭；应输入“{0}”", (char)currentChar), result.startLocation, currentLocation);
-        goto end;
-
-        #region 变量字符串
-                    case '$':
-
-        // $xxx, ${xx}
-        if (_parsingStringVarableChar >= 0 && (Unicode.isIdentifierPart(_input.Peek()) || _input.Peek() == '{')) {
-
-            // 标记之前的字符串已读取完毕。
-            result.endLocation = currentLocation;
-
-            // 第一次发现变量，生成 ("之前的字符串" + <表达式> + "之后的字符串") 标记序列。
-            // 在 result 后插入变量。
-            if (orignalScanTargetToken == result) {
-                result.next = result.clone();
-                result.type = TokenType.lParam;
-                result.endLocation = result.startLocation + 1;
-                result = result.next;
-                result.startLocation++;
-            }
-
-            // 插入 + 。
-            result = result.next = new Token() {
-                type = TokenType.add,
-                    startLocation = currentLocation,
-                    endLocation = currentLocation,
-                            };
-
-            // $abc
-            if (_input.Peek() != '{') {
-
-                // 插入字符串。
-                result = result.next = new Token();
-                scan();
-
-                // 插入 +。
-                result = result.next = new Token() {
-                    type = TokenType.add,
-                        startLocation = currentLocation,
-                        endLocation = currentLocation,
-                                };
-
-            } else {
-
-                // 插入 (
-                result = result.next = new Token() {
-                    type = TokenType.lParam,
-                        startLocation = currentLocation + 1,
-                        endLocation = currentLocation + 2,
-                                };
-
-                // 读取 ${
-                _input.Read(); // {
-                _currentChar = _input.Read();
-                currentLocation.column += 2;
-
-                bool foundSomething = false;
-                _parsingStringVarableChar = currentChar;
-
-                // 插入 } 之前的所有标记。
-                while (true) {
-                    result = result.next = new Token();
-                    scan();
-                    if (result.type == TokenType.rBrace) {
-                        break;
+        if (ch === CharCode.num0) {
+            switch (this.sourceText.charCodeAt(this.sourceStart)) {
+                case CharCode.x:
+                case CharCode.X:
+                    this.sourceStart++;
+                    while (this.sourceStart < this.sourceEnd) {
+                        ch = this.sourceText.charCodeAt(this.sourceStart);
+                        if (ch >= CharCode.num0 && ch <= CharCode.num9) {
+                            result = result * 16 + ch - CharCode.num0;
+                        } else if (ch >= CharCode.A && ch <= CharCode.F) {
+                            result = result * 16 + 10 + ch - CharCode.A;
+                        } else if (ch >= CharCode.a && ch <= CharCode.f) {
+                            result = result * 16 + 10 + ch - CharCode.a;
+                        } else {
+                            this.error("应输入十六进制数字，实际是“{0}”", String.fromCharCode(ch));
+                            break;
+                        }
                     }
-                    if (result.type == TokenType.eof) {
-                        goto end;
+                    return result;
+                case CharCode.b:
+                case CharCode.B:
+                    this.sourceStart++;
+                    while (this.sourceStart < this.sourceEnd) {
+                        ch = this.sourceText.charCodeAt(this.sourceStart);
+                        if (ch === CharCode.num0) {
+                            result = result * 2;
+                        } else if (ch === CharCode.num1) {
+                            result = result * 2 + 1;
+                        } else {
+                            this.error("应输入十六进制数字，实际是“{0}”", String.fromCharCode(ch));
+                            break;
+                        }
                     }
-                    foundSomething = true;
+                    return result;
+            }
+        }
+
+        result.buffer.Append('.');
+        readDecimalDigits();
+        currentLocation.column += result.buffer.Length;
+
+
+        //result.buffer.Length = 0;
+
+        //// 0x...
+        //if (_currentChar == '0' && (_input.Peek() | 0x20) == 'x') {
+
+        //    // 读取 0x
+        //    _input.Read();
+
+        //    // 读取十六进制。
+        //    while (Unicode.isHexDigit(_currentChar = _input.Read())) {
+        //        result.buffer.Append((char)_currentChar);
+        //    }
+        //    currentLocation.column += 2 + result.buffer.Length;
+
+        //    // 至少应读到一个数字。
+        //    if (result.buffer.Length == 0) {
+        //        Compiler.error(ErrorCode.invalidHexNumber, "语法错误：无效的数字；应输入十六进制数字", result.startLocation, currentLocation);
+        //    }
+
+        //    result.type = TokenType.hexIntLiteral;
+        //    goto end;
+        //}
+
+        //// 整数部分。
+        //readDecimalDigits();
+
+        //// 小数部分。
+        //if (_currentChar == '.' && Unicode.isDecimalDigit(_input.Peek())) {
+        //    _currentChar = _input.Read();
+        //    scanFloatLiteral();
+        //    result.type = TokenType.floatLiteral;
+        //    goto end;
+        //}
+
+        //currentLocation.column += result.buffer.Length;
+        //result.type = TokenType.intLiteral;
+        //goto end;
+
+    }
+
+    /**
+     * 解析指定标记表示的整数。
+     * @param buffer 要解析的内容。
+     */
+    static parseNumber(buffer: string, start: number, end: number) {
+        long result = 0;
+        try {
+            for (int i = 0; i < token.buffer.Length; i++) {
+                result = checked(result * 10 + token.buffer[i] - '0');
+            }
+        } catch (OverflowException) {
+            Compiler.error(ErrorCode.decimalNumberTooLarge, "整数常量值太大", token.startLocation, token.endLocation);
+            result = long.MaxValue;
+        }
+
+        return result;
+    }
+
+    /**
+     * 读取接下来的所有数字。从 _currentChar 开始判断。
+     */
+    private readDecimalDigits() {
+        do {
+            result.buffer.Append((char)_currentChar);
+        } while (Unicode.isDecimalDigit(_currentChar = _input.Read()));
+    }
+
+    /**
+     * 读取接下来的所有十六进制数字组成的字符。忽略 _currentChar 值。
+     * <param name="length" > </param>
+* <returns></returns>
+     */
+    private readUnicodeChar(int length) {
+
+        int result = 0;
+
+        while (--length >= 0) {
+            _currentChar = _input.Read();
+            currentLocation.column++;
+            int value = _currentChar - '0';
+            if (value < 0 || value > 9) {
+                value = (_currentChar | 0x20) - 'a';
+                if (value < 0 || value > 5) {
+                    Compiler.error(ErrorCode.expectedHexDight, "语法错误：应输入十六进制数字", currentLocation, currentLocation + 1);
+                    return result;
                 }
 
-                _parsingStringVarableChar = 0;
-
-                if (!foundSomething) {
-                    result.type = TokenType.@null;
-
-                    // 插入 )
-                    result = result.next = new Token() {
-                        type = TokenType.rParam,
-                            startLocation = currentLocation - 1,
-                            endLocation = currentLocation
-                    };
-
-                } else {
-                    // 插入 )
-                    result.type = TokenType.rParam;
-                }
-
-                // 插入 + 。
-                result = result.next = new Token() {
-                    type = TokenType.add,
-                        startLocation = result.startLocation,
-                        endLocation = result.startLocation
-                };
-
+                value += 10;
             }
 
-            // 插入后续字符串。
-            result = result.next = new Token() {
-                type = TokenType.stringLiteral,
-                    startLocation = currentLocation,
-                            };
-            goto parseCurrent;
-
+            result = (result << 4) | value;
         }
 
-        goto default;
-        #endregion
+        return result;
+    }
 
-                    default:
-        result.buffer.Append((char)_currentChar);
-        currentLocation.column++;
-        continue;
+    /**
+     * 报告当前标记不是标识符的错误。
+     */
+    private reportIsNotIdentifierError() {
+        Compiler.error(ErrorCode.expectedIdentifier, result.type.isKeyword() ? String.Format("语法错误：应输入标识符；“{0}”是关键字，请改为“${0}”", result.type.getName()) : "语法错误：应输入标识符", result.startLocation, result.endLocation);
+    }
+
+    /**
+     * 扫描紧跟的一行字符。从 _currentChar 开始判断。
+     */
+    private scanLine() {
+
+        // 读取非换行符。
+        while (Unicode.isNonTerminator(_currentChar)) {
+            result.buffer.Append((char)_currentChar);
+            _currentChar = _input.Read();
+            currentLocation.column++;
+        }
+
+        // 忽略末尾空白。
+        while (result.buffer.Length > 0 && Unicode.isWhiteSpace(result.buffer[result.buffer.Length - 1])) {
+            result.buffer.Length--;
+            currentLocation.column--;
+        }
 
     }
-}
 
-end:
-
-// 如果之前解析了变量字符串，则重定位开头。
-if (orignalScanTargetToken != result) {
-    result.endLocation = currentLocation - 1;
-    result.next = new Token() {
-        type = TokenType.rParam,
-            startLocation = currentLocation - 1,
-            endLocation = currentLocation,
-                };
-    result = orignalScanTargetToken;
-    return;
-}
-
-orignalScanTargetToken.endLocation = currentLocation;
-        }
-
-        /**
-         * 扫描紧跟的无转义字符串部分。忽略 _currentChar 值。
-         */
-        private void scanVerbatimString() {
-
-    // 读取引号。
-    currentLocation.column++;
-
-    result.buffer.Length = 0;
-    while (true) {
-        switch (_currentChar = _input.Read()) {
-            case '`':
-                _currentChar = _input.Read();
-                currentLocation.column++;
-                if (_currentChar == '`') {
-                    goto default;
-        }
-        return;
-                    case '\r':
-        result.buffer.Append('\r');
-        if (_input.Peek() == '\n') {
-            _input.Read();
-            goto case '\n';
-        }
-        newLine();
-        continue;
-                    case '\n':
-        result.buffer.Append('\n');
-        newLine();
-        continue;
-                    case -1:
-        result.endLocation = currentLocation;
-        Compiler.error(ErrorCode.expectedStringLiteralEnd, String.Format("语法错误：字符串未关闭；应输入“{0}”", (char)'`'), result.startLocation, currentLocation);
-        return;
-                    default:
-        result.buffer.Append((char)_currentChar);
-        currentLocation.column++;
-        continue;
-    }
-}
-
-        }
-
-        /**
-         * 扫描紧跟的小数部分。从 _currentChar 开始判断。
-         */
-        private void scanFloatLiteral() {
-    result.buffer.Append('.');
-    readDecimalDigits();
-    currentLocation.column += result.buffer.Length;
-}
-
-        /**
-         * 扫描紧跟的空白字符。从 _currentChar 开始判断。
-         */
-        private void scanWhiteSpace() {
-    while (Unicode.isWhiteSpace(_currentChar)) {
-        _currentChar = _input.Read();
-        currentLocation.column++;
-    }
-}
-
-        /**
-         * 忽略当前行剩下的所有内容。从 _currentChar 开始判断。
-         */
-        private void skipLine() {
-    while (Unicode.isNonTerminator(_currentChar)) {
-        _currentChar = _input.Read();
-    }
-}
-
-        /**
-         * 读取接下来的所有数字。从 _currentChar 开始判断。
-         */
-        private void readDecimalDigits() {
-    do {
-        result.buffer.Append((char)_currentChar);
-    } while (Unicode.isDecimalDigit(_currentChar = _input.Read()));
-}
-
-        /**
-         * 读取接下来的所有十六进制数字组成的字符。忽略 _currentChar 值。
-         */
-         * <param name="length" > </param>
+    /**
+     * 解析指定标记中表示的十六进制整数。
+     */
+    * <param name="token" > </param>
     * <returns></returns>
-        private int readUnicodeChar(int length) {
-
-    int result = 0;
-
-    while (--length >= 0) {
-        _currentChar = _input.Read();
-        currentLocation.column++;
-        int value = _currentChar - '0';
-        if (value < 0 || value > 9) {
-            value = (_currentChar | 0x20) - 'a';
-            if (value < 0 || value > 5) {
-                Compiler.error(ErrorCode.expectedHexDight, "语法错误：应输入十六进制数字", currentLocation, currentLocation + 1);
-                return result;
-            }
-
-            value += 10;
-        }
-
-        result = (result << 4) | value;
-    }
-
-    return result;
-}
-
-        /**
-         * 报告当前标记不是标识符的错误。
-         */
-        private void reportIsNotIdentifierError() {
-    Compiler.error(ErrorCode.expectedIdentifier, result.type.isKeyword() ? String.Format("语法错误：应输入标识符；“{0}”是关键字，请改为“${0}”", result.type.getName()) : "语法错误：应输入标识符", result.startLocation, result.endLocation);
-}
-
-        /**
-         * 扫描紧跟的一行字符。从 _currentChar 开始判断。
-         */
-        private void scanLine() {
-
-    // 读取非换行符。
-    while (Unicode.isNonTerminator(_currentChar)) {
-        result.buffer.Append((char)_currentChar);
-        _currentChar = _input.Read();
-        currentLocation.column++;
-    }
-
-    // 忽略末尾空白。
-    while (result.buffer.Length > 0 && Unicode.isWhiteSpace(result.buffer[result.buffer.Length - 1])) {
-        result.buffer.Length--;
-        currentLocation.column--;
-    }
-
-}
-
-        /**
-         * 解析指定标记中表示的整数。
-         */
-         * <param name="token" > </param>
-    * <returns></returns>
-        public static long parseLongToken(Token token) {
-    long result = 0;
-    try {
-        for (int i = 0; i < token.buffer.Length; i++) {
-            result = checked(result * 10 + token.buffer[i] - '0');
-        }
-    } catch (OverflowException) {
-        Compiler.error(ErrorCode.decimalNumberTooLarge, "整数常量值太大", token.startLocation, token.endLocation);
-        result = long.MaxValue;
-    }
-
-    return result;
-}
-
-        /**
-         * 解析指定标记中表示的十六进制整数。
-         */
-         * <param name="token" > </param>
-    * <returns></returns>
-        public static long parseHexIntToken(Token token) {
+    public static long parseHexIntToken(Token token) {
     long result = 0;
     try {
         for (int i = 0; i < token.buffer.Length; i++) {
@@ -1050,8 +1068,6 @@ orignalScanTargetToken.endLocation = currentLocation;
     }
     return num;
 }
-
-#endregion
 
 }
 

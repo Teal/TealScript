@@ -807,7 +807,7 @@ export function getPrecedence(token: TokenType) {
 /**
  * 存储所有关键字的名字。
  */
-const keywords = {};
+const keywords: { [keyword: string]: TokenType } = {};
 
 /// <summary>
 /// 获取标识符是否是关键字。
@@ -816,4 +816,13 @@ const keywords = {};
 /// <returns></returns>
 export function isKeyword(token: TokenType) {
     return Unicode.isLetter(type.getName()[0]);
+}
+
+/**
+ * 将指定标记转为 JavaScript 源码等效的字符串。
+ * @param token 要转换的标记。
+ * @returns 返回等效的字符串。
+ */
+export function identifierToKeyword(token: string) {
+    return keywords[token];
 }
