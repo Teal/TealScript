@@ -3,7 +3,7 @@
  * @author xuld@vip.qq.com
  */
 
-import {TokenType, identifierToKeyword} from '../ast/tokenType';
+import {TokenType, stringToToken} from '../ast/tokenType';
 import {options, error, ErrorType, LanguageVersion, ParseCommentsOption} from '../compiler/compiler';
 import {CharCode} from './charCode';
 import * as Unicode from './unicode';
@@ -42,6 +42,9 @@ export class Lexer {
         this.sourceStart = start;
         this.sourceEnd = end;
 
+        // 跳过开头的 #! 部分。
+        this.skipShebang();
+
         // 预读第一个标记。
         const firstToken = this.scan();
         firstToken.onNewLine = true;
@@ -52,6 +55,7 @@ export class Lexer {
             end: start,
             onNewLine: true,
         };
+
     }
 
     /**
@@ -116,6 +120,33 @@ export class Lexer {
     // #region 解析
 
     /**
+     * 跳过开头的 #! 标记。
+     */
+    skipShebang() {
+
+        // 跳过空格和 UTF-8 BOM。
+        while (this.sourceStart < this.sourceEnd && Unicode.isWhiteSpace(this.sourceText.charCodeAt(this.sourceStart))) {
+            this.sourceStart++;
+        }
+
+        // 跳过 #!...。
+        if (this.sourceText.charCodeAt(this.sourceStart) === CharCode.hash || this.sourceText.charCodeAt(this.sourceStart + 1) === CharCode.exclamation) {
+            this.sourceStart += 2;
+            this.skipLine();
+        }
+
+    }
+
+    /**
+     * 跳过当前行末尾的所有字符。
+     */
+    skipLine() {
+        while (this.sourceStart < this.sourceEnd && !Unicode.isLineTerminator(this.sourceText.charCodeAt(this.sourceStart))) {
+            this.sourceStart++;
+        }
+    }
+
+    /**
      * 报告一个词法解析错误。
      * @param message 错误的信息。
      * @param args 格式化信息的参数。
@@ -164,9 +195,7 @@ export class Lexer {
                     switch (this.sourceText.charCodeAt(this.sourceStart)) {
                         case CharCode.slash:
                             const singleCommentStart = ++this.sourceStart;
-                            while (this.sourceStart < this.sourceEnd && !Unicode.isLineTerminator(this.sourceText.charCodeAt(this.sourceStart))) {
-                                this.sourceStart++;
-                            }
+                            this.skipLine();
                             if (options.parseComments & ParseCommentsOption.singleLine) {
                                 this.comments.push({ start: singleCommentStart, end: this.sourceStart });
                             }
@@ -204,7 +233,8 @@ export class Lexer {
                 // .1, .., ...
                 case CharCode.dot:
                     if (Unicode.isDecimalDigit(this.sourceStart)) {
-                        result.data = this.scanFloatDights(0);
+                        this.sourceStart--;
+                        result.data = this.scanNumericLiteralBody(CharCode.dot);
                         result.type = TokenType.numericLiteral;
                         break;
                     }
@@ -276,8 +306,8 @@ export class Lexer {
 
                 // `
                 case CharCode.backtick:
-                    result.data = this.scanTemplateLiteralBody(ch);
-                    result.type = this.sourceText.charCodeAt(this.sourceStart - 1) === CharCode.backtick ? TokenType.noSubstitutionTemplateLiteral : TokenType.templateHead;
+                    result.data = this.scanStringLiteralBody(ch);
+                    result.type = this.sourceText.charCodeAt(this.sourceStart - 1) === CharCode.openBrace ? TokenType.templateHead : TokenType.noSubstitutionTemplateLiteral;
                     break;
 
                 // +, ++, +=
@@ -491,6 +521,14 @@ export class Lexer {
                     result.type = TokenType.caret;
                     break;
 
+                // #
+                case CharCode.hash:
+                    if (options.languageVersion === LanguageVersion.tealScript) {
+                        this.skipLine();
+                        continue;
+                    }
+                // 继续执行。
+
                 default:
 
                     // 数字。
@@ -540,7 +578,7 @@ export class Lexer {
                 this.error("意外的字符：“{0}”。", '\\');
                 result += "\\";
             } else {
-                const num = this.scanHexDights(++this.sourceStart + 4);
+                const num = this.scanDights(16, ++this.sourceStart + 4);
                 result += String.fromCharCode(num);
             }
         } else {
@@ -553,7 +591,7 @@ export class Lexer {
                     this.error("意外的字符：“{0}”。", '\\');
                     result += "\\";
                 } else {
-                    const num = this.scanHexDights(++this.sourceStart + 4);
+                    const num = this.scanDights(16, ++this.sourceStart + 4);
                     result += String.fromCharCode(num);
                 }
                 continue;
@@ -573,23 +611,21 @@ export class Lexer {
      */
     private scanNumericLiteralBody(currentChar: number) {
 
-        console.assert(currentChar >= CharCode.num0 && currentChar <= CharCode.num9);
-
         // 0x00, 0O00, 0b00
         if (currentChar === CharCode.num0) {
             switch (this.sourceText.charCodeAt(this.sourceStart)) {
                 case CharCode.x:
                 case CharCode.X:
                     this.sourceStart++;
-                    return this.scanHexDights(this.sourceEnd);
+                    return this.scanDights(16, this.sourceEnd);
                 case CharCode.b:
                 case CharCode.B:
                     this.sourceStart++;
-                    return this.scanBinaryOrOctalOrDecimalDights(2);
+                    return this.scanDights(2, this.sourceEnd);
                 case CharCode.o:
                 case CharCode.O:
                     this.sourceStart++;
-                    return this.scanBinaryOrOctalOrDecimalDights(8);
+                    return this.scanDights(8, this.sourceEnd);
             }
         }
 
@@ -597,7 +633,7 @@ export class Lexer {
         let result = currentChar - CharCode.num0;
         while (this.sourceStart < this.sourceEnd) {
             const num = this.sourceText.charCodeAt(this.sourceStart) - CharCode.num0;
-            if (num >= 0 && num < 10) {
+            if (num >= 0 && num <= 9) {
                 this.sourceStart++;
                 result = result * 10 + num;
             } else {
@@ -606,120 +642,42 @@ export class Lexer {
         }
 
         // 读取小数部分。
-        switch (this.sourceText.charCodeAt(this.sourceStart)) {
-            case CharCode.dot:
-                this.sourceStart++;
-                return this.scanFloatDights(result);
-            case CharCode.e:
-            case CharCode.E:
-                this.sourceStart++;
-                return this.scanExponentDights(result);
-        }
-
-        return result;
-    }
-
-    /**
-     * 扫描紧跟的浮点数字部分。
-     * @param currentValue 当前已读取的数值。
-     */
-    private scanFloatDights(currentValue: number) {
-
-        console.assert(this.sourceText.charCodeAt(this.sourceStart - 1) === CharCode.dot);
-
-        // 解析小数点。
-        let p = 1;
-        while (this.sourceStart < this.sourceEnd) {
-            const num = this.sourceText.charCodeAt(this.sourceStart) - CharCode.num0;
-            if (num >= 0 && num <= 9) {
-                currentValue += num / p;
-                p /= 10;
-            } else {
-                break;
+        if (this.sourceText.charCodeAt(this.sourceStart) === CharCode.dot) {
+            this.sourceStart++;
+            let p = 1;
+            while (this.sourceStart < this.sourceEnd) {
+                const num = this.sourceText.charCodeAt(this.sourceStart) - CharCode.num0;
+                if (num >= 0 && num <= 9) {
+                    this.sourceStart++;
+                    result += num / p;
+                    p *= 10;
+                } else {
+                    break;
+                }
             }
         }
 
-        // 解析 e, E。
+        // 读取科学计数法部分。
         switch (this.sourceText.charCodeAt(this.sourceStart)) {
             case CharCode.e:
             case CharCode.E:
-                this.sourceStart++;
-                return this.scanExponentDights(currentValue);
-        }
-
-        return currentValue;
-    }
-
-    /**
-     * 扫描紧跟的浮点数字部分。
-     * @param currentValue 当前已读取的数值。
-     */
-    private scanExponentDights(currentValue: number) {
-
-        console.assert((this.sourceText.charCodeAt(this.sourceStart - 1) | CharCode.space) === CharCode.e);
-
-        switch (this.sourceText.charCodeAt(this.sourceStart)) {
-            case CharCode.minus:
-                this.sourceStart++;
-                return currentValue * Math.pow(10, -this.scanBinaryOrOctalOrDecimalDights(10));
-            case CharCode.plus:
-                this.sourceStart++;
-            // 继续执行
-            default:
-                return currentValue * Math.pow(10, this.scanBinaryOrOctalOrDecimalDights(10));
-        }
-
-    }
-
-    /**
-     * 扫描紧跟的十六进制数字。
-     * @param end 扫描的终止位置。
-     * @return 返回解析的数值。
-     */
-    private scanHexDights(end: number) {
-        let result = 0;
-        const start = this.sourceStart;
-        while (this.sourceStart < end) {
-            const ch = this.sourceText.charCodeAt(this.sourceStart);
-            if (ch >= CharCode.num0 && ch <= CharCode.num9) {
-                this.sourceStart++;
-                result = result * 16 + ch - CharCode.num0;
-            } else if (ch >= CharCode.A && ch <= CharCode.F) {
-                this.sourceStart++;
-                result = result * 16 + 10 + ch - CharCode.A;
-            } else if (ch >= CharCode.a && ch <= CharCode.f) {
-                this.sourceStart++;
-                result = result * 16 + 10 + ch - CharCode.a;
-            } else {
-                if (start === this.sourceStart) {
-                    this.error("应输入十六进制数字；实际是“{0}”", this.sourceText.charAt(this.sourceStart));
+                let base: number;
+                switch (this.sourceText.charCodeAt(++this.sourceStart)) {
+                    case CharCode.minus:
+                        this.sourceStart++;
+                        base = -this.scanDights(10, this.sourceEnd);
+                        break;
+                    case CharCode.plus:
+                        this.sourceStart++;
+                    // 继续执行
+                    default:
+                        base = this.scanDights(10, this.sourceEnd);
+                        break;
                 }
+                result *= Math.pow(10, base);
                 break;
-            }
         }
-        return result;
-    }
 
-    /**
-     * 扫描紧跟的二进制或八进制数字。
-     * @param base 进制基数。可以是 2 或 8。
-     * @return 返回解析的数值。
-     */
-    private scanBinaryOrOctalOrDecimalDights(base: number) {
-        let result = 0;
-        const start = this.sourceStart;
-        while (this.sourceStart < this.sourceEnd) {
-            const num = this.sourceText.charCodeAt(this.sourceStart) - CharCode.num0;
-            if (num >= 0 && num < base) {
-                this.sourceStart++;
-                result = result * base + num;
-            } else {
-                if (start === this.sourceStart) {
-                    this.error(base === 2 ? "应输入二进制数字；实际是“{0}”" : base === 8 ? "应输入八进制数字；实际是“{0}”" : "应输入数字；实际是“{0}”", this.sourceText.charAt(this.sourceStart));
-                }
-                break;
-            }
-        }
         return result;
     }
 
@@ -729,87 +687,150 @@ export class Lexer {
      */
     private scanStringLiteralBody(currentChar: number) {
 
-        console.assert(currentChar === CharCode.singleQuote || currentChar === CharCode.doubleQuote);
-
         let result = "";
 
-        while (this.sourceStart < this.sourceEnd) {
-            const ch = this.sourceText.charCodeAt(this.sourceStart++);
-            switch (ch) {
-                case currentChar:
-                    return result;
-                case CharCode.backslash:
-                    switch (this.sourceText.charCodeAt(this.sourceStart)) {
-                        case CharCode.singleQuote:
-                            this.sourceStart++;
-                            result += '\'';
-                            continue;
-                        case CharCode.doubleQuote:
-                            this.sourceStart++;
-                            result += '\"';
-                            continue;
-                        case CharCode.n:
-                            this.sourceStart++;
-                            result += '\n';
-                            continue;
-                        case CharCode.r:
-                            this.sourceStart++;
-                            result += '\r';
-                            continue;
-                        case CharCode.t:
-                            this.sourceStart++;
-                            result += '\t';
-                            continue;
-                        case CharCode.u:
-                            result += String.fromCharCode(this.scanHexDights(++this.sourceStart + 4));
-                            continue;
-                        case CharCode.x:
-                            result += String.fromCharCode(this.scanHexDights(++this.sourceStart + 2));
-                            continue;
-                        case CharCode.num0:
-                            this.sourceStart++;
-                            result += '\0';
-                            continue;
-                        case CharCode.b:
-                            this.sourceStart++;
-                            result += '\b';
-                            continue;
-                        case CharCode.f:
-                            this.sourceStart++;
-                            result += '\f';
-                            continue;
-                        case CharCode.v:
-                            this.sourceStart++;
-                            result += '\v';
-                            continue;
-                        case CharCode.carriageReturn:
-                            if (this.sourceText.charCodeAt(++this.sourceStart) === CharCode.lineFeed) {
-                                this.sourceStart++;
-                            }
-                            continue;
-                        case CharCode.lineFeed:
-                            this.sourceStart++;
-                            continue;
-                        default:
-                            continue;
-                    }
+        // ''' 多行不转义字符串。
+        if (options.languageVersion === LanguageVersion.tealScript && this.sourceText.charCodeAt(this.sourceStart + 1) === currentChar && this.sourceText.charCodeAt(this.sourceStart) === currentChar) {
+            let start = this.sourceStart += 2;
+            let terminated = false;
+            while (this.sourceStart < this.sourceEnd) {
+                if (this.sourceText.charCodeAt(this.sourceStart) === currentChar &&
+                    this.sourceText.charCodeAt(this.sourceStart + 1) === currentChar &&
+                    this.sourceText.charCodeAt(this.sourceStart + 2) === currentChar) {
+                    terminated = true;
+                    break;
+                }
+                this.sourceStart++;
             }
-            if (Unicode.isLineTerminator(ch)) {
-                break;
+            result += this.sourceText.substring(start, this.sourceStart);
+            if (terminated) {
+                this.sourceStart += 3;
+                return result;
             }
-            result += String.fromCharCode(ch);
+        } else {
+            while (this.sourceStart < this.sourceEnd) {
+                const ch = this.sourceText.charCodeAt(this.sourceStart++);
+                switch (ch) {
+                    case currentChar:
+                        return result;
+                    case CharCode.backslash:
+                        switch (this.sourceText.charCodeAt(this.sourceStart++)) {
+                            case CharCode.singleQuote:
+                                result += '\'';
+                                continue;
+                            case CharCode.doubleQuote:
+                                result += '\"';
+                                continue;
+                            case CharCode.backtick:
+                                result += '`';
+                                continue;
+                            case CharCode.n:
+                                result += '\n';
+                                continue;
+                            case CharCode.r:
+                                result += '\r';
+                                continue;
+                            case CharCode.num0:
+                                result += '\0';
+                                continue;
+                            case CharCode.t:
+                                result += '\t';
+                                continue;
+                            case CharCode.u:
+                                result += String.fromCharCode(this.scanDights(16, ++this.sourceStart + 4));
+                                continue;
+                            case CharCode.x:
+                                result += String.fromCharCode(this.scanDights(16, ++this.sourceStart + 2));
+                                continue;
+                            case CharCode.b:
+                                result += '\b';
+                                continue;
+                            case CharCode.v:
+                                result += '\v';
+                                continue;
+                            case CharCode.f:
+                                result += '\f';
+                                continue;
+                            case CharCode.carriageReturn:
+                                if (this.sourceText.charCodeAt(this.sourceStart) === CharCode.lineFeed) {
+                                    this.sourceStart++;
+                                }
+                            // 继续执行。
+                            case CharCode.lineFeed:
+                            case CharCode.lineSeparator:
+                            case CharCode.paragraphSeparator:
+                                continue;
+                            case undefined:
+                                this.error("文件提前结束；应输入转义字符；");
+                                return result;
+                            default:
+                                this.sourceStart--;
+                                continue;
+                        }
+                    case CharCode.dollar:
+                        // 模板字符串中的 ${ 。
+                        if (currentChar === CharCode.backtick && this.sourceText.charCodeAt(this.sourceStart) === CharCode.openBrace) {
+                            this.sourceStart += 2;
+                            return result;
+                        }
+                        break;
+                    case CharCode.carriageReturn:
+                        if (this.sourceText.charCodeAt(this.sourceStart) === CharCode.lineFeed) {
+                            this.sourceStart++;
+                        }
+                    // 继续执行。
+                    case CharCode.lineFeed:
+                        // 仅在模板字符串内部可换行。
+                        if (currentChar === CharCode.backtick) {
+                            this.sourceStart++;
+                            result += "\n";
+                            continue;
+                        }
+                        break;
+                }
+                if (Unicode.isLineTerminator(ch)) {
+                    break;
+                }
+                result += String.fromCharCode(ch);
+            }
         }
 
         this.error("字符串未关闭；应输入“{0}”", String.fromCharCode(currentChar));
-
         return result;
     }
 
     /**
-     * 扫描紧跟的模板字符串部分。
-     * @param currentChar 当前已读取的字符。
+     * 扫描紧跟的数字。
+     * @param base 进制基数。可以是 2、8、10 或 16。
+     * @param end 扫描的终止位置。
+     * @return 返回解析的数值。
      */
-    private scanTemplateLiteralBody(currentChar: number) {
+    private scanDights(base: number, end: number) {
+        let result = 0;
+        const start = this.sourceStart;
+        while (this.sourceStart < end) {
+            let num = this.sourceText.charCodeAt(this.sourceStart);
+            num = base <= 9 || num >= CharCode.num0 && num <= CharCode.num9 ? num - CharCode.num0 :
+                num >= CharCode.A && num <= CharCode.Z ? 10 + num - CharCode.A :
+                    num >= CharCode.a && num <= CharCode.z ? 10 + num - CharCode.a : -1;
+            if (num >= 0 && num < base) {
+                this.sourceStart++;
+                result = result * base + num;
+            } else {
+                if (start === this.sourceStart) {
+                    this.error(base === 2 ? "应输入二进制数字；实际是“{0}”" : base === 8 ? "应输入八进制数字；实际是“{0}”" : base === 16 ? "应输入十六进制数字；实际是“{0}”" : "应输入数字；实际是“{0}”", this.sourceText.charAt(this.sourceStart));
+                }
+                break;
+            }
+        }
+        return result;
+    }
+
+    // #endregion
+
+    // #region 延时解析
+
+    scanRegExpLiteral(currentChar: number) {
 
     }
 

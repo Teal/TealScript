@@ -809,6 +809,15 @@ export function getPrecedence(token: TokenType) {
  */
 const keywords: { [keyword: string]: TokenType } = {};
 
+/**
+ * 将指定的字符串转为对应的标记。
+ * @param token 要转换的字符串。
+ * @returns 返回等效的标记。如果字符串无效，则返回 undefined。
+ */
+export function stringToToken(token: string) {
+    return keywords[token];
+}
+
 /// <summary>
 /// 获取标识符是否是关键字。
 /// </summary>
@@ -819,10 +828,10 @@ export function isKeyword(token: TokenType) {
 }
 
 /**
- * 将指定标记转为 JavaScript 源码等效的字符串。
- * @param token 要转换的标记。
- * @returns 返回等效的字符串。
+ * 判断一个标记是否是标识符或关键字。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
  */
-export function identifierToKeyword(token: string) {
-    return keywords[token];
+export function isIdentifierOrKeyword(token: TokenType) {
+    return token >= SyntaxKind.Identifier;
 }
