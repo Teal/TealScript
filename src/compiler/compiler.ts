@@ -22,7 +22,7 @@ export interface CompileOptions {
     /**
      * 设置是否解析注释。
      */
-    parseComments?: boolean;
+    parseComments?: ParseCommentsOption;
 
 }
 
@@ -56,7 +56,32 @@ export enum LanguageVersion {
 /**
  * 指示如何解析注释。
  */
-export enum Comments {
+export enum ParseCommentsOption {
+
+    /**
+     * 不解析注释。
+     */
+    none,
+
+    /**
+     * 仅解析单行注释。
+     */
+    singleLine = 1 << 0,
+
+    /**
+     * 仅解析多行注释。
+     */
+    multiLine = 1 << 1,
+
+    /**
+     * 仅解析文档注释。
+     */
+    jsDoc = ParseCommentsOption.multiLine | 1 << 2,
+
+    /**
+     * 解析全部注释。
+     */
+    all = ParseCommentsOption.singleLine | ParseCommentsOption.multiLine,
 
 }
 
