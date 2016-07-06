@@ -1,5 +1,5 @@
 ﻿/**
- * @fileOverview 标记类型
+ * @fileOverview 标记和关键字
  */
 
 /**

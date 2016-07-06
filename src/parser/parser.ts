@@ -4,7 +4,7 @@
 
 import {TokenType, tokenToString, isNonReservedWord, isUnaryOperator, isExpressionStart, getPrecedence, isStatementStart} from '../ast/tokenType';
 import * as nodes from '../ast/nodes';
-import {Lexer, Token} from './lexer';
+import {Lexer, Token} from './this.lexer';
 import {options, error, ErrorType, LanguageVersion} from '../compiler/compiler';
 
 /**
@@ -18,239 +18,239 @@ export class Parser {
     /**
      * 获取或设置当前语法解析器使用的词法解析器。
      */
-    lexer = new Lexer();
+    this.lexer = new Lexer();
 
-    /**
-     * 解析指定的源文件。
-     * @param text 要解析的源码。
-     * @param start 解析的源码开始位置。
-     * @param fileName 解析的源码位置。
-     */
-    parse(text: string, start?: number, fileName?: string) {
-        this.lexer.setSource(text, start, fileName);
-        return this.parseSourceFile();
+/**
+ * 解析指定的源文件。
+ * @param text 要解析的源码。
+ * @param start 解析的源码开始位置。
+ * @param fileName 解析的源码位置。
+ */
+parse(text: string, start ?: number, fileName ?: string) {
+    this.lexer.setSource(text, start, fileName);
+    return this.parseSourceFile();
+}
+
+/**
+ * 从指定的输入解析一个语句。
+ * @param text 要解析的源码。
+ * @param start 解析的源码开始位置。
+ * @param fileName 解析的源码位置。
+ */
+parseAsStatement(text: string, start ?: number, fileName ?: string) {
+    this.lexer.setSource(text, start, fileName);
+    return this.parseStatement();
+}
+
+/**
+ * 从指定的输入解析一个表达式。
+ * @param text 要解析的源码。
+ * @param start 解析的源码开始位置。
+ * @param fileName 解析的源码位置。
+ */
+parseAsExpression(text: string, start ?: number, fileName ?: string) {
+    this.lexer.setSource(text, start, fileName);
+    return this.parseExpression();
+}
+
+/**
+ * 从指定的输入解析一个类型表达式。
+ * @param text 要解析的源码。
+ * @param start 解析的源码开始位置。
+ * @param fileName 解析的源码位置。
+ */
+parseAsTypeExpression(text: string, start ?: number, fileName ?: string) {
+    this.lexer.setSource(text, start, fileName);
+    return this.parseTypeExpression();
+}
+
+// #endregion
+
+// #region 解析工具
+
+/**
+ * 报告一个语法错误。
+ * @param token 发生错误的标记。
+ * @param message 错误的信息。
+ * @param args 格式化错误的参数。
+ */
+error(token: Token, message: string, ...args: any[]) {
+    error(ErrorType.syntaxError, this.lexer.fileName, token.start, token.end, message, ...args);
+}
+
+        /**
+         * 存储解析的内部标记。
+         */
+        private flags: ParseFlags = 0;
+
+        /**
+         * 如果下一个标记是指定的类型，则读取下一个标记。
+         * @param token 期待的标记类型。
+         * @returns 如果已读取标记则返回 true，否则返回 false。
+         */
+        private readToken(token: TokenType) {
+    if (this.lexer.peek().type === token) {
+        this.lexer.read();
+        return true;
+    }
+    return false;
+}
+
+        /**
+         * 读取下一个标记。如如果下一个标记不是指定的类型则输出一条错误。
+         * @param token 期待的标记。
+         * @returns 如果已读取标记则返回下一个标记的开始位置，否则返回 undefined。
+         */
+        private expectToken(token: TokenType) {
+    if (this.lexer.peek().type === token) {
+        return this.lexer.read().start;
     }
 
-    /**
-     * 从指定的输入解析一个语句。
-     * @param text 要解析的源码。
-     * @param start 解析的源码开始位置。
-     * @param fileName 解析的源码位置。
-     */
-    parseAsStatement(text: string, start?: number, fileName?: string) {
-        this.lexer.setSource(text, start, fileName);
-        return this.parseStatement();
+    this.error(this.lexer.peek(), "应输入“{0}”。", tokenToString(token));
+}
+
+//    /**
+//     * 读取一个标识符。
+//     */
+//    * <returns></returns>
+//    private Identifier expectIdentifier() {
+//    if (this.lexer.peek().type == TokenType.identifier) {
+//        return parseIdentifier();
+//    }
+
+//    if (this.lexer.peek().type.isKeyword()) {
+//        Compiler.error(ErrorCode.expectedIdentifier, String.Format("语法错误：应输入标识符；“{0}”是关键字，请改为“${0}”", this.lexer.peek().type.getName()), this.lexer.peek());
+//        return parseIdentifier();
+//    }
+//    Compiler.error(ErrorCode.expectedIdentifier, "语法错误：应输入标识符", this.lexer.peek());
+
+//    return new Identifier() {
+//        value = String.Empty
+//    };
+//}
+
+//    /**
+//     * 读取一个分号。
+//     */
+//    private void expectSemicolon() {
+//    if (readToken(TokenType.semicolon)) {
+//        return;
+//    }
+
+//    if (Compiler.options.disallowMissingSemicolons) {
+//        Compiler.error(ErrorCode.strictExpectedSemicolon, "严格模式：应输入“;”", this.lexer.current.endLocation, this.lexer.current.endLocation);
+//        return;
+//    }
+
+//    if (!this.lexer.peek().hasLineTerminatorBeforeStart && this.lexer.peek().type != TokenType.rBrace && this.lexer.peek().type != TokenType.eof) {
+//        Compiler.error(ErrorCode.expectedSemicolon, "语法错误：应输入“;”或换行", this.lexer.current.endLocation, this.lexer.current.endLocation);
+//    }
+//}
+
+//    private bool expectLBrace() {
+//    if (this.lexer.peek().type == TokenType.lBrace) {
+//        this.lexer.read();
+//        return true;
+//    }
+//    Compiler.error(ErrorCode.expectedLBrace, "语法错误：应输入“{”", this.lexer.peek());
+//    return false;
+//}
+
+//        private static bool checkIdentifier(Token token, string value) {
+//    if (token.type != TokenType.identifier || token.buffer.Length != value.Length) {
+//        return false;
+//    }
+//    for (int i = 0; i < value.Length; i++) {
+//        if (token.buffer[i] != value[i]) {
+//            return false;
+//        }
+//    }
+//    return true;
+//}
+
+//        /**
+//         * 将现有的表达式转为标识符。
+//         */
+//         * <param name="value" > </param>
+//    * <returns></returns>
+//        private static Identifier toIdentifier(Expression value) {
+//    var result = value as Identifier;
+//    if (result != null) {
+//        return result;
+//    }
+
+//    // expression 为 null， 表示 expression 不是表达式，已经在解析表达式时报告错误了。
+//    if (value != Expression.empty) {
+//        if (value is PredefinedTypeLiteral) {
+//            Compiler.error(ErrorCode.expectedIdentifier, String.Format("语法错误：应输入标识符；“{0}”是关键字，请改用“${0}”", ((PredefinedTypeLiteral)value).type.getName()), value);
+//        } else {
+//            Compiler.error(ErrorCode.expectedIdentifier, "语法错误：应输入标识符", value);
+//        }
+//    }
+
+//    return new Identifier() {
+//        value = value.ToString()
+//    };
+//}
+
+//    /**
+//     * 忽略当前成员相关的所有标记。
+//     */
+//    private void skipToMemberDefinition() {
+//    // #todo 改进我
+//    do {
+//        this.lexer.read();
+
+//        if (this.lexer.peek().type.isUsedInGlobal()) {
+//            if (this.lexer.peek().type.isPredefinedType() && this.lexer.current.type != TokenType.rBrace) {
+//                continue;
+//            }
+//            break;
+//        }
+
+//    } while (this.lexer.peek().type != TokenType.eof);
+//}
+
+//        /**
+//         * 忽略当前行的所有标记。
+//         */
+//        private void skipToNextLine() {
+//    do {
+//        this.lexer.read();
+//    } while (this.lexer.peek().type != TokenType.eof && !this.lexer.peek().hasLineTerminatorBeforeStart);
+//}
+
+/**
+ * 解析一个逗号隔开的节点列表(<..., ...>。
+ * @param nodes 要解析的节点列表。
+ */
+parseNodeList<T extends Node>(start: TokenType, parseElement: () => T, end: TokenType) {
+    const result = new nodes.NodeList<T>();
+
+    return result;
+}
+
+        /**
+         * 尝试在当前位置自动插入分号。
+         * @return 返回插入或补齐分号后的结束位置。
+         */
+        private autoInsertSemicolon() {
+    switch (this.lexer.peek().type) {
+        case TokenType.semicolon:
+            return this.lexer.read().end;
+        case TokenType.closeBrace:
+        case TokenType.endOfFile:
+            return options.autoInsertSemicolon === false ?
+                this.expectToken(TokenType.semicolon) :
+                this.lexer.current.end;
+        default:
+            return options.autoInsertSemicolon === false || !this.lexer.peek().onNewLine ?
+                this.expectToken(TokenType.semicolon) :
+                this.lexer.current.end;
     }
+}
 
-    /**
-     * 从指定的输入解析一个表达式。
-     * @param text 要解析的源码。
-     * @param start 解析的源码开始位置。
-     * @param fileName 解析的源码位置。
-     */
-    parseAsExpression(text: string, start?: number, fileName?: string) {
-        this.lexer.setSource(text, start, fileName);
-        return this.parseExpression();
-    }
-
-    /**
-     * 从指定的输入解析一个类型表达式。
-     * @param text 要解析的源码。
-     * @param start 解析的源码开始位置。
-     * @param fileName 解析的源码位置。
-     */
-    parseAsTypeExpression(text: string, start?: number, fileName?: string) {
-        this.lexer.setSource(text, start, fileName);
-        return this.parseTypeExpression();
-    }
-
-    // #endregion
-
-    // #region 解析工具
-
-    /**
-     * 报告一个语法错误。
-     * @param token 发生错误的标记。
-     * @param message 错误的信息。
-     * @param args 格式化错误的参数。
-     */
-    error(token: Token, message: string, ...args: any[]) {
-        error(ErrorType.syntaxError, this.lexer.fileName, token.start, token.end, message, ...args);
-    }
-
-    /**
-     * 存储解析的内部标记。
-     */
-    private flags: ParseFlags = 0;
-
-    /**
-     * 如果下一个标记是指定的类型，则读取下一个标记。
-     * @param token 期待的标记类型。
-     * @returns 如果已读取标记则返回 true，否则返回 false。
-     */
-    private readToken(token: TokenType) {
-        if (this.lexer.peek().type === token) {
-            this.lexer.read();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 读取下一个标记。如如果下一个标记不是指定的类型则输出一条错误。
-     * @param token 期待的标记。
-     * @returns 如果已读取标记则返回下一个标记的开始位置，否则返回 undefined。
-     */
-    private expectToken(token: TokenType) {
-        if (this.lexer.peek().type === token) {
-            return this.lexer.read().start;
-        }
-
-        this.error(this.lexer.peek(), "应输入“{0}”。", tokenToString(token));
-    }
-
-    //    /**
-    //     * 读取一个标识符。
-    //     */
-    //    * <returns></returns>
-    //    private Identifier expectIdentifier() {
-    //    if (lexer.peek().type == TokenType.identifier) {
-    //        return parseIdentifier();
-    //    }
-
-    //    if (lexer.peek().type.isKeyword()) {
-    //        Compiler.error(ErrorCode.expectedIdentifier, String.Format("语法错误：应输入标识符；“{0}”是关键字，请改为“${0}”", lexer.peek().type.getName()), lexer.peek());
-    //        return parseIdentifier();
-    //    }
-    //    Compiler.error(ErrorCode.expectedIdentifier, "语法错误：应输入标识符", lexer.peek());
-
-    //    return new Identifier() {
-    //        value = String.Empty
-    //    };
-    //}
-
-    //    /**
-    //     * 读取一个分号。
-    //     */
-    //    private void expectSemicolon() {
-    //    if (readToken(TokenType.semicolon)) {
-    //        return;
-    //    }
-
-    //    if (Compiler.options.disallowMissingSemicolons) {
-    //        Compiler.error(ErrorCode.strictExpectedSemicolon, "严格模式：应输入“;”", lexer.current.endLocation, lexer.current.endLocation);
-    //        return;
-    //    }
-
-    //    if (!lexer.peek().hasLineTerminatorBeforeStart && lexer.peek().type != TokenType.rBrace && lexer.peek().type != TokenType.eof) {
-    //        Compiler.error(ErrorCode.expectedSemicolon, "语法错误：应输入“;”或换行", lexer.current.endLocation, lexer.current.endLocation);
-    //    }
-    //}
-
-    //    private bool expectLBrace() {
-    //    if (lexer.peek().type == TokenType.lBrace) {
-    //        lexer.read();
-    //        return true;
-    //    }
-    //    Compiler.error(ErrorCode.expectedLBrace, "语法错误：应输入“{”", lexer.peek());
-    //    return false;
-    //}
-
-    //        private static bool checkIdentifier(Token token, string value) {
-    //    if (token.type != TokenType.identifier || token.buffer.Length != value.Length) {
-    //        return false;
-    //    }
-    //    for (int i = 0; i < value.Length; i++) {
-    //        if (token.buffer[i] != value[i]) {
-    //            return false;
-    //        }
-    //    }
-    //    return true;
-    //}
-
-    //        /**
-    //         * 将现有的表达式转为标识符。
-    //         */
-    //         * <param name="value" > </param>
-    //    * <returns></returns>
-    //        private static Identifier toIdentifier(Expression value) {
-    //    var result = value as Identifier;
-    //    if (result != null) {
-    //        return result;
-    //    }
-
-    //    // expression 为 null， 表示 expression 不是表达式，已经在解析表达式时报告错误了。
-    //    if (value != Expression.empty) {
-    //        if (value is PredefinedTypeLiteral) {
-    //            Compiler.error(ErrorCode.expectedIdentifier, String.Format("语法错误：应输入标识符；“{0}”是关键字，请改用“${0}”", ((PredefinedTypeLiteral)value).type.getName()), value);
-    //        } else {
-    //            Compiler.error(ErrorCode.expectedIdentifier, "语法错误：应输入标识符", value);
-    //        }
-    //    }
-
-    //    return new Identifier() {
-    //        value = value.ToString()
-    //    };
-    //}
-
-    //    /**
-    //     * 忽略当前成员相关的所有标记。
-    //     */
-    //    private void skipToMemberDefinition() {
-    //    // #todo 改进我
-    //    do {
-    //        lexer.read();
-
-    //        if (lexer.peek().type.isUsedInGlobal()) {
-    //            if (lexer.peek().type.isPredefinedType() && lexer.current.type != TokenType.rBrace) {
-    //                continue;
-    //            }
-    //            break;
-    //        }
-
-    //    } while (lexer.peek().type != TokenType.eof);
-    //}
-
-    //        /**
-    //         * 忽略当前行的所有标记。
-    //         */
-    //        private void skipToNextLine() {
-    //    do {
-    //        lexer.read();
-    //    } while (lexer.peek().type != TokenType.eof && !lexer.peek().hasLineTerminatorBeforeStart);
-    //}
-
-    /**
-     * 解析一个逗号隔开的节点列表(<..., ...>。
-     * @param nodes 要解析的节点列表。
-     */
-    parseNodeList<T extends Node>(start: TokenType, parseElement: () => T, end: TokenType) {
-        const result = new nodes.NodeList<T>();
-
-        return result;
-    }
-
-    /**
-     * 尝试在当前位置自动插入分号。
-     * @return 返回插入或补齐分号后的结束位置。
-     */
-    private autoInsertSemicolon() {
-        switch (this.lexer.peek().type) {
-            case TokenType.semicolon:
-                return this.lexer.read().end;
-            case TokenType.closeBrace:
-            case TokenType.endOfFile:
-                return options.autoInsertSemicolon === false ?
-                    this.expectToken(TokenType.semicolon) :
-                    this.lexer.current.end;
-            default:
-                return options.autoInsertSemicolon === false || !this.lexer.peek().onNewLine ?
-                    this.expectToken(TokenType.semicolon) :
-                    this.lexer.current.end;
-        }
-    }
-
-    // #endregion
+        // #endregion
 
     // #region 节点
 
@@ -263,165 +263,165 @@ export class Parser {
      */
     private parseStatement() {
 
-        switch (this.lexer.peek().type) {
+    switch (this.lexer.peek().type) {
 
-            case TokenType.identifier:
-                const identifier = this.parseIdentifier();
-                return this.readToken(TokenType.colon) ?
-                    this.parseLabeledStatement(identifier) :
-                    this.parseExpressionStatement(identifier);
+        case TokenType.identifier:
+            const identifier = this.parseIdentifier();
+            return this.readToken(TokenType.colon) ?
+                this.parseLabeledStatement(identifier) :
+                this.parseExpressionStatement(identifier);
 
-            //        case TokenType.var:
-            //            return parseVariableOrExpressionStatement(parsePredefinedType());
+        //        case TokenType.var:
+        //            return parseVariableOrExpressionStatement(parsePredefinedType());
 
-            //        case TokenType.yield:
-            //            return parseYieldStatement();
+        //        case TokenType.yield:
+        //            return parseYieldStatement();
 
-            //        case TokenType.@const:
-            //            return parseVariableStatement(VariableType.constLocal);
+        //        case TokenType.const:
+        //            return parseVariableStatement(VariableType.constLocal);
 
-            //        default:
-            //            if (type.isPredefinedType()) {
-            //                goto case TokenType.var;
+        //        default:
+        //            if (type.isPredefinedType()) {
+        //                goto case TokenType.var;
 
-            case TokenType.openBrace:
-                return this.parseBlockStatement();
-            case TokenType.var:
-                return this.parseVariableStatement(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
-            case TokenType.let:
-                if (this.followsIdentifierOrStartOfDestructuring()) {
-                    return parseVariableStatement(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
-                }
-                break;
-            case TokenType.function:
-                return parseFunctionDeclaration(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
-            case TokenType.class:
-                return parseClassDeclaration(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
+        case TokenType.openBrace:
+            return this.parseBlockStatement();
+        case TokenType.var:
+            return this.parseVariableStatement(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
+        case TokenType.let:
+            if (this.followsIdentifierOrStartOfDestructuring()) {
+                return parseVariableStatement(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
+            }
+            break;
+        case TokenType.function:
+            return parseFunctionDeclaration(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
+        case TokenType.class:
+            return parseClassDeclaration(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
 
-            case TokenType.if:
-                return this.parseIfStatement();
-            case TokenType.switch:
-                return this.parseSwitchStatement();
-            case TokenType.for:
-                return this.parseForStatement();
-            case TokenType.while:
-                return this.parseWhileStatement();
-            case TokenType.do:
-                return this.parseDoWhileStatement();
+        case TokenType.if:
+            return this.parseIfStatement();
+        case TokenType.switch:
+            return this.parseSwitchStatement();
+        case TokenType.for:
+            return this.parseForStatement();
+        case TokenType.while:
+            return this.parseWhileStatement();
+        case TokenType.do:
+            return this.parseDoWhileStatement();
 
-            case TokenType.break:
-                return this.parseBreakStatement();
-            case TokenType.continue:
-                return this.parseContinueStatement();
-            case TokenType.return:
-                return this.parseReturnStatement();
-            case TokenType.throw:
-                return this.parseThrowStatement();
+        case TokenType.break:
+            return this.parseBreakStatement();
+        case TokenType.continue:
+            return this.parseContinueStatement();
+        case TokenType.return:
+            return this.parseReturnStatement();
+        case TokenType.throw:
+            return this.parseThrowStatement();
 
-            case TokenType.try:
-                return this.parseTryStatement();
+        case TokenType.try:
+            return this.parseTryStatement();
 
-            case TokenType.debugger:
-                return this.parseDebuggerStatement();
+        case TokenType.debugger:
+            return this.parseDebuggerStatement();
 
-            case TokenType.semicolon:
-                return this.parseEmptyStatement();
-            case TokenType.endOfFile:
-                return null;
-            case TokenType.with:
-                return this.parseWithStatement();
+        case TokenType.semicolon:
+            return this.parseEmptyStatement();
+        case TokenType.endOfFile:
+            return null;
+        case TokenType.with:
+            return this.parseWithStatement();
 
-            case TokenType.AtToken:
-                return parseDeclaration();
-            case TokenType.async:
-            case TokenType.interface:
-            case TokenType.type:
-            case TokenType.module:
-            case TokenType.namespace:
-            case TokenType.declare:
-            case TokenType.const:
-            case TokenType.enum:
-            case TokenType.export:
-            case TokenType.import:
-            case TokenType.private:
-            case TokenType.protected:
-            case TokenType.public:
-            case TokenType.abstract:
-            case TokenType.static:
-            case TokenType.readonly:
-            case TokenType.global:
-                if (this.isStartOfDeclaration()) {
-                    return this.parseDeclaration();
-                }
-                break;
-        }
-        return this.parseExpressionStatement();
+        case TokenType.AtToken:
+            return parseDeclaration();
+        case TokenType.async:
+        case TokenType.interface:
+        case TokenType.type:
+        case TokenType.module:
+        case TokenType.namespace:
+        case TokenType.declare:
+        case TokenType.const:
+        case TokenType.enum:
+        case TokenType.export:
+        case TokenType.import:
+        case TokenType.private:
+        case TokenType.protected:
+        case TokenType.public:
+        case TokenType.abstract:
+        case TokenType.static:
+        case TokenType.readonly:
+        case TokenType.global:
+            if (this.isStartOfDeclaration()) {
+                return this.parseDeclaration();
+            }
+            break;
     }
+    return this.parseExpressionStatement();
+}
 
     /**
      * 解析一个语句块({...})。
      */
     private parseBlockStatement() {
 
-        console.assert(this.lexer.peek().type === TokenType.openBrace);
-        const result = new nodes.BlockStatement();
-        result.start = this.lexer.read().start;
-        result.statements = this.parseStatementList(TokenType.closeBrace);
-        result.end = this.lexer.read().end;
-        console.assert(this.lexer.current.type === TokenType.closeBrace);
-        return result;
-    }
+    console.assert(this.lexer.peek().type === TokenType.openBrace);
+    const result = new nodes.BlockStatement();
+    result.start = this.lexer.read().start;
+    result.statements = this.parseStatementList(TokenType.closeBrace);
+    result.end = this.lexer.read().end;
+    console.assert(this.lexer.current.type === TokenType.closeBrace);
+    return result;
+}
 
     /**
      * 解析一个语句列表(...; ...)。
      */
-    private parseStatementList(end?: TokenType) {
+    private parseStatementList(end ?: TokenType) {
 
-        //  StatementList[Yield, Return] :
-        //      StatementListItem[Yield, Return]
-        //      StatementList[Yield,Return] StatementListItem[Yield, Return]
-        //  
-        //  StatementListItem[Yield, Return] :
-        //      Statement[Yield, Return]
-        //      Declaration[Yield]
+    //  StatementList[Yield, Return] :
+    //      StatementListItem[Yield, Return]
+    //      StatementList[Yield,Return] StatementListItem[Yield, Return]
+    //  
+    //  StatementListItem[Yield, Return] :
+    //      Statement[Yield, Return]
+    //      Declaration[Yield]
 
-        const result = <nodes.NodeList<nodes.Statement>>[];
-        while (true) {
-            result.push(this.parseStatement());
-            switch (this.lexer.peek().type) {
-                case end:
-                    return result;
-                case TokenType.endOfFile:
-                    if (end != undefined) {
-                        this.expectToken(end);
-                    }
-                    return result;
-            }
+    const result = <nodes.NodeList<nodes.Statement>>[];
+    while (true) {
+        result.push(this.parseStatement());
+        switch (this.lexer.peek().type) {
+            case end:
+                return result;
+            case TokenType.endOfFile:
+                if (end != undefined) {
+                    this.expectToken(end);
+                }
+                return result;
         }
     }
+}
 
     /**
      * 解析一个变量声明语句(var xx = ...)。
      */
-    private parseVariableStatement(type: Function, decorators?: nodes.NodeList<nodes.Decorator>, modifiers?: nodes.NodeList<nodes.Modifier>) {
+    private parseVariableStatement(type: Function, decorators ?: nodes.NodeList < nodes.Decorator >, modifiers ?: nodes.NodeList<nodes.Modifier>) {
 
-        //  VariableStatement[Yield] :
-        //      var VariableDeclarationList[In, Yield];
-        //      let VariableDeclarationList[In, Yield];
-        //      const VariableDeclarationList[In, Yield];
+    //  VariableStatement[Yield] :
+    //      var VariableDeclarationList[In, Yield];
+    //      let VariableDeclarationList[In, Yield];
+    //      const VariableDeclarationList[In, Yield];
 
-        console.assert(this.lexer.peek().type === TokenType.var || this.lexer.peek().type === TokenType.let || this.lexer.peek().type === TokenType.const);
+    console.assert(this.lexer.peek().type === TokenType.var || this.lexer.peek().type === TokenType.let || this.lexer.peek().type === TokenType.const);
 
-        const result = this.lexer.peek().type === TokenType.var ? new nodes.VarStatement() :
-            this.lexer.peek().type === TokenType.let ? new nodes.LetStatement() :
-                new nodes.ConstStatement();
-        result.start = this.lexer.read().start; // var、let、const
-        result.decorators = decorators;
-        result.modifiers = modifiers;
-        result.variables = this.parseVariableDeclarationList();
-        result.end = this.autoInsertSemicolon();
-        return result;
-    }
+    const result = this.lexer.peek().type === TokenType.var ? new nodes.VarStatement() :
+        this.lexer.peek().type === TokenType.let ? new nodes.LetStatement() :
+            new nodes.ConstStatement();
+    result.start = this.lexer.read().start; // var、let、const
+    result.decorators = decorators;
+    result.modifiers = modifiers;
+    result.variables = this.parseVariableDeclarationList();
+    result.end = this.autoInsertSemicolon();
+    return result;
+}
 
     /**
      * 解析一个变量声明列表(xx = 1, ...)。
@@ -436,7 +436,7 @@ export class Parser {
         do {
             result.push(this.parseVariableDeclaration());
         } while (this.readToken(TokenType.comma));
-        return result;
+return result;
     }
 
     /**
@@ -444,315 +444,315 @@ export class Parser {
      */
     private parseVariableDeclaration() {
 
-        //  VariableDeclaration[In, Yield] :
-        //      BindingIdentifier[Yield] TypeAnnotation? Initializer[In, Yield]?
-        //      BindingPattern[Yield] TypeAnnotation? Initializer[In, Yield]
+    //  VariableDeclaration[In, Yield] :
+    //      BindingIdentifier[Yield] TypeAnnotation? Initializer[In, Yield]?
+    //      BindingPattern[Yield] TypeAnnotation? Initializer[In, Yield]
 
-        const result = new nodes.VariableDeclaration();
-        result.name = this.parseBindingIdentifierOrPattern(); // BindingIdentifier | BindingPattern
-        if (this.readToken(TokenType.colon)) { // TypeAnnotation
-            result.colonStart = this.lexer.current.start;
-            result.type = this.parseTypeExpression();
-        }
-        if (this.readToken(TokenType.equals)) { // Initializer
-            result.equalStart = this.lexer.current.start;
-            result.initialiser = this.parseExpression();
-        }
-        return result;
+    const result = new nodes.VariableDeclaration();
+    result.name = this.parseBindingIdentifierOrPattern(); // BindingIdentifier | BindingPattern
+    if (this.readToken(TokenType.colon)) { // TypeAnnotation
+        result.colonStart = this.lexer.current.start;
+        result.type = this.parseTypeExpression();
     }
+    if (this.readToken(TokenType.equals)) { // Initializer
+        result.equalStart = this.lexer.current.start;
+        result.initialiser = this.parseExpression();
+    }
+    return result;
+}
 
     /**
      * 解析一个绑定名称(xx、[xx]、{xx})。
      */
     private parseBindingIdentifierOrPattern() {
-        switch (this.lexer.peek().type) {
-            case TokenType.identifier:
-                return this.parseIdentifier();
-            case TokenType.openBracket:
-                return this.parseArrayBindingPattern();
-            case TokenType.openBrace:
-                return this.parseObjectBindingPattern();
-            default:
-                return this.parseIdentifier();
-        }
+    switch (this.lexer.peek().type) {
+        case TokenType.identifier:
+            return this.parseIdentifier();
+        case TokenType.openBracket:
+            return this.parseArrayBindingPattern();
+        case TokenType.openBrace:
+            return this.parseObjectBindingPattern();
+        default:
+            return this.parseIdentifier();
     }
+}
 
     /**
      * 解析一个空语句(;)。
      */
     private parseEmptyStatement() {
 
-        //  EmptyStatement:
-        //      ;
+    //  EmptyStatement:
+    //      ;
 
-        console.assert(this.lexer.current.type === TokenType.semicolon);
-        const result = new nodes.EmptyStatement();
-        result.start = this.lexer.read().start;
-        return result;
-    }
+    console.assert(this.lexer.current.type === TokenType.semicolon);
+    const result = new nodes.EmptyStatement();
+    result.start = this.lexer.read().start;
+    return result;
+}
 
     /**
      * 解析一个标签语句(xx: ...)。
      * @param label 已解析的标签部分。
      */
     private parseLabeledStatement(label: nodes.Identifier) {
-        // LabeledStatement :
-        //   Identifier : Statement
-        console.assert(this.lexer.current.type === TokenType.colon);
-        const result = new nodes.LabeledStatement();
-        result.label = label;
-        result.colonStart = this.lexer.read().type;
-        result.body = this.parseStatement();
-        return result;
-    }
+    // LabeledStatement :
+    //   Identifier : Statement
+    console.assert(this.lexer.current.type === TokenType.colon);
+    const result = new nodes.LabeledStatement();
+    result.label = label;
+    result.colonStart = this.lexer.read().type;
+    result.body = this.parseStatement();
+    return result;
+}
 
     /**
      * 解析一个表达式语句(x();)。
      */
     private parseExpressionStatement() {
 
-        // ExpressionStatement[Yield] :
-        //   Expression[In, Yield] ;
+    // ExpressionStatement[Yield] :
+    //   Expression[In, Yield] ;
 
-        console.assert(isExpressionStart(this.lexer.current.type));
-        const result = new nodes.ExpressionStatement();
-        result.body = this.parseExpression();
-        result.end = this.autoInsertSemicolon();
-        return result;
-    }
+    console.assert(isExpressionStart(this.lexer.current.type));
+    const result = new nodes.ExpressionStatement();
+    result.body = this.parseExpression();
+    result.end = this.autoInsertSemicolon();
+    return result;
+}
 
     /**
      * 解析一个 if 语句(if(xx) {...})。
      */
     private parseIfStatement() {
 
-        // IfStatement :
-        //   if Condition EmbeddedStatement
-        //   if Condition EmbeddedStatement else EmbeddedStatement
+    // IfStatement :
+    //   if Condition EmbeddedStatement
+    //   if Condition EmbeddedStatement else EmbeddedStatement
 
-        console.assert(this.lexer.peek().type === TokenType.if);
-        const result = new nodes.IfStatement();
-        result.start = this.lexer.read().start;
-        result.condition = this.parseCondition();
-        result.then = this.parseEmbeddedStatement();
-        if (this.readToken(TokenType.else)) {
-            result.else = this.parseEmbeddedStatement();
-        }
-        return result;
+    console.assert(this.lexer.peek().type === TokenType.if);
+    const result = new nodes.IfStatement();
+    result.start = this.lexer.read().start;
+    result.condition = this.parseCondition();
+    result.then = this.parseEmbeddedStatement();
+    if (this.readToken(TokenType.else)) {
+        result.else = this.parseEmbeddedStatement();
     }
+    return result;
+}
 
     /**
      * 解析一个 switch 语句(switch(...){...})。
      */
     private parseSwitchStatement() {
 
-        // SwitchStatement :
-        //   switch Condition? { CaseClause... }
+    // SwitchStatement :
+    //   switch Condition? { CaseClause... }
 
-        console.assert(this.lexer.peek().type == TokenType.switch);
+    console.assert(this.lexer.peek().type == TokenType.switch);
 
-        const result = new nodes.SwitchStatement();
-        result.start = this.lexer.read().start; // switch
-        result.condition = this.lexer.peek().type === TokenType.openBrace ? undefined : this.parseCondition();
-        result.cases = this.parseNodeList(TokenType.openBrace, this.parseCaseClause, TokenType.closeBrace);
-        return result;
+    const result = new nodes.SwitchStatement();
+    result.start = this.lexer.read().start; // switch
+    result.condition = this.lexer.peek().type === TokenType.openBrace ? undefined : this.parseCondition();
+    result.cases = this.parseNodeList(TokenType.openBrace, this.parseCaseClause, TokenType.closeBrace);
+    return result;
 
-    }
+}
 
     /**
      * 解析一个 switch 语句的 case 分支(case ...:{...})。
      */
     private parseCaseClause() {
 
-        // CaseClause :
-        //   case Expression : Statement...
-        //   default : Statement...
-        //   case Expression, Expression... : Statement...
-        //   case else : Statement...
+    // CaseClause :
+    //   case Expression : Statement...
+    //   default : Statement...
+    //   case Expression, Expression... : Statement...
+    //   case else : Statement...
 
-        console.assert(this.lexer.peek().type == TokenType.case || this.lexer.peek().type == TokenType.default);
-        const result = new nodes.CaseClause();
-        result.start = this.lexer.read().start;
-        if (this.lexer.current.type === TokenType.case) {
-            result.label = this.parseExpressionWith(ParseContext.allowElse);
-        }
-        result.colonStart = this.expectToken(TokenType.colon);
-        result.statements = this.parseNodeList(null, this.parseStatement, TokenType.closeBrace);
-        return result;
+    console.assert(this.lexer.peek().type == TokenType.case || this.lexer.peek().type == TokenType.default);
+    const result = new nodes.CaseClause();
+    result.start = this.lexer.read().start;
+    if (this.lexer.current.type === TokenType.case) {
+        result.label = this.parseExpressionWith(ParseContext.allowElse);
     }
+    result.colonStart = this.expectToken(TokenType.colon);
+    result.statements = this.parseNodeList(null, this.parseStatement, TokenType.closeBrace);
+    return result;
+}
 
     /**
      * 解析一个 for 语句(for(...; ...; ...) {...})。
      */
     private parseForStatement() {
 
-        // ForStatement :
-        //   for ( VariableOrExpression? ; Expression? ; Expression? ) EmbeddedStatement
-        //   for ( Type Identifier in Expression ) EmbeddedStatement
-        //   for ( Type Identifier = Expression to Expression ) EmbeddedStatement
+    // ForStatement :
+    //   for ( VariableOrExpression? ; Expression? ; Expression? ) EmbeddedStatement
+    //   for ( Type Identifier in Expression ) EmbeddedStatement
+    //   for ( Type Identifier = Expression to Expression ) EmbeddedStatement
 
-        // VariableOrExpression :
-        //   Type VariableList
-        //   Expression
+    // VariableOrExpression :
+    //   Type VariableList
+    //   Expression
 
-        console.assert(lexer.peek().type == TokenType.@for);
+    console.assert(this.lexer.peek().type == TokenType.for);
 
-        var startLocation = lexer.read().startLocation; // for
+    var start = this.lexer.read().start; // for
 
-        bool hasParentheses = readToken(TokenType.lParam);
-        if (!hasParentheses && Compiler.options.disallowMissingParentheses) {
-            Compiler.error(ErrorCode.strictExpectedParentheses, "严格模式: 应输入“(”", lexer.current);
-        }
-
-        if (followsWithExpression()) {
-
-            var parsed = parseVariableOrExpression();
-            Variable parsedVariable = parsed as Variable;
-            if (parsedVariable != null) {
-
-                // for in
-                if (checkIdentifier(lexer.peek(), "in")) {
-                    return parseForInStatement(startLocation, hasParentheses, parsedVariable);
-                }
-
-                // for to
-                if (checkIdentifier(lexer.peek(), "to")) {
-                    return parseForToStatement(startLocation, hasParentheses, parsedVariable);
-                }
-
-            }
-
-            return parseForStatement(startLocation, hasParentheses, parsed);
-        }
-
-        return parseForStatement(startLocation, hasParentheses, null);
-
+    bool hasParentheses = readToken(TokenType.lParam);
+    if (!hasParentheses && Compiler.options.disallowMissingParentheses) {
+        Compiler.error(ErrorCode.strictExpectedParentheses, "严格模式: 应输入“(”", this.lexer.current);
     }
 
-    private parseForStatement(Location startLocation, bool hasParam, Node initializer) {
-        var result = new ForStatement();
-        result.startLocation = startLocation;
-        result.initializer = initializer;
-        expectToken(TokenType.semicolon, ErrorCode.expectedSemicolon);
-        if (lexer.peek().type != TokenType.semicolon) {
-            result.condition = parseExpression();
-        }
-        expectToken(TokenType.semicolon, ErrorCode.expectedSemicolon);
+    if (followsWithExpression()) {
 
-        if (followsWithExpression()) {
-            result.iterator = parseExpression();
-            while (readToken(TokenType.comma)) {
-                result.iterator = new CommaExpression() {
-                    left = result.iterator,
-                        right = parseExpression()
-                };
+        var parsed = parseVariableOrExpression();
+        Variable parsedVariable = parsed as Variable;
+        if (parsedVariable != null) {
+
+            // for in
+            if (checkIdentifier(this.lexer.peek(), "in")) {
+                return parseForInStatement(start, hasParentheses, parsedVariable);
             }
+
+            // for to
+            if (checkIdentifier(this.lexer.peek(), "to")) {
+                return parseForToStatement(start, hasParentheses, parsedVariable);
+            }
+
         }
-        if (hasParam) {
-            expectToken(TokenType.rParam, ErrorCode.expectedRParam);
-        }
-        result.body = parseEmbeddedStatement();
-        return result;
+
+        return parseForStatement(start, hasParentheses, parsed);
     }
+
+    return parseForStatement(start, hasParentheses, null);
+
+}
+
+    private parseForStatement(Location start, bool hasParam, Node initializer) {
+    var result = new ForStatement();
+    result.start = start;
+    result.initializer = initializer;
+    expectToken(TokenType.semicolon, ErrorCode.expectedSemicolon);
+    if (this.lexer.peek().type != TokenType.semicolon) {
+        result.condition = parseExpression();
+    }
+    expectToken(TokenType.semicolon, ErrorCode.expectedSemicolon);
+
+    if (followsWithExpression()) {
+        result.iterator = parseExpression();
+        while (readToken(TokenType.comma)) {
+            result.iterator = new CommaExpression() {
+                left = result.iterator,
+                    right = parseExpression()
+            };
+        }
+    }
+    if (hasParam) {
+        expectToken(TokenType.rParam, ErrorCode.expectedRParam);
+    }
+    result.body = parseEmbeddedStatement();
+    return result;
+}
 
     /**
      * 解析一个 for..in 语句(for(var xx in ...) {...})。
      */
-    private parseForInStatement(Location startLocation, bool hasParam, Variable variable) {
+    private parseForInStatement(Location start, bool hasParam, Variable variable) {
 
-        if (variable.initialiser != null) {
-            Compiler.error(ErrorCode.unexpectedForInInitialiser, "语法错误：“for in”语句中变量不允许有初始值", variable.initialiser);
-        }
-        if (variable.next != null) {
-            Compiler.error(ErrorCode.invalidForInInitialiser, "语法错误：“for in”语句中最多只能有一个变量", variable.next);
-        }
-
-        var result = new ForInStatement();
-        result.startLocation = startLocation;
-        result.variable = variable;
-        lexer.read(); // in
-        result.iterator = parseExpression();
-        if (hasParam) {
-            expectToken(TokenType.rParam, ErrorCode.expectedRParam);
-        }
-        result.body = parseEmbeddedStatement();
-        return result;
+    if (variable.initialiser != null) {
+        Compiler.error(ErrorCode.unexpectedForInInitialiser, "语法错误：“for in”语句中变量不允许有初始值", variable.initialiser);
     }
+    if (variable.next != null) {
+        Compiler.error(ErrorCode.invalidForInInitialiser, "语法错误：“for in”语句中最多只能有一个变量", variable.next);
+    }
+
+    var result = new ForInStatement();
+    result.start = start;
+    result.variable = variable;
+    this.lexer.read(); // in
+    result.iterator = parseExpression();
+    if (hasParam) {
+        expectToken(TokenType.rParam, ErrorCode.expectedRParam);
+    }
+    result.body = parseEmbeddedStatement();
+    return result;
+}
 
     /**
      * 解析一个 for..of 语句(for(var xx of ...) {...})。
      */
     private parseForOfStatement(node: nodes.ForOfStatement) {
 
-    }
+}
 
     /**
      * 解析一个 for..to 语句(for(var xx = ... to ...) {...})。
      */
-    private parseForToStatement(Location startLocation, bool hasParam, Variable variable) {
-        if (variable.initialiser == null) {
-            Compiler.error(ErrorCode.expectedForToInitialiser, "语法错误：“for to”语句中变量缺少初始值", variable.name);
-        }
-        if (variable.next != null) {
-            Compiler.error(ErrorCode.invalidForToInitialiser, "语法错误：“for to”语句中最多只能有一个变量", variable.next);
-        }
-        var result = new ForToStatement();
-        result.startLocation = startLocation;
-        result.variable = variable;
-        lexer.read(); // to
-        result.end = parseExpression();
-
-        if (readToken(TokenType.semicolon) && followsWithExpression()) {
-            result.iterator = parseExpression();
-        }
-
-        if (hasParam) {
-            expectToken(TokenType.rParam, ErrorCode.expectedRParam);
-        }
-        result.body = parseEmbeddedStatement();
-        return result;
+    private parseForToStatement(Location start, bool hasParam, Variable variable) {
+    if (variable.initialiser == null) {
+        Compiler.error(ErrorCode.expectedForToInitialiser, "语法错误：“for to”语句中变量缺少初始值", variable.name);
     }
+    if (variable.next != null) {
+        Compiler.error(ErrorCode.invalidForToInitialiser, "语法错误：“for to”语句中最多只能有一个变量", variable.next);
+    }
+    var result = new ForToStatement();
+    result.start = start;
+    result.variable = variable;
+    this.lexer.read(); // to
+    result.end = parseExpression();
+
+    if (readToken(TokenType.semicolon) && followsWithExpression()) {
+        result.iterator = parseExpression();
+    }
+
+    if (hasParam) {
+        expectToken(TokenType.rParam, ErrorCode.expectedRParam);
+    }
+    result.body = parseEmbeddedStatement();
+    return result;
+}
 
     /**
      * 解析一个 while 语句(while(...) {...})。
      */
     private parseWhileStatement() {
 
-        // WhileStatement :
-        //   while Condition EmbeddedStatement ;
+    // WhileStatement :
+    //   while Condition EmbeddedStatement ;
 
-        console.assert(lexer.peek().type == TokenType.@while);
+    console.assert(this.lexer.peek().type == TokenType.while);
 
-        return new WhileStatement() {
-            startLocation = lexer.read().startLocation, // @while
-                condition = parseCondition(),
-                body = parseEmbeddedStatement()
-        };
-    }
+    return new WhileStatement() {
+        start = this.lexer.read().start, // @while
+            condition = parseCondition(),
+            body = parseEmbeddedStatement()
+    };
+}
 
     /**
      * 解析一个 do..while 语句(do {...} while(...);)。
      */
     private parseDoWhileStatement() {
 
-        // DoWhileStatement :
-        //   do EmbeddedStatement while Condition ;
+    // DoWhileStatement :
+    //   do EmbeddedStatement while Condition ;
 
-        console.assert(lexer.peek().type == TokenType.@do);
+    console.assert(this.lexer.peek().type == TokenType.do);
 
-        var startLocation = lexer.read().startLocation; // do
-        var body = parseEmbeddedStatement();
-        DoWhileStatement result = new DoWhileStatement();
+    var start = this.lexer.read().start; // do
+    var body = parseEmbeddedStatement();
+    DoWhileStatement result = new DoWhileStatement();
 
-        expectToken(TokenType.@while, ErrorCode.expectedWhile);
+    expectToken(TokenType.while, ErrorCode.expectedWhile);
 
-        result.startLocation = startLocation;
-        result.body = body;
-        result.condition = parseCondition();
+    result.start = start;
+    result.body = body;
+    result.condition = parseCondition();
 
-        expectSemicolon();
-        return result;
-    }
+    expectSemicolon();
+    return result;
+}
 
     // #endregion
 
@@ -762,661 +762,635 @@ export class Parser {
      * 解析一个表达式。
      * @param minPrecedence 当前解析的最低操作符优先级。
      */
-    private parseExpression(minPrecedence?: number) {
-        console.assert(isExpressionStart(this.lexer.peek().type));
-        let parsed: nodes.Expression;
-        const type = this.lexer.peek().type;
+    private parseExpression(minPrecedence ?: number) {
+    console.assert(isExpressionStart(this.lexer.peek().type));
+    let parsed: nodes.Expression;
+    const type = this.lexer.peek().type;
 
-        switch (type) {
+    switch (type) {
 
-            // Identifier、Identifier<T>、Identifier[]
-            case TokenType.identifier:
-                parsed = this.parseRestTypeExprssion(this.parseIdentifier());
+        // Identifier、Identifier<T>、Identifier[]
+        case TokenType.identifier:
+            parsed = this.parseRestTypeExprssion(this.parseIdentifier());
+            break;
+
+        // (Expr)、(Expr) => {...}
+        case TokenType.openParen:
+            parsed = this.parseParenthesizedExpressionOrArrowFunction();
+            break;
+
+        // new Expr
+        case TokenType.new:
+            parsed = this.parseNewExpression();
+            break;
+
+        // ""、''
+        case TokenType.stringLiteral:
+            parsed = this.parseStringLiteral();
+            break;
+
+        // 0
+        case TokenType.numericLiteral:
+            parsed = this.parseNumericLiteral();
+            break;
+
+        // [Expr, ...]
+        case TokenType.openBracket:
+            parsed = this.parseArrayLiteral();
+            break;
+
+        // {key: Expr, ...}
+        case TokenType.openBrace:
+            parsed = this.parseObjectLiteral();
+            break;
+
+        // @ Identifier
+        case TokenType.at:
+            parsed = this.parseAtExpression();
+            break;
+
+        case TokenType.null:
+            parsed = this.parseNullLiteral();
+            break;
+
+        case TokenType.true:
+            parsed = this.parseTrueLiteral();
+            break;
+
+        case TokenType.false:
+            parsed = this.parseFalseLiteral();
+            break;
+
+        case TokenType.this:
+            parsed = this.parseThisLiteral();
+            break;
+
+        case TokenType.super:
+            parsed = this.parseSuperLiteral();
+            break;
+
+        case TokenType.plusPlus:
+            parsed = this.parseIncrementExpression();
+            break;
+
+        case TokenType.minusMinus:
+            parsed = this.parseDecrementExpression();
+            break;
+
+        case TokenType.equalsGreaterThan:
+            parsed = this.parseArrowFunction();
+            break;
+
+        case TokenType.await:
+            parsed = this.parseAwaitExpression();
+            break;
+
+        default:
+
+            // +Expr
+            if (isUnaryOperator(type)) {
+                parsed = this.parseUnaryExpression();
                 break;
+            }
 
-            // (Expr)、(Expr) => {...}
-            case TokenType.openParen:
-                parsed = this.parseParenthesizedExpressionOrArrowFunction();
-                break;
-
-            // new Expr
-            case TokenType.new:
-                parsed = this.parseNewExpression();
-                break;
-
-            // ""、''
-            case TokenType.stringLiteral:
-                parsed = this.parseStringLiteral();
-                break;
-
-            // 0
-            case TokenType.numericLiteral:
-                parsed = this.parseNumericLiteral();
-                break;
-
-            // [Expr, ...]
-            case TokenType.openBracket:
-                parsed = this.parseArrayLiteral();
-                break;
-
-            // {key: Expr, ...}
-            case TokenType.openBrace:
-                parsed = this.parseObjectLiteral();
-                break;
-
-            // @ Identifier
-            case TokenType.at:
-                parsed = this.parseAtExpression();
-                break;
-
-            case TokenType.null:
-                parsed = this.parseNullLiteral();
-                break;
-
-            case TokenType.true:
-                parsed = this.parseTrueLiteral();
-                break;
-
-            case TokenType.false:
-                parsed = this.parseFalseLiteral();
-                break;
-
-            case TokenType.this:
-                parsed = this.parseThisLiteral();
-                break;
-
-            case TokenType.super:
-                parsed = this.parseSuperLiteral();
-                break;
-
-            case TokenType.plusPlus:
-                parsed = this.parseIncrementExpression();
-                break;
-
-            case TokenType.minusMinus:
-                parsed = this.parseDecrementExpression();
-                break;
-
-            case TokenType.equalsGreaterThan:
-                parsed = this.parseArrowFunction();
-                break;
-
-            case TokenType.await:
-                parsed = this.parseAwaitExpression();
-                break;
-
-            default:
-
-                // +Expr
-                if (isUnaryOperator(type)) {
-                    parsed = this.parseUnaryExpression();
+            switch (type) {
+                case TokenType.closeParen:
+                    this.error(this.lexer.read(), "多余的“)”。");
                     break;
-                }
+                case TokenType.closeBracket:
+                    this.error(this.lexer.read(), "多余的“]”。");
+                    break;
+                case TokenType.closeBrace:
+                    this.error(this.lexer.read(), "多余的“}”。");
+                    break;
+                default:
+                    if (isStatementStart(type)) {
+                        this.error(this.lexer.peek(), "“{0}”是语句关键字；改用其它变量名?", tokenToString(type));
+                    } else {
+                        this.error(this.lexer.peek(), "无效的表达式项“{0}”", tokenToString(type));
+                    }
+                    do {
+                        this.lexer.read();
+                    } while (this.lexer.peek().type != TokenType.endOfFile && !this.lexer.peek().onNewLine);
+                    break;
+            }
 
-                switch (type) {
-                    case TokenType.closeParen:
-                        this.error(this.lexer.read(), "多余的“)”。");
-                        break;
-                    case TokenType.closeBracket:
-                        this.error(this.lexer.read(), "多余的“]”。");
-                        break;
-                    case TokenType.closeBrace:
-                        this.error(this.lexer.read(), "多余的“}”。");
-                        break;
-                    default:
-                        if (isStatementStart(type)) {
-                            this.error(this.lexer.peek(), "“{0}”是语句关键字；改用其它变量名?", tokenToString(type));
-                        } else {
-                            this.error(this.lexer.peek(), "无效的表达式项“{0}”", tokenToString(type));
-                        }
-                        do {
-                            this.lexer.read();
-                        } while (this.lexer.peek().type != TokenType.endOfFile && !this.lexer.peek().onNewLine);
-                        break;
-                }
-
-                return nodes.Expression.null;
-        }
-        return this.parseRestExpression(parsed, minPrecedence);
+            return nodes.Expression.null;
     }
+    return this.parseRestExpression(parsed, minPrecedence);
+}
 
     /**
      * 在解析一个表达式之后，继续解析剩下的后缀表达式。
      * @pram parsed 已解析的表达式。
      * @param minPrecedence 当前解析的最低操作符优先级。
      */
-    private parseRestExpression(parsed: nodes.Expression, minPrecedence?: number) {
+    private parseRestExpression(parsed: nodes.Expression, minPrecedence ?: number) {
 
-        // PostfixExpression :
-        //   MemberExpression
-        //   MemberExpression [no LineTerminator here] ++
-        //   MemberExpression [no LineTerminator here] --
+    TokenType type;
+    int precedence;
 
-        // MemberExpression :
-        //   CallExpression
-        //   PrimaryExpression
-        //   LambdaLiteral
-        //   MemberExpression [ Expression ]
-        //   MemberExpression . Identifier
-        //   MemberExpression .. Identifier
+    while ((precedence = (type = this.lexer.peek().type).getPrecedence()) >= minPrecedence) {
 
-        TokenType type;
-        int precedence;
-
-        while ((precedence = (type = lexer.peek().type).getPrecedence()) >= minPrecedence) {
-
-            // Exper = Val
-            if (type.isAssignOperator()) {
-                lexer.read();
-                parsed = new BinaryExpression() {
-                    leftOperand = parsed,
+        // Exper = Val
+        if (type.isAssignOperator()) {
+            this.lexer.read();
+            parsed = new BinaryExpression() {
+                leftOperand = parsed,
                         @operator = type,
-                        rightOperand = parseExpression(precedence)
-                };
-                continue;
-            }
-
-            switch (type) {
-
-                // Expr.call
-                case TokenType.period: {
-                    var current = new MemberCallExpression();
-                    current.target = parsed;
-                    lexer.read();
-                    current.argument = parseGenericTypeExpression(expectIdentifier(), TypeUsage.expression);
-                    parsed = current;
-                    continue;
-                }
-
-                // Expr()
-                case TokenType.lParam: {
-                    var current = new FuncCallExpression();
-                    current.target = parsed;
-                    current.arguments = parseArgumentList(TokenType.rParam, ErrorCode.expectedRParam);
-                    current.endLocation = lexer.current.endLocation;
-                    parsed = current;
-                    continue;
-                }
-
-                // Expr ->
-                case TokenType.lambda:
-                    parsed = parseLambdaLiteral(toIdentifier(parsed));
-                    continue;
-
-                // Expr[]
-                case TokenType.lBrack: {
-                    var current = new IndexCallExpression();
-                    current.target = parsed;
-                    current.arguments = parseArgumentList(TokenType.rBrack, ErrorCode.expectedRBrack);
-                    current.endLocation = lexer.current.endLocation;
-                    parsed = current;
-                    continue;
-                }
-
-                // Expr ? A : B
-                case TokenType.conditional: {
-                    var current = new ConditionalExpression();
-                    current.condition = parsed;
-                    lexer.read();
-                    current.thenExpression = parseExpression();
-                    expectToken(TokenType.colon, ErrorCode.expectedColon);
-                    current.elseExpression = parseExpression();
-                    parsed = current;
-                    continue;
-                }
-
-                // Expr++, Exper--
-                case TokenType.inc:
-                case TokenType.dec:
-                    // 如果 ++ 和 -- 在新行出现，则不继续解析。
-                    if (lexer.peek().hasLineTerminatorBeforeStart) {
-                        return parsed;
-                    }
-                    parsed = new MutatorExpression {
-                        operand = parsed,
-                            @operator = type,
-                            endLocation = lexer.read().endLocation
-                    };
-                    continue;
-
-                // Expr..A
-                case TokenType.periodChain: {
-                    var current = new ChainCallExpression();
-                    current.target = parsed;
-                    lexer.read(); // ..
-                    current.argument = expectIdentifier();
-                    parsed = new ChainExpression() {
-                        chainCallExpression = current,
-                              //  body = parseExpression(current, precedence + 1)
-                            };
-                    continue;
-                }
-
-                case TokenType.@is:
-                    lexer.read();
-                    parsed = new IsExpression() {
-                        leftOperand = parsed,
-                            rightOperand = parseExpression(precedence + 1)
-                    };
-                    continue;
-
-                case TokenType.@as:
-                    lexer.read();
-                    parsed = new AsExpression() {
-                        leftOperand = parsed,
-                            rightOperand = parseExpression(precedence + 1)
-                    };
-                    continue;
-
-                case TokenType.rangeTo: {
-                    var current = new RangeLiteral();
-                    current.start = parsed;
-                    lexer.read();
-                    current.end = parseExpression(precedence + 1);
-                    parsed = current;
-                    continue;
-                }
-
-                default:
-
-                    // Exper + Val
-                    if (type.isBinaryOperator()) {
-                        lexer.read();
-                        parsed = new BinaryExpression() {
-                            leftOperand = parsed,
-                                @operator = type,
-                                rightOperand = parseExpression(precedence + 1)
-                        };
-                        continue;
-                    }
-
-                    return parsed;
-            }
-        }
-
-        return parsed;
-    }
-
-    private parseParenthesizedExpressionOrArrowFunction() {
-
-        console.assert(this.lexer.peek().type == TokenType.openParen);
-
-        if (this.isArrowFunction()) { }
-
-        //switch (followsWithLambdaOrTypeConversion()) {
-
-        //    // (Parameters) ->
-        //    case State.on:
-        //        return parseLambdaLiteral(null);
-
-        //    // (Type) Expression
-        //    case State.off: {
-        //            var result = new CastExpression();
-        //            result.startLocation = lexer.read().startLocation; // (
-        //            result.targetType = parseType();
-        //            expectToken(TokenType.rParam, ErrorCode.expectedRParam);
-        //            result.body = parseExpression(TokenType.lParam.getPrecedence());
-        //            return result;
-        //        }
-
-        //    // (Expression)
-        //    default: {
-        //            var result = new ParenthesizedExpression();
-        //            result.startLocation = lexer.read().startLocation; // (
-        //            result.body = parseExpression();
-        //            expectToken(TokenType.rParam, ErrorCode.expectedRParam);
-        //            result.endLocation = lexer.current.endLocation;
-        //            return result;
-        //        }
-        //}
-
-    }
-
-    private parseNewExpression() {
-
-        console.assert(lexer.peek().type == TokenType.@new);
-
-        var result = new NewExpression();
-        //result.startLocation = lexer.read().startLocation; // new
-        //result.target = parseType(TypeUsage.@new);
-
-        //switch (lexer.peek().type) {
-        //    case TokenType.lParam:
-        //        result.type = TokenType.lParam;
-        //        result.arguments = parseArgumentList(TokenType.rParam, ErrorCode.expectedRParam);
-        //        break;
-        //    case TokenType.lBrack:
-        //        result.type = TokenType.lBrack;
-        //        result.arguments = parseArgumentList(TokenType.rBrack, ErrorCode.expectedRBrack);
-        //        break;
-        //}
-
-        //if (lexer.peek().type == TokenType.lBrace) {
-        //    result.initializer = parseListOrDictLiteral(TokenType.rBrace, ErrorCode.expectedRBrace);
-        //}
-
-        return result;
-    }
-
-    private parseExpression() {
-
-        let result = this.parseAssignmentExpressionOrHigher();
-        while (this.readToken(TokenType.comma)) {
-            result = this.makeBinaryExpression(result, TokenType.comma, this.lexer.tokenStart - 1, this.parseAssignmentExpressionOrHigher());
-        }
-
-        return result;
-    }
-
-    /**
-     * 解析一个一元运算表达式(+x)。
-     */
-    parseUnaryExpression(node: nodes.UnaryExpression) {
-        node.operand.accept(this);
-    }
-
-    // #endregion
-
-    // #region 成员
-
-    // #endregion
-
-    #region 解析成员
-
-    /**
-     * 所有解析操作的入口函数。
-     */
-    * <param name="target" > </param>
-    private void parseSourceUnitBody(SourceUnit target) {
-
-    // SourceUnit :
-    //   ImportDirectiveList? MemberDefinitionList?
-
-    // ImportDirectiveList :
-    //   ImportDirective ...
-
-    // 解析导入指令。
-    target.importDirectives = parseImportDirectiveList();
-
-    // 解析其它成员。
-    parseMemberContainerDefinitionBody(target, false);
-
-}
-
-        private ImportDirective parseImportDirectiveList() {
-
-    // ImportDirective :
-    //   import Type ;
-    //   import Identifier = Type ;
-    //   import Type => Identifier ;
-
-    ImportDirective first = null, last = null;
-
-    while (readToken(TokenType.import)) {
-
-        var current = new ImportDirective();
-
-        current.value = parseType();
-        switch (lexer.peek().type) {
-            case TokenType.assign:
-                lexer.read();
-                current.alias = toIdentifier(current.value);
-                current.value = parseType();
-                break;
-            case TokenType.assignTo:
-                lexer.read();
-                current.alias = expectIdentifier();
-                break;
-        }
-
-        expectSemicolon();
-
-        if (first == null) {
-            last = first = current;
-        } else {
-            last = last.next = current;
-        }
-    }
-
-    return first;
-
-}
-
-        private void parseMemberContainerDefinitionBody(MemberContainerDefinition target, bool expectRBrack) {
-
-    // MemberDefinitionList :
-    //   MemberDefinition ...
-
-    // MemberDefinition :
-    //   FieldDefinition
-    //   AliasDefinition
-    //   PropertyDefinition
-    //   OperatorOverloadDefinition
-    //   IndexerDefinition
-    //   MethodDefinition
-    //   ConstructorDefinition
-    //   DeconstructorDefinition
-    //   TypeDefinition 
-    //   NamespaceDefinition 
-    //   ExtensionDefinition 
-
-    // TypeDefinition :
-    //   ClassDefinition
-    //   StructDefinition
-    //   EnumDefinition
-    //   InterfaceDefinition
-
-    MemberDefinition last = null;
-    while (true) {
-
-        MemberDefinition current;
-        Expression returnType;
-        var docComment = parseDocComment();
-        var annotations = parseMemberAnnotationList();
-        var modifiers = parseModifiers();
-        var type = lexer.peek().type;
-
-        // int xxx...
-        if (type.isPredefinedType()) {
-            returnType = parsePredefinedType();
-            goto parseTypeMember;
+                    rightOperand = parseExpression(precedence)
+            };
+            continue;
         }
 
         switch (type) {
 
-            #region 标识符
-                    case TokenType.identifier:
+            // Expr.call
+            case TokenType.period: {
+                var current = new MemberCallExpression();
+                current.target = parsed;
+                this.lexer.read();
+                current.argument = parseGenericTypeExpression(expectIdentifier(), TypeUsage.expression);
+                parsed = current;
+                continue;
+            }
 
-        var currentIdentifier = parseIdentifier();
+            // Expr()
+            case TokenType.lParam: {
+                var current = new FuncCallExpression();
+                current.target = parsed;
+                current.arguments = parseArgumentList(TokenType.rParam, ErrorCode.expectedRParam);
+                current.endLocation = this.lexer.current.endLocation;
+                parsed = current;
+                continue;
+            }
 
-        // A()
-        if (lexer.peek().type == TokenType.lParam) {
-            current = parseConstructor(docComment, annotations, modifiers, currentIdentifier);
-            goto parseSuccess;
-        }
+            // Expr ->
+            case TokenType.lambda:
+                parsed = parseLambdaLiteral(toIdentifier(parsed));
+                continue;
 
-        returnType = parseType(currentIdentifier, TypeUsage.type);
-        goto parseTypeMember;
+            // Expr[]
+            case TokenType.lBrack: {
+                var current = new IndexCallExpression();
+                current.target = parsed;
+                current.arguments = parseArgumentList(TokenType.rBrack, ErrorCode.expectedRBrack);
+                current.endLocation = this.lexer.current.endLocation;
+                parsed = current;
+                continue;
+            }
 
-        #endregion
+            // Expr ? A : B
+            case TokenType.conditional: {
+                var current = new ConditionalExpression();
+                current.condition = parsed;
+                this.lexer.read();
+                current.thenExpression = parseExpression();
+                expectToken(TokenType.colon, ErrorCode.expectedColon);
+                current.elseExpression = parseExpression();
+                parsed = current;
+                continue;
+            }
 
-        #region 关键字开头的成员定义
-
-                    case TokenType.@namespace:
-        current = parseNamespaceDefinition(docComment, annotations, modifiers);
-        goto parseSuccess;
-                    case TokenType.@class:
-        current = parseClassDefinition(docComment, annotations, modifiers);
-        goto parseSuccess;
-                    case TokenType.@struct:
-        current = parseStructDefinition(docComment, annotations, modifiers);
-        goto parseSuccess;
-                    case TokenType.@interface:
-        current = parseInterfaceDefinition(docComment, annotations, modifiers);
-        goto parseSuccess;
-                    case TokenType.@enum:
-        current = parseEnumDefinition(docComment, annotations, modifiers);
-        goto parseSuccess;
-                    case TokenType.extend:
-        current = parseExtensionDefinition(docComment, annotations, modifiers);
-        goto parseSuccess;
-                    case TokenType.func:
-        current = parseFuncDefinition(docComment, annotations, modifiers);
-        goto parseSuccess;
-
-        #endregion
-
-        #region 结束符
-
-                    case TokenType.rBrace:
-        lexer.read();
-        if (expectRBrack) {
-            return;
-        }
-        Compiler.error(ErrorCode.unexpectedRBrace, "语法错误：多余的“}”", lexer.current);
-        continue;
-                    case TokenType.eof:
-        if (expectRBrack) {
-            expectToken(TokenType.rBrace, ErrorCode.expectedRBrace);
-        }
-        return;
-
-        #endregion
-
-        #region 错误
-
-                    case TokenType.import:
-        Compiler.error(ErrorCode.unexpectedImportDirective, "“import”指令只能在文件顶部使用", lexer.peek());
-        // 忽略之后的所有 import 语句。
-        skipToMemberDefinition();
-        continue;
-                    case TokenType.semicolon:
-        Compiler.error(ErrorCode.unexpectedSemicolon, "语法错误：多余的“;”", lexer.peek());
-        lexer.read();
-        continue;
-                    default:
-        Compiler.error(ErrorCode.unexpectedStatement, "语法错误：应输入函数、类或其它成员定义；所有语句都应放在函数内", lexer.peek());
-        skipToMemberDefinition();
-        continue;
-
-        #endregion
-
-    }
-
-    parseTypeMember:
-
-    // 当前接口的显示声明。
-    Expression explicitType = null;
-
-    parseNextTypeMember:
-
-    switch (lexer.peek().type) {
-
-        #region Type name
-                    case TokenType.identifier:
-
-    Identifier currentIdentifier = parseIdentifier();
-    switch (lexer.peek().type) {
-
-        // Type name()
-        case TokenType.lParam:
-            current = parseMethodDefinition(docComment, annotations, modifiers, returnType, explicitType, currentIdentifier);
-            goto parseSuccess;
-
-        // Type name {get; set;}
-        case TokenType.lBrace:
-            current = parsePropertyDefinition(docComment, annotations, modifiers, returnType, explicitType, currentIdentifier);
-            goto parseSuccess;
-
-        // Type InterfaceType.name()
-        case TokenType.period:
-            explicitType = explicitType == null ? (Expression)currentIdentifier : new MemberCallExpression() {
-                target = explicitType,
-                    argument = currentIdentifier
-            };
-            lexer.read();
-            goto parseNextTypeMember;
-
-        // Type name<T>()
-        case TokenType.lt:
-            if (followsWithTypeMemberDefinition()) {
-                var currentType = parseGenericTypeExpression(currentIdentifier, TypeUsage.type);
-                explicitType = explicitType == null ? (Expression)currentType : new MemberCallExpression() {
-                    target = explicitType,
-                        argument = currentType
+            // Expr++, Exper--
+            case TokenType.inc:
+            case TokenType.dec:
+                // 如果 ++ 和 -- 在新行出现，则不继续解析。
+                if (this.lexer.peek().hasLineTerminatorBeforeStart) {
+                    return parsed;
+                }
+                parsed = new MutatorExpression {
+                    operand = parsed,
+                            @operator = type,
+                        endLocation = this.lexer.read().endLocation
                 };
-                lexer.read();
-                goto parseNextTypeMember;
-            }
-            current = parseMethodDefinition(docComment, annotations, modifiers, returnType, explicitType, currentIdentifier);
-            goto parseSuccess;
+                continue;
 
-        // Type name;
-        // Type name = Value;
-        // Type name, name2;
-        default:
-            current = parseFieldDefinition(docComment, annotations, modifiers, returnType, explicitType, currentIdentifier);
-            goto parseSuccess;
-
-    }
-
-    #endregion
-
-    #region Type this
-                    case TokenType.@this:
-    lexer.read();
-
-    // Type this [params] {}
-    if (lexer.peek().type == TokenType.lBrack) {
-        current = parseIndexerOperatorDefinition(docComment, annotations, modifiers, returnType, explicitType);
-        goto parseSuccess;
-    }
-
-    // Type this +(params) {}
-    if (lexer.peek().type.isOverloadableOperator()) {
-        current = parseOperatorOverloadDefinition(docComment, annotations, modifiers, returnType, explicitType);
-        goto parseSuccess;
-    }
-
-    Compiler.error(ErrorCode.invalidOperatorOverload, String.Format("“{0}”不是可重载的操作符", lexer.peek().type.getName()), lexer.peek());
-    skipToMemberDefinition();
-    continue;
-    #endregion
-
-                    // 其它情况。
-                    default:
-    expectIdentifier();
-    skipToMemberDefinition();
-    continue;
-
-}
-
-parseSuccess:
-if (target.members == null) {
-    last = target.members = current;
-} else if (current != null) {
-    last = last.next = current;
-}
-
+            // Expr..A
+            case TokenType.periodChain: {
+                var current = new ChainCallExpression();
+                current.target = parsed;
+                this.lexer.read(); // ..
+                current.argument = expectIdentifier();
+                parsed = new ChainExpression() {
+                    chainCallExpression = current,
+                              //  body = parseExpression(current, precedence + 1)
+                            };
+                continue;
             }
 
+            case TokenType.is:
+                this.lexer.read();
+                parsed = new IsExpression() {
+                    leftOperand = parsed,
+                        rightOperand = parseExpression(precedence + 1)
+                };
+                continue;
+
+            case TokenType.as:
+                this.lexer.read();
+                parsed = new AsExpression() {
+                    leftOperand = parsed,
+                        rightOperand = parseExpression(precedence + 1)
+                };
+                continue;
+
+            case TokenType.rangeTo: {
+                var current = new RangeLiteral();
+                current.start = parsed;
+                this.lexer.read();
+                current.end = parseExpression(precedence + 1);
+                parsed = current;
+                continue;
+            }
+
+            default:
+
+                // Exper + Val
+                if (type.isBinaryOperator()) {
+                    this.lexer.read();
+                    parsed = new BinaryExpression() {
+                        leftOperand = parsed,
+                                @operator = type,
+                            rightOperand = parseExpression(precedence + 1)
+                    };
+                    continue;
+                }
+
+                return parsed;
         }
+    }
+
+    return parsed;
+}
+
+    private parseParenthesizedExpressionOrArrowFunction() {
+
+    console.assert(this.lexer.peek().type == TokenType.openParen);
+
+    if (this.isArrowFunction()) { }
+
+    //switch (followsWithLambdaOrTypeConversion()) {
+
+    //    // (Parameters) ->
+    //    case State.on:
+    //        return parseLambdaLiteral(null);
+
+    //    // (Type) Expression
+    //    case State.off: {
+    //            var result = new CastExpression();
+    //            result.start = this.lexer.read().start; // (
+    //            result.targetType = parseType();
+    //            expectToken(TokenType.rParam, ErrorCode.expectedRParam);
+    //            result.body = parseExpression(TokenType.lParam.getPrecedence());
+    //            return result;
+    //        }
+
+    //    // (Expression)
+    //    default: {
+    //            var result = new ParenthesizedExpression();
+    //            result.start = this.lexer.read().start; // (
+    //            result.body = parseExpression();
+    //            expectToken(TokenType.rParam, ErrorCode.expectedRParam);
+    //            result.endLocation = this.lexer.current.endLocation;
+    //            return result;
+    //        }
+    //}
+
+}
+
+    private parseNewExpression() {
+
+    console.assert(this.lexer.peek().type == TokenType.new);
+
+    const result = new nodes.NewExpression();
+    result.start = this.lexer.read().start; // new
+    result.target = this.parseExpression(0);
+
+    if (this.lexer.peek().type == TokenType.openParen) {
+        result.arguments = this.parseArgumentList();
+    }
+
+    return result;
+}
+
+//    private parseExpression() {
+
+//    let result = this.parseAssignmentExpressionOrHigher();
+//    while (this.readToken(TokenType.comma)) {
+//        result = this.makeBinaryExpression(result, TokenType.comma, this.lexer.tokenStart - 1, this.parseAssignmentExpressionOrHigher());
+//    }
+
+//    return result;
+//}
+
+/**
+ * 解析一个一元运算表达式(+x)。
+ */
+parseUnaryExpression(node: nodes.UnaryExpression) {
+    node.operand.accept(this);
+}
+
+// #endregion
+
+// #region 成员
+
+// #endregion
+
+//    /**
+//     * 所有解析操作的入口函数。
+//     */
+//    * <param name="target" > </param>
+//    private void parseSourceUnitBody(SourceUnit target) {
+
+//    // SourceUnit :
+//    //   ImportDirectiveList? MemberDefinitionList?
+
+//    // ImportDirectiveList :
+//    //   ImportDirective ...
+
+//    // 解析导入指令。
+//    target.importDirectives = parseImportDirectiveList();
+
+//    // 解析其它成员。
+//    parseMemberContainerDefinitionBody(target, false);
+
+//}
+
+//        private ImportDirective parseImportDirectiveList() {
+
+//    // ImportDirective :
+//    //   import Type ;
+//    //   import Identifier = Type ;
+//    //   import Type => Identifier ;
+
+//    ImportDirective first = null, last = null;
+
+//    while (readToken(TokenType.import)) {
+
+//        var current = new ImportDirective();
+
+//        current.value = parseType();
+//        switch (this.lexer.peek().type) {
+//            case TokenType.assign:
+//                this.lexer.read();
+//                current.alias = toIdentifier(current.value);
+//                current.value = parseType();
+//                break;
+//            case TokenType.assignTo:
+//                this.lexer.read();
+//                current.alias = expectIdentifier();
+//                break;
+//        }
+
+//        expectSemicolon();
+
+//        if (first == null) {
+//            last = first = current;
+//        } else {
+//            last = last.next = current;
+//        }
+//    }
+
+//    return first;
+
+//}
+
+//        private void parseMemberContainerDefinitionBody(MemberContainerDefinition target, bool expectRBrack) {
+
+//    // MemberDefinitionList :
+//    //   MemberDefinition ...
+
+//    // MemberDefinition :
+//    //   FieldDefinition
+//    //   AliasDefinition
+//    //   PropertyDefinition
+//    //   OperatorOverloadDefinition
+//    //   IndexerDefinition
+//    //   MethodDefinition
+//    //   ConstructorDefinition
+//    //   DeconstructorDefinition
+//    //   TypeDefinition 
+//    //   NamespaceDefinition 
+//    //   ExtensionDefinition 
+
+//    // TypeDefinition :
+//    //   ClassDefinition
+//    //   StructDefinition
+//    //   EnumDefinition
+//    //   InterfaceDefinition
+
+//    MemberDefinition last = null;
+//    while (true) {
+
+//        MemberDefinition current;
+//        Expression returnType;
+//        var docComment = parseDocComment();
+//        var annotations = parseMemberAnnotationList();
+//        var modifiers = parseModifiers();
+//        var type = this.lexer.peek().type;
+
+//        // int xxx...
+//        if (type.isPredefinedType()) {
+//            returnType = parsePredefinedType();
+//            goto parseTypeMember;
+//        }
+
+//        switch (type) {
+
+//            #region 标识符
+//                    case TokenType.identifier:
+
+//        var currentIdentifier = parseIdentifier();
+
+//        // A()
+//        if (this.lexer.peek().type == TokenType.lParam) {
+//            current = parseConstructor(docComment, annotations, modifiers, currentIdentifier);
+//            goto parseSuccess;
+//        }
+
+//        returnType = parseType(currentIdentifier, TypeUsage.type);
+//        goto parseTypeMember;
+
+//        #endregion
+
+//        #region 关键字开头的成员定义
+
+//                    case TokenType.namespace:
+//        current = parseNamespaceDefinition(docComment, annotations, modifiers);
+//        goto parseSuccess;
+//                    case TokenType.class:
+//        current = parseClassDefinition(docComment, annotations, modifiers);
+//        goto parseSuccess;
+//                    case TokenType.struct:
+//        current = parseStructDefinition(docComment, annotations, modifiers);
+//        goto parseSuccess;
+//                    case TokenType.interface:
+//        current = parseInterfaceDefinition(docComment, annotations, modifiers);
+//        goto parseSuccess;
+//                    case TokenType.enum:
+//        current = parseEnumDefinition(docComment, annotations, modifiers);
+//        goto parseSuccess;
+//                    case TokenType.extend:
+//        current = parseExtensionDefinition(docComment, annotations, modifiers);
+//        goto parseSuccess;
+//                    case TokenType.func:
+//        current = parseFuncDefinition(docComment, annotations, modifiers);
+//        goto parseSuccess;
+
+//        #endregion
+
+//        #region 结束符
+
+//                    case TokenType.rBrace:
+//        this.lexer.read();
+//        if (expectRBrack) {
+//            return;
+//        }
+//        Compiler.error(ErrorCode.unexpectedRBrace, "语法错误：多余的“}”", this.lexer.current);
+//        continue;
+//                    case TokenType.eof:
+//        if (expectRBrack) {
+//            expectToken(TokenType.rBrace, ErrorCode.expectedRBrace);
+//        }
+//        return;
+
+//        #endregion
+
+//        #region 错误
+
+//                    case TokenType.import:
+//        Compiler.error(ErrorCode.unexpectedImportDirective, "“import”指令只能在文件顶部使用", this.lexer.peek());
+//        // 忽略之后的所有 import 语句。
+//        skipToMemberDefinition();
+//        continue;
+//                    case TokenType.semicolon:
+//        Compiler.error(ErrorCode.unexpectedSemicolon, "语法错误：多余的“;”", this.lexer.peek());
+//        this.lexer.read();
+//        continue;
+//                    default:
+//        Compiler.error(ErrorCode.unexpectedStatement, "语法错误：应输入函数、类或其它成员定义；所有语句都应放在函数内", this.lexer.peek());
+//        skipToMemberDefinition();
+//        continue;
+
+//        #endregion
+
+//    }
+
+//    parseTypeMember:
+
+//    // 当前接口的显示声明。
+//    Expression explicitType = null;
+
+//    parseNextTypeMember:
+
+//    switch (this.lexer.peek().type) {
+
+//        #region Type name
+//                    case TokenType.identifier:
+
+//    Identifier currentIdentifier = parseIdentifier();
+//    switch (this.lexer.peek().type) {
+
+//        // Type name()
+//        case TokenType.lParam:
+//            current = parseMethodDefinition(docComment, annotations, modifiers, returnType, explicitType, currentIdentifier);
+//            goto parseSuccess;
+
+//        // Type name {get; set;}
+//        case TokenType.lBrace:
+//            current = parsePropertyDefinition(docComment, annotations, modifiers, returnType, explicitType, currentIdentifier);
+//            goto parseSuccess;
+
+//        // Type InterfaceType.name()
+//        case TokenType.period:
+//            explicitType = explicitType == null ? (Expression)currentIdentifier : new MemberCallExpression() {
+//                target = explicitType,
+//                    argument = currentIdentifier
+//            };
+//            this.lexer.read();
+//            goto parseNextTypeMember;
+
+//        // Type name<T>()
+//        case TokenType.lt:
+//            if (followsWithTypeMemberDefinition()) {
+//                var currentType = parseGenericTypeExpression(currentIdentifier, TypeUsage.type);
+//                explicitType = explicitType == null ? (Expression)currentType : new MemberCallExpression() {
+//                    target = explicitType,
+//                        argument = currentType
+//                };
+//                this.lexer.read();
+//                goto parseNextTypeMember;
+//            }
+//            current = parseMethodDefinition(docComment, annotations, modifiers, returnType, explicitType, currentIdentifier);
+//            goto parseSuccess;
+
+//        // Type name;
+//        // Type name = Value;
+//        // Type name, name2;
+//        default:
+//            current = parseFieldDefinition(docComment, annotations, modifiers, returnType, explicitType, currentIdentifier);
+//            goto parseSuccess;
+
+//    }
+
+//    #endregion
+
+//    #region Type this
+//                    case TokenType.this:
+//    this.lexer.read();
+
+//    // Type this [params] {}
+//    if (this.lexer.peek().type == TokenType.lBrack) {
+//        current = parseIndexerOperatorDefinition(docComment, annotations, modifiers, returnType, explicitType);
+//        goto parseSuccess;
+//    }
+
+//    // Type this +(params) {}
+//    if (this.lexer.peek().type.isOverloadableOperator()) {
+//        current = parseOperatorOverloadDefinition(docComment, annotations, modifiers, returnType, explicitType);
+//        goto parseSuccess;
+//    }
+
+//    Compiler.error(ErrorCode.invalidOperatorOverload, String.Format("“{0}”不是可重载的操作符", this.lexer.peek().type.getName()), this.lexer.peek());
+//    skipToMemberDefinition();
+//    continue;
+//    #endregion
+
+//                    // 其它情况。
+//                    default:
+//    expectIdentifier();
+//    skipToMemberDefinition();
+//    continue;
+
+//}
+
+//parseSuccess:
+//if (target.members == null) {
+//    last = target.members = current;
+//} else if (current != null) {
+//    last = last.next = current;
+//}
+
+//            }
+
+//        }
 
         /**
          * 判断之后是否存在函数名。
          */
          * <returns></returns>
         private bool followsWithTypeMemberDefinition() {
-    lexer.mark();
-    lexer.markRead();
+    this.lexer.mark();
+    this.lexer.markRead();
 
     // 忽略之后的泛型参数。
     while (true) {
-        switch (lexer.markRead().type) {
+        switch (this.lexer.markRead().type) {
             case TokenType.gt:
 
                 // 如果紧跟 . 说明这是实体泛型。
-                return lexer.markRead().type == TokenType.period;
+                return this.lexer.markRead().type == TokenType.period;
             case TokenType.lt:
                 return true;
             case TokenType.colon:
@@ -1426,89 +1400,89 @@ if (target.members == null) {
     }
 }
 
-        private DocComment parseDocComment() {
-    return lexer.peek().docComment;
-}
+//        private DocComment parseDocComment() {
+//    return this.lexer.peek().docComment;
+//}
 
-        private MemberDefinition.MemberAnnotation parseMemberAnnotationList() {
+//        private MemberDefinition.MemberAnnotation parseMemberAnnotationList() {
 
-    // MemberAnnotationList :
-    //   MemberDefinition.MemberAnnotation ...
+//    // MemberAnnotationList :
+//    //   MemberDefinition.MemberAnnotation ...
 
-    // MemberDefinition.MemberAnnotation :
-    //   @ Type FuncCallArguments?
+//    // MemberDefinition.MemberAnnotation :
+//    //   @ Type FuncCallArguments?
 
-    MemberDefinition.MemberAnnotation first = null, last = null;
+//    MemberDefinition.MemberAnnotation first = null, last = null;
 
-    int count = 0;
+//    int count = 0;
 
-    while (readToken(TokenType.at)) {
+//    while (readToken(TokenType.at)) {
 
-        var current = new MemberDefinition.MemberAnnotation();
+//        var current = new MemberDefinition.MemberAnnotation();
 
-        current.target = parseType();
-        if (lexer.peek().type == TokenType.lParam) {
-            current.arguments = parseArgumentList(TokenType.rParam, ErrorCode.expectedRParam);
-        }
+//        current.target = parseType();
+//        if (this.lexer.peek().type == TokenType.lParam) {
+//            current.arguments = parseArgumentList(TokenType.rParam, ErrorCode.expectedRParam);
+//        }
 
-        if (first == null) {
-            last = first = current;
-        } else {
-            last = last.next = current;
-        }
+//        if (first == null) {
+//            last = first = current;
+//        } else {
+//            last = last.next = current;
+//        }
 
-        if (++count > 250) {
-            Compiler.error(ErrorCode.tooManyAnnoatation, "注解太多；一个成员最多只能包含 250 个注解", lexer.current);
-        }
+//        if (++count > 250) {
+//            Compiler.error(ErrorCode.tooManyAnnoatation, "注解太多；一个成员最多只能包含 250 个注解", this.lexer.current);
+//        }
 
-    }
+//    }
 
-    return first;
+//    return first;
 
-}
+//}
 
         private Modifiers parseModifiers() {
     Modifiers result = Modifiers.none;
 
-    while (lexer.peek().type.isModifier()) {
+    while (this.lexer.peek().type.isModifier()) {
         Modifiers current;
-        switch (lexer.read().type) {
-            case TokenType.@static:
+        switch (this.lexer.read().type) {
+            case TokenType.static:
                 current = Modifiers.@static;
                 break;
-            case TokenType.@virtual:
+            case TokenType.virtual:
                 current = Modifiers.@virtual;
                 break;
-            case TokenType.@override:
+            case TokenType.override:
                 current = Modifiers.@override;
                 break;
-            case TokenType.@abstract:
+            case TokenType.abstract:
                 current = Modifiers.@abstract;
                 break;
 
-            case TokenType.@private:
+            case TokenType.private:
                 current = Modifiers.@private;
                 break;
-            case TokenType.@public:
+            case TokenType.public:
                 current = Modifiers.@public;
                 break;
-            case TokenType.@protected:
+            case TokenType.protected:
                 current = Modifiers.@protected;
                 break;
 
-            case TokenType.@new:
+            case TokenType.new:
                 current = Modifiers.@new;
                 break;
-            case TokenType.@const:
+            case TokenType.const:
                 current = Modifiers.@const;
                 break;
             case TokenType.final:
                 current = Modifiers.final;
                 break;
-            case TokenType.@extern:
+            case TokenType.extern:
                 current = Modifiers.@extern;
                 break;
-            case TokenType.@volatile:
+            case TokenType.volatile:
                 current = Modifiers.@volatile;
                 break;
             default:
@@ -1517,12 +1491,12 @@ if (target.members == null) {
         }
 
         if (result.hasFlag(current)) {
-            Compiler.error(ErrorCode.dumpModifiers, String.Format("“{0}”修饰符重复；应删除“{0}”", current.getName()), lexer.current);
+            Compiler.error(ErrorCode.dumpModifiers, String.Format("“{0}”修饰符重复；应删除“{0}”", current.getName()), this.lexer.current);
             continue;
         }
 
         if (result.getAccessibility() != Modifiers.none && current.getAccessibility() != Modifiers.none) {
-            Compiler.error(ErrorCode.tooManyAccessibility, String.Format("访问修饰符太多；应删除“{0}”", current.getName()), lexer.current);
+            Compiler.error(ErrorCode.tooManyAccessibility, String.Format("访问修饰符太多；应删除“{0}”", current.getName()), this.lexer.current);
             continue;
         }
 
@@ -1592,29 +1566,29 @@ if (target.members == null) {
                 do {
                     Expression type;
 
-                    switch (lexer.peek().type) {
-                        case TokenType.@class:
+                    switch (this.lexer.peek().type) {
+                        case TokenType.class:
                             type = new MemberDefinition.GenericParameter.ClassConstraintExpression() {
-                                startLocation = lexer.read().startLocation
+                                start = this.lexer.read().start
                             };
                             break;
-                        case TokenType.@struct:
+                        case TokenType.struct:
                             type = new MemberDefinition.GenericParameter.StructConstraintExpression() {
-                                startLocation = lexer.read().startLocation
+                                start = this.lexer.read().start
                             };
                             break;
-                        case TokenType.@enum:
+                        case TokenType.enum:
                             type = new MemberDefinition.GenericParameter.EnumConstraintExpression() {
-                                startLocation = lexer.read().startLocation
+                                start = this.lexer.read().start
                             };
                             break;
-                        case TokenType.@new:
+                        case TokenType.new:
                             type = new MemberDefinition.GenericParameter.NewableConstraintExpression() {
-                                startLocation = lexer.read().startLocation,
+                                start = this.lexer.read().start,
                                     };
                             expectToken(TokenType.lParam, ErrorCode.expectedLParam);
                             expectToken(TokenType.rParam, ErrorCode.expectedRParam);
-                            type.endLocation = lexer.current.endLocation;
+                            type.endLocation = this.lexer.current.endLocation;
                             break;
                         case TokenType.rParam:
                             goto end;
@@ -1630,7 +1604,7 @@ if (target.members == null) {
                     }
 
                     if (++j > 250) {
-                        Compiler.error(ErrorCode.tooManyGenericConstraints, "泛型约束太多；一个泛型参数最多只能包含 250 个约束", lexer.current);
+                        Compiler.error(ErrorCode.tooManyGenericConstraints, "泛型约束太多；一个泛型参数最多只能包含 250 个约束", this.lexer.current);
                     }
 
                 } while (readToken(TokenType.comma));
@@ -1649,7 +1623,7 @@ if (target.members == null) {
         }
 
         if (++count > 250) {
-            Compiler.error(ErrorCode.tooManyGenericTypeParameters, "泛型参数太多；一个成员最多只能包含 250 个泛型参数", lexer.current);
+            Compiler.error(ErrorCode.tooManyGenericTypeParameters, "泛型参数太多；一个成员最多只能包含 250 个泛型参数", this.lexer.current);
         }
 
     } while (readToken(TokenType.comma));
@@ -1685,28 +1659,28 @@ if (target.members == null) {
 
             var current = new Teal.Compiler.MemberDefinition.Parameter();
             current.variableType = VariableType.inParameter;
-            switch (lexer.peek().type) {
-                case TokenType.@ref:
+            switch (this.lexer.peek().type) {
+                case TokenType.ref:
                     current.variableType = VariableType.refParameter;
-                    lexer.read();
+                    this.lexer.read();
                     parseRestParameterModifiers();
                     goto default;
-                case TokenType.@params:
+                case TokenType.params:
                     current.variableType = VariableType.paramsParameter;
-                    lexer.read();
+                    this.lexer.read();
                     parseRestParameterModifiers();
                     goto default;
-                case TokenType.@out:
+                case TokenType.out:
                     current.variableType = VariableType.outParameter;
-                    lexer.read();
+                    this.lexer.read();
                     parseRestParameterModifiers();
                     goto default;
                 case TokenType.ellipsis:
                     current.variableType = VariableType.argListParameter;
                     current.name = new Identifier() {
-                        startLocation = lexer.read().startLocation,
+                        start = this.lexer.read().start,
                             value = "...",
-                            endLocation = lexer.current.endLocation
+                            endLocation = this.lexer.current.endLocation
                     };
                     break;
                 default:
@@ -1742,12 +1716,12 @@ if (target.members == null) {
 }
 
         private void parseRestParameterModifiers() {
-    switch (lexer.peek().type) {
-        case TokenType.@ref:
-        case TokenType.@params:
-        case TokenType.@out:
-            lexer.read();
-            Compiler.error(ErrorCode.tooManyParameterModifiers, String.Format("参数修饰符太多；应删除“{0}”", lexer.peek().type.getName()), lexer.current);
+    switch (this.lexer.peek().type) {
+        case TokenType.ref:
+        case TokenType.params:
+        case TokenType.out:
+            this.lexer.read();
+            Compiler.error(ErrorCode.tooManyParameterModifiers, String.Format("参数修饰符太多；应删除“{0}”", this.lexer.peek().type.getName()), this.lexer.current);
             parseRestParameterModifiers();
             break;
     }
@@ -1761,7 +1735,7 @@ if (target.members == null) {
 
     if (readToken(TokenType.lBrace)) {
         var result = new ToplevelBlock();
-        result.startLocation = lexer.current.startLocation;
+        result.start = this.lexer.current.start;
         parseBlockBody(result);
         return result;
     }
@@ -1787,11 +1761,11 @@ if (target.members == null) {
     result.parameters = parseParameterList(TokenType.lParam, TokenType.rParam, ErrorCode.expectedRParam);
 
     //if (readToken(TokenType.colon)) {
-    //    if (lexer.peek().type != TokenType.@this && lexer.peek().type != TokenType.@base) {
-    //        Compiler.error(ErrorCode.expectedThisOrBase, "语法错误：应输入“this”或“base”", lexer.peek());
+    //    if (this.lexer.peek().type != TokenType.this && this.lexer.peek().type != TokenType.base) {
+    //        Compiler.error(ErrorCode.expectedThisOrBase, "语法错误：应输入“this”或“base”", this.lexer.peek());
     //    } else {
-    //        result.initializerType = lexer.read().type;
-    //        if (lexer.peek().type == TokenType.lParam) {
+    //        result.initializerType = this.lexer.read().type;
+    //        if (this.lexer.peek().type == TokenType.lParam) {
     //            result.initializerArguments = parseArgumentList(TokenType.rParam, ErrorCode.expectedRParam);
     //        } else {
     //            expectToken(TokenType.lParam, ErrorCode.expectedLParam);
@@ -1856,7 +1830,7 @@ if (target.members == null) {
             current.modifiers = parseAccesibilityModifiers();
 
             if (!readToken(TokenType.identifier)) {
-                Compiler.error(ErrorCode.expectedGetOrSet, "语法错误：应输入“get”或“set”", lexer.peek());
+                Compiler.error(ErrorCode.expectedGetOrSet, "语法错误：应输入“get”或“set”", this.lexer.peek());
                 skipToMemberDefinition();
                 return;
             }
@@ -1865,16 +1839,16 @@ if (target.members == null) {
             current.name = parseIdentifier();
             if (current.name.value == "get") {
                 if (target.getAccessor != null) {
-                    Compiler.error(ErrorCode.dumpGetOrSet, "get 访问器重复", lexer.current);
+                    Compiler.error(ErrorCode.dumpGetOrSet, "get 访问器重复", this.lexer.current);
                 }
                 target.getAccessor = current;
             } else if (current.name.value == "set") {
                 if (target.setAccessor != null) {
-                    Compiler.error(ErrorCode.dumpGetOrSet, "set 访问器重复", lexer.current);
+                    Compiler.error(ErrorCode.dumpGetOrSet, "set 访问器重复", this.lexer.current);
                 }
                 target.setAccessor = current;
             } else {
-                Compiler.error(ErrorCode.expectedGetOrSet, "语法错误：应输入“get”或“set”", lexer.current);
+                Compiler.error(ErrorCode.expectedGetOrSet, "语法错误：应输入“get”或“set”", this.lexer.current);
             }
 
             current.body = parseMethodBody();
@@ -1887,26 +1861,26 @@ if (target.members == null) {
 
         private Modifiers parseAccesibilityModifiers() {
     Modifiers result = Modifiers.none;
-    while (lexer.peek().type.isModifier()) {
+    while (this.lexer.peek().type.isModifier()) {
         Modifiers current;
-        switch (lexer.read().type) {
-            case TokenType.@private:
+        switch (this.lexer.read().type) {
+            case TokenType.private:
                 current = Modifiers.@private;
                 break;
-            case TokenType.@public:
+            case TokenType.public:
                 current = Modifiers.@public;
                 break;
-            case TokenType.@protected:
+            case TokenType.protected:
                 current = Modifiers.@protected;
                 break;
             default:
-                Compiler.error(ErrorCode.invalidModifiers, String.Format("修饰符“{0}”对该项无效", lexer.current.type.getName()), lexer.current);
+                Compiler.error(ErrorCode.invalidModifiers, String.Format("修饰符“{0}”对该项无效", this.lexer.current.type.getName()), this.lexer.current);
                 continue;
         }
 
         // 只能设置成一个值。
         if (result != Modifiers.none) {
-            Compiler.error(ErrorCode.tooManyAccessibility, String.Format("访问修饰符太多；应删除“{0}”", lexer.current.type.getName()), lexer.current);
+            Compiler.error(ErrorCode.tooManyAccessibility, String.Format("访问修饰符太多；应删除“{0}”", this.lexer.current.type.getName()), this.lexer.current);
             continue;
         }
 
@@ -1928,7 +1902,7 @@ if (target.members == null) {
     result.returnType = returnType;
     result.explicitType = explicitType;
     result.name = parseIdentifier(); // this
-    result.@operator = lexer.current.type;
+    result.@operator = this.lexer.current.type;
     result.parameters = parseParameterList(TokenType.lParam, TokenType.rParam, ErrorCode.expectedRParam);
     result.body = parseMethodBody();
     return result;
@@ -1959,13 +1933,13 @@ if (target.members == null) {
     //    Annotations? Modifiers? func Identifier ( ParameterList? ) MethodBody
 
     var result = new MethodDefinition();
-    lexer.read(); // func
+    this.lexer.read(); // func
     result.name = expectIdentifier();
     expectToken(TokenType.lParam, ErrorCode.expectedLParam);
 
     Variable last = null;
     do {
-        if (lexer.peek().type == TokenType.rParam) {
+        if (this.lexer.peek().type == TokenType.rParam) {
             break;
         }
 
@@ -1998,12 +1972,12 @@ if (target.members == null) {
     }
 
     if (modifiers != Modifiers.none) {
-        Compiler.error(ErrorCode.unexpectedModifiers, "命名空间不允许有修饰符", lexer.current);
+        Compiler.error(ErrorCode.unexpectedModifiers, "命名空间不允许有修饰符", this.lexer.current);
     }
 
     var result = new NamespaceDefinition();
     result.docComment = docComment;
-    lexer.read(); // namespace
+    this.lexer.read(); // namespace
 
     result.name = expectIdentifier();
     if (readToken(TokenType.period)) {
@@ -2062,7 +2036,7 @@ if (target.members == null) {
     target.docComment = docComment;
     target.annotations = annotations;
     target.modifiers = modifiers;
-    lexer.read(); // class | struct | interface
+    this.lexer.read(); // class | struct | interface
     target.name = expectIdentifier();
 
     if (readToken(TokenType.lt)) {
@@ -2122,7 +2096,7 @@ if (target.members == null) {
     result.docComment = docComment;
     result.annotations = annotations;
     result.modifiers = modifiers;
-    lexer.read(); // enum
+    this.lexer.read(); // enum
     result.name = expectIdentifier();
 
     if (readToken(TokenType.colon)) {
@@ -2172,7 +2146,7 @@ if (target.members == null) {
     do {
         result.Add(parseType());
         if (result.Count > 250) {
-            Compiler.error(ErrorCode.tooManyBaseTypes, "基类型太多；类类型不得超过 250 个", lexer.current);
+            Compiler.error(ErrorCode.tooManyBaseTypes, "基类型太多；类类型不得超过 250 个", this.lexer.current);
         }
     } while (readToken(TokenType.comma));
     return result;
@@ -2190,13 +2164,13 @@ if (target.members == null) {
     var statements = target.statements = new List<Statement>();
 
     while (true) {
-        switch (lexer.peek().type) {
+        switch (this.lexer.peek().type) {
             case TokenType.rBrace:
-                target.endLocation = lexer.read().endLocation;
+                target.endLocation = this.lexer.read().endLocation;
                 return;
             case TokenType.eof:
                 expectToken(TokenType.rBrace, ErrorCode.expectedRBrace);
-                target.endLocation = lexer.current.endLocation;
+                target.endLocation = this.lexer.current.endLocation;
                 return;
             default:
                 statements.Add(parseStatement());
@@ -2214,7 +2188,7 @@ if (target.members == null) {
         private Statement parseVariableOrExpressionStatement(Expression parsedType) {
 
     // Type Identifier;
-    if (lexer.peek().type == TokenType.identifier) {
+    if (this.lexer.peek().type == TokenType.identifier) {
         return parseVariableStatement(parsedType, parseIdentifier());
     }
 
@@ -2230,12 +2204,12 @@ if (target.members == null) {
          */
          * <returns></returns>
         private Node parseVariableOrExpression() {
-    switch (lexer.peek().type) {
+    switch (this.lexer.peek().type) {
         case TokenType.identifier:
             var parsedType = parseTypeExpression(parseIdentifier(), TypeUsage.declartion);
 
             // 标识符后不是标识符，说明当前标识符就是需要的标识符。
-            if (lexer.peek().type == TokenType.identifier) {
+            if (this.lexer.peek().type == TokenType.identifier) {
                 return parseVariableList(parsedType, parseIdentifier());
             }
 
@@ -2243,11 +2217,11 @@ if (target.members == null) {
 
         default:
 
-            if (lexer.peek().type.isPredefinedType()) {
+            if (this.lexer.peek().type.isPredefinedType()) {
                 var parsedType2 = parsePredefinedType();
 
                 // 标识符后不是标识符，说明当前标识符就是需要解析的标识符。
-                if (lexer.peek().type == TokenType.identifier) {
+                if (this.lexer.peek().type == TokenType.identifier) {
                     return parseVariableList(parsedType2, parseIdentifier());
                 }
                 return parseExpression(parsedType2);
@@ -2266,15 +2240,15 @@ if (target.members == null) {
     var result = parseStatement();
 
     if (result == null) {
-        Compiler.error(ErrorCode.expectedStatement, "语法错误：应输入语句", lexer.peek());
+        Compiler.error(ErrorCode.expectedStatement, "语法错误：应输入语句", this.lexer.peek());
     } else if (result is VariableStatement) {
         Compiler.error(ErrorCode.invalidVariableStatement, "嵌套语句不能是变量声明语句；应使用“{}”包围", ((VariableStatement)result).type);
     } else if (result is LabeledStatement) {
         Compiler.error(ErrorCode.invalidLabeledStatement, "嵌套语句不能是标签语句；应使用“{}”包围", ((LabeledStatement)result).label);
     }
 
-    if (result is Semicolon && lexer.peek().type == TokenType.lBrace) {
-        Compiler.warning(ErrorCode.confusedSemicolon, "此分号可能是多余的", lexer.current.startLocation, lexer.current.endLocation);
+    if (result is Semicolon && this.lexer.peek().type == TokenType.lBrace) {
+        Compiler.warning(ErrorCode.confusedSemicolon, "此分号可能是多余的", this.lexer.current.start, this.lexer.current.endLocation);
     }
 
     return result;
@@ -2285,10 +2259,10 @@ if (target.members == null) {
     // Block :
     //   { StatementList? }
 
-    console.assert(lexer.peek().type == TokenType.lBrace);
+    console.assert(this.lexer.peek().type == TokenType.lBrace);
 
     var result = new Block();
-    result.startLocation = lexer.read().startLocation; // {
+    result.start = this.lexer.read().start; // {
     parseBlockBody(result);
     return result;
 
@@ -2302,7 +2276,7 @@ if (target.members == null) {
     //var result = new ExpressionStatement();
     //result.body = parseExpression();
     //expectSemicolon();
-    //result.endLocation = lexer.current.endLocation;
+    //result.endLocation = this.lexer.current.endLocation;
     //return result;
 
     throw new Unreachable();
@@ -2314,7 +2288,7 @@ if (target.members == null) {
     //var result = new ExpressionStatement();
     //result.body = parseExpression(parsed);
     //expectSemicolon();
-    //result.endLocation = lexer.current.endLocation;
+    //result.endLocation = this.lexer.current.endLocation;
     //return result;
 
     throw new Unreachable();
@@ -2326,17 +2300,17 @@ if (target.members == null) {
     // ThrowStatement :
     //   throw Expression? ;
 
-    console.assert(lexer.peek().type == TokenType.@throw);
+    console.assert(this.lexer.peek().type == TokenType.throw);
 
     var result = new ThrowStatement();
-    result.startLocation = lexer.read().startLocation; // throw
+    result.start = this.lexer.read().start; // throw
 
     if (followsWithExpression()) {
         result.value = parseExpression();
     }
 
     expectSemicolon();
-    result.endLocation = lexer.current.endLocation;
+    result.endLocation = this.lexer.current.endLocation;
     return result;
 
 }
@@ -2346,13 +2320,13 @@ if (target.members == null) {
     // YieldStatement :
     //   yield Expression ;
 
-    console.assert(lexer.peek().type == TokenType.@yield);
+    console.assert(this.lexer.peek().type == TokenType.yield);
 
     YieldStatement result = new YieldStatement();
-    result.startLocation = lexer.read().startLocation; // yield
+    result.start = this.lexer.read().start; // yield
     result.value = parseExpression();
     expectSemicolon();
-    result.endLocation = lexer.current.endLocation;
+    result.endLocation = this.lexer.current.endLocation;
 
     return result;
 }
@@ -2362,23 +2336,23 @@ if (target.members == null) {
     // GotoStatement :
     //   goto Identifier ;
 
-    console.assert(lexer.peek().type == TokenType.@goto);
+    console.assert(this.lexer.peek().type == TokenType.goto);
 
-    var startLocation = lexer.read().startLocation; // goto
+    var start = this.lexer.read().start; // goto
 
     Statement result;
 
-    switch (lexer.peek().type) {
+    switch (this.lexer.peek().type) {
         case TokenType.identifier:
             result = new GotoLabelStatement() {
-                startLocation = startLocation,
+                start = start,
                     target = parseIdentifier()
             };
             break;
-        case TokenType.@case:
-            lexer.read();
+        case TokenType.case:
+            this.lexer.read();
             result = new GotoCaseStatement() {
-                target = readToken(TokenType.@else) ? null : parseExpression()
+                target = readToken(TokenType.else) ? null : parseExpression()
             };
             break;
         default:
@@ -2386,9 +2360,9 @@ if (target.members == null) {
             return null;
     }
 
-    result.startLocation = startLocation;
+    result.start = start;
     expectSemicolon();
-    result.endLocation = lexer.current.endLocation;
+    result.endLocation = this.lexer.current.endLocation;
     return result;
 }
 
@@ -2397,12 +2371,12 @@ if (target.members == null) {
     // BreakStatement :
     //   break ;
 
-    console.assert(lexer.peek().type == TokenType.@break);
+    console.assert(this.lexer.peek().type == TokenType.break);
 
     var result = new BreakStatement();
-    result.startLocation = lexer.read().startLocation; // break
+    result.start = this.lexer.read().start; // break
     expectSemicolon();
-    result.endLocation = lexer.current.endLocation;
+    result.endLocation = this.lexer.current.endLocation;
     return result;
 }
 
@@ -2411,12 +2385,12 @@ if (target.members == null) {
     // ContinueStatement :
     //   continue ;
 
-    console.assert(lexer.peek().type == TokenType.@continue);
+    console.assert(this.lexer.peek().type == TokenType.continue);
 
     var result = new ContinueStatement();
-    result.startLocation = lexer.read().startLocation; // continue
+    result.start = this.lexer.read().start; // continue
     expectSemicolon();
-    result.endLocation = lexer.current.endLocation;
+    result.endLocation = this.lexer.current.endLocation;
     return result;
 }
 
@@ -2425,18 +2399,18 @@ if (target.members == null) {
     // ReturnStatement :
     //   return Expression? ;
 
-    console.assert(lexer.peek().type == TokenType.@return);
+    console.assert(this.lexer.peek().type == TokenType.return);
 
     var result = new ReturnStatement();
 
-    result.startLocation = lexer.read().startLocation;
+    result.start = this.lexer.read().start;
 
     if (followsWithExpression()) {
         result.value = parseExpression();
     }
 
     expectSemicolon();
-    result.endLocation = lexer.current.endLocation;
+    result.endLocation = this.lexer.current.endLocation;
     return result;
 
 }
@@ -2455,16 +2429,16 @@ if (target.members == null) {
     //   catch ( Type ) EmbeddedStatement
     //   catch ( Type Identifier ) EmbeddedStatement
 
-    console.assert(lexer.peek().type == TokenType.@try);
+    console.assert(this.lexer.peek().type == TokenType.try);
 
     var result = new TryStatement();
-    result.startLocation = lexer.read().startLocation; // try
+    result.start = this.lexer.read().start; // try
     result.tryClause = parseEmbeddedStatement();
 
     TryStatement.CatchClause last = null;
-    while (readToken(TokenType.@catch)) {
+    while (readToken(TokenType.catch)) {
         var current = new TryStatement.CatchClause();
-        current.startLocation = lexer.current.startLocation;
+        current.start = this.lexer.current.start;
 
         if (readToken(TokenType.lParam)) {
             current.variable = new Variable();
@@ -2484,7 +2458,7 @@ if (target.members == null) {
         }
     }
 
-    if (readToken(TokenType.@finally)) {
+    if (readToken(TokenType.finally)) {
         result.finallyClause = parseEmbeddedStatement();
     }
 
@@ -2496,14 +2470,14 @@ if (target.members == null) {
     // WithStatement :
     //   with EmabedVariableDeclaration EmbeddedStatement
 
-    console.assert(lexer.peek().type == TokenType.@with);
+    console.assert(this.lexer.peek().type == TokenType.with);
 
     var result = new WithStatement();
-    result.startLocation = lexer.read().startLocation;
+    result.start = this.lexer.read().start;
 
     bool foundParams = readToken(TokenType.lParam);
     if (!foundParams && Compiler.options.disallowMissingParentheses) {
-        Compiler.error(ErrorCode.strictExpectedParentheses, "严格模式: 应输入“(”", lexer.current);
+        Compiler.error(ErrorCode.strictExpectedParentheses, "严格模式: 应输入“(”", this.lexer.current);
     }
 
     result.target = parseVariableOrExpression();
@@ -2528,9 +2502,9 @@ if (target.members == null) {
     * <returns></returns>
         private Identifier parseIdentifier() {
     return new Identifier() {
-        startLocation = lexer.read().startLocation,
-            value = lexer.current.buffer.ToString(),
-            endLocation = lexer.current.endLocation
+        start = this.lexer.read().start,
+            value = this.lexer.current.buffer.ToString(),
+            endLocation = this.lexer.current.endLocation
     };
 }
 
@@ -2543,12 +2517,12 @@ if (target.members == null) {
     // MagicVariable :
     //   @ Identifier
 
-    console.assert(lexer.peek().type == TokenType.@at);
+    console.assert(this.lexer.peek().type == TokenType.at);
 
     var result = new MagicVariable();
-    result.startLocation = lexer.read().startLocation; // @
+    result.start = this.lexer.read().start; // @
     result.value = expectIdentifier().value;
-    result.endLocation = lexer.current.endLocation;
+    result.endLocation = this.lexer.current.endLocation;
     return result;
 }
 
@@ -2572,7 +2546,7 @@ if (target.members == null) {
         expectToken(TokenType.rParam, ErrorCode.expectedRParam);
     } else {
         if (Compiler.options.disallowMissingParentheses) {
-            Compiler.error(ErrorCode.strictExpectedParentheses, "严格模式: 应输入“(”", lexer.current);
+            Compiler.error(ErrorCode.strictExpectedParentheses, "严格模式: 应输入“(”", this.lexer.current);
         }
         result = parseExpression();
     }
@@ -2583,16 +2557,16 @@ if (target.members == null) {
         private Expression parseIntOrLongLiteral(long value) {
     if (value <= int.MaxValue) {
         return new IntLiteral() {
-            startLocation = lexer.read().startLocation,
+            start = this.lexer.read().start,
                 value = (int)value,
-                    endLocation = lexer.current.endLocation
+                    endLocation = this.lexer.current.endLocation
         };
     }
 
     return new LongLiteral() {
-        startLocation = lexer.read().startLocation,
+        start = this.lexer.read().start,
             value = value,
-            endLocation = lexer.current.endLocation
+            endLocation = this.lexer.current.endLocation
     };
 
 }
@@ -2617,27 +2591,27 @@ if (target.members == null) {
     // Property :
     //   PropertyName : Expression
 
-    console.assert(lexer.peek().type == (stopBrack == TokenType.rBrace ? TokenType.@lBrace : TokenType.lBrack));
+    console.assert(this.lexer.peek().type == (stopBrack == TokenType.rBrace ? TokenType.lBrace : TokenType.lBrack));
 
-    var startLocation = lexer.read().startLocation; // [
-    var type = lexer.current.type;
+    var start = this.lexer.read().start; // [
+    var type = this.lexer.current.type;
 
     // [:], {:}
     if (readToken(TokenType.colon)) {
         expectToken(stopBrack, errorCode);
         return new DictLiteral() {
-            startLocation = startLocation,
+            start = start,
                 type = type,
-                endLocation = lexer.current.endLocation
+                endLocation = this.lexer.current.endLocation
         };
     }
 
     // [], {}
     if (readToken(stopBrack)) {
         return new ListLiteral() {
-            startLocation = startLocation,
+            start = start,
                 type = type,
-                endLocation = lexer.current.endLocation
+                endLocation = this.lexer.current.endLocation
         };
     }
 
@@ -2646,7 +2620,7 @@ if (target.members == null) {
     // [key: value], {key: value}
     if (readToken(TokenType.colon)) {
         var result = new DictLiteral();
-        result.startLocation = startLocation;
+        result.start = start;
         result.type = type;
 
         var last = result.properties = new DictLiteral.Property() {
@@ -2678,13 +2652,13 @@ if (target.members == null) {
 
         expectToken(stopBrack, errorCode);
         end:
-        result.endLocation = lexer.current.endLocation;
+        result.endLocation = this.lexer.current.endLocation;
         return result;
 
     } else {
 
         var result = new ListLiteral();
-        result.startLocation = startLocation;
+        result.start = start;
         result.type = type;
         result.values = new List<Expression>() { firstKey };
 
@@ -2701,7 +2675,7 @@ if (target.members == null) {
 
         expectToken(stopBrack, errorCode);
         end:
-        result.endLocation = lexer.current.endLocation;
+        result.endLocation = this.lexer.current.endLocation;
         return result;
 
     }
@@ -2726,9 +2700,9 @@ if (target.members == null) {
     //   ref ToExpression
     //   out ToExpression
 
-    console.assert(lexer.peek().type == (stopBrack == TokenType.rParam ? TokenType.@lParam : TokenType.lBrack));
+    console.assert(this.lexer.peek().type == (stopBrack == TokenType.rParam ? TokenType.lParam : TokenType.lBrack));
 
-    lexer.read(); // [, (
+    this.lexer.read(); // [, (
 
     FuncCallExpression.Argument first = null, last = null;
 
@@ -2741,7 +2715,7 @@ if (target.members == null) {
         var current = new FuncCallExpression.Argument();
 
         // 读取命名参数名。
-        if (lexer.peek().type == TokenType.identifier) {
+        if (this.lexer.peek().type == TokenType.identifier) {
             var currentIdentifier = parseIdentifier();
 
             if (readToken(TokenType.colon)) {
@@ -2772,9 +2746,9 @@ if (target.members == null) {
 
         private void parseArgumentBody(FuncCallExpression.Argument target) {
 
-    if (readToken(TokenType.@out)) {
+    if (readToken(TokenType.out)) {
         target.type = readToken(TokenType.assignTo) ? FuncCallExpression.ArgumentType.outAssignTo : FuncCallExpression.ArgumentType.@out;
-    } else if (readToken(TokenType.@ref)) {
+    } else if (readToken(TokenType.ref)) {
         target.type = FuncCallExpression.ArgumentType.@ref;
     }
 
@@ -2800,32 +2774,32 @@ if (target.members == null) {
     //    MethodBody
     //    Expression
 
-    console.assert(lexer.peek().type == TokenType.lParam || lexer.peek().type == TokenType.lambda);
+    console.assert(this.lexer.peek().type == TokenType.lParam || this.lexer.peek().type == TokenType.lambda);
 
     var result = new LambdaLiteral();
 
     //if (parsedParameter != null) {
-    //    result.startLocation = parsedParameter.startLocation;
+    //    result.start = parsedParameter.start;
     //    result.parameters = new Parameter();
     //    result.parameters.name = parsedParameter;
-    //} else if (lexer.peek().type == TokenType.lambda) {
-    //    result.startLocation = lexer.peek().startLocation; // ->
+    //} else if (this.lexer.peek().type == TokenType.lambda) {
+    //    result.start = this.lexer.peek().start; // ->
     //} else {
-    //    result.startLocation = lexer.read().startLocation; // (
+    //    result.start = this.lexer.read().start; // (
 
     //    if (!readToken(TokenType.rParam)) {
     //        Parameter current = result.parameters = new Parameter();
-    //        if (readToken(TokenType.@ref)) {
+    //        if (readToken(TokenType.ref)) {
     //            current.variableType = VariableType.refParameter;
     //            current.type = parseType();
     //            current.name = expectIdentifier();
-    //        } else if (readToken(TokenType.@out)) {
+    //        } else if (readToken(TokenType.out)) {
     //            current.variableType = VariableType.outParameter;
     //            current.type = parseType();
     //            current.name = expectIdentifier();
     //        } else {
     //            current.type = parseType();
-    //            if (lexer.peek().type == TokenType.identifier) {
+    //            if (this.lexer.peek().type == TokenType.identifier) {
     //                current.name = parseIdentifier();
     //            } else {
     //                current.name = toIdentifier(current.type);
@@ -2838,9 +2812,9 @@ if (target.members == null) {
     //        while (readToken(TokenType.comma)) {
     //            current = new Parameter();
     //            if (hasType) {
-    //                if (readToken(TokenType.@ref)) {
+    //                if (readToken(TokenType.ref)) {
     //                    current.variableType = VariableType.refParameter;
-    //                } else if (readToken(TokenType.@out)) {
+    //                } else if (readToken(TokenType.out)) {
     //                    current.variableType = VariableType.outParameter;
     //                }
     //                current.type = parseType();
@@ -2854,15 +2828,15 @@ if (target.members == null) {
 
     //            // 跳过参数部分。
     //            do {
-    //                lexer.read();
-    //            } while (lexer.peek().type != TokenType.eof && lexer.peek().type != TokenType.rParam && lexer.peek().type != TokenType.lambda && lexer.peek().type != TokenType.lBrace && lexer.peek().type != TokenType.rBrace);
+    //                this.lexer.read();
+    //            } while (this.lexer.peek().type != TokenType.eof && this.lexer.peek().type != TokenType.rParam && this.lexer.peek().type != TokenType.lambda && this.lexer.peek().type != TokenType.lBrace && this.lexer.peek().type != TokenType.rBrace);
     //        }
     //    }
 
     //}
 
-    //console.assert(lexer.peek().type == TokenType.lambda);
-    //lexer.read(); //->
+    //console.assert(this.lexer.peek().type == TokenType.lambda);
+    //this.lexer.read(); //->
     //if (readToken(TokenType.lBrace)) {
     //    result.body = new ToplevelBlock();
     //    parseBlockBody(result.body);
@@ -2897,7 +2871,7 @@ private enum TypeUsage {
     // GenericArgumentList :
     //   < TypeList >
 
-    var type = lexer.peek().type;
+    var type = this.lexer.peek().type;
 
     if (type == TokenType.identifier) {
         return parseType(parseIdentifier(), typeUsage);
@@ -2907,7 +2881,7 @@ private enum TypeUsage {
         return parsePredefinedType(typeUsage);
     }
 
-    Compiler.error(ErrorCode.expectedType, String.Format("语法错误：应输入类型；“{0}”不是类型", type.getName()), lexer.peek());
+    Compiler.error(ErrorCode.expectedType, String.Format("语法错误：应输入类型；“{0}”不是类型", type.getName()), this.lexer.peek());
     return Expression.empty;
 
 }
@@ -2927,22 +2901,22 @@ private enum TypeUsage {
     //   PredefinedType []
     //   PredefinedType *
 
-    console.assert(lexer.peek().type.isPredefinedType());
+    console.assert(this.lexer.peek().type.isPredefinedType());
 
     Expression parsed = new PredefinedTypeLiteral() {
-        startLocation = lexer.read().startLocation,
-            type = lexer.current.type,
+        start = this.lexer.read().start,
+            type = this.lexer.current.type,
             };
 
     while (true) {
-        switch (lexer.peek().type) {
+        switch (this.lexer.peek().type) {
             case TokenType.lBrack:
 
                 // new 表达式中不解析数组类型。
                 if (typeUsage == TypeUsage.@new) {
                     goto default;
         }
-        lexer.read(); // [
+        this.lexer.read(); // [
 
         //// 读取数组维数。
         //int rank = 1;
@@ -2953,14 +2927,14 @@ private enum TypeUsage {
         parsed = new ArrayTypeExpression() {
             elementType = parsed,
                 //rank = rank,
-                endLocation = lexer.current.endLocation
+                endLocation = this.lexer.current.endLocation
         };
         continue;
                     case TokenType.mul:
-        lexer.read();
+        this.lexer.read();
         parsed = new PtrTypeExpression() {
             elementType = parsed,
-                endLocation = lexer.current.endLocation
+                endLocation = this.lexer.current.endLocation
         };
         continue;
                     default:
@@ -3007,7 +2981,7 @@ private enum TypeUsage {
         private Expression parseArrayTypeExpression(Expression parsed, TypeUsage typeUsage) {
 
     while (true) {
-        switch (lexer.peek().type) {
+        switch (this.lexer.peek().type) {
             case TokenType.lBrack:
 
                 // new 表达式中不解析数组类型。
@@ -3017,16 +2991,16 @@ private enum TypeUsage {
                 if (typeUsage != TypeUsage.type) {
 
                     // 判断 [ 是索引还是数组类型。
-                    lexer.mark();
+                    this.lexer.mark();
                     do {
-                        lexer.markRead();
-                    } while (lexer.markPeek().type == TokenType.comma);
-                    if (lexer.markPeek().type != TokenType.rBrack) {
+                        this.lexer.markRead();
+                    } while (this.lexer.markPeek().type == TokenType.comma);
+                    if (this.lexer.markPeek().type != TokenType.rBrack) {
                         goto default;
         }
     }
 
-    lexer.read(); // [
+    this.lexer.read(); // [
 
     int rank = 1;
     while (readToken(TokenType.comma))
@@ -3036,22 +3010,22 @@ private enum TypeUsage {
     parsed = new ArrayTypeExpression() {
         elementType = parsed,
             //rank = rank,
-            endLocation = lexer.current.endLocation
+            endLocation = this.lexer.current.endLocation
     };
     continue;
                     case TokenType.mul:
     if (typeUsage == TypeUsage.expression) {
-        lexer.mark();
-        lexer.markRead();
+        this.lexer.mark();
+        this.lexer.markRead();
 
         // 如果紧跟表达式，则 * 解析为乘号。
-        if (lexer.markRead().type.isExpressionStart()) {
+        if (this.lexer.markRead().type.isExpressionStart()) {
             goto default;
         }
     }
     parsed = new PtrTypeExpression() {
         elementType = parsed,
-            endLocation = lexer.read().endLocation
+            endLocation = this.lexer.read().endLocation
     };
     continue;
                     default:
@@ -3069,23 +3043,23 @@ private enum TypeUsage {
         * <returns></returns>
         private Expression parseGenericTypeExpression(Identifier parsedIdentifier, TypeUsage typeUsage) {
 
-    if (lexer.peek().type == TokenType.lt) {
+    if (this.lexer.peek().type == TokenType.lt) {
 
         // 判断 < 是小于号还是泛型参数。
         if (typeUsage != TypeUsage.type) {
-            lexer.mark();
+            this.lexer.mark();
             if (!markReadGenericTypeExpression()) {
                 return parsedIdentifier;
             }
         }
 
-        lexer.read(); // <
+        this.lexer.read(); // <
 
         var result = new GenericTypeExpression();
         result.elementType = parsedIdentifier;
         result.genericArguments = new List<Expression>();
         do {
-            if (lexer.peek().type == TokenType.comma || lexer.peek().type == TokenType.gt) {
+            if (this.lexer.peek().type == TokenType.comma || this.lexer.peek().type == TokenType.gt) {
                 result.genericArguments.Add(null);
                 continue;
             }
@@ -3093,7 +3067,7 @@ private enum TypeUsage {
         } while (readToken(TokenType.comma));
 
         expectToken(TokenType.gt, ErrorCode.expectedGt);
-        result.endLocation = lexer.current.endLocation;
+        result.endLocation = this.lexer.current.endLocation;
         return result;
     }
 
@@ -3106,14 +3080,14 @@ private enum TypeUsage {
          * <returns></returns>
         private bool markReadGenericTypeExpression() {
 
-    console.assert(lexer.markPeek().type == TokenType.@lt);
+    console.assert(this.lexer.markPeek().type == TokenType.lt);
 
     do {
 
-        lexer.markRead(); // <, ,
+        this.lexer.markRead(); // <, ,
 
         // 允许直接结束。
-        if (lexer.markPeek().type == TokenType.gt) {
+        if (this.lexer.markPeek().type == TokenType.gt) {
             break;
         }
 
@@ -3122,10 +3096,10 @@ private enum TypeUsage {
             return false;
         }
 
-    } while (lexer.markPeek().type == TokenType.comma);
+    } while (this.lexer.markPeek().type == TokenType.comma);
 
     // 如果是 > 说明一切顺利。
-    return lexer.markRead().type == TokenType.gt;
+    return this.lexer.markRead().type == TokenType.gt;
 }
 
         /**
@@ -3134,24 +3108,24 @@ private enum TypeUsage {
          * <returns></returns>
         private bool markReadArrayTypeExpression() {
 
-    console.assert(lexer.markPeek().type == TokenType.lBrack);
+    console.assert(this.lexer.markPeek().type == TokenType.lBrack);
 
-    lexer.markRead(); // [
+    this.lexer.markRead(); // [
 
     // 跳过逗号。
-    while (lexer.markPeek().type == TokenType.comma) {
-        lexer.markRead();
+    while (this.lexer.markPeek().type == TokenType.comma) {
+        this.lexer.markRead();
     }
 
-    return lexer.markRead().type == TokenType.rBrack;
+    return this.lexer.markRead().type == TokenType.rBrack;
 
 }
 
         private bool markReadType() {
-    var type = lexer.markRead().type;
+    var type = this.lexer.markRead().type;
 
     if (type == TokenType.identifier) {
-        if (lexer.markPeek().type == TokenType.lt && !markReadGenericTypeExpression()) {
+        if (this.lexer.markPeek().type == TokenType.lt && !markReadGenericTypeExpression()) {
             return false;
         }
     } else if (!type.isPredefinedType()) {
@@ -3160,18 +3134,18 @@ private enum TypeUsage {
 
     // 读取类型数组和指针组合。
     while (true) {
-        switch (lexer.markPeek().type) {
+        switch (this.lexer.markPeek().type) {
             case TokenType.lBrack:
                 if (!markReadArrayTypeExpression()) {
                     return false;
                 }
                 continue;
             case TokenType.mul:
-                lexer.markRead();
+                this.lexer.markRead();
                 continue;
             case TokenType.period:
-                lexer.markRead();
-                if (lexer.markRead().type != TokenType.identifier) {
+                this.lexer.markRead();
+                if (this.lexer.markRead().type != TokenType.identifier) {
                     return false;
                 }
                 continue;
@@ -3183,7 +3157,7 @@ private enum TypeUsage {
 }
 
         private bool followsWithExpression() {
-    return lexer.peek().type.isExpressionStart();
+    return this.lexer.peek().type.isExpressionStart();
 }
 
 #endregion
