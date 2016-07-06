@@ -1793,52 +1793,6 @@ export class ParenthesizedExpression extends Expression {
 }
 
 /**
- * 表示一个条件表达式(... ? ... : ...)。
- */
-export class ConditionalExpression extends Expression {
-
-    /**
-     * 获取当前条件表达式的条件部分。
-     */
-    condition: Expression;
-
-    /**
-     * 获取当前条件表达式的则部分。
-     */
-    then: Expression;
-
-    /**
-     * 获取当前条件表达式的否则部分。
-     */
-    else: Expression;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitConditionalExpression(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.condition, "condition", this) !== false &&
-            callback.call(scope, this.then, "then", this) !== false &&
-            callback.call(scope, this.else, "else", this) !== false;
-    }
-
-}
-
-/**
  * 表示一个成员调用表达式(x.y)。
  */
 export class MemberCallExpression extends Expression {
@@ -2074,19 +2028,76 @@ export class IncrementExpression extends UnaryExpression {
 }
 
 /**
- * 表示一个二元运算表达式(x + y)。
+ * 表示一个更新表达式()。
  */
-export class BinaryExpression extends Expression {
+export abstract class UpdateExpression extends UnaryExpression {
+
+}
+
+/**
+ * 表示一个删除表达式(~x)。
+ */
+export class DeleteExpression extends UnaryExpression {
+
+}
+
+/**
+ * 表示一个空值表达式(~x)。
+ */
+export class VoidExpression extends UnaryExpression {
+
+}
+
+/**
+ * 表示一个获取类型表达式(~x)。
+ */
+export class TypeOfExpression extends UnaryExpression {
+
+}
+
+/**
+ * 表示一个正数表达式(~x)。
+ */
+export class PositiveExpression extends UnaryExpression {
+
+}
+
+/**
+ * 表示一个负数表达式(~x)。
+ */
+export class NegativeExpression extends UnaryExpression {
+
+}
+
+/**
+ * 表示一个位反表达式(~x)。
+ */
+export class BitwiseNotExpression extends UnaryExpression {
+
+}
+
+/**
+ * 表示一个逻辑非表达式(!x)。
+ */
+export class LogicalNotExpression extends UnaryExpression {
+
+}
+
+// #region 双目表达式
+
+
+
+// #endregion
+
+/**
+ * 表示一个二元运算表达式(x + y、x = y、...)。
+ */
+export abstract class BinaryExpression extends Expression {
 
     /**
      * 获取当前表达式的左值部分。
      */
     leftOperand: Expression;
-
-    /**
-     * 获取当前表达式的运算符。合法的值为 +、-、*、/、**、^、%、&、|、&&、||、<<、>>、>>>、is、as、instanceof。
-     */
-    operator: TokenType;
 
     /**
      * 获取运算符的开始位置。
@@ -2134,6 +2145,251 @@ export class BinaryExpression extends Expression {
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
         return callback.call(scope, this.leftOperand, "leftOperand", this) !== false &&
             callback.call(scope, this.rightOperand, "rightOperand", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个乘除表达式(x * y、x / y)。
+ */
+export abstract class MultiplicativeExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个次方表达式(x ** y)。
+ */
+export class ExponentiationExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个乘表达式(x * y)。
+ */
+export class MultiplyExpression extends AdditiveExpression {
+
+}
+
+/**
+ * 表示一个减表达式(x / y)。
+ */
+export class DivideExpression extends AdditiveExpression {
+
+}
+
+/**
+ * 表示一个加减表达式(x + y、x - y)。
+ */
+export abstract class AdditiveExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个加表达式(x + y)。
+ */
+export class AddExpression extends AdditiveExpression {
+
+}
+
+/**
+ * 表示一个减表达式(x - y)。
+ */
+export class SubtractExpression extends AdditiveExpression {
+
+}
+
+/**
+ * 表示一个位移表达式(x >> y、x << y、x >>> y)。
+ */
+export abstract class ShiftExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个左移表达式(x << y)。
+ */
+export class ShiftLeftExpression extends ShiftExpression {
+
+}
+
+/**
+ * 表示一个右移表达式(x >> y)。
+ */
+export class ShiftRightExpression extends ShiftExpression {
+
+}
+
+/**
+ * 表示一个无符右移表达式(x >>> y)。
+ */
+export class UnsignedShiftRightExpression extends ShiftExpression {
+
+}
+
+/**
+ * 表示一个比较表达式(x > y、x !== y)。
+ */
+export abstract class RelationalExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个小于表达式(x < y)。
+ */
+export class LessThanExpression extends RelationalExpression {
+
+}
+
+/**
+ * 表示一个大于表达式(x > y)。
+ */
+export class GreaterThanExpression extends RelationalExpression {
+
+}
+
+/**
+ * 表示一个小于等于表达式(x <= y)。
+ */
+export class LessThanOrEqualExpression extends RelationalExpression {
+
+}
+
+/**
+ * 表示一个大于等于表达式(x >= y)。
+ */
+export class GreaterThanOrEqualExpression extends RelationalExpression {
+
+}
+
+/**
+ * 表示一个实例判断表达式(x instanceof y)。
+ */
+export class InstanceOfExpression extends RelationalExpression {
+
+}
+
+/**
+ * 表示一个属性判断表达式(x in y)。
+ */
+export class InExpression extends RelationalExpression {
+
+}
+
+/**
+ * 表示一个相等比较表达式(x == y、x !== y)。
+ */
+export abstract class EqualityExpression extends RelationalExpression {
+
+}
+
+/**
+ * 表示一个相等表达式(x == y)。
+ */
+export class EqualExpression extends EqualityExpression {
+
+}
+
+/**
+ * 表示一个不等表达式(x !== y)。
+ */
+export class NotEqualExpression extends EqualityExpression {
+
+}
+
+/**
+ * 表示一个严格相等表达式(x !== y)。
+ */
+export class StrictEqualExpression extends EqualityExpression {
+
+}
+
+/**
+ * 表示一个不严格等表达式(x !== y)。
+ */
+export class StrictNotEqualExpression extends EqualityExpression {
+
+}
+
+/**
+ * 表示一个逻辑与表达式(x && y)。
+ */
+export class LogicalAndExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个位或表达式(x | y)。
+ */
+export class BitwiseOrExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个位异或表达式(x ^ y)。
+ */
+export class BitwiseXorExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个位与表达式(x & y)。
+ */
+export class BitwiseAndExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个逻辑或表达式(x || y)。
+ */
+export class LogicalOrExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个 yield 表达式(yield x、yield * x)。
+ */
+export class YieldExpression extends Expression {
+
+    /**
+     * 获取当前表达式的 * 的开始位置。如果当前表达式无 * 则返回 undefined。
+     */
+    asteriskStart: number;
+
+    /**
+     * 获取当前表达式的 * 的结束位置。如果当前表达式无 * 则返回非数字。
+     */
+    get asteriskEnd() { return this.asteriskStart + 1; }
+
+    /**
+     * 获取 yield 表达式的主体部分。
+     */
+    body: Expression;
+
+    /**
+     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     */
+    get end() { return this.body ? this.body.end : this.start + 5/*'yield'.length*/; }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitYieldExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每一项执行的回调函数。
+     * * param value 当前项的值。
+     * * param key 当前项的索引或键。
+     * * param target 当前正在遍历的目标对象。
+     * * returns 函数可以返回 false 以终止循环。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+        return callback.call(scope, this.body, "body", this) !== false;
     }
 
 }
@@ -2195,36 +2451,31 @@ export class ArrowFunction extends Expression {
 }
 
 /**
- * 表示一个 yield 表达式(yield xx)。
+ * 表示一个条件表达式(x ? y : z)。
  */
-export class YieldExpression extends Statement {
+export class ConditionalExpression extends Expression {
 
     /**
-     * 获取当前表达式的 * 的开始位置。如果当前表达式无 * 则返回 undefined。
+     * 获取当前条件表达式的条件部分。
      */
-    asteriskStart: number;
+    condition: Expression;
 
     /**
-     * 获取当前表达式的 * 的结束位置。如果当前表达式无 * 则返回非数字。
+     * 获取当前条件表达式的则部分。
      */
-    get asteriskEnd() { return this.asteriskStart + 1; }
+    then: Expression;
 
     /**
-     * 获取 yield 表达式的主体部分。
+     * 获取当前条件表达式的否则部分。
      */
-    body: Expression;
-
-    /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
-     */
-    get end() { return this.body ? this.body.end : this.start + 5/*'yield'.length*/; }
+    else: Expression;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitYieldExpression(this);
+        return vistior.visitConditionalExpression(this);
     }
 
     /**
@@ -2238,8 +2489,115 @@ export class YieldExpression extends Statement {
      * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.body, "body", this) !== false;
+        return callback.call(scope, this.condition, "condition", this) !== false &&
+            callback.call(scope, this.then, "then", this) !== false &&
+            callback.call(scope, this.else, "else", this) !== false;
     }
+
+}
+
+/**
+ * 表示一个左值表达式(x、x.key)。
+ */
+export abstract class LeftHandSideExpression extends Expression {
+
+}
+
+/**
+ * 表示一个赋值表达式(x = y、x += y、...)。
+ */
+export abstract class AssignmentExpression extends BinaryExpression {
+
+}
+
+/**
+ * 表示一个等于表达式(x = y)。
+ */
+export class AssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个乘等于表达式(x *= y)。
+ */
+export class MultiplyAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个模等于表达式(x %= y)。
+ */
+export class ModuloAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个加等于表达式(x += y)。
+ */
+export class AddAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个减等于表达式(x -= y)。
+ */
+export class SubtractAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个左移等于表达式(x <<= y)。
+ */
+export class LeftShiftAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个右移等于表达式(x >>= y)。
+ */
+export class RightShiftAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个无符右移等于表达式(x >>>= y)。
+ */
+export class UnsignedRightShiftAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个位与等于表达式(x &= y)。
+ */
+export class BitwiseAndAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个位异或等于表达式(x ^= y)。
+ */
+export class BitwiseXorAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个次方等于表达式(x ^= y)。
+ */
+export class ExponentiationAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个位或等于表达式(x |= y)。
+ */
+export class BitwiseOrAssignExpression extends AssignmentExpression {
+
+}
+
+/**
+ * 表示一个逗号表达式(x, y)。
+ */
+export class CommaExpression extends BinaryExpression {
 
 }
 
