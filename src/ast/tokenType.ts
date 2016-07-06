@@ -815,6 +815,14 @@ const keywords: { [keyword: string]: TokenType } = {};
  * @returns 返回等效的标记。如果字符串无效，则返回 undefined。
  */
 export function stringToToken(token: string) {
+    //// Reserved words are between 2 and 11 characters long and start with a lowercase letter
+    //const len = tokenValue.length;
+    //if (len >= 2 && len <= 11) {
+    //    const ch = tokenValue.charCodeAt(0);
+    //    if (ch >= CharacterCodes.a && ch <= CharacterCodes.z && hasOwnProperty.call(textToToken, tokenValue)) {
+    //        return token = textToToken[tokenValue];
+    //    }
+    //}
     return keywords[token];
 }
 

@@ -24,6 +24,16 @@ export interface CompileOptions {
      */
     parseComments?: ParseCommentsOption;
 
+    /**
+     * 跳过 Unix #! 标记。
+     */
+    skipShebang: boolean;
+
+    /**
+     * 跳过未关闭的多行字符串和注释。
+     */
+    skipUnterminatedLiteral: boolean;
+
 }
 
 /**
@@ -44,7 +54,7 @@ export enum LanguageVersion {
     /**
      * JavaScript 7(ECMAScript-262, the 7th verison)。
      */
-    javaScript7,
+    javaScript,
 
     /**
      * JavaScript 3(ECMAScript-262, the 3rd verison)。

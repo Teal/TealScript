@@ -281,143 +281,6 @@ namespace ts {
         let hasExtendedUnicodeEscape: boolean;
         let tokenIsUnterminated: boolean;
 
-        function scanEscapeSequence(): string {
-            pos++;
-            const ch = text.charCodeAt(pos);
-            pos++;
-            switch (ch) {
-                case CharacterCodes.u:
-                    // '\u{DDDDDDDD}'
-                    if (pos < end && text.charCodeAt(pos) === CharacterCodes.openBrace) {
-                        hasExtendedUnicodeEscape = true;
-                        pos++;
-                        return scanExtendedUnicodeEscape();
-                    }
-
-                    // '\uDDDD'
-                    return scanHexadecimalEscape(/*numDigits*/ 4);
-
-                case CharacterCodes.x:
-                    // '\xDD'
-                    return scanHexadecimalEscape(/*numDigits*/ 2);
-
-                default:
-                    return String.fromCharCode(ch);
-            }
-        }
-
-        function scanHexadecimalEscape(numDigits: number): string {
-            const escapedValue = scanExactNumberOfHexDigits(numDigits);
-
-            if (escapedValue >= 0) {
-                return String.fromCharCode(escapedValue);
-            }
-            else {
-                error(Diagnostics.Hexadecimal_digit_expected);
-                return "";
-            }
-        }
-
-        function scanExtendedUnicodeEscape(): string {
-            const escapedValue = scanMinimumNumberOfHexDigits(1);
-            let isInvalidExtendedEscape = false;
-
-            // Validate the value of the digit
-            if (escapedValue < 0) {
-                error(Diagnostics.Hexadecimal_digit_expected);
-                isInvalidExtendedEscape = true;
-            }
-            else if (escapedValue > 0x10FFFF) {
-                error(Diagnostics.An_extended_Unicode_escape_value_must_be_between_0x0_and_0x10FFFF_inclusive);
-                isInvalidExtendedEscape = true;
-            }
-
-            if (pos >= end) {
-                error(Diagnostics.Unexpected_end_of_text);
-                isInvalidExtendedEscape = true;
-            }
-            else if (text.charCodeAt(pos) === CharacterCodes.closeBrace) {
-                // Only swallow the following character up if it's a '}'.
-                pos++;
-            }
-            else {
-                error(Diagnostics.Unterminated_Unicode_escape_sequence);
-                isInvalidExtendedEscape = true;
-            }
-
-            if (isInvalidExtendedEscape) {
-                return "";
-            }
-
-            return utf16EncodeAsString(escapedValue);
-        }
-
-        // Derived from the 10.1.1 UTF16Encoding of the ES6 Spec.
-        function utf16EncodeAsString(codePoint: number): string {
-            Debug.assert(0x0 <= codePoint && codePoint <= 0x10FFFF);
-
-            if (codePoint <= 65535) {
-                return String.fromCharCode(codePoint);
-            }
-
-            const codeUnit1 = Math.floor((codePoint - 65536) / 1024) + 0xD800;
-            const codeUnit2 = ((codePoint - 65536) % 1024) + 0xDC00;
-
-            return String.fromCharCode(codeUnit1, codeUnit2);
-        }
-
-        // Current character is known to be a backslash. Check for Unicode escape of the form '\uXXXX'
-        // and return code point value if valid Unicode escape is found. Otherwise return -1.
-        function peekUnicodeEscape(): number {
-            if (pos + 5 < end && text.charCodeAt(pos + 1) === CharacterCodes.u) {
-                const start = pos;
-                pos += 2;
-                const value = scanExactNumberOfHexDigits(4);
-                pos = start;
-                return value;
-            }
-            return -1;
-        }
-
-        function scanIdentifierParts(): string {
-            let result = "";
-            let start = pos;
-            while (pos < end) {
-                let ch = text.charCodeAt(pos);
-                if (isIdentifierPart(ch, languageVersion)) {
-                    pos++;
-                }
-                else if (ch === CharacterCodes.backslash) {
-                    ch = peekUnicodeEscape();
-                    if (!(ch >= 0 && isIdentifierPart(ch, languageVersion))) {
-                        break;
-                    }
-                    result += text.substring(start, pos);
-                    result += String.fromCharCode(ch);
-                    // Valid Unicode escape is always six characters
-                    pos += 6;
-                    start = pos;
-                }
-                else {
-                    break;
-                }
-            }
-            result += text.substring(start, pos);
-            return result;
-        }
-
-        function getIdentifierToken(): SyntaxKind {
-            // Reserved words are between 2 and 11 characters long and start with a lowercase letter
-            const len = tokenValue.length;
-            if (len >= 2 && len <= 11) {
-                const ch = tokenValue.charCodeAt(0);
-                if (ch >= CharacterCodes.a && ch <= CharacterCodes.z && hasOwnProperty.call(textToToken, tokenValue)) {
-                    return token = textToToken[tokenValue];
-                }
-            }
-            return token = SyntaxKind.Identifier;
-        }
-
         function scan(): SyntaxKind {
             startPos = pos;
             hasExtendedUnicodeEscape = false;
@@ -425,69 +288,10 @@ namespace ts {
             tokenIsUnterminated = false;
             while (true) {
                 tokenPos = pos;
-                if (pos >= end) {
-                    return token = SyntaxKind.EndOfFileToken;
-                }
                 let ch = text.charCodeAt(pos);
 
-                // Special handling for shebang
-                if (ch === CharacterCodes.hash && pos === 0 && isShebangTrivia(text, pos)) {
-                    pos = scanShebangTrivia(text, pos);
-                    if (skipTrivia) {
-                        continue;
-                    }
-                    else {
-                        return token = SyntaxKind.ShebangTrivia;
-                    }
-                }
-
                 switch (ch) {
-                    case CharacterCodes.lineFeed:
-                    case CharacterCodes.carriageReturn:
-                        precedingLineBreak = true;
-                        if (skipTrivia) {
-                            pos++;
-                            continue;
-                        }
-                        else {
-                            if (ch === CharacterCodes.carriageReturn && pos + 1 < end && text.charCodeAt(pos + 1) === CharacterCodes.lineFeed) {
-                                // consume both CR and LF
-                                pos += 2;
-                            }
-                            else {
-                                pos++;
-                            }
-                            return token = SyntaxKind.NewLineTrivia;
-                        }
-                    case CharacterCodes.tab:
-                    case CharacterCodes.verticalTab:
-                    case CharacterCodes.formFeed:
-                    case CharacterCodes.space:
-                        if (skipTrivia) {
-                            pos++;
-                            continue;
-                        }
-                        else {
-                            while (pos < end && isWhiteSpace(text.charCodeAt(pos))) {
-                                pos++;
-                            }
-                            return token = SyntaxKind.WhitespaceTrivia;
-                        }
-                    case CharacterCodes.exclamation:
-                        if (text.charCodeAt(pos + 1) === CharacterCodes.equals) {
-                            if (text.charCodeAt(pos + 2) === CharacterCodes.equals) {
-                                return pos += 3, token = SyntaxKind.ExclamationEqualsEqualsToken;
-                            }
-                            return pos += 2, token = SyntaxKind.ExclamationEqualsToken;
-                        }
-                        pos++;
-                        return token = SyntaxKind.ExclamationToken;
-                    case CharacterCodes.doubleQuote:
-                    case CharacterCodes.singleQuote:
-                        tokenValue = scanString();
-                        return token = SyntaxKind.StringLiteral;
-                    case CharacterCodes.backtick:
-                        return token = scanTemplateAndSetTokenValue();
+                    
                     case CharacterCodes.percent:
                         if (text.charCodeAt(pos + 1) === CharacterCodes.equals) {
                             return pos += 2, token = SyntaxKind.PercentEqualsToken;
@@ -766,16 +570,6 @@ namespace ts {
                     case CharacterCodes.at:
                         pos++;
                         return token = SyntaxKind.AtToken;
-                    case CharacterCodes.backslash:
-                        let cookedChar = peekUnicodeEscape();
-                        if (cookedChar >= 0 && isIdentifierStart(cookedChar, languageVersion)) {
-                            pos += 6;
-                            tokenValue = String.fromCharCode(cookedChar) + scanIdentifierParts();
-                            return token = getIdentifierToken();
-                        }
-                        error(Diagnostics.Invalid_character);
-                        pos++;
-                        return token = SyntaxKind.Unknown;
                     default:
                         if (isIdentifierStart(ch, languageVersion)) {
                             pos++;
