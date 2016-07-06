@@ -1345,8 +1345,10 @@ class NullExpression extends Expression {
 
 }
 
+// #region 基础表达式
+
 /**
- * 表示一个主表达式。
+ * 表示一个基础表达式(x、[0]、...)。
  */
 export abstract class PrimaryExpression extends Expression { }
 
@@ -1562,6 +1564,11 @@ export class TemplateLiteral extends PrimaryExpression {
     tag: Identifier;
 
     /**
+     * 获取当前模板字符串的所有组成部分。
+     */
+    spans: NodeList<Expression | TemplateSpan>;
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      */
@@ -1586,9 +1593,16 @@ export class TemplateLiteral extends PrimaryExpression {
 }
 
 /**
+ * 表示模板字符串的一个常量区域。
+ */
+export class TemplateSpan extends Node {
+
+}
+
+/**
  * 表示一个数组字面量([...])。
  */
-export class ArrayLiteral extends Expression {
+export class ArrayLiteral extends PrimaryExpression {
 
     /**
      * 获取当前数组字面量的所有项。
@@ -1632,12 +1646,12 @@ export class ArrayLiteral extends Expression {
 /**
  * 表示一个对象字面量({x: ...})。
  */
-export class ObjectLiteral extends Expression {
+export class ObjectLiteral extends PrimaryExpression {
 
     /**
      * 获取当前对象字面量的所有项。
      */
-    elements: NodeList<ObjectLiteralElement>;
+    elements: NodeList<PropertyDefinition>;
 
     /**
      * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
@@ -1676,7 +1690,7 @@ export class ObjectLiteral extends Expression {
 /**
  * 表示一个对象字面量项(x: ...)。
  */
-export class ObjectLiteralElement extends Node {
+export class PropertyDefinition extends Node {
 
     /**
      * 获取当前对象字面量项的键部分。
@@ -1761,7 +1775,7 @@ export class EnumExpression extends PrimaryExpression {
 /**
  * 表示一个括号表达式((...))。
  */
-export class ParenthesizedExpression extends Expression {
+export class ParenthesizedExpression extends PrimaryExpression {
 
     /**
      * 获取当前括号表达式的主体部分。
@@ -1789,6 +1803,20 @@ export class ParenthesizedExpression extends Expression {
     each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
         return callback.call(scope, this.body, "body", this) !== false;
     }
+
+}
+
+// #endregion
+
+/**
+ * 表示一个展开表达式。
+ */
+export class SpreadExpression extends UnaryExpression {
+
+    /**
+     * 获取当前展开表达式的主体部分。
+     */
+    body: Expression;
 
 }
 
@@ -1957,12 +1985,7 @@ export class IndexCallExpression extends CallLikeExpression {
 /**
  * 表示一个一元运算表达式(+x)。
  */
-export class UnaryExpression extends Expression {
-
-    /**
-     * 获取当前表达式的运算符。可能的值有：+、-、!、~、typeof、await、delete、void。
-     */
-    operator: TokenType;
+export abstract class UnaryExpression extends Expression {
 
     /**
      * 获取当前表达式的运算数。
