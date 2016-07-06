@@ -211,6 +211,160 @@ export abstract class Statement extends Node {
 }
 
 /**
+ * 表示一个语句块({...})。
+ */
+export class BlockStatement extends Statement {
+
+    /**
+     * 获取当前语句块内的所有语句。
+     */
+    statements: NodeList<Statement>;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitBlockStatement(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每一项执行的回调函数。
+     * * param value 当前项的值。
+     * * param key 当前项的索引或键。
+     * * param target 当前正在遍历的目标对象。
+     * * returns 函数可以返回 false 以终止循环。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+        return this.statements.each(callback, scope);
+    }
+
+}
+
+/**
+ * 表示一个变量声明语句(var xx、let xx、const xx)。
+ */
+export abstract class VariableStatement extends Statement {
+
+    /**
+     * 获取当前变量语句的修饰器。如果变量无修饰器则返回 undefined。
+     */
+    decorators: NodeList<Decorator>;
+
+    /**
+     * 获取当前变量语句的修饰符。如果变量无修饰符则返回 undefined。
+     */
+    modifiers: NodeList<Modifier>;
+
+    /**
+     * 获取当前变量声明语句的所有变量。
+     */
+    variables: NodeList<VariableDeclaration>;
+
+    /**
+     * 判断当前语句末尾是否包含分号。
+     */
+    get hasSemicolon() { return this.end > this.variables[this.variables.length - 1].end; }
+
+}
+
+/**
+ * 表示一个块级变量声明语句(var xx = ...)。
+ */
+export class VarStatement extends VariableStatement {
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每一项执行的回调函数。
+     * * param value 当前项的值。
+     * * param key 当前项的索引或键。
+     * * param target 当前正在遍历的目标对象。
+     * * returns 函数可以返回 false 以终止循环。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+        return (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            this.variables.each(callback, scope);
+    }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitVarStatement(this);
+    }
+
+}
+
+/**
+ * 表示一个局部变量声明语句(let xx = ...)。
+ */
+export class LetStatement extends VariableStatement {
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每一项执行的回调函数。
+     * * param value 当前项的值。
+     * * param key 当前项的索引或键。
+     * * param target 当前正在遍历的目标对象。
+     * * returns 函数可以返回 false 以终止循环。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+        return (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            this.variables.each(callback, scope);
+    }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitLetStatement(this);
+    }
+
+}
+
+/**
+ * 表示一个常量声明语句(const xx = ...)。
+ */
+export class ConstStatement extends VariableStatement {
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每一项执行的回调函数。
+     * * param value 当前项的值。
+     * * param key 当前项的索引或键。
+     * * param target 当前正在遍历的目标对象。
+     * * returns 函数可以返回 false 以终止循环。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+        return (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            this.variables.each(callback, scope);
+    }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitConstStatement(this);
+    }
+
+}
+
+/**
  * 表示一个空语句(;)。
  */
 export class EmptyStatement extends Statement {
@@ -232,117 +386,6 @@ export class EmptyStatement extends Statement {
     accept(vistior: NodeVisitor) {
         return vistior.visitEmptyStatement(this);
     }
-
-}
-
-/**
- * 表示一个语句块({...})。
- */
-export class Block extends Statement {
-
-    /**
-     * 获取当前语句块内的所有语句。
-     */
-    statements: NodeList<Statement>;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitBlock(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.statements.each(callback, scope);
-    }
-
-}
-
-/**
- * 表示一个变量声明语句(var xx = ...)。
- */
-export class VariableStatement extends Statement {
-
-    /**
-     *
-     */
-    decorators: NodeList<Decorator>;
-
-    /**
-     * 获取当前变量声明语句的格式。
-     */
-    type: VariableType;
-
-    /**
-     * 获取当前变量声明语句的所有变量。
-     */
-    variables: NodeList<VariableDeclaration>;
-
-    /**
-     * 判断当前语句末尾是否包含分号。
-     */
-    get hasSemicolon() { return this.end > this.variables[this.variables.length - 1].end; }
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitVariableStatement(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.decorators.each(callback, scope) &&
-            this.variables.each(callback, scope);
-    }
-
-}
-
-/**
- * 表示变量的声明格式。
- */
-export enum VariableType {
-
-    /**
-     * 变量未声明。
-     */
-    none,
-
-    /**
-     * 使用 var 声明。
-     */
-    var,
-
-    /**
-     * 使用 const 声明。
-     */
-    const,
-
-    /**
-     * 使用 let 声明。
-     */
-    let,
 
 }
 
@@ -397,9 +440,14 @@ export class LabeledStatement extends Statement {
 }
 
 /**
- * 表示一个表达式语句(...;)。
+ * 表示一个表达式语句(x();)。
  */
 export class ExpressionStatement extends Statement {
+
+    /**
+     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     */
+    get start() { return this.body.start; }
 
     /**
      * 获取当前表达式语句的主体部分。
@@ -436,7 +484,7 @@ export class ExpressionStatement extends Statement {
 }
 
 /**
- * 表示一个 if 语句(if(...) {...})。
+ * 表示一个 if 语句(if(xx) {...})。
  */
 export class IfStatement extends Statement {
 
@@ -1277,12 +1325,65 @@ export class WithStatement extends Statement {
  */
 export abstract class Expression extends Node {
 
+    /**
+     * 获取空表达式。
+     */
+    static null = new NullExpression();
+
+}
+
+/**
+ * 表示一个空表达式。
+ */
+class NullExpression extends Expression {
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) { }
+
+}
+
+/**
+ * 表示一个主表达式。
+ */
+export abstract class PrimaryExpression extends Expression { }
+
+/**
+ * 表示 this 字面量(this)。
+ */
+export class ThisLiteral extends PrimaryExpression {
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitThisLiteral(this);
+    }
+
+}
+
+/**
+ * 表示 super 字面量(super)。
+ */
+export class SuperLiteral extends PrimaryExpression {
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitSuperLiteral(this);
+    }
+
 }
 
 /**
  * 表示一个标识符(xx)。
  */
-export class Identifier extends Expression {
+export class Identifier extends PrimaryExpression {
 
     /**
      * 获取或设置当前标识符的内容。
@@ -1300,9 +1401,14 @@ export class Identifier extends Expression {
 }
 
 /**
- * 表示 null 字面量(null)。
+ * 表示一个简单字面量(""、6)。
  */
-export class NullLiteral extends Expression {
+export abstract class Literal extends PrimaryExpression { }
+
+/**
+ * 表示一个 null 字面量(null)。
+ */
+export class NullLiteral extends Literal {
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -1315,9 +1421,16 @@ export class NullLiteral extends Expression {
 }
 
 /**
- * 表示 true 字面量(true)。
+ * 表示一个布尔型字面量(true、false)。
  */
-export class TrueLiteral extends Expression {
+export abstract class BooleanLiteral extends Literal {
+
+}
+
+/**
+ * 表示一个 true 字面量(true)。
+ */
+export class TrueLiteral extends BooleanLiteral {
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -1330,9 +1443,9 @@ export class TrueLiteral extends Expression {
 }
 
 /**
- * 表示 false 字面量(false)。
+ * 表示一个 false 字面量(false)。
  */
-export class FalseLiteral extends Expression {
+export class FalseLiteral extends BooleanLiteral {
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -1347,7 +1460,7 @@ export class FalseLiteral extends Expression {
 /**
  * 表示一个浮点数字面量(1)。
  */
-export class NumericLiteral extends Expression {
+export class NumericLiteral extends Literal {
 
     /**
      * 获取或设置当前浮点数的值。
@@ -1367,7 +1480,7 @@ export class NumericLiteral extends Expression {
 /**
  * 表示一个字符串字面量('...')。
  */
-export class StringLiteral extends Expression {
+export class StringLiteral extends Literal {
 
     /**
      * 获取或设置当前引号的类型。
@@ -1392,12 +1505,7 @@ export class StringLiteral extends Expression {
 /**
  * 表示一个正则表达式字面量(/.../)。
  */
-export class RegExpLiteral extends Expression {
-
-    /**
-     * 获取或设置当前斜杠的类型。
-     */
-    slash: TokenType;
+export class RegularExpressionLiteral extends Literal {
 
     /**
      * 获取或设置当前正则表达式的内容。
@@ -1405,9 +1513,19 @@ export class RegExpLiteral extends Expression {
     value: string;
 
     /**
+     * 获取当前主体后斜杠的开始位置。
+     */
+    slashStart: number;
+
+    /**
+     * 获取当前主体后斜杠的结束位置。
+     */
+    get slashEnd() { return this.slashStart + 1; }
+
+    /**
      * 获取当前正则表达式的标志部分。如果不存在标志则返回 undefined。
      */
-    flags: Identifier;
+    flags: string;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -1436,7 +1554,7 @@ export class RegExpLiteral extends Expression {
 /**
  * 表示一个模板字符串字面量(`...`)。
  */
-export class TemplateStringLiteral extends StringLiteral {
+export class TemplateLiteral extends PrimaryExpression {
 
     /**
      * 获取当前模板字符串的标签部分。如果不存在标签则返回 undefined。
@@ -1556,7 +1674,7 @@ export class ObjectLiteral extends Expression {
 }
 
 /**
- * 表示一个对象字面量项。
+ * 表示一个对象字面量项(x: ...)。
  */
 export class ObjectLiteralElement extends Node {
 
@@ -1606,32 +1724,37 @@ export class ObjectLiteralElement extends Node {
 }
 
 /**
- * 表示 this 字面量(this)。
+ * 表示一个函数表达式(function () {})。
  */
-export class ThisLiteral extends Expression {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitThisLiteral(this);
-    }
+export class FunctionExpression extends PrimaryExpression {
 
 }
 
 /**
- * 表示 super 字面量(super)。
+ * 表示一个生成器表达式(function * () {})。
  */
-export class SuperLiteral extends Expression {
+export class GeneratorExpression extends FunctionExpression {
 
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitSuperLiteral(this);
-    }
+}
+
+/**
+ * 表示一个类表达式(class xx {})。
+ */
+export class ClassExpression extends PrimaryExpression {
+
+}
+
+/**
+ * 表示一个接口表达式(interface xx {})。
+ */
+export class InterfaceExpression extends PrimaryExpression {
+
+}
+
+/**
+ * 表示一个枚举表达式(enum xx {})。
+ */
+export class EnumExpression extends PrimaryExpression {
 
 }
 
@@ -2018,7 +2141,7 @@ export class BinaryExpression extends Expression {
 /**
  * 表示一个箭头函数(x => ...)。
  */
-export class LambdaLiteral extends Expression {
+export class ArrowFunction extends Expression {
 
     /**
      * 获取当前箭头函数的所有泛型参数。
@@ -2043,7 +2166,7 @@ export class LambdaLiteral extends Expression {
     /**
      * 获取当前箭头函数的主体部分。
      */
-    body: Block | Expression;
+    body: BlockStatement | Expression;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2975,7 +3098,7 @@ export class PropertyOrIndexerDefinition extends MethodOrPropertyDefinition {
     /**
      * 获取访问器的主体。（可能为 null）
      */
-    body: Block;
+    body: BlockStatement;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3090,7 +3213,7 @@ export class MethodOrConstructorDefinition extends MethodOrPropertyDefinition {
     /**
      * 获取当前函数定义的主体。
      */
-    body: Block;
+    body: BlockStatement;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3700,6 +3823,16 @@ export class ObjectBindingElement extends Declaration {
  * 表示一个变量声明(xx = ...)。
  */
 export class VariableDeclaration extends Declaration {
+
+    /**
+     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     */
+    get start() { return this.name.start; }
+
+    /**
+     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     */
+    get end() { return this.initializer ? this.initializer.end : this.type ? this.type.end : this.name.end; }
 
     /**
      * 获取当前变量名后冒号的开始位置。如果当前变量后不跟冒号则返回 undefined。

@@ -31,28 +31,49 @@ export abstract class NodeVisitor {
     }
 
     /**
+     * 访问一个语句块({...})。
+     * @param node 要访问的节点。
+     */
+    visitBlockStatement(node: nodes.BlockStatement) {
+        node.statements.accept(this);
+    }
+
+    /**
+     * 访问一个块级变量声明语句(var xx = ...)。
+     * @param node 要访问的节点。
+     */
+    visitVarStatement(node: nodes.VarStatement) {
+        node.decorators && node.decorators.accept(this);
+        node.modifiers && node.modifiers.accept(this);
+        node.variables.accept(this);
+    }
+
+    /**
+     * 访问一个局部变量声明语句(let xx = ...)。
+     * @param node 要访问的节点。
+     */
+    visitLetStatement(node: nodes.LetStatement) {
+        node.decorators && node.decorators.accept(this);
+        node.modifiers && node.modifiers.accept(this);
+        node.variables.accept(this);
+    }
+
+    /**
+     * 访问一个常量声明语句(const xx = ...)。
+     * @param node 要访问的节点。
+     */
+    visitConstStatement(node: nodes.ConstStatement) {
+        node.decorators && node.decorators.accept(this);
+        node.modifiers && node.modifiers.accept(this);
+        node.variables.accept(this);
+    }
+
+    /**
      * 访问一个空语句(;)。
      * @param node 要访问的节点。
      */
     visitEmptyStatement(node: nodes.EmptyStatement) {
 
-    }
-
-    /**
-     * 访问一个语句块({...})。
-     * @param node 要访问的节点。
-     */
-    visitBlock(node: nodes.Block) {
-        node.statements.accept(this);
-    }
-
-    /**
-     * 访问一个变量声明语句(var xx = ...)。
-     * @param node 要访问的节点。
-     */
-    visitVariableStatement(node: nodes.VariableStatement) {
-        node.decorators.accept(this);
-        node.variables.accept(this);
     }
 
     /**

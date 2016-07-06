@@ -71,7 +71,7 @@ export class Resolver {
      * @param block
      * @param name
      */
-    resolveValueOfString(block: nodes.Block, name: string) {
+    resolveValueOfString(block: nodes.BlockStatement, name: string) {
 
     }
 
@@ -169,7 +169,7 @@ class TypeResolver extends NodeVisitor {
      * 访问一个语句块({...})。
      * @param node 要访问的节点。
      */
-    visitBlock(node: nodes.Block) {
+    visitBlock(node: nodes.BlockStatement) {
         node.statements.accept(this);
     }
 

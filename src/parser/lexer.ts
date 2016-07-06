@@ -27,13 +27,20 @@ export class Lexer {
     pos: number;
 
     /**
+     * 获取正在解析的源码路径。
+     */
+    fileName: string;
+
+    /**
      * 设置要解析的源码。
      * @param text 要解析的源码文本。
      * @param start 解析的源码开始位置。
+     * @param fileName 解析的源码位置。
      */
-    setSource(text: string, start = 0) {
+    setSource(text: string, start = 0, fileName?: string) {
         this.source = text;
         this.pos = start;
+        this.fileName = fileName;
         delete this.comments;
 
         // 跳过开头的 #! 部分。
@@ -126,7 +133,7 @@ export class Lexer {
      * @param args 格式化信息的参数。
      */
     error(message: string, ...args: any[]) {
-        error(ErrorType.lexicalError, message, ...args);
+        error(ErrorType.lexicalError, this.fileName, this.pos, this.pos, message, ...args);
     }
 
     /**
@@ -161,7 +168,7 @@ export class Lexer {
         while (true) {
             let ch = this.source.charCodeAt(result.start = this.pos++);
 
-            // 标识符, 关键字
+            // 标识符、关键字
             if (ch >= CharCode.a && ch <= CharCode.z) {
                 result.data = this.scanIdentifier();
                 result.type = stringToToken(result.data);
@@ -170,7 +177,7 @@ export class Lexer {
 
             switch (ch) {
 
-                // \s, \t
+                // \s、\t
                 case CharCode.space:
                 case CharCode.horizontalTab:
                     // 加速连续空格解析。
@@ -179,15 +186,15 @@ export class Lexer {
                     }
                     continue;
 
-                // \r, \n
+                // \r、\n
                 case CharCode.carriageReturn:
                 case CharCode.lineFeed:
                     result.onNewLine = true;
                     continue;
 
-                // /, //, /*, /=
+                // /、//、/*、/=
                 case CharCode.slash:
-                    switch (this.source.charCodeAt(this.pos++)) { // /, *, =
+                    switch (this.source.charCodeAt(this.pos++)) { // /、*、=
                         case CharCode.slash:
                             const singleCommentStart = this.pos;
                             this.skipLine();
@@ -227,7 +234,7 @@ export class Lexer {
                     }
                     break;
 
-                // .1, .., ...
+                // .1、..、...
                 case CharCode.dot:
                     if (Unicode.isDecimalDigit(this.pos)) {
                         this.pos--;
@@ -273,7 +280,7 @@ export class Lexer {
                     result.type = TokenType.semicolon;
                     break;
 
-                // =, ==, ===, =>
+                // =、==、===、=>
                 case CharCode.equals:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.equals:
@@ -304,7 +311,7 @@ export class Lexer {
                     }
                     break;
 
-                // ', "
+                // '、"
                 case CharCode.singleQuote:
                 case CharCode.doubleQuote:
                     result.data = this.scanStringLiteral(ch);
@@ -317,7 +324,7 @@ export class Lexer {
                     result.type = this.source.charCodeAt(this.pos - 1) === CharCode.openBrace ? TokenType.templateHead : TokenType.noSubstitutionTemplateLiteral;
                     break;
 
-                // +, ++, +=
+                // +、++、+=
                 case CharCode.plus:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.plus:
@@ -334,7 +341,7 @@ export class Lexer {
                     }
                     break;
 
-                // -, --, -=
+                // -、--、-=
                 case CharCode.minus:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.minus:
@@ -376,9 +383,9 @@ export class Lexer {
                     result.type = TokenType.closeBracket;
                     break;
 
-                // 0x000, 0b000, 0O000, 0
+                // 0x000、0b000、0O000、0
                 case CharCode.num0:
-                    switch (this.source.charCodeAt(this.pos++)) { // x, b, o
+                    switch (this.source.charCodeAt(this.pos++)) { // x、b、o
                         case CharCode.x:
                         case CharCode.X:
                             result.data = this.scanDights(16);
@@ -407,7 +414,7 @@ export class Lexer {
                     result.type = TokenType.at;
                     break;
 
-                // !, !=, !==
+                // !、!=、!==
                 case CharCode.exclamation:
                     if (this.source.charCodeAt(this.pos) === CharCode.equals) {
                         if (this.source.charCodeAt(++this.pos) === CharCode.equals) { // =
@@ -421,7 +428,7 @@ export class Lexer {
                     result.type = TokenType.exclamation;
                     break;
 
-                // %, %=
+                // %、%=
                 case CharCode.percent:
                     if (this.source.charCodeAt(this.pos) === TokenType.equals) {
                         this.pos++; // =
@@ -431,7 +438,7 @@ export class Lexer {
                     result.type = TokenType.percent;
                     break;
 
-                // &, &&, &=
+                // &、&&、&=
                 case CharCode.ampersand:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.ampersand:
@@ -448,7 +455,7 @@ export class Lexer {
                     }
                     break;
 
-                // *, **, **=, *=
+                // *、**、**=、*=
                 case CharCode.asterisk:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.asterisk:
@@ -469,7 +476,7 @@ export class Lexer {
                     }
                     break;
 
-                // <, <<, <<=, <=
+                // <、<<、<<=、<=
                 case CharCode.lessThan:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.lessThan:
@@ -494,7 +501,7 @@ export class Lexer {
                     }
                     break;
 
-                // >, >=, >>, >>=, >>>, >>>=
+                // >, >=, >>、>>=、>>>、>>>=
                 case CharCode.greaterThan:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.equals:
@@ -526,7 +533,7 @@ export class Lexer {
                     }
                     break;
 
-                // |, |=, ||
+                // |、|=、||
                 case CharCode.bar:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.bar:
@@ -548,7 +555,7 @@ export class Lexer {
                     result.type = TokenType.tilde;
                     break;
 
-                // ^, ^=
+                // ^、^=
                 case CharCode.caret:
                     if (this.source.charCodeAt(this.pos) === CharCode.equals) {
                         this.pos++; // =

@@ -15,11 +15,6 @@ export interface CompileOptions {
     languageVersion?: LanguageVersion;
 
     /**
-     * 获取或设置是否禁止省略条件表达式的括号。
-     */
-    disallowMissingParentheses?: boolean;
-
-    /**
      * 设置是否解析注释。
      */
     parseComments?: ParseCommentsOption;
@@ -43,6 +38,16 @@ export interface CompileOptions {
      * 跳过 Jsx 语法(<xx/>)。
      */
     parseJsx?: boolean;
+
+    /**
+     * 自动插入分号。
+     */
+    autoInsertSemicolon?: boolean;
+
+    /**
+     * 自动插入条件表达式的括号。
+     */
+    autoInsertParenthese?: boolean;
 
 }
 
@@ -111,7 +116,7 @@ export enum ParseCommentsOption {
  * @param message 错误的信息。
  * @param args 格式化错误的参数。
  */
-export function error(type: ErrorType, message: string, ...args: any[]) {
+export function error(type: ErrorType, fileName: string, start: number, end: number, message: string, ...args: any[]) {
 
 }
 
