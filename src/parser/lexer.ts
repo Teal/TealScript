@@ -22,7 +22,7 @@ export class Lexer {
     source: string;
 
     /**
-     * 获取正在解析的源码开始位置。
+     * 获取正在解析的位置。
      */
     pos: number;
 
@@ -49,7 +49,7 @@ export class Lexer {
             type: TokenType.unknown,
             start: start,
             end: start,
-            onNewLine: true,
+            onNewLine: true
         };
 
     }
@@ -126,7 +126,7 @@ export class Lexer {
      * @param args 格式化信息的参数。
      */
     error(message: string, ...args: any[]) {
-        error(ErrorType.lexical, message, ...args);
+        error(ErrorType.lexicalError, message, ...args);
     }
 
     /**
@@ -159,10 +159,6 @@ export class Lexer {
         const result = <Token>{};
 
         while (true) {
-            if (this.pos >= this.sourceEnd) {
-                result.type = TokenType.endOfFile;
-                break;
-            }
             let ch = this.source.charCodeAt(result.start = this.pos++);
 
             // 标识符, 关键字
@@ -191,19 +187,20 @@ export class Lexer {
 
                 // /, //, /*, /=
                 case CharCode.slash:
-                    switch (this.source.charCodeAt(this.pos)) {
+                    switch (this.source.charCodeAt(this.pos++)) { // /, *, =
                         case CharCode.slash:
-                            const singleCommentStart = ++this.pos;
+                            const singleCommentStart = this.pos;
                             this.skipLine();
                             if (options.parseComments & ParseCommentsOption.singleLine) {
+                                this.comments = this.comments || [];
                                 this.comments.push({ start: singleCommentStart, end: this.pos });
                             }
                             continue;
                         case CharCode.asterisk:
-                            const multiCommentStart = ++this.pos;
+                            const multiCommentStart = this.pos;
                             let multiCommentEnd: number;
-                            while (this.pos < this.sourceEnd) {
-                                ch = this.source.charCodeAt(this.pos++);
+                            while (this.pos < this.source.length) {
+                                ch = this.source.charCodeAt(this.pos++); // 注释字符。
                                 if (Unicode.isLineTerminator(ch)) {
                                     result.onNewLine = true;
                                 } else if (ch === CharCode.asterisk && this.source.charCodeAt(this.pos + 1) === CharCode.slash) {
@@ -212,18 +209,19 @@ export class Lexer {
                                     break;
                                 }
                             }
-                            if (multiCommentEnd == null && options.languageVersion) {
+                            if (multiCommentEnd == null && options.languageVersion !== LanguageVersion.tealScript) {
                                 this.error("多行注释未关闭；应输入“*/”。");
                             }
                             if ((options.parseComments & ParseCommentsOption.jsDoc) ? this.source.charCodeAt(multiCommentStart) === CharCode.asterisk : (options.parseComments & ParseCommentsOption.multiLine)) {
+                                this.comments = this.comments || [];
                                 this.comments.push({ start: multiCommentStart, end: multiCommentEnd });
                             }
                             continue;
                         case CharCode.equals:
-                            this.pos++;
                             result.type = TokenType.slashEquals;
                             break;
                         default:
+                            this.pos--;
                             result.type = TokenType.slash;
                             break;
                     }
@@ -238,9 +236,9 @@ export class Lexer {
                         break;
                     }
                     if (this.source.charCodeAt(this.pos) === CharCode.dot) {
-                        this.pos++;
+                        this.pos++; // .
                         if (this.source.charCodeAt(this.pos) === CharCode.dot) {
-                            this.pos++;
+                            this.pos++; // .
                             result.type = TokenType.dotDotDot;
                             break;
                         }
@@ -279,15 +277,25 @@ export class Lexer {
                 case CharCode.equals:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.equals:
-                            this.pos++;
+                            this.pos++; // =
                             if (this.source.charCodeAt(this.pos) === CharCode.equals) {
-                                this.pos++;
+                                this.pos++; // =
+                                if (options.skipGitConflictMarker !== false && result.onNewLine && this.skipGitConflictMarker(CharCode.equals, 4)) {
+                                    // 跳过冲突的第二个版本。
+                                    while (this.pos < this.source.length) {
+                                        if (this.skipGitConflictMarker(CharCode.greaterThan, 7)) {
+                                            break;
+                                        }
+                                        this.skipLine();
+                                    }
+                                    continue;
+                                }
                                 result.type = TokenType.equalsEqualsEquals;
                                 break;
                             }
                             result.type = TokenType.equalsEquals;
                         case CharCode.greaterThan:
-                            this.pos++;
+                            this.pos++; // >
                             result.type = TokenType.equalsGreaterThan;
                             break;
                         default:
@@ -313,11 +321,11 @@ export class Lexer {
                 case CharCode.plus:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.plus:
-                            this.pos++;
+                            this.pos++; // +
                             result.type = TokenType.plusPlus;
                             break;
                         case CharCode.equals:
-                            this.pos++;
+                            this.pos++; // =
                             result.type = TokenType.plusEquals;
                             break;
                         default:
@@ -330,11 +338,11 @@ export class Lexer {
                 case CharCode.minus:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.minus:
-                            this.pos++;
+                            this.pos++; // -
                             result.type = TokenType.minusMinus;
                             break;
                         case CharCode.equals:
-                            this.pos++;
+                            this.pos++; // =
                             result.type = TokenType.minusEquals;
                             break;
                         default:
@@ -368,12 +376,42 @@ export class Lexer {
                     result.type = TokenType.closeBracket;
                     break;
 
+                // 0x000, 0b000, 0O000, 0
+                case CharCode.num0:
+                    switch (this.source.charCodeAt(this.pos++)) { // x, b, o
+                        case CharCode.x:
+                        case CharCode.X:
+                            result.data = this.scanDights(16);
+                            break;
+                        case CharCode.b:
+                        case CharCode.B:
+                            result.data = this.scanDights(2);
+                            break;
+                        case CharCode.o:
+                        case CharCode.O:
+                            result.data = this.scanDights(8);
+                            break;
+                        default:
+                            // EcmaScript 规定 0 后必须跟八进制数字，
+                            // 实际上大部分编译器将 08 和 09 解释为十进制数字。
+                            result.data = Unicode.isOctalDigit(this.source.charCodeAt(--this.pos)) ?
+                                this.scanDights(8) :
+                                this.scanNumericLiteral(CharCode.num0);
+                            break;
+                    }
+                    result.type = TokenType.numericLiteral;
+                    break;
+
+                // @
+                case CharCode.at:
+                    result.type = TokenType.at;
+                    break;
+
                 // !, !=, !==
                 case CharCode.exclamation:
-                    if (this.pos < this.sourceEnd && this.source.charCodeAt(this.pos) === CharCode.equals) {
-                        this.pos++;
-                        if (this.pos < this.sourceEnd && this.source.charCodeAt(this.pos) === CharCode.equals) {
-                            this.pos++;
+                    if (this.source.charCodeAt(this.pos) === CharCode.equals) {
+                        if (this.source.charCodeAt(++this.pos) === CharCode.equals) { // =
+                            this.pos++; // =
                             result.type = TokenType.exclamationEqualsEquals;
                             break;
                         }
@@ -385,8 +423,8 @@ export class Lexer {
 
                 // %, %=
                 case CharCode.percent:
-                    if (this.pos < this.sourceEnd && this.source.charCodeAt(this.pos) === TokenType.equals) {
-                        this.pos++;
+                    if (this.source.charCodeAt(this.pos) === TokenType.equals) {
+                        this.pos++; // =
                         result.type = TokenType.percentEquals;
                         break;
                     }
@@ -397,11 +435,11 @@ export class Lexer {
                 case CharCode.ampersand:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.ampersand:
-                            this.pos++;
+                            this.pos++; // &
                             result.type = TokenType.ampersandAmpersand;
                             break;
                         case CharCode.equals:
-                            this.pos++;
+                            this.pos++; // =
                             result.type = TokenType.ampersandEquals;
                             break;
                         default:
@@ -414,15 +452,15 @@ export class Lexer {
                 case CharCode.asterisk:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.asterisk:
-                            if (this.source.charCodeAt(++this.pos) === CharCode.equals) {
-                                this.pos++;
+                            if (this.source.charCodeAt(++this.pos) === CharCode.equals) {  // *
+                                this.pos++; // =
                                 result.type = TokenType.asteriskAsteriskEquals;
                                 break;
                             }
                             result.type = TokenType.asteriskAsterisk;
                             break;
                         case CharCode.equals:
-                            this.pos++;
+                            this.pos++; // =
                             result.type = TokenType.asteriskEquals;
                             break;
                         default:
@@ -435,15 +473,19 @@ export class Lexer {
                 case CharCode.lessThan:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.lessThan:
-                            if (this.source.charCodeAt(++this.pos) === CharCode.equals) {
-                                this.pos++;
+                            this.pos++; // <
+                            if (options.skipGitConflictMarker !== false && result.onNewLine && this.skipGitConflictMarker(CharCode.lessThan, 5)) {
+                                continue;
+                            }
+                            if (this.source.charCodeAt(this.pos) === CharCode.equals) {
+                                this.pos++; // =
                                 result.type = TokenType.lessThanLessThanEquals;
                                 break;
                             }
                             result.type = TokenType.lessThanLessThan;
                             break;
                         case CharCode.equals:
-                            this.pos++;
+                            this.pos++; // =
                             result.type = TokenType.lessThanEquals;
                             break;
                         default:
@@ -456,7 +498,7 @@ export class Lexer {
                 case CharCode.greaterThan:
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.equals:
-                            this.pos++;
+                            this.pos++; // =
                             result.type = TokenType.greaterThanEquals;
                             break;
                         case CharCode.greaterThan:
@@ -487,13 +529,13 @@ export class Lexer {
                 // |, |=, ||
                 case CharCode.bar:
                     switch (this.source.charCodeAt(this.pos)) {
-                        case CharCode.equals:
-                            this.pos++;
-                            result.type = TokenType.barEquals;
-                            break;
                         case CharCode.bar:
-                            this.pos++;
+                            this.pos++; // |
                             result.type = TokenType.barBar;
+                            break;
+                        case CharCode.equals:
+                            this.pos++; // =
+                            result.type = TokenType.barEquals;
                             break;
                         default:
                             result.type = TokenType.bar;
@@ -506,15 +548,10 @@ export class Lexer {
                     result.type = TokenType.tilde;
                     break;
 
-                // @
-                case CharCode.at:
-                    result.type = TokenType.at;
-                    break;
-
                 // ^, ^=
                 case CharCode.caret:
-                    if (this.source.charCodeAt(this.pos) === TokenType.caretEquals) {
-                        this.pos++;
+                    if (this.source.charCodeAt(this.pos) === CharCode.equals) {
+                        this.pos++; // =
                         result.type = TokenType.caretEquals;
                         break;
                     }
@@ -537,6 +574,11 @@ export class Lexer {
                     }
                     this.error("非法字符：“{0}”。", '#');
                     continue;
+
+                case undefined:
+                    this.pos--;
+                    result.type = TokenType.endOfFile;
+                    break;
 
                 // #
                 case CharCode.hash:
@@ -577,6 +619,7 @@ export class Lexer {
 
             }
 
+            break;
         }
 
         result.end = this.pos;
@@ -590,9 +633,11 @@ export class Lexer {
      */
     private scanIdentifier(currentChar?: number) {
 
+        console.assert(Unicode.isIdentifierStart(currentChar == undefined ? this.source.charCodeAt(this.pos) : currentChar));
+
         let result: string;
         let start = this.pos;
-        while (this.pos < this.sourceEnd) {
+        while (true) {
             const ch = this.source.charCodeAt(this.pos);
             if (!Unicode.isIdentifierPart(ch)) {
                 if (ch === CharCode.backslash) {
@@ -609,12 +654,11 @@ export class Lexer {
                     result += this.source.substring(start, this.pos);
 
                     // 处理转义字符。
-                    if (++this.pos < this.sourceEnd &&
-                        this.source.charCodeAt(this.pos) === CharCode.u) {
-                        this.pos++;
+                    if (this.source.charCodeAt(++this.pos) === CharCode.u) { // \
+                        this.pos++; // u
                         result += String.fromCharCode(this.scanDights(16, 4));
                     } else {
-                        this.error("非法字符：“{0}”。", '\\');
+                        this.error("非法字符：“\\”；应输入“u”。");
                     }
 
                     // 继续处理剩下的识符部分。
@@ -642,13 +686,11 @@ export class Lexer {
 
         // ''' 多行不转义字符串。
         if (options.languageVersion === LanguageVersion.tealScript &&
-            this.pos + 2 < this.sourceEnd &&
             this.source.charCodeAt(this.pos + 1) === currentChar &&
             this.source.charCodeAt(this.pos) === currentChar) {
             let start = this.pos += 2;
-            for (; this.pos < this.sourceEnd; this.pos++) {
-                if (this.pos + 2 < this.sourceEnd &&
-                    this.source.charCodeAt(this.pos) === currentChar &&
+            for (; this.pos < this.source.length; this.pos++) {
+                if (this.source.charCodeAt(this.pos) === currentChar &&
                     this.source.charCodeAt(this.pos + 1) === currentChar &&
                     this.source.charCodeAt(this.pos + 2) === currentChar) {
                     const end = this.pos;
@@ -665,18 +707,14 @@ export class Lexer {
         // 普通字符串和模板字符串。
         let result = "";
         let start = this.pos;
-        while (this.pos < this.sourceEnd) {
+        while (true) {
             let ch = this.source.charCodeAt(this.pos);
             switch (ch) {
                 case currentChar:
                     return result + this.source.substring(start, this.pos++);
                 case CharCode.backslash:
-                    result += this.source.substring(start, this.pos++);
-                    if (this.pos >= this.sourceEnd) {
-                        this.error("应输入转义字符。");
-                        return result;
-                    }
-                    ch = this.source.charCodeAt(this.pos++);
+                    result += this.source.substring(start, this.pos++); // \
+                    ch = this.source.charCodeAt(this.pos++); // 转义字符。
                     switch (ch) {
                         case CharCode.singleQuote:
                             result += '\'';
@@ -693,28 +731,25 @@ export class Lexer {
                         case CharCode.r:
                             result += '\r';
                             break;
-                        case CharCode.num0:
-                            result += '\0';
-                            break;
                         case CharCode.t:
                             result += '\t';
                             break;
                         case CharCode.u:
                             // \u{00000000}
                             if (options.languageVersion !== LanguageVersion.javaScript3 &&
-                                ++this.pos < this.sourceEnd &&
                                 this.source.charCodeAt(this.pos) === CharCode.openBrace) {
+                                this.pos++; // {
                                 ch = this.scanDights(16);
                                 if (ch > 0x10FFFF) {
                                     this.error("扩展 Unicode 字符必须在 0x0 到 0x10FFFF 之间");
                                     break;
                                 }
                                 result += ch <= 65535 ? String.fromCharCode(ch) : String.fromCharCode(Math.floor((ch - 65536) / 1024) + 0xD800, ((ch - 65536) % 1024) + 0xDC00);
-                                if (this.pos >= this.sourceEnd || this.source.charCodeAt(this.pos) !== CharCode.closeBrace) {
+                                if (this.source.charCodeAt(this.pos++) !== CharCode.closeBrace) {  // }
+                                    this.pos--;
                                     this.error("扩展 Unicode 字符未关闭；应输入“}”");
                                     break;
                                 }
-                                this.pos++;
                             } else {
                                 result += String.fromCharCode(this.scanDights(16, 4));
                             }
@@ -733,34 +768,37 @@ export class Lexer {
                             break;
                         case CharCode.carriageReturn:
                             if (this.source.charCodeAt(this.pos) === CharCode.lineFeed) {
-                                this.pos++;
+                                this.pos++; // \n
                             }
                         // 继续执行。
                         case CharCode.lineFeed:
                         case CharCode.lineSeparator:
                         case CharCode.paragraphSeparator:
                             break;
+                        case undefined:
+                            this.pos--;
+                            this.error("应输入转义字符。");
+                            return result;
                         default:
-                            result += String.fromCharCode(ch);
+                            result += String.fromCharCode(Unicode.isOctalDigit(ch) ? this.scanDights(8, undefined, 256) : ch);
                             break;
                     }
                     start = this.pos;
                     continue;
                 case CharCode.dollar:
-                    this.pos++;
+                    this.pos++; // $
                     // 模板字符串中的 ${ 。
                     if (currentChar === CharCode.backtick &&
-                        this.pos < this.sourceEnd &&
                         this.source.charCodeAt(this.pos) === CharCode.openBrace) {
-                        return result + this.source.substring(start, this.pos++ - 1);
+                        return result + this.source.substring(start, this.pos++ - 1); // {
                     }
                     continue;
                 case CharCode.carriageReturn:
                     // 仅在模板字符串内部可换行。换行符 \r 和 \r\n 转 \n。
                     if (currentChar === CharCode.backtick) {
-                        result += this.source.substring(start, this.pos++) + "\n";
+                        result += this.source.substring(start, this.pos++) + "\n"; // \r
                         if (this.source.charCodeAt(this.pos) === CharCode.lineFeed) {
-                            this.pos++;
+                            this.pos++; // \n
                         }
                         start = this.pos;
                         continue;
@@ -769,16 +807,16 @@ export class Lexer {
                 case CharCode.lineFeed:
                     // 仅在模板字符串内部可换行。
                     if (currentChar === CharCode.backtick) {
-                        result += this.source.substring(start, this.pos++) + "\n";
+                        result += this.source.substring(start, this.pos++) + "\n"; // \n
                         start = this.pos;
                         continue;
                     }
                     break;
             }
-            if (Unicode.isLineTerminator(ch)) {
+            if (ch == undefined || Unicode.isLineTerminator(ch)) {
                 break;
             }
-            this.pos++;
+            this.pos++; // 字符串的字符。
         }
 
         this.error("字符串未关闭；应输入“{0}”。", String.fromCharCode(currentChar));
@@ -791,29 +829,12 @@ export class Lexer {
      */
     private scanNumericLiteral(currentChar: number) {
 
-        // 0x00, 0O00, 0b00
-        if (currentChar === CharCode.num0 && this.pos < this.sourceEnd) {
-            switch (this.source.charCodeAt(this.pos++)) {
-                case CharCode.x:
-                case CharCode.X:
-                    return this.scanDights(16);
-                case CharCode.b:
-                case CharCode.B:
-                    return this.scanDights(2);
-                case CharCode.o:
-                case CharCode.O:
-                    return this.scanDights(8);
-                default:
-                    this.pos--;
-            }
-        }
-
         // 读取整数部分。
         let result = currentChar - CharCode.num0;
-        while (this.pos < this.sourceEnd) {
+        while (true) {
             const num = this.source.charCodeAt(this.pos) - CharCode.num0;
             if (num >= 0 && num <= 9) {
-                this.pos++;
+                this.pos++; // 整数部分。
                 result = result * 10 + num;
             } else {
                 break;
@@ -822,12 +843,12 @@ export class Lexer {
 
         // 读取小数部分。
         if (this.source.charCodeAt(this.pos) === CharCode.dot) {
-            this.pos++;
+            this.pos++; // .
             let p = 1;
-            while (this.pos < this.sourceEnd) {
+            while (true) {
                 const num = this.source.charCodeAt(this.pos) - CharCode.num0;
                 if (num >= 0 && num <= 9) {
-                    this.pos++;
+                    this.pos++; // 小数部分。
                     result += num / p;
                     p *= 10;
                 } else {
@@ -841,13 +862,13 @@ export class Lexer {
             case CharCode.e:
             case CharCode.E:
                 let base: number;
-                switch (++this.pos < this.sourceEnd ? this.source.charCodeAt(this.pos) : undefined) {
+                switch (this.source.charCodeAt(this.pos)) {
                     case CharCode.minus:
-                        this.pos++;
+                        this.pos++; // -
                         base = -this.scanDights(10);
                         break;
                     case CharCode.plus:
-                        this.pos++;
+                        this.pos++; // +
                     // 继续执行
                     default:
                         base = this.scanDights(10);
@@ -864,35 +885,150 @@ export class Lexer {
      * 扫描紧跟的数字字符。
      * @param base 进制基数。可以是 2、8、10 或 16。
      * @param count 要求的解析字数。如果未传递则不限制。
+     * @param max 允许解析的最大值。如果未传递则不限制。
      * @return 返回解析的数值。
      */
-    private scanDights(base: number, count?: number) {
+    private scanDights(base: number, count?: number, max?: number) {
         let result = 0;
         const start = this.pos;
-        const end = count == undefined ? this.sourceEnd : this.pos + count;
-        while (this.pos < this.sourceEnd) {
+        while (true) {
             let num = this.source.charCodeAt(this.pos);
             num = base <= 9 || num >= CharCode.num0 && num <= CharCode.num9 ? num - CharCode.num0 :
                 num >= CharCode.A && num <= CharCode.Z ? 10 + num - CharCode.A :
                     num >= CharCode.a && num <= CharCode.z ? 10 + num - CharCode.a : -1;
-            if (num >= 0 && num < base) {
-                this.pos++;
-                result = result * base + num;
-            } else {
+
+            // 解析到不合法的数字或超过范围则停止解析。
+            if (num < 0 || num >= base ||
+                count != undefined && count-- === 0 ||
+                max != undefined && result * base + num >= max) {
                 break;
             }
+
+            result = result * base + num;
+            this.pos++;
         }
-        if (start === this.pos || count != undefined && this.pos - start !== count) {
-            this.error(base === 2 ? "应输入二进制数字" : base === 8 ? "应输入八进制数字" : base === 16 ? "应输入十六进制数字" : "应输入数字");
+        if (start === this.pos || count > 0) {
+            this.error(base === 2 ? "应输入二进制数字。" : base === 8 ? "应输入八进制数字。" : base === 16 ? "应输入十六进制数字。" : "应输入数字。");
         }
         return result;
     }
 
+    /**
+     * 跳过当前紧跟 Git 的冲突标记。
+     * @param currentChar 当前已读取的字符。只能是 <、= 或 >。
+     * @param repeatCount 要求的重复个数。
+     * @returns 如果跳过成功则返回 true，否则返回 false。
+     */
+    private skipGitConflictMarker(currentChar: number, repeatCount: number) {
+        for (let i = 0; i < repeatCount; i++) {
+            if (this.source.charCodeAt(this.pos + i) !== currentChar) {
+                return false;
+            }
+        }
+        if (this.source.charCodeAt(this.pos + repeatCount) !== CharCode.space) {
+            return false;
+        }
+        this.pos += repeatCount;
+        this.skipLine();
+        return true;
+    }
+
     // #endregion
 
-    // #region 延时解析
+    // #region 重新读取
 
-    readAsRegExpLiteral(currentChar: number) {
+    /**
+     * 以正则表达式重新读取下一个标记。
+     */
+    readAsRegExpLiteral() {
+        console.assert(this.source.charCodeAt(this.current.start) === CharCode.slash);
+
+        // FIXME: 需要测试正则表达式语法?
+
+        let pattern: string;
+        let flags: string;
+        let data: RegExp;
+
+        let start = this.current.start + 1;
+        this.pos = start;
+
+        let tokenIsUnterminated = false;
+        let inCharacterClass = false;
+
+        while (true) {
+            let ch = this.source.charCodeAt(this.pos++);
+            switch (ch) {
+                case CharCode.slash:
+                    if (inCharacterClass) {
+                        continue;
+                    }
+                    break;
+                case CharCode.openBracket:
+                    inCharacterClass = true;
+                    break;
+                case CharCode.closeBracket:
+                    inCharacterClass = false;
+                    break;
+                case CharCode.backslash:
+                    ch = this.source.charCodeAt(++this.pos);  // 转义字符
+                    if (ch == undefined || Unicode.isLineTerminator(ch)) {
+                        tokenIsUnterminated = true;
+                    }
+                    continue;
+                default:
+                    if (ch == undefined || Unicode.isLineTerminator(ch)) {
+                        this.pos--;
+                        tokenIsUnterminated = true;
+                        break;
+                    }
+                    continue;
+            }
+
+            break;
+        }
+
+        if (tokenIsUnterminated) {
+            this.error("正则表达式未关闭；应输入“/”");
+            pattern = this.source.substring(start, this.pos);
+        } else {
+            pattern = this.source.substring(start, this.pos - 1);
+            start = this.pos;
+            while (Unicode.isIdentifierPart(this.source.charCodeAt(this.pos))) {
+                this.pos++;
+            }
+            flags = this.source.substring(start, this.pos);
+        }
+
+        return this.current = this.current._next = <Token>{
+            start: this.current.start,
+            type: TokenType.regularExpressionLiteral,
+            data: { pattern, flags },
+            end: this.pos
+        };
+    }
+
+    /**
+     * 以模板中间或尾部重新读取下一个标记。
+     */
+    readAsTemplateMiddleOrTail() {
+        console.assert(this.source.charCodeAt(this.current.start) === CharCode.closeBrace);
+
+        let start = this.current.start + 1;
+        this.pos = start;
+
+        const data = this.scanStringLiteral(CharCode.backtick);
+        return this.current = this.current._next = <Token>{
+            start: this.current.start,
+            type: this.source.charCodeAt(this.pos - 1) === CharCode.openBrace ? TokenType.templateMiddle : TokenType.templateTail,
+            data: data,
+            end: this.pos
+        };
+    }
+
+    /**
+     * 以 JSX 标签名重新读取下一个标记。
+     */
+    readAsJsxTagName() {
 
     }
 

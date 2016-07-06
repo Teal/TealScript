@@ -27,12 +27,22 @@ export interface CompileOptions {
     /**
      * 跳过 Unix #! 标记。
      */
-    skipShebang: boolean;
+    skipShebang?: boolean;
 
     /**
      * 跳过未关闭的多行字符串和注释。
      */
-    skipUnterminatedLiteral: boolean;
+    skipUnterminatedLiteral?: boolean;
+
+    /**
+     * 跳过 Git 冲突标记(<<<<<<<)。
+     */
+    skipGitConflictMarker?: boolean;
+
+    /**
+     * 跳过 Jsx 语法(<xx/>)。
+     */
+    parseJsx?: boolean;
 
 }
 
@@ -113,16 +123,16 @@ export enum ErrorType {
     /**
      * 词法解析错误。
      */
-    lexical,
+    lexicalError,
 
     /**
      * 语法解析错误。
      */
-    syntax,
+    syntaxError,
 
     /**
      * 语义分析错误。
      */
-    resolve
+    resolveError
 
 }

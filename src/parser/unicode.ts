@@ -107,7 +107,7 @@ export function isIdentifierPart(ch: number): boolean {
         ch >= CharCode.num0 && ch <= CharCode.num9 ||
         ch === CharCode.dollar ||
         ch === CharCode.underline ||
-        ch > CharCode.asciiMax && lookupInUnicodeMap(ch, options.languageVersion === LanguageVersion.es3 ? unicodeES3IdentifierPart : unicodeES5IdentifierPart);
+        ch > CharCode.asciiMax && lookupInUnicodeMap(ch, options.languageVersion === LanguageVersion.javaScript3 ? unicodeES3IdentifierPart : unicodeES5IdentifierPart);
 }
 
 /**
