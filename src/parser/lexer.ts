@@ -947,7 +947,7 @@ export class Lexer {
     /**
      * 以正则表达式重新读取下一个标记。
      */
-    readAsRegExpLiteral() {
+    readAsRegularExpressionLiteral() {
         console.assert(this.source.charCodeAt(this.current.start) === CharCode.slash);
 
         // FIXME: 需要测试正则表达式语法?

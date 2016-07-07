@@ -480,6 +480,14 @@ export abstract class NodeVisitor {
     }
 
     /**
+     * 访问一个模板字面量的一个文本区域(`abc`)。
+     * @param node 要访问的节点。
+     */
+    visitTemplateSpan(node: nodes.TemplateSpan) {
+
+    }
+
+    /**
      * 访问一个正则表达式字面量(/abc/)。
      * @param node 要访问的节点。
      */

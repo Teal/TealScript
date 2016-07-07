@@ -836,11 +836,11 @@ export class Parser {
      * 解析一个字符串字面量('abc'、"abc"、`abc`)。
      */
     private parseStringLiteral() {
-        console.assert(this.lexer.peek().type === TokenType.stringLiteral);
+        console.assert(this.lexer.peek().type === TokenType.stringLiteral || this.lexer.peek().type === TokenType.noSubstitutionTemplateLiteral);
         const result = new nodes.StringLiteral();
         result.start = this.lexer.read().start;
         result.value = this.lexer.current.data;
-        result.end = this.lexer.read().end;
+        result.end = this.lexer.current.end;
         return result;
     }
 
@@ -848,19 +848,50 @@ export class Parser {
      * 解析一个模板字面量(`abc${x + y}def`)。
      */
     private parseTemplateLiteral() {
+        console.assert(this.lexer.peek().type === TokenType.templateHead);
+        const result = new nodes.TemplateLiteral();
+        result.spans = new nodes.NodeList<nodes.Expression>();
 
+        while (true) {
+
+            console.assert(this.lexer.peek().type === TokenType.templateHead || this.lexer.peek().type === TokenType.templateMiddle);
+            let span = new nodes.TemplateSpan();
+            span.start = this.lexer.read().start;
+            span.value = this.lexer.current.data;
+            span.end = this.lexer.current.end;
+            result.spans.push(span);
+
+            let expressions = this.parseExpression();
+            result.spans.push(expressions);
+
+            if (this.lexer.peek().type !== TokenType.closeBrace) {
+                this.expectToken(TokenType.closeBrace);
+                break;
+            }
+
+            if (this.lexer.readAsTemplateMiddleOrTail().type === TokenType.templateTail) {
+                let span = new nodes.TemplateSpan();
+                span.start = this.lexer.read().start;
+                span.value = this.lexer.current.data;
+                span.end = this.lexer.current.end;
+                result.spans.push(span);
+                break;
+            }
+        }
+
+        return result;
     }
 
     /**
      * 解析一个正则表达式字面量(/abc/)。
      */
     private parseRegularExpressionLiteral() {
-        console.assert(this.lexer.peek().type === TokenType.regularExpressionLiteral);
+        console.assert(this.lexer.peek().type === TokenType.slash || this.lexer.peek().type === TokenType.slashEquals);
         const result = new nodes.RegularExpressionLiteral();
-        result.start = this.lexer.read().start;
+        result.start = this.lexer.readAsRegularExpressionLiteral().start;
         result.value = this.lexer.current.data.pattern;
         result.flags = this.lexer.current.data.flags;
-        result.end = this.lexer.read().end;
+        result.end = this.lexer.current.end;
         return result;
     }
 
@@ -868,14 +899,45 @@ export class Parser {
      * 解析一个数组字面量([x, y])。
      */
     private parseArrayLiteral() {
-
+        console.assert(this.lexer.peek().type === TokenType.openBracket);
+        const result = new nodes.ArrayLiteral();
+        result.start = this.lexer.read().start;
+        result.elements = new nodes.NodeList<nodes.Expression>();
+        result.elements.seperators = [];
+        while (true) {
+            switch (this.lexer.peek().type) {
+                case TokenType.comma:
+                    result.elements.seperators.push(this.lexer.read().start);
+                    continue;
+                case TokenType.closeBracket:
+                    return result;
+                default:
+                    result.elements.push(this.parseExpressionWith(ParseFlags.disallowComma));
+            }
+        }
     }
 
     /**
      * 解析一个对象字面量({x: y})。
      */
     private parseObjectLiteral() {
+        console.assert(this.lexer.peek().type === TokenType.openBrace);
+        const result = new nodes.ObjectLiteral();
+        result.start = this.lexer.read().start;
+        result.elements = new nodes.NodeList<nodes.PropertyDeclaration | nodes.MethodDeclaration | nodes.AccessorDeclaration>();
+        result.elements.seperators = [];
+        while (true) {
+            switch (this.lexer.peek().type) {
+                case TokenType.comma:
+                    result.elements.seperators.push(this.lexer.read().start);
+                    continue;
+                case TokenType.closeBrace:
+                   // return result;
+                default:
 
+                    // result.elements.push(this.parseExpressionWith(ParseFlags.disallowComma));
+            }
+        }
     }
 
     /**

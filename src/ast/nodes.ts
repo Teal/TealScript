@@ -2377,7 +2377,17 @@ export class TemplateLiteral extends Expression {
     /**
      * 获取当前模板字符串的所有组成部分。
      */
-    spans: NodeList<Expression>;
+    spans: NodeList<TemplateSpan | Expression>;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.spans[0].start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.spans[this.spans.length - 1].end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2396,6 +2406,27 @@ export class TemplateLiteral extends Expression {
      */
     each(callback: EachCallback, scope?: any) {
         return this.spans.each(callback, scope);
+    }
+
+}
+
+/**
+ * 表示一个模板字面量的一个文本区域(\`abc${、}abc${、}abc\`)。
+ */
+export class TemplateSpan extends Node {
+
+    /**
+     * 获取当前区块的名字。
+     */
+    value: string;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitTemplateSpan(this);
     }
 
 }
@@ -2437,16 +2468,6 @@ export class ArrayLiteral extends Expression {
     elements: NodeList<Expression>;
 
     /**
-     * 获取当前节点的开始位置。
-     */
-    get start() { return this.elements.start; }
-
-    /**
-     * 获取当前节点的结束位置。
-     */
-    get end() { return this.elements.end; }
-
-    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      * @returns 返回访问器的处理结果。
@@ -2476,16 +2497,6 @@ export class ObjectLiteral extends Expression {
      * 获取当前对象字面量的所有项。
      */
     elements: NodeList<PropertyDeclaration | MethodDeclaration | AccessorDeclaration>;
-
-    /**
-     * 获取当前节点的开始位置。
-     */
-    get start() { return this.elements.start; }
-
-    /**
-     * 获取当前节点的结束位置。
-     */
-    get end() { return this.elements.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
