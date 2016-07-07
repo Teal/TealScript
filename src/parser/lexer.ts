@@ -583,7 +583,7 @@ export class Lexer {
                     continue;
 
                 case undefined:
-                    this.pos--;
+                    this.pos = this.source.length;
                     result.type = TokenType.endOfFile;
                     break;
 

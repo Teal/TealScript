@@ -45,9 +45,49 @@ export interface CompileOptions {
     autoInsertSemicolon?: boolean;
 
     /**
+     * 启用更智能的分号插入方式。
+     */
+    smartSemicolonInsertion: boolean;
+
+    /**
      * 自动插入条件表达式的括号。
      */
     autoInsertParenthese?: boolean;
+
+    /**
+     * 允许使用 case else 语法代替 default。
+     */
+    allowCaseElse?: boolean;
+
+    /**
+     * 允许使用 for..of 语法。
+     */
+    allowForOf?: boolean;
+
+    /**
+     * 允许使用 for..to 语法。
+     */
+    allowForTo?: boolean;
+
+    /**
+     * 允许使用 throw 空参数语法。
+     */
+    allowRethrow?: boolean;
+
+    /**
+     * 允许使用 with 语句定义语法。
+     */
+    allowWithVaribale?: boolean;
+
+    /**
+     * 自动插入 try 语句块。
+     */
+    autoInsertTryStatementBlock?: boolean;
+
+    /**
+     * 自动插入 try 语句块。
+     */
+    allowTryStatementCatchMissingVaribale?: boolean;
 
 }
 

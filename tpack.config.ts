@@ -32,8 +32,9 @@ tpack.task("gen-nodes", function () {
                     continue;
                 }
                 members = members || {};
-                members[(<ts.Identifier>prop.name).text] = sourceFile.text.substring(prop.type.pos, prop.type.end).trim();
-                if (getDocComment(prop, false).indexOf("undefined") >= 0) {
+                const type = sourceFile.text.substring(prop.type.pos, prop.type.end).trim();
+                members[(<ts.Identifier>prop.name).text] = type;
+                if (getDocComment(prop, false).indexOf("undefined") >= 0 || getDocComment(prop, false).indexOf("可能不存在") >= 0/* || isArrayType(type)*/) {
                     optional[(<ts.Identifier>prop.name).text] = true;
                 }
             }
@@ -69,11 +70,14 @@ tpack.task("gen-nodes", function () {
             if (type.isAbstract) continue;
             let p = type;
             while (p = nodes[p.extends]) {
+                var r = {};
                 for (const m in p.members) {
-                    if (!type.members[m]) {
-                        type.members[m] = p.members[m];
-                    }
+                    r[m] = p.members[m];
                 }
+                for (const m in type.members) {
+                    r[m] = type.members[m];
+                }
+                type.members = r;
                 for (const m in p.optional) {
                     if (!type.optional[m]) {
                         type.optional[m] = p.optional[m];
