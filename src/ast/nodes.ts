@@ -9,51 +9,53 @@ import {NodeVisitor} from './nodeVisitor';
 // #region 节点
 
 /**
+ * 表示 each 函数的回调函数。
+ * @param node 当前节点。
+ * @param key 当前节点的索引或键。
+ * @param target 当前正在遍历的目标节点或所在列表。
+ * @returns 函数如果返回 false 则表示终止遍历。
+ */
+type EachCallback = (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void;
+
+/**
  * 表示一个语法树节点。
  */
 export abstract class Node {
 
     /**
-     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的开始位置。
      */
     start: number;
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     end: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     abstract accept(vistior: NodeVisitor);
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return true;
     }
 
     /**
      * 遍历当前节点的所有直接和间接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    walk(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    walk(callback: EachCallback, scope?: any) {
         return this.each(function (childNode: Node) {
             return callback.apply(this, arguments) !== false &&
                 childNode.walk(callback, scope);
@@ -68,29 +70,24 @@ export abstract class Node {
 export class NodeList<T extends Node> extends Array<T> {
 
     /**
-     * 获取当前节点列表的开始位置。如果不存在开始标记则返回 undefined。
+     * 获取当前节点列表的开始标记的位置。如果不存在开始标记则返回 undefined。
      */
     start: number;
 
     /**
-     * 获取当前节点列表的结束位置。如果不存在结束标记则返回 undefined。
+     * 获取当前节点列表的结束标记的位置。如果不存在结束标记则返回 undefined。
      */
     end: number;
 
     /**
-     * 获取当前节点所有分割符（如逗号）的开始位置。如果当前列表无分隔符则返回 undefined。
+     * 获取当前节点列表所有分割符（如逗号）的位置。如果不存在分隔符则返回 undefined。
      */
-    seperatorStarts: number[];
-
-    /**
-     * 获取当前节点所有分割符（如逗号）的结束位置。如果当前列表无分隔符则返回 undefined。
-     */
-    get seperatorEnds() { return this.seperatorStarts.map(p => p + 1); }
+    seperators: number[];
 
     /**
      * 判断当前列表是否包含尾随的分隔符（如数组定义中的最后一项是否是逗号）。
      */
-    get hasTrailingSeperator() { return this.seperatorStarts.length === this.length; }
+    get hasTrailingSeperator() { return this.seperators.length === this.length; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -101,14 +98,10 @@ export class NodeList<T extends Node> extends Array<T> {
     }
 
     /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * 遍历当前节点列表，并对每一项执行 *callback*。
+     * @param callback 对每个节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: (node: T, key, target) => boolean | void, scope?: any) {
         for (let i = 0; i < this.length; i++) {
@@ -120,16 +113,12 @@ export class NodeList<T extends Node> extends Array<T> {
     }
 
     /**
-     * 遍历当前节点的所有直接和间接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * 遍历当前节点列表及节点的直接和间接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    walk(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    walk(callback: EachCallback, scope?: any) {
         return this.each(function (childNode: Node) {
             return callback.apply(this, arguments) !== false &&
                 childNode.walk(callback, scope);
@@ -171,6 +160,7 @@ export class SourceFile extends Node {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitSourceFile(this);
@@ -178,15 +168,11 @@ export class SourceFile extends Node {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.comments || this.comments.each(callback, scope)) &&
             (!this.jsDoc || callback.call(scope, this.jsDoc, "jsDoc", this) !== false) &&
             this.statements.each(callback, scope);
@@ -208,6 +194,25 @@ export abstract class Statement extends Node {
      */
     get hasSemicolon() { return false; }
 
+    /**
+     * 表示一个错误语句。
+     */
+    static error = Object.freeze(new ErrorStatement());
+
+}
+
+/**
+ * 表示一个错误语句。
+ */
+class ErrorStatement extends Statement {
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) { }
+
 }
 
 /**
@@ -221,8 +226,19 @@ export class BlockStatement extends Statement {
     statements: NodeList<Statement>;
 
     /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.statements.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.statements.end; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitBlockStatement(this);
@@ -230,15 +246,11 @@ export class BlockStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.statements.each(callback, scope);
     }
 
@@ -247,15 +259,20 @@ export class BlockStatement extends Statement {
 /**
  * 表示一个变量声明语句(var xx、let xx、const xx)。
  */
-export abstract class VariableStatement extends Statement {
+export class VariableStatement extends Statement {
 
     /**
-     * 获取当前变量语句的修饰器。如果变量无修饰器则返回 undefined。
+     * 获取当前变量声明的类型。合法的值有：var、let、const。
+     */
+    type: TokenType;
+
+    /**
+     * 获取当前变量语句的描述器。如果不存在描述器则返回 undefined。
      */
     decorators: NodeList<Decorator>;
 
     /**
-     * 获取当前变量语句的修饰符。如果变量无修饰符则返回 undefined。
+     * 获取当前变量语句的修饰符。如果不存在修饰符则返回 undefined。
      */
     modifiers: NodeList<Modifier>;
 
@@ -269,97 +286,87 @@ export abstract class VariableStatement extends Statement {
      */
     get hasSemicolon() { return this.end > this.variables[this.variables.length - 1].end; }
 
-}
-
-/**
- * 表示一个块级变量声明语句(var xx = ...)。
- */
-export class VarStatement extends VariableStatement {
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitVariableStatement(this);
+    }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             this.variables.each(callback, scope);
     }
 
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitVarStatement(this);
-    }
-
 }
 
 /**
- * 表示一个局部变量声明语句(let xx = ...)。
+ * 表示一个变量声明(x = 1、[x] = [1]、{a: x} = {a: 1})。
  */
-export class LetStatement extends VariableStatement {
+export class VariableDeclaration extends Node {
 
     /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * 获取当前声明的名字部分。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return (!this.decorators || this.decorators.each(callback, scope)) &&
-            (!this.modifiers || this.modifiers.each(callback, scope)) &&
-            this.variables.each(callback, scope);
-    }
+    name: BindingName;
+
+    /**
+     * 获取当前变量名后冒号的位置。如果当前变量后不跟冒号则返回 undefined。
+     */
+    colon: number;
+
+    /**
+     * 获取当前变量定义的类型。如果当前变量后不跟冒号则返回 undefined。
+     */
+    type: Expression;
+
+    /**
+     * 获取当前变量名后等号的位置。如果当前变量后不跟等号则返回 undefined。
+     */
+    equal: number;
+
+    /**
+     * 获取当前变量的初始值。如果当前变量后不跟等号则返回 undefined。
+     */
+    initializer: Expression;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.name.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.initializer ? this.initializer.end : this.type ? this.type.end : this.name.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitLetStatement(this);
+        return vistior.visitVariableDeclaration(this);
     }
-
-}
-
-/**
- * 表示一个常量声明语句(const xx = ...)。
- */
-export class ConstStatement extends VariableStatement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return (!this.decorators || this.decorators.each(callback, scope)) &&
-            (!this.modifiers || this.modifiers.each(callback, scope)) &&
-            this.variables.each(callback, scope);
-    }
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitConstStatement(this);
+    each(callback: EachCallback, scope?: any) {
+        return (!this.type || callback.call(scope, this.type, "type", this) !== false) &&
+            (!this.initializer || callback.call(scope, this.initializer, "initializer", this) !== false);
     }
 
 }
@@ -370,7 +377,7 @@ export class ConstStatement extends VariableStatement {
 export class EmptyStatement extends Statement {
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.start + 1; }
 
@@ -382,6 +389,7 @@ export class EmptyStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitEmptyStatement(this);
@@ -400,14 +408,9 @@ export class LabeledStatement extends Statement {
     label: Identifier;
 
     /**
-     * 获取当前标签名后冒号的开始位置。
+     * 获取当前标签名后冒号的位置。
      */
-    colonStart: number;
-
-    /**
-     * 获取当前标签名后冒号的结束位置。
-     */
-    get colonEnd() { return this.colonEnd + 1; }
+    colon: number;
 
     /**
      * 获取当前标签语句的主体部分。
@@ -415,8 +418,19 @@ export class LabeledStatement extends Statement {
     body: Statement;
 
     /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.label.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.body.end; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitLabeledStatement(this);
@@ -424,15 +438,11 @@ export class LabeledStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.label, "label", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
     }
@@ -445,7 +455,7 @@ export class LabeledStatement extends Statement {
 export class ExpressionStatement extends Statement {
 
     /**
-     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的开始位置。
      */
     get start() { return this.body.start; }
 
@@ -462,6 +472,7 @@ export class ExpressionStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitExpressionStatement(this);
@@ -469,22 +480,18 @@ export class ExpressionStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.body, "body", this) !== false;
     }
 
 }
 
 /**
- * 表示一个 if 语句(if(xx) {...})。
+ * 表示一个 if 语句(if(xx) ...)。
  */
 export class IfStatement extends Statement {
 
@@ -504,13 +511,14 @@ export class IfStatement extends Statement {
     else: Statement;
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return (this.else || this.then).end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitIfStatement(this);
@@ -518,15 +526,11 @@ export class IfStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
             callback.call(scope, this.then, "then", this) !== false &&
             (!this.else || callback.call(scope, this.else, "else", this) !== false);
@@ -535,7 +539,7 @@ export class IfStatement extends Statement {
 }
 
 /**
- * 表示一个 switch 语句(switch(...){...})。
+ * 表示一个 switch 语句(switch(xx){...})。
  */
 export class SwitchStatement extends Statement {
 
@@ -550,13 +554,14 @@ export class SwitchStatement extends Statement {
     cases: NodeList<CaseClause>;
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.cases.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitSwitchStatement(this);
@@ -564,15 +569,11 @@ export class SwitchStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.condition || callback.call(scope, this.condition, "condition", this) !== false) &&
             this.cases.each(callback, scope);
     }
@@ -590,14 +591,9 @@ export class CaseClause extends Node {
     label: Expression;
 
     /**
-     * 获取当前标签名后冒号的开始位置。
+     * 获取当前标签名后冒号的位置。
      */
-    colonStart: number;
-
-    /**
-     * 获取当前标签名后冒号的结束位置。
-     */
-    get colonEnd() { return this.colonEnd + 1; }
+    colon: number;
 
     /**
      * 获取当前分支的所有语句。
@@ -607,6 +603,7 @@ export class CaseClause extends Node {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitCaseClause(this);
@@ -614,15 +611,11 @@ export class CaseClause extends Node {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.label || callback.call(scope, this.label, "label", this) !== false) &&
             this.statements.each(callback, scope);
     }
@@ -630,7 +623,7 @@ export class CaseClause extends Node {
 }
 
 /**
- * 表示一个 for 语句(for(...; ...; ...) {...})。
+ * 表示一个 for 语句(for(var i = 0; i < 9; i++) ...)。
  */
 export class ForStatement extends Statement {
 
@@ -640,14 +633,9 @@ export class ForStatement extends Statement {
     initializer: VariableStatement | Expression;
 
     /**
-     * 获取条件部分中首个分号的开始位置。
+     * 获取条件部分中首个分号的位置。
      */
-    firstSemicolonStart: number;
-
-    /**
-     * 获取条件部分中首个分号的结束位置。
-     */
-    get firstSemicolonEnd() { return this.firstSemicolonStart + 1; }
+    firstSemicolon: number;
 
     /**
      * 获取当前 for 语句的条件部分。如果当前 for 语句不存在条件部分则返回 undefined。
@@ -655,14 +643,9 @@ export class ForStatement extends Statement {
     condition: Expression;
 
     /**
-     * 获取条件部分中第二个分号的开始位置。
+     * 获取条件部分中第二个分号的位置。
      */
-    secondSemicolonStart: number;
-
-    /**
-     * 获取条件部分中第二个分号的结束位置。
-     */
-    get secondSemicolonEnd() { return this.secondSemicolonStart + 1; }
+    secondSemicolon: number;
 
     /**
      * 获取当前 for 语句的迭代器部分。如果当前 for 语句不存在迭代器部分则返回 undefined。
@@ -677,6 +660,7 @@ export class ForStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitForStatement(this);
@@ -684,15 +668,11 @@ export class ForStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.initializer || callback.call(scope, this.initializer, "initializer", this) !== false) &&
             (!this.condition || callback.call(scope, this.condition, "condition", this) !== false) &&
             (!this.iterator || callback.call(scope, this.iterator, "iterator", this) !== false) &&
@@ -702,19 +682,19 @@ export class ForStatement extends Statement {
 }
 
 /**
- * 表示一个 for..in 语句(for(var xx in ...) {...})。
+ * 表示一个 for..in 语句(for(var x in y) ...)。
  */
 export class ForInStatement extends Statement {
 
     /**
-     * 获取当前 for..in 语句的变量声明格式。如果未声明变量则返回 undefined。
+     * 获取当前 for..in 语句的变量声明格式。如果未声明变量则返回 undefined。合法的值有：var、const、let。
      */
-    variableType: VariableType;
+    variableType: TokenType;
 
     /**
      * 获取当前 for..in 语句的变量名。
      */
-    variable: Identifier | ArrayBindingPattern | ObjectBindingPattern;
+    variable: BindingName;
 
     /**
      * 获取当前 for..in 语句的迭代部分。
@@ -729,6 +709,7 @@ export class ForInStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitForInStatement(this);
@@ -736,36 +717,31 @@ export class ForInStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.variable, "variable", this) !== false &&
-            callback.call(scope, this.iterator, "iterator", this) !== false &&
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.iterator, "iterator", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
     }
 
 }
 
 /**
- * 表示一个 for..of 语句(for(var xx of ...) {...})。
+ * 表示一个 for..of 语句(for(var x of y) ...)。
  */
 export class ForOfStatement extends Statement {
 
     /**
-     * 获取当前 for..of 语句的变量声明格式。如果未声明变量则返回 undefined。
+     * 获取当前 for..of 语句的变量声明格式。如果未声明变量则返回 undefined。合法的值有：var、const、let。
      */
-    variableType: VariableType;
+    variableType: TokenType;
 
     /**
      * 获取当前 for..of 语句的变量部分。
      */
-    variable: Identifier | ArrayBindingPattern | ObjectBindingPattern;
+    variable: BindingName;
 
     /**
      * 获取当前 for..of 语句的迭代部分。
@@ -780,6 +756,7 @@ export class ForOfStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitForOfStatement(this);
@@ -787,51 +764,31 @@ export class ForOfStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.variable, "variable", this) !== false &&
-            callback.call(scope, this.iterator, "iterator", this) !== false &&
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.iterator, "iterator", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
     }
 
 }
 
 /**
- * 表示一个 for..to 语句(for(var xx = ... to ...) {...})。
+ * 表示一个 for..to 语句(for(var x = 0 to 10) ...)。
  */
 export class ForToStatement extends Statement {
 
     /**
-     * 获取当前 for..of 语句的变量声明格式。如果未声明变量则返回 undefined。
-     */
-    variableType: VariableType;
-
-    /**
-     * 获取当前 for..of 语句的变量部分。
-     */
-    variable: Identifier;
-
-    /**
-     * 获取等号的开始位置。如果不存在等号则返回 undefined。
-     */
-    equalStart: number;
-
-    /**
-     * 获取等号的结束位置。如果不存在等号则返回非数字。
-     */
-    get equalEnd() { return this.equalStart + 1; }
-
-    /**
      * 获取当前 for 语句的初始化部分。如果当前 for 语句不存在初始化语句则返回 undefined。
      */
-    initializer: Expression;
+    initializer: VariableStatement;
+
+    /**
+     * 获取关键字 to 的位置。
+     */
+    to: number;
 
     /**
      * 获取当前 for..of 语句的迭代部分。
@@ -846,6 +803,7 @@ export class ForToStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitForToStatement(this);
@@ -853,17 +811,12 @@ export class ForToStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.variable, "variable", this) !== false &&
-            (!this.initializer || callback.call(scope, this.initializer, "initializer", this) !== false) &&
+    each(callback: EachCallback, scope?: any) {
+        return (!this.initializer || callback.call(scope, this.initializer, "initializer", this) !== false) &&
             callback.call(scope, this.iterator, "iterator", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
     }
@@ -871,7 +824,7 @@ export class ForToStatement extends Statement {
 }
 
 /**
- * 表示一个 while 语句(while(...) {...})。
+ * 表示一个 while 语句(while(...) ...)。
  */
 export class WhileStatement extends Statement {
 
@@ -886,13 +839,14 @@ export class WhileStatement extends Statement {
     body: Statement;
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.body.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitWhileStatement(this);
@@ -900,15 +854,11 @@ export class WhileStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
     }
@@ -916,7 +866,7 @@ export class WhileStatement extends Statement {
 }
 
 /**
- * 表示一个 do..while 语句(do {...} while(...);)。
+ * 表示一个 do..while 语句(do ... while(xx);)。
  */
 export class DoWhileStatement extends Statement {
 
@@ -931,6 +881,11 @@ export class DoWhileStatement extends Statement {
     body: Statement;
 
     /**
+     * 获取 while 关键字的位置。
+     */
+    while: number;
+
+    /**
      * 判断当前语句末尾是否包含分号。
      */
     get hasSemicolon() { return this.end > this.condition.end; }
@@ -938,6 +893,7 @@ export class DoWhileStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitDoWhileStatement(this);
@@ -945,15 +901,11 @@ export class DoWhileStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
     }
@@ -961,7 +913,7 @@ export class DoWhileStatement extends Statement {
 }
 
 /**
- * 表示一个 continue 语句(continue;)。
+ * 表示一个 continue 语句(continue xx;)。
  */
 export class ContinueStatement extends Statement {
 
@@ -978,6 +930,7 @@ export class ContinueStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitContinueStatement(this);
@@ -985,22 +938,18 @@ export class ContinueStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.label || callback.call(scope, this.label, "label", this) !== false);
     }
 
 }
 
 /**
- * 表示一个 break 语句(break;)。
+ * 表示一个 break 语句(break xx;)。
  */
 export class BreakStatement extends Statement {
 
@@ -1017,6 +966,7 @@ export class BreakStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitBreakStatement(this);
@@ -1024,22 +974,18 @@ export class BreakStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.label || callback.call(scope, this.label, "label", this) !== false);
     }
 
 }
 
 /**
- * 表示一个 return 语句(return ...;)。
+ * 表示一个 return 语句(return xx;)。
  */
 export class ReturnStatement extends Statement {
 
@@ -1056,6 +1002,7 @@ export class ReturnStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitReturnStatement(this);
@@ -1063,22 +1010,18 @@ export class ReturnStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.value || callback.call(scope, this.value, "value", this) !== false);
     }
 
 }
 
 /**
- * 表示一个 throw 语句(throw ...;)。
+ * 表示一个 throw 语句(throw xx;)。
  */
 export class ThrowStatement extends Statement {
 
@@ -1090,11 +1033,12 @@ export class ThrowStatement extends Statement {
     /**
      * 判断当前语句末尾是否包含分号。
      */
-    get hasSemicolon() { return this.end > (this.value ? this.value.end : this.start + 6/*'return'.length*/); }
+    get hasSemicolon() { return this.end > this.value.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitThrowStatement(this);
@@ -1102,15 +1046,11 @@ export class ThrowStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.value, "value", this) !== false;
     }
 
@@ -1139,6 +1079,7 @@ export class TryStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitTryStatement(this);
@@ -1146,15 +1087,11 @@ export class TryStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.try, "try", this) !== false &&
             callback.call(scope, this.catch, "catch", this) !== false &&
             callback.call(scope, this.finally, "finally", this) !== false;
@@ -1168,14 +1105,9 @@ export class TryStatement extends Statement {
 export class CatchClause extends Node {
 
     /**
-     * 获取异常变量的开括号的开始位置。
+     * 获取异常变量的开括号的位置。
      */
-    openParanStart: number;
-
-    /**
-     * 获取异常变量的开括号的结束位置。
-     */
-    get openParanEnd() { return this.openParanStart + 1; }
+    openParan: number;
 
     /**
      * 获取当前 catch 分句的变量名
@@ -1183,14 +1115,9 @@ export class CatchClause extends Node {
     variable: Identifier;
 
     /**
-     * 获取异常变量的闭括号的开始位置。
+     * 获取异常变量的闭括号的位置。
      */
-    closeParanStart: number;
-
-    /**
-     * 获取异常变量的闭括号的结束位置。
-     */
-    get closeParanEnd() { return this.closeParanStart + 1; }
+    closeParan: number;
 
     /**
      * 获取当前 catch 分句的主体部分。
@@ -1200,6 +1127,7 @@ export class CatchClause extends Node {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitCatchClause(this);
@@ -1207,15 +1135,11 @@ export class CatchClause extends Node {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.variable, "variable", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
     }
@@ -1235,6 +1159,7 @@ export class FinallyClause extends Node {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitFinallyClause(this);
@@ -1242,15 +1167,11 @@ export class FinallyClause extends Node {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.body, "body", this) !== false;
     }
 
@@ -1269,6 +1190,7 @@ export class DebuggerStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitDebuggerStatement(this);
@@ -1277,7 +1199,7 @@ export class DebuggerStatement extends Statement {
 }
 
 /**
- * 表示一个 with 语句(with(...) {...})。
+ * 表示一个 with 语句(with(...) ...)。
  */
 export class WithStatement extends Statement {
 
@@ -1294,6 +1216,7 @@ export class WithStatement extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitWithStatement(this);
@@ -1301,15 +1224,11 @@ export class WithStatement extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.value, "value", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
     }
@@ -1326,75 +1245,40 @@ export class WithStatement extends Statement {
 export abstract class Expression extends Node {
 
     /**
-     * 获取空表达式。
+     * 获取错误表达式。
      */
-    static null = new NullExpression();
+    static error = Object.freeze(new ErrorExpression());
 
 }
 
 /**
- * 表示一个空表达式。
+ * 表示一个错误的表达式。
  */
-class NullExpression extends Expression {
+class ErrorExpression extends Expression {
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) { }
 
 }
 
-// #region 基础表达式
-
 /**
- * 表示一个基础表达式(x、[0]、...)。
+ * 表示一个标识符(x)。
  */
-export abstract class PrimaryExpression extends Expression { }
-
-/**
- * 表示 this 字面量(this)。
- */
-export class ThisLiteral extends PrimaryExpression {
+export class Identifier extends Expression {
 
     /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitThisLiteral(this);
-    }
-
-}
-
-/**
- * 表示 super 字面量(super)。
- */
-export class SuperLiteral extends PrimaryExpression {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitSuperLiteral(this);
-    }
-
-}
-
-/**
- * 表示一个标识符(xx)。
- */
-export class Identifier extends PrimaryExpression {
-
-    /**
-     * 获取或设置当前标识符的内容。
+     * 获取当前标识符的内容。
      */
     value: string;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitIdentifier(this);
@@ -1403,66 +1287,35 @@ export class Identifier extends PrimaryExpression {
 }
 
 /**
- * 表示一个简单字面量(""、6)。
+ * 表示一个简单字面量(this、super、null、true、false)。
  */
-export abstract class Literal extends PrimaryExpression { }
+export class SimpleLiteral extends Expression {
 
-/**
- * 表示一个 null 字面量(null)。
- */
-export class NullLiteral extends Literal {
+    /**
+     * 获取当前字面量的类型。合法的值有：this、super、null、true、false。
+     */
+    type: TokenType;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.start + tokenToString(this.type).length; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitNullLiteral(this);
+        return vistior.visitSimpleLiteral(this);
     }
 
 }
 
 /**
- * 表示一个布尔型字面量(true、false)。
+ * 表示一个数字字面量(1)。
  */
-export abstract class BooleanLiteral extends Literal {
-
-}
-
-/**
- * 表示一个 true 字面量(true)。
- */
-export class TrueLiteral extends BooleanLiteral {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitTrueLiteral(this);
-    }
-
-}
-
-/**
- * 表示一个 false 字面量(false)。
- */
-export class FalseLiteral extends BooleanLiteral {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitFalseLiteral(this);
-    }
-
-}
-
-/**
- * 表示一个浮点数字面量(1)。
- */
-export class NumericLiteral extends Literal {
+export class NumericLiteral extends Expression {
 
     /**
      * 获取或设置当前浮点数的值。
@@ -1472,6 +1325,7 @@ export class NumericLiteral extends Literal {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitNumericLiteral(this);
@@ -1480,14 +1334,14 @@ export class NumericLiteral extends Literal {
 }
 
 /**
- * 表示一个字符串字面量('...')。
+ * 表示一个字符串字面量('abc'、"abc"、`abc`)。
  */
-export class StringLiteral extends Literal {
+export class StringLiteral extends Expression {
 
     /**
-     * 获取或设置当前引号的类型。
+     * 获取当前字符串字面量的引号类型。合法的值有：'、"、`。
      */
-    quote: TokenType;
+    type: TokenType;
 
     /**
      * 获取或设置当前字符串的内容。
@@ -1497,6 +1351,7 @@ export class StringLiteral extends Literal {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitStringLiteral(this);
@@ -1505,24 +1360,45 @@ export class StringLiteral extends Literal {
 }
 
 /**
- * 表示一个正则表达式字面量(/.../)。
+ * 表示一个模板字符串字面量(`abc${x + y}def`)。
  */
-export class RegularExpressionLiteral extends Literal {
+export class TemplateLiteral extends Expression {
+
+    /**
+     * 获取当前模板字符串的所有组成部分。
+     */
+    spans: NodeList<Expression>;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitTemplateLiteral(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return this.spans.each(callback, scope);
+    }
+
+}
+
+/**
+ * 表示一个正则表达式字面量(/abc/)。
+ */
+export class RegularExpressionLiteral extends Expression {
 
     /**
      * 获取或设置当前正则表达式的内容。
      */
     value: string;
-
-    /**
-     * 获取当前主体后斜杠的开始位置。
-     */
-    slashStart: number;
-
-    /**
-     * 获取当前主体后斜杠的结束位置。
-     */
-    get slashEnd() { return this.slashStart + 1; }
 
     /**
      * 获取当前正则表达式的标志部分。如果不存在标志则返回 undefined。
@@ -1532,77 +1408,18 @@ export class RegularExpressionLiteral extends Literal {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitRegExpLiteral(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return (!this.flags || callback.call(scope, this.flags, "flags", this) !== false);
+        return vistior.visitRegularExpressionLiteral(this);
     }
 
 }
 
 /**
- * 表示一个模板字符串字面量(`...`)。
+ * 表示一个数组字面量([x, y])。
  */
-export class TemplateLiteral extends PrimaryExpression {
-
-    /**
-     * 获取当前模板字符串的标签部分。如果不存在标签则返回 undefined。
-     */
-    tag: Identifier;
-
-    /**
-     * 获取当前模板字符串的所有组成部分。
-     */
-    spans: NodeList<Expression | TemplateSpan>;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitTemplateStringLiteral(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return (!this.tag || callback.call(scope, this.tag, "tag", this) !== false);
-    }
-
-}
-
-/**
- * 表示模板字符串的一个常量区域。
- */
-export class TemplateSpan extends Node {
-
-}
-
-/**
- * 表示一个数组字面量([...])。
- */
-export class ArrayLiteral extends PrimaryExpression {
+export class ArrayLiteral extends Expression {
 
     /**
      * 获取当前数组字面量的所有项。
@@ -1610,18 +1427,19 @@ export class ArrayLiteral extends PrimaryExpression {
     elements: NodeList<Expression>;
 
     /**
-     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的开始位置。
      */
     get start() { return this.elements.start; }
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.elements.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitArrayLiteral(this);
@@ -1629,43 +1447,40 @@ export class ArrayLiteral extends PrimaryExpression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.elements.each(callback, scope);
     }
 
 }
 
 /**
- * 表示一个对象字面量({x: ...})。
+ * 表示一个对象字面量({x: y})。
  */
-export class ObjectLiteral extends PrimaryExpression {
+export class ObjectLiteral extends Expression {
 
     /**
      * 获取当前对象字面量的所有项。
      */
-    elements: NodeList<PropertyDefinition>;
+    elements: NodeList<PropertyDeclaration | MethodDeclaration | AccessorDeclaration>;
 
     /**
-     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的开始位置。
      */
     get start() { return this.elements.start; }
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.elements.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitObjectLiteral(this);
@@ -1673,66 +1488,12 @@ export class ObjectLiteral extends PrimaryExpression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.elements.each(callback, scope);
-    }
-
-}
-
-/**
- * 表示一个对象字面量项(x: ...)。
- */
-export class PropertyDefinition extends Node {
-
-    /**
-     * 获取当前对象字面量项的键部分。
-     */
-    name: Identifier | StringLiteral | NumericLiteral;
-
-    /**
-     * 获取当前变量名后冒号的开始位置。如果当前变量后不跟冒号则返回 undefined。
-     */
-    colonStart: number;
-
-    /**
-     * 获取当前变量名后冒号的结束位置。如果当前变量后不跟冒号则返回非数字。
-     */
-    get colonEnd() { return this.colonEnd + 1; }
-
-    /**
-     * 获取当前对象字面量项的值部分。如果当前键值对省略了键，则返回键部分。
-     */
-    value: Expression;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitObjectLiteralElement(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.name, "name", this) !== false &&
-            callback.call(scope, this.value, "value", this) !== false;
     }
 
 }
@@ -1740,42 +1501,261 @@ export class PropertyDefinition extends Node {
 /**
  * 表示一个函数表达式(function () {})。
  */
-export class FunctionExpression extends PrimaryExpression {
+export class FunctionExpression extends Expression {
 
-}
+    /**
+     * 获取当前星号的位置。如果当前函数名前没有星号则返回 undefined。
+     */
+    asterisk: number;
 
-/**
- * 表示一个生成器表达式(function * () {})。
- */
-export class GeneratorExpression extends FunctionExpression {
+    /**
+     * 获取当前函数的名字。如果当前函数没有名字则返回 undefined。
+     */
+    name: Identifier;
+
+    /**
+     * 获取成员的泛型参数。
+     */
+    genericParameters: NodeList<GenericParameterDeclaration>;
+
+    /**
+     * 获取当前函数定义的参数列表。
+     */
+    parameters: NodeList<ParameterDeclaration>;
+
+    /**
+     * 获取当前返回类型前冒号的位置。如果当前返回类型前不存在冒号则返回 undefined。
+     */
+    colon: number;
+
+    /**
+     * 获取当前函数声明的返回类型。如果当前返回类型前不存在冒号则返回 undefined。
+     */
+    returnType: Expression;
+
+    /**
+     * 获取当前函数定义的主体。如果当前函数不含主体则返回 undefined。
+     */
+    body: ArrowFunctionExpression | BlockStatement;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitFunctionExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
+            this.genericParameters.each(callback, scope) &&
+            this.parameters.each(callback, scope) &&
+            (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
+            (!this.body || callback.call(scope, this.body, "body", this) !== false);
+    }
 
 }
 
 /**
  * 表示一个类表达式(class xx {})。
  */
-export class ClassExpression extends PrimaryExpression {
+export class ClassExpression extends Expression {
+
+    /**
+     * 获取当前类的名字。如果当前类没有名字则返回 undefined。
+     */
+    name: Identifier;
+
+    /**
+     * 获取当前类型的继承列表。如果当前类型不含继承列表则返回 undefined。
+     */
+    extends: NodeList<Expression>;
+
+    /**
+     * 获取当前类型的实现列表。如果当前类型不含实现列表则返回 undefined。
+     */
+    implements: NodeList<Expression>;
+
+    /**
+     * 获取当前类型定义的泛型形参列表。如果当前定义不是泛型则返回 undefined。
+     */
+    genericParameters: NodeList<GenericParameterDeclaration>;
+
+    /**
+     * 获取当前容器内的所有成员。
+     */
+    members: NodeList<MemberDeclaration>;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitClassExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
+            (!this.extends || this.extends.each(callback, scope)) &&
+            (!this.implements || this.implements.each(callback, scope)) &&
+            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            this.members.each(callback, scope);
+    }
 
 }
 
 /**
  * 表示一个接口表达式(interface xx {})。
  */
-export class InterfaceExpression extends PrimaryExpression {
+export class InterfaceExpression extends Expression {
+
+    /**
+     * 获取当前接口的名字。如果当前接口没有名字则返回 undefined。
+     */
+    name: Identifier;
+
+    /**
+     * 获取当前类型的继承列表。如果当前类型不含继承列表则返回 undefined。
+     */
+    extends: NodeList<Expression>;
+
+    /**
+     * 获取当前类型定义的泛型形参列表。如果当前定义不是泛型则返回 undefined。
+     */
+    genericParameters: NodeList<GenericParameterDeclaration>;
+
+    /**
+     * 获取当前容器内的所有成员。
+     */
+    members: NodeList<MemberDeclaration>;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitInterfaceExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
+            (!this.extends || this.extends.each(callback, scope)) &&
+            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            this.members.each(callback, scope);
+    }
 
 }
 
 /**
  * 表示一个枚举表达式(enum xx {})。
  */
-export class EnumExpression extends PrimaryExpression {
+export class EnumExpression extends Expression {
+
+    /**
+     * 获取当前枚举的名字。如果当前枚举没有名字则返回 undefined。
+     */
+    name: Identifier;
+
+    /**
+     * 获取当前容器内的所有成员。
+     */
+    members: NodeList<EnumMemberDeclaration>;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitEnumExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
+            this.members.each(callback, scope);
+    }
 
 }
 
 /**
- * 表示一个括号表达式((...))。
+ * 表示一个箭头函数(x => y)。
  */
-export class ParenthesizedExpression extends PrimaryExpression {
+export class ArrowFunctionExpression extends Expression {
+
+    /**
+     * 获取当前箭头函数的所有泛型参数。
+     */
+    typeParameters: NodeList<GenericParameterDeclaration>;
+
+    /**
+     * 获取当前箭头函数的所有参数。
+     */
+    parameters: NodeList<ParameterDeclaration>;
+
+    /**
+     * 获取当前表达式的箭头位置。
+     */
+    arrow: number;
+
+    /**
+     * 获取当前箭头函数的主体部分。
+     */
+    body: BlockStatement | Expression;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrowFunctionExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return this.typeParameters.each(callback, scope) &&
+            this.parameters.each(callback, scope) &&
+            callback.call(scope, this.body, "body", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个括号表达式((x))。
+ */
+export class ParenthesizedExpression extends Expression {
 
     /**
      * 获取当前括号表达式的主体部分。
@@ -1785,6 +1765,7 @@ export class ParenthesizedExpression extends PrimaryExpression {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitParenthesizedExpression(this);
@@ -1792,31 +1773,13 @@ export class ParenthesizedExpression extends PrimaryExpression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.body, "body", this) !== false;
     }
-
-}
-
-// #endregion
-
-/**
- * 表示一个展开表达式。
- */
-export class SpreadExpression extends UnaryExpression {
-
-    /**
-     * 获取当前展开表达式的主体部分。
-     */
-    body: Expression;
 
 }
 
@@ -1831,23 +1794,29 @@ export class MemberCallExpression extends Expression {
     target: Expression;
 
     /**
+     * 获取点的位置。
+     */
+    dot: number;
+
+    /**
      * 获取当前调用的参数部分。
      */
     argument: Identifier;
 
     /**
-     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的开始位置。
      */
     get start() { return this.target.start; }
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.argument.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitMemberCallExpression(this);
@@ -1855,15 +1824,11 @@ export class MemberCallExpression extends Expression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.target, "target", this) !== false &&
             callback.call(scope, this.argument, "argument", this) !== false;
     }
@@ -1871,9 +1836,9 @@ export class MemberCallExpression extends Expression {
 }
 
 /**
- * 表示一个类调用表达式(x(...))。
+ * 表示一个索引调用表达式(x[y])。
  */
-export abstract class CallLikeExpression extends Expression {
+export class IndexCallExpression extends Expression {
 
     /**
      * 获取当前调用的目标部分。
@@ -1881,85 +1846,24 @@ export abstract class CallLikeExpression extends Expression {
     target: Expression;
 
     /**
-     * 获取当前表达式的所有参数。
+     * 获取当前表达式的所有参数。如果当前调用表达式不包含参数则返回 undefined。
      */
     arguments: NodeList<Expression>;
 
-}
-
-/**
- * 表示一个函数调用表达式(x(...))。
- */
-export class CallExpression extends CallLikeExpression {
-
     /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitCallExpression(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.target, "target", this) !== false &&
-            this.arguments.each(callback, scope);
-    }
-
-}
-
-/**
- * 表示一个 new 表达式(new x(...))。
- */
-export class NewExpression extends CallLikeExpression {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitNewExpression(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.target, "target", this) !== false &&
-            this.arguments.each(callback, scope);
-    }
-
-}
-
-/**
- * 表示一个索引调用表达式(x[...])。
- */
-export class IndexCallExpression extends CallLikeExpression {
-
-    /**
-     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的开始位置。
      */
     get start() { return this.target.start; }
 
     /**
+     * 获取当前节点的开始位置。
+     */
+    get end() { return this.arguments.end; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitIndexCallExpression(this);
@@ -1967,59 +1871,188 @@ export class IndexCallExpression extends CallLikeExpression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.target, "target", this) !== false &&
-            this.arguments.each(callback, scope);
+            (!this.arguments || this.arguments.each(callback, scope));
     }
 
 }
 
 /**
- * 表示一个一元运算表达式(+x)。
+ * 表示一个函数调用表达式(x())。
  */
-export abstract class UnaryExpression extends Expression {
+export class FunctionCallExpression extends Expression {
+
+    /**
+     * 获取当前调用的目标部分。
+     */
+    target: Expression;
+
+    /**
+     * 获取当前表达式的所有参数。如果当前调用表达式不包含参数则返回 undefined。
+     */
+    arguments: NodeList<Expression>;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.target.start; }
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get end() { return this.arguments.end; }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitFunctionCallExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.target, "target", this) !== false &&
+            (!this.arguments || this.arguments.each(callback, scope));
+    }
+
+}
+
+/**
+ * 表示一个模板调用表达式(x`abc`)。
+ */
+export class TemplateCallExpression extends Expression {
+
+    /**
+     * 获取当前调用的目标部分。
+     */
+    target: Expression;
+
+    /**
+     * 获取当前表达式的参数。
+     */
+    argument: TemplateLiteral;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.target.start; }
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get end() { return this.argument.end; }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitTemplateCallExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.target, "target", this) !== false &&
+            callback.call(scope, this.argument, "argument", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个 new 表达式(new x())。
+ */
+export class NewExpression extends Expression {
+
+    /**
+     * 获取当前调用的目标部分。
+     */
+    target: Expression;
+
+    /**
+     * 获取当前表达式的所有参数。如果当前调用表达式不包含参数则返回 undefined。
+     */
+    arguments: NodeList<Expression>;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get end() { return this.arguments.end; }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitNewExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.target, "target", this) !== false &&
+            (!this.arguments || this.arguments.each(callback, scope));
+    }
+
+}
+
+/**
+ * 表示一个 new.target 表达式(new.target)。
+ */
+export class NewTargetExpression extends Expression {
+
+    /**
+     * 获取点的位置。
+     */
+    dot: number;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitNewTargetExpression(this);
+    }
+
+}
+
+/**
+ * 表示一个一元运算表达式(+x、typeof x、...)。
+ */
+export class UnaryExpression extends Expression {
+
+    /**
+     * 获取当前运算的类型。合法的值有：...、++、--、+、-、delete、void、typeof、~、!。
+     */
+    type: TokenType;
 
     /**
      * 获取当前表达式的运算数。
      */
     operand: Expression;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitUnaryExpression(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.operand, "operand", this) !== false;
-    }
-
-}
-
-/**
- * 表示一个增量表达式(x++)。
- */
-export class IncrementExpression extends UnaryExpression {
 
     /**
      * 判断当前表达式是否是后缀表达式。
@@ -2029,93 +2062,28 @@ export class IncrementExpression extends UnaryExpression {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitIncrementExpression(this);
+        return vistior.visitUnaryExpression(this);
     }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.operand, "operand", this) !== false;
     }
 
 }
 
 /**
- * 表示一个更新表达式()。
- */
-export abstract class UpdateExpression extends UnaryExpression {
-
-}
-
-/**
- * 表示一个删除表达式(~x)。
- */
-export class DeleteExpression extends UnaryExpression {
-
-}
-
-/**
- * 表示一个空值表达式(~x)。
- */
-export class VoidExpression extends UnaryExpression {
-
-}
-
-/**
- * 表示一个获取类型表达式(~x)。
- */
-export class TypeOfExpression extends UnaryExpression {
-
-}
-
-/**
- * 表示一个正数表达式(~x)。
- */
-export class PositiveExpression extends UnaryExpression {
-
-}
-
-/**
- * 表示一个负数表达式(~x)。
- */
-export class NegativeExpression extends UnaryExpression {
-
-}
-
-/**
- * 表示一个位反表达式(~x)。
- */
-export class BitwiseNotExpression extends UnaryExpression {
-
-}
-
-/**
- * 表示一个逻辑非表达式(!x)。
- */
-export class LogicalNotExpression extends UnaryExpression {
-
-}
-
-// #region 双目表达式
-
-
-
-// #endregion
-
-/**
  * 表示一个二元运算表达式(x + y、x = y、...)。
  */
-export abstract class BinaryExpression extends Expression {
+export class BinaryExpression extends Expression {
 
     /**
      * 获取当前表达式的左值部分。
@@ -2123,14 +2091,14 @@ export abstract class BinaryExpression extends Expression {
     leftOperand: Expression;
 
     /**
-     * 获取运算符的开始位置。
+     * 获取当前运算的类型。合法的值有：,、*=、/=、%=、+=、‐=、<<=、>>=、>>>=、&=、^=、|=、**=、||、&&、|、^、&、==、!=、===、!==、<、>、<=、>=、instanceof、in、<<、>>、>>>、+、-、*、/、%、**。
      */
-    operatorStart: number;
+    type: TokenType;
 
     /**
-     * 获取运算符的结束位置。
+     * 获取运算符的位置。
      */
-    get operatorEnd() { return this.operatorStart + tokenToString(this.operator).length; }
+    operator: number;
 
     /**
      * 获取当前表达式的右值部分。
@@ -2138,18 +2106,19 @@ export abstract class BinaryExpression extends Expression {
     rightOperand: Expression;
 
     /**
-     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的开始位置。
      */
     get start() { return this.leftOperand.start; }
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.rightOperand.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitBinaryExpression(this);
@@ -2157,214 +2126,14 @@ export abstract class BinaryExpression extends Expression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.leftOperand, "leftOperand", this) !== false &&
             callback.call(scope, this.rightOperand, "rightOperand", this) !== false;
     }
-
-}
-
-/**
- * 表示一个乘除表达式(x * y、x / y)。
- */
-export abstract class MultiplicativeExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个次方表达式(x ** y)。
- */
-export class ExponentiationExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个乘表达式(x * y)。
- */
-export class MultiplyExpression extends AdditiveExpression {
-
-}
-
-/**
- * 表示一个减表达式(x / y)。
- */
-export class DivideExpression extends AdditiveExpression {
-
-}
-
-/**
- * 表示一个加减表达式(x + y、x - y)。
- */
-export abstract class AdditiveExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个加表达式(x + y)。
- */
-export class AddExpression extends AdditiveExpression {
-
-}
-
-/**
- * 表示一个减表达式(x - y)。
- */
-export class SubtractExpression extends AdditiveExpression {
-
-}
-
-/**
- * 表示一个位移表达式(x >> y、x << y、x >>> y)。
- */
-export abstract class ShiftExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个左移表达式(x << y)。
- */
-export class ShiftLeftExpression extends ShiftExpression {
-
-}
-
-/**
- * 表示一个右移表达式(x >> y)。
- */
-export class ShiftRightExpression extends ShiftExpression {
-
-}
-
-/**
- * 表示一个无符右移表达式(x >>> y)。
- */
-export class UnsignedShiftRightExpression extends ShiftExpression {
-
-}
-
-/**
- * 表示一个比较表达式(x > y、x !== y)。
- */
-export abstract class RelationalExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个小于表达式(x < y)。
- */
-export class LessThanExpression extends RelationalExpression {
-
-}
-
-/**
- * 表示一个大于表达式(x > y)。
- */
-export class GreaterThanExpression extends RelationalExpression {
-
-}
-
-/**
- * 表示一个小于等于表达式(x <= y)。
- */
-export class LessThanOrEqualExpression extends RelationalExpression {
-
-}
-
-/**
- * 表示一个大于等于表达式(x >= y)。
- */
-export class GreaterThanOrEqualExpression extends RelationalExpression {
-
-}
-
-/**
- * 表示一个实例判断表达式(x instanceof y)。
- */
-export class InstanceOfExpression extends RelationalExpression {
-
-}
-
-/**
- * 表示一个属性判断表达式(x in y)。
- */
-export class InExpression extends RelationalExpression {
-
-}
-
-/**
- * 表示一个相等比较表达式(x == y、x !== y)。
- */
-export abstract class EqualityExpression extends RelationalExpression {
-
-}
-
-/**
- * 表示一个相等表达式(x == y)。
- */
-export class EqualExpression extends EqualityExpression {
-
-}
-
-/**
- * 表示一个不等表达式(x !== y)。
- */
-export class NotEqualExpression extends EqualityExpression {
-
-}
-
-/**
- * 表示一个严格相等表达式(x !== y)。
- */
-export class StrictEqualExpression extends EqualityExpression {
-
-}
-
-/**
- * 表示一个不严格等表达式(x !== y)。
- */
-export class StrictNotEqualExpression extends EqualityExpression {
-
-}
-
-/**
- * 表示一个逻辑与表达式(x && y)。
- */
-export class LogicalAndExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个位或表达式(x | y)。
- */
-export class BitwiseOrExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个位异或表达式(x ^ y)。
- */
-export class BitwiseXorExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个位与表达式(x & y)。
- */
-export class BitwiseAndExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个逻辑或表达式(x || y)。
- */
-export class LogicalOrExpression extends BinaryExpression {
 
 }
 
@@ -2374,14 +2143,9 @@ export class LogicalOrExpression extends BinaryExpression {
 export class YieldExpression extends Expression {
 
     /**
-     * 获取当前表达式的 * 的开始位置。如果当前表达式无 * 则返回 undefined。
+     * 获取当前表达式的 * 的位置。如果当前表达式无 * 则返回 undefined。
      */
-    asteriskStart: number;
-
-    /**
-     * 获取当前表达式的 * 的结束位置。如果当前表达式无 * 则返回非数字。
-     */
-    get asteriskEnd() { return this.asteriskStart + 1; }
+    asterisk: number;
 
     /**
      * 获取 yield 表达式的主体部分。
@@ -2389,13 +2153,14 @@ export class YieldExpression extends Expression {
     body: Expression;
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.body ? this.body.end : this.start + 5/*'yield'.length*/; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitYieldExpression(this);
@@ -2403,72 +2168,12 @@ export class YieldExpression extends Expression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.body, "body", this) !== false;
-    }
-
-}
-
-/**
- * 表示一个箭头函数(x => ...)。
- */
-export class ArrowFunction extends Expression {
-
-    /**
-     * 获取当前箭头函数的所有泛型参数。
-     */
-    typeParameters: NodeList<GenericParameterDeclaration>;
-
-    /**
-     * 获取当前箭头函数的所有参数。
-     */
-    parameters: NodeList<ParameterDeclaration>;
-
-    /**
-     * 获取当前表达式的箭头开始位置。
-     */
-    arrowStart: number;
-
-    /**
-     * 获取当前表达式的箭头结束位置。
-     */
-    get arrowEnd() { return this.arrowStart + 2; }
-
-    /**
-     * 获取当前箭头函数的主体部分。
-     */
-    body: BlockStatement | Expression;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitLambdaLiteral(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.typeParameters.each(callback, scope) &&
-            this.parameters.each(callback, scope) &&
-            callback.call(scope, this.body, "body", this) !== false;
     }
 
 }
@@ -2496,6 +2201,7 @@ export class ConditionalExpression extends Expression {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitConditionalExpression(this);
@@ -2503,124 +2209,15 @@ export class ConditionalExpression extends Expression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
             callback.call(scope, this.then, "then", this) !== false &&
             callback.call(scope, this.else, "else", this) !== false;
     }
-
-}
-
-/**
- * 表示一个左值表达式(x、x.key)。
- */
-export abstract class LeftHandSideExpression extends Expression {
-
-}
-
-/**
- * 表示一个赋值表达式(x = y、x += y、...)。
- */
-export abstract class AssignmentExpression extends BinaryExpression {
-
-}
-
-/**
- * 表示一个等于表达式(x = y)。
- */
-export class AssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个乘等于表达式(x *= y)。
- */
-export class MultiplyAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个模等于表达式(x %= y)。
- */
-export class ModuloAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个加等于表达式(x += y)。
- */
-export class AddAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个减等于表达式(x -= y)。
- */
-export class SubtractAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个左移等于表达式(x <<= y)。
- */
-export class LeftShiftAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个右移等于表达式(x >>= y)。
- */
-export class RightShiftAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个无符右移等于表达式(x >>>= y)。
- */
-export class UnsignedRightShiftAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个位与等于表达式(x &= y)。
- */
-export class BitwiseAndAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个位异或等于表达式(x ^= y)。
- */
-export class BitwiseXorAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个次方等于表达式(x ^= y)。
- */
-export class ExponentiationAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个位或等于表达式(x |= y)。
- */
-export class BitwiseOrAssignExpression extends AssignmentExpression {
-
-}
-
-/**
- * 表示一个逗号表达式(x, y)。
- */
-export class CommaExpression extends BinaryExpression {
 
 }
 
@@ -2630,14 +2227,9 @@ export class CommaExpression extends BinaryExpression {
 export class CastExpression extends Expression {
 
     /**
-     * 获取当前表达式的 < 的开始位置。
+     * 获取当前表达式的 < 的位置。
      */
-    lessThanStart: number;
-
-    /**
-     * 获取当前表达式的 < 的结束位置。
-     */
-    get lessThanEnd() { return this.lessThanStart + 1; }
+    lessThan: number;
 
     /**
      * 获取当前类型转换表达式的类型部分。
@@ -2645,7 +2237,7 @@ export class CastExpression extends Expression {
     type: Expression;
 
     /**
-     * 获取当前表达式的 > 的开始位置。
+     * 获取当前表达式的 > 的位置。
      */
     greaterThanStart: number;
 
@@ -2662,6 +2254,7 @@ export class CastExpression extends Expression {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitCastExpression(this);
@@ -2669,42 +2262,13 @@ export class CastExpression extends Expression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.type, "type", this) !== false &&
             callback.call(scope, this.body, "body", this) !== false;
-    }
-
-}
-
-/**
- * 表示内置类型字面量(number)。
- */
-export class PredefinedTypeLiteral extends Expression {
-
-    /**
-     * 获取字面量所表示的类型。可能的返回值有 void、number、string、boolean、any。
-     */
-    type: TokenType;
-
-    /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
-     */
-    get end() { return this.start + tokenToString(this.type).length; }
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitPredefinedTypeLiteral(this);
     }
 
 }
@@ -2727,6 +2291,7 @@ export class GenericTypeExpression extends Expression {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitGenericTypeExpression(this);
@@ -2734,15 +2299,11 @@ export class GenericTypeExpression extends Expression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.element, "element", this) !== false &&
             this.genericArguments.each(callback, scope);
     }
@@ -2760,28 +2321,19 @@ export class ArrayTypeExpression extends Expression {
     element: Expression;
 
     /**
-     * 获取当前表达式的 [ 的开始位置。
+     * 获取当前表达式的 [ 的位置。
      */
-    openBracketStart: number;
+    openBracket: number;
 
     /**
-     * 获取当前表达式的 [ 的结束位置。
+     * 获取当前表达式的 ] 的位置。
      */
-    get openBracketEnd() { return this.openBracketStart + 1; }
-
-    /**
-     * 获取当前表达式的 ] 的开始位置。
-     */
-    closeBracketStart: number;
-
-    /**
-     * 获取当前表达式的 ] 的结束位置。
-     */
-    get closeBracketEnd() { return this.closeBracketStart + 1; }
+    closeBracket: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitArrayTypeExpression(this);
@@ -2789,29 +2341,25 @@ export class ArrayTypeExpression extends Expression {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.element, "element", this) !== false;
     }
 
 }
 
 /**
- * 表示一个 JSX 节点（<div>...</div>)。
+ * 表示一个 JSX 节点(<div>...</div>)。
  */
 export abstract class JsxNode extends Expression {
 
 }
 
 /**
- * 表示一个 JSX 标签（<div>...</div>)。
+ * 表示一个 JSX 标签(<div>...</div>)。
  */
 export class JsxElement extends JsxNode {
 
@@ -2831,18 +2379,14 @@ export class JsxElement extends JsxNode {
     children: NodeList<JsxNode>;
 
     /**
-     * 获取斜杠的开始位置。如果当前标签不含斜杠则返回 undefined。
+     * 获取斜杠的位置。如果当前标签不含斜杠则返回 undefined。
      */
-    slashStart: number;
-
-    /**
-     * 获取斜杠的结束位置。如果当前标签不含斜杠则返回非数字。
-     */
-    get slashEnd() { return this.slashStart + 1; }
+    slash: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitJsxElement(this);
@@ -2850,15 +2394,11 @@ export class JsxElement extends JsxNode {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.tagName, "tagName", this) !== false &&
             this.attributes.each(callback, scope) &&
             this.children.each(callback, scope);
@@ -2867,7 +2407,7 @@ export class JsxElement extends JsxNode {
 }
 
 /**
- * 表示一个 JSX 标签属性（id="a")。
+ * 表示一个 JSX 标签属性(id="a")。
  */
 export class JsxAttribute extends JsxNode {
 
@@ -2877,14 +2417,9 @@ export class JsxAttribute extends JsxNode {
     name: Identifier;
 
     /**
-     * 获取等号的开始位置。
+     * 获取等号的位置。
      */
-    equalStart: number;
-
-    /**
-     * 获取等号的结束位置。
-     */
-    get equalEnd() { return this.equalStart + 1; }
+    equal: number;
 
     /**
      * 获取当前属性的值。如果不存在值则返回 undefined。
@@ -2893,15 +2428,11 @@ export class JsxAttribute extends JsxNode {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.name, "name", this) !== false &&
             (!this.value || callback.call(scope, this.value, "value", this) !== false);
     }
@@ -2909,6 +2440,7 @@ export class JsxAttribute extends JsxNode {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitJsxAttribute(this);
@@ -2917,7 +2449,7 @@ export class JsxAttribute extends JsxNode {
 }
 
 /**
- * 表示一个 JSX 表达式（{...})。
+ * 表示一个 JSX 表达式({...})。
  */
 export class JsxExpression extends JsxNode {
 
@@ -2928,21 +2460,18 @@ export class JsxExpression extends JsxNode {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.body, "body", this) !== false;
     }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitJsxExpression(this);
@@ -2950,7 +2479,7 @@ export class JsxExpression extends JsxNode {
 }
 
 /**
- * 表示一个 JSX 文本（{...})。
+ * 表示一个 JSX 文本({...})。
  */
 export class JsxText extends JsxNode {
 
@@ -2962,6 +2491,7 @@ export class JsxText extends JsxNode {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitJsxText(this);
@@ -2969,7 +2499,7 @@ export class JsxText extends JsxNode {
 }
 
 /**
- * 表示一个 JSX 文本（{...})。
+ * 表示一个 JSX 关闭元素({...})。
  */
 export class JsxClosingElement extends JsxNode {
 
@@ -2979,32 +2509,24 @@ export class JsxClosingElement extends JsxNode {
     tagName: Expression;
 
     /**
-     * 获取斜杠的开始位置。
+     * 获取斜杠的位置。
      */
     slashStart: number;
 
     /**
-     * 获取斜杠的结束位置。
-     */
-    get slashEnd() { return this.slashStart + 1; }
-
-    /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.tagName, "tagName", this) !== false;
     }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitJsxClosingElement(this);
@@ -3014,32 +2536,32 @@ export class JsxClosingElement extends JsxNode {
 
 // #endregion
 
-// #region 成员
+// #region 成员定义
 
 /**
  * 表示一个成员（如方法、字段、类等）定义。
  */
-export abstract class MemberDefinition extends Statement {
+export abstract class MemberDeclaration extends Statement {
 
     /**
-     * 获取当前成员的所有注解。
+     * 获取当前成员的所有描述器。如果当前成员不存在描述器则返回 undefined。
      */
     decorators: NodeList<Decorator>;
 
     /**
-     * 获取当前成员的修饰符。
+     * 获取当前成员的修饰符。如果当前成员不存在修饰符则返回 undefined。
      */
     modifiers: NodeList<Modifier>;
 
     /**
-     * 获取当前成员的名字。如果当前成员是匿名的则返回 undefined。
+     * 获取当前成员的名字。
      */
     name: Identifier;
 
 }
 
 /**
- * 表示一个描述器(@xx(...))。
+ * 表示一个描述器(@xx)。
  */
 export class Decorator extends Node {
 
@@ -3049,13 +2571,14 @@ export class Decorator extends Node {
     body: Expression;
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.body.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitDecorator(this);
@@ -3063,15 +2586,11 @@ export class Decorator extends Node {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.body, "body", this) !== false;
     }
 
@@ -3083,18 +2602,19 @@ export class Decorator extends Node {
 export class Modifier extends Node {
 
     /**
-     * 获取当前修饰符的类型。可能的值有：static、abstract、public、protected、private。
+     * 获取当前修饰符的类型。合法的值有：static、abstract、public、protected、private。
      */
     type: TokenType;
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.start + tokenToString(this.type).length; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitModifier(this);
@@ -3103,29 +2623,165 @@ export class Modifier extends Node {
 }
 
 /**
- * 表示一个可以包含子成员的容器成员定义。
+ * 表示一个函数定义(function fn() {...}、function * fn(){...})。
  */
-export abstract class MemberContainerDefinition extends MemberDefinition {
+export class FunctionDeclaration extends MemberDeclaration {
 
     /**
-     * 获取当前容器内的所有成员。
+     * 获取当前星号的位置。如果当前函数名前没有星号则返回 undefined。
      */
-    members: NodeList<MemberDefinition>;
+    asterisk: number;
+
+    /**
+     * 获取成员的泛型参数。
+     */
+    genericParameters: NodeList<GenericParameterDeclaration>;
+
+    /**
+     * 获取当前函数定义的参数列表。
+     */
+    parameters: NodeList<ParameterDeclaration>;
+
+    /**
+     * 获取当前返回类型前冒号的位置。如果当前返回类型前不存在冒号则返回 undefined。
+     */
+    colon: number;
+
+    /**
+     * 获取当前函数声明的返回类型。如果当前返回类型前不存在冒号则返回 undefined。
+     */
+    returnType: Expression;
+
+    /**
+     * 获取当前函数定义的主体。如果当前函数不含主体则返回 undefined。
+     */
+    body: ArrowFunctionExpression | BlockStatement;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitFunctionDeclaration(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return this.genericParameters.each(callback, scope) &&
+            this.parameters.each(callback, scope) &&
+            (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
+            (!this.body || callback.call(scope, this.body, "body", this) !== false) &&
+            (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
+    }
 
 }
 
 /**
- * 表示一个类型（如类、接口）定义。
+ * 表示一个泛型参数。
  */
-export abstract class TypeDefinition extends MemberContainerDefinition {
+export class GenericParameterDeclaration extends Node {
 
     /**
-     * 获取当前类型的继承列表。
+     * 获取当前泛型参数的名字部分。
+     */
+    name: Identifier;
+
+    /**
+     * 获取 extends 关键字的位置。如果不存在约束部分则返回 undefined。
+     */
+    extends: number;
+
+    /**
+     * 获取当前泛型参数的约束部分。如果不存在约束部分则返回 undefined。
+     */
+    constraint: Expression;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitGenericParameterDeclaration(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.name, "name", this) !== false &&
+            (!this.constraint || callback.call(scope, this.constraint, "constraint", this) !== false);
+    }
+
+}
+
+/**
+ * 表示一个参数声明(x、x = 1、...x)。
+ */
+export class ParameterDeclaration extends VariableDeclaration {
+
+    /**
+     * 获取当前参数的所有描述器。如果当前参数不存在描述器则返回 undefined。
+     */
+    decorators: NodeList<Decorator>;
+
+    /**
+     * 获取当前参数的修饰符。如果当前参数不存在修饰符则返回 undefined。
+     */
+    modifiers: NodeList<Modifier>;
+
+    /**
+     * 获取当前参数的点点点位置。如果当前参数不含点点点则返回 undefined。
+     */
+    dotDotDot: number;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitParameterDeclaration(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            (!this.type || callback.call(scope, this.type, "type", this) !== false) &&
+            (!this.initializer || callback.call(scope, this.initializer, "initializer", this) !== false);
+    }
+
+}
+
+/**
+ * 表示一个类定义(class A {...})。
+ */
+export class ClassDeclaration extends MemberDeclaration {
+
+    /**
+     * 获取当前类型的继承列表。如果当前类型不含继承列表则返回 undefined。
      */
     extends: NodeList<Expression>;
 
     /**
-     * 获取当前类型的实现列表。
+     * 获取当前类型的实现列表。如果当前类型不含实现列表则返回 undefined。
      */
     implements: NodeList<Expression>;
 
@@ -3134,39 +2790,34 @@ export abstract class TypeDefinition extends MemberContainerDefinition {
      */
     genericParameters: NodeList<GenericParameterDeclaration>;
 
-}
-
-/**
- * 表示一个类定义(@class ...)。
- */
-export class ClassDefinition extends TypeDefinition {
+    /**
+     * 获取当前容器内的所有成员。
+     */
+    members: NodeList<MemberDeclaration>;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitClassDefinition(this);
+        return vistior.visitClassDeclaration(this);
     }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.extends.each(callback, scope) &&
-            this.implements.each(callback, scope) &&
+    each(callback: EachCallback, scope?: any) {
+        return (!this.extends || this.extends.each(callback, scope)) &&
+            (!this.implements || this.implements.each(callback, scope)) &&
             (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
             this.members.each(callback, scope) &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
+            (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
     }
 
 }
@@ -3174,34 +2825,45 @@ export class ClassDefinition extends TypeDefinition {
 /**
  * 表示一个接口定义。
  */
-export class InterfaceDefinition extends TypeDefinition {
+export class InterfaceDeclaration extends MemberDeclaration {
+
+    /**
+     * 获取当前类型的继承列表。如果当前类型不含继承列表则返回 undefined。
+     */
+    extends: NodeList<Expression>;
+
+    /**
+     * 获取当前类型定义的泛型形参列表。如果当前定义不是泛型则返回 undefined。
+     */
+    genericParameters: NodeList<GenericParameterDeclaration>;
+
+    /**
+     * 获取当前容器内的所有成员。
+     */
+    members: NodeList<MemberDeclaration>;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitInterfaceDefinition(this);
+        return vistior.visitInterfaceDeclaration(this);
     }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.extends.each(callback, scope) &&
-            this.implements.each(callback, scope) &&
+    each(callback: EachCallback, scope?: any) {
+        return (!this.extends || this.extends.each(callback, scope)) &&
             (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
             this.members.each(callback, scope) &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
+            (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
     }
 
 }
@@ -3209,39 +2871,112 @@ export class InterfaceDefinition extends TypeDefinition {
 /**
  * 表示一个枚举定义。
  */
-export class EnumDefinition extends TypeDefinition {
+export class EnumDeclaration extends MemberDeclaration {
 
     /**
      * 获取当前容器内的所有成员。
      */
-    members: NodeList<EnumMemberDefinition>;
+    members: NodeList<EnumMemberDeclaration>;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitEnumDefinition(this);
+        return vistior.visitEnumDeclaration(this);
     }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.members.each(callback, scope) &&
-            this.extends.each(callback, scope) &&
-            this.implements.each(callback, scope) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
+            (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个枚举的成员定义。
+ */
+export class EnumMemberDeclaration extends MemberDeclaration {
+
+    /**
+     * 获取当前枚举成员的初始化表达式（可能为 null）。
+     */
+    initializer: Expression;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitEnumMemberDeclaration(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.initializer, "initializer", this) !== false &&
+            (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个命名空间定义。
+ */
+export class NamespaceDeclaration extends MemberDeclaration {
+
+    /**
+     * 获取当前命名空间定义的类型。合法的值有：namespace、module。
+     */
+    type: TokenType;
+
+    /**
+     * 获取当前的命名空间。
+     */
+    names: NodeList<Identifier>;
+
+    /**
+     * 获取当前容器内的所有成员。
+     */
+    members: NodeList<MemberDeclaration>;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitNamespaceDeclaration(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return this.names.each(callback, scope) &&
+            this.members.each(callback, scope) &&
+            (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
     }
 
 }
@@ -3249,7 +2984,7 @@ export class EnumDefinition extends TypeDefinition {
 /**
  * 表示一个扩展定义。
  */
-export class ExtensionDefinition extends MemberContainerDefinition {
+export class ExtensionDeclaration extends MemberDeclaration {
 
     /**
      * 获取当前要扩展的目标类型表达式。
@@ -3262,250 +2997,32 @@ export class ExtensionDefinition extends MemberContainerDefinition {
     implements: NodeList<Expression>;
 
     /**
+     * 获取当前容器内的所有成员。
+     */
+    members: NodeList<MemberDeclaration>;
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitExtensionDefinition(this);
+        return vistior.visitExtensionDeclaration(this);
     }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.targetType, "targetType", this) !== false &&
             this.implements.each(callback, scope) &&
             this.members.each(callback, scope) &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
-
-/**
- * 表示一个命名空间定义。
- */
-export class NamespaceDefinition extends MemberContainerDefinition {
-
-    /**
-     * 获取当前的命名空间。
-     */
-    names: NodeList<Identifier>;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitNamespaceDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.names.each(callback, scope) &&
-            this.members.each(callback, scope) &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
-
-/**
- * 表示一个模块。
- */
-export class ModuleDefinition extends MemberContainerDefinition {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitModuleDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.members.each(callback, scope) &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
-
-/**
- * 表示一个类型子成员定义。
- */
-export class TypeMemberDefinition extends MemberDefinition {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitTypeMemberDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
-
-/**
- * 表示一个字段定义。
- */
-export class FieldDefinition extends TypeMemberDefinition {
-
-    /**
-     * 获取当前字段的所有变量。
-     */
-    variables: NodeList<VariableDeclaration>;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitFieldDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.variables.each(callback, scope) &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
-
-/**
- * 表示一个方法或属性定义。
- */
-export class MethodOrPropertyDefinition extends TypeMemberDefinition {
-
-    /**
-     * 获取当前成员的返回类型。
-     */
-    returnType: Expression;
-
-    /**
-     * 获取当前成员被显式声明的所有者。
-     */
-    explicitType: Expression;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitMethodOrPropertyDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.returnType, "returnType", this) !== false &&
-            callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
-
-/**
- * 表示一个属性或索引器定义。
- */
-export class PropertyOrIndexerDefinition extends MethodOrPropertyDefinition {
-
-    /**
-     * 获取访问器的主体。（可能为 null）
-     */
-    body: BlockStatement;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitPropertyOrIndexerDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.body, "body", this) !== false &&
-            callback.call(scope, this.returnType, "returnType", this) !== false &&
-            callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
+            (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
     }
 
 }
@@ -3513,27 +3030,39 @@ export class PropertyOrIndexerDefinition extends MethodOrPropertyDefinition {
 /**
  * 表示一个属性定义。
  */
-export class PropertyDefinition extends MemberDefinition {
+export class PropertyDeclaration extends MemberDeclaration {
+
+    /**
+     * 获取当前声明的名字部分。
+     */
+    name: BindingName;
+
+    /**
+     * 获取当前变量名后冒号的位置。如果当前变量后不跟冒号则返回 undefined。
+     */
+    colon: number;
+
+    /**
+     * 获取当前对象字面量项的值部分。如果当前键值对省略了键，则返回 undefined。
+     */
+    value: Expression;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitPropertyDefinition(this);
+        return vistior.visitPropertyDeclaration(this);
     }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.decorators.each(callback, scope) &&
             this.modifiers.each(callback, scope) &&
             (!this.name || callback.call(scope, this.name, "name", this) !== false);
@@ -3542,94 +3071,9 @@ export class PropertyDefinition extends MemberDefinition {
 }
 
 /**
- * 表示一个索引器定义。
+ * 表示一个类或对象内部的方法定义(fn() {...})。
  */
-export class IndexerDefinition extends PropertyOrIndexerDefinition {
-
-    /**
-     * 获取当前定义的参数列表。
-     */
-    parameters: ParameterDeclaration;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitIndexerDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.parameters, "parameters", this) !== false &&
-            callback.call(scope, this.body, "body", this) !== false &&
-            callback.call(scope, this.returnType, "returnType", this) !== false &&
-            callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
-
-/**
- * 表示一个方法或构造函数定义。
- */
-export class MethodOrConstructorDefinition extends MethodOrPropertyDefinition {
-
-    /**
-     * 获取当前函数定义的参数列表。
-     */
-    parameters: ParameterDeclaration;
-
-    /**
-     * 获取当前函数定义的主体。
-     */
-    body: BlockStatement;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitMethodOrConstructorDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.parameters, "parameters", this) !== false &&
-            callback.call(scope, this.body, "body", this) !== false &&
-            callback.call(scope, this.returnType, "returnType", this) !== false &&
-            callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
-
-/**
- * 表示一个方法定义。
- */
-export class MethodDefinition extends MethodOrConstructorDefinition {
+export class MethodDeclaration extends MemberDeclaration {
 
     /**
      * 获取成员的泛型参数。
@@ -3637,107 +3081,93 @@ export class MethodDefinition extends MethodOrConstructorDefinition {
     genericParameters: NodeList<GenericParameterDeclaration>;
 
     /**
+     * 获取当前函数定义的参数列表。
+     */
+    parameters: NodeList<ParameterDeclaration>;
+
+    /**
+     * 获取当前返回类型前冒号的位置。如果当前返回类型前不存在冒号则返回 undefined。
+     */
+    colon: number;
+
+    /**
+     * 获取当前函数声明的返回类型。如果当前返回类型前不存在冒号则返回 undefined。
+     */
+    returnType: Expression;
+
+    /**
+     * 获取当前函数定义的主体。如果当前函数不含主体则返回 undefined。
+     */
+    body: ArrowFunctionExpression | BlockStatement;
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitMethodDefinition(this);
+        return vistior.visitMethodDeclaration(this);
     }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.genericParameters.each(callback, scope) &&
-            callback.call(scope, this.parameters, "parameters", this) !== false &&
-            callback.call(scope, this.body, "body", this) !== false &&
-            callback.call(scope, this.returnType, "returnType", this) !== false &&
-            callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
+            this.parameters.each(callback, scope) &&
+            (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
+            (!this.body || callback.call(scope, this.body, "body", this) !== false) &&
+            (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
     }
 
 }
 
 /**
- * 表示一个构造函数定义。
+ * 表示一个类或对象内部的读写访问器定义(get fn() {...})。
  */
-export class ConstructorDefinition extends MethodOrConstructorDefinition {
+export class AccessorDeclaration extends MemberDeclaration {
+
+    /**
+     * 判断当前访问器是否是获取访问器。
+     */
+    get get() { return !this.set; }
+
+    /**
+     * 判断当前访问器是否是设置访问器。
+     */
+    set: boolean;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitConstructorDefinition(this);
+        return vistior.visitAccessorDeclaration(this);
     }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.parameters, "parameters", this) !== false &&
-            callback.call(scope, this.body, "body", this) !== false &&
-            callback.call(scope, this.returnType, "returnType", this) !== false &&
-            callback.call(scope, this.explicitType, "explicitType", this) !== false &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
+    each(callback: EachCallback, scope?: any) {
+        return (!this.decorators || this.decorators.each(callback, scope)) &&
+            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            callback.call(scope, this.name, "name", this) !== false;
     }
 
 }
 
-/**
- * 表示一个枚举的成员定义。
- */
-export class EnumMemberDefinition extends TypeMemberDefinition {
+// #endregion
 
-    /**
-     * 获取当前枚举成员的初始化表达式（可能为 null）。
-     */
-    initializer: Expression;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitEnumMemberDefinition(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.initializer, "initializer", this) !== false &&
-            this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            (!this.name || callback.call(scope, this.name, "name", this) !== false);
-    }
-
-}
+// #region 导入和导出
 
 /**
  * 表示一个 import 指令(import xx from '...';)。
@@ -3752,21 +3182,17 @@ export class ImportDirective extends Statement {
     /**
      * 获取当前导入项的值部分。
      */
-    from: StringLiteral;
+    target: StringLiteral;
 
     /**
-     * 获取当前导入声明的 from 开始位置。如果当前导入声明不含 from 则返回 undefined。
+     * 获取当前导入声明的 from 位置。如果当前导入声明不含 from 则返回 undefined。
      */
-    fromStart: number;
-
-    /**
-     * 获取当前导入声明的 from 结束位置。如果当前导入声明不含 from 则返回非数字。
-     */
-    get fromEnd() { return this.fromStart + 3; }
+    from: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitImportDirective(this);
@@ -3774,17 +3200,13 @@ export class ImportDirective extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.elements.each(callback, scope) &&
-            callback.call(scope, this.from, "from", this) !== false;
+            callback.call(scope, this.target, "target", this) !== false;
     }
 
 }
@@ -3800,14 +3222,9 @@ export class ImportEqualsDirective extends Statement {
     variable: Identifier | ArrayBindingPattern | ObjectBindingPattern;
 
     /**
-     * 获取当前导入声明的等号开始位置。
+     * 获取当前导入声明的等号位置。
      */
-    equalStart: number;
-
-    /**
-     * 获取当前导入声明的等号结束位置。
-     */
-    get equalEnd() { return this.equalStart + 3; }
+    equal: number;
 
     /**
      * 获取当前导入项的值部分。
@@ -3817,6 +3234,7 @@ export class ImportEqualsDirective extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitImportEqualsDirective(this);
@@ -3824,15 +3242,11 @@ export class ImportEqualsDirective extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.variable, "variable", this) !== false &&
             callback.call(scope, this.value, "value", this) !== false;
     }
@@ -3850,14 +3264,9 @@ export class NameImportClause extends Node {
     name: Identifier;
 
     /**
-     * 获取当前导入声明的 as 开始位置。如果当前导入声明不含 as 则返回 undefined。
+     * 获取当前导入声明的 as 位置。如果当前导入声明不含 as 则返回 undefined。
      */
-    asStart: number;
-
-    /**
-     * 获取当前导入声明的 as 结束位置。如果当前导入声明不含 as 则返回非数字。
-     */
-    get asEnd() { return this.asStart + 3; }
+    as: number;
 
     /**
      * 获取当前导入的别名。
@@ -3866,15 +3275,11 @@ export class NameImportClause extends Node {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
             callback.call(scope, this.alias, "alias", this) !== false;
     }
@@ -3882,6 +3287,7 @@ export class NameImportClause extends Node {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitNameImportClause(this);
@@ -3900,21 +3306,18 @@ export class NamespaceImportClause extends Node {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.elements.each(callback, scope);
     }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitNamespaceImportClause(this);
@@ -3935,21 +3338,17 @@ export class ExportDirective extends Statement {
     /**
      * 支持多个对象组成一个单链表。
      */
-    from: StringLiteral;
+    target: StringLiteral;
 
     /**
-     * 获取当前导入声明的 from 开始位置。如果当前导入声明不含 from 则返回 undefined。
+     * 获取当前导入声明的 from 位置。如果当前导入声明不含 from 则返回 undefined。
      */
-    fromStart: number;
-
-    /**
-     * 获取当前导入声明的 from 结束位置。如果当前导入声明不含 from 则返回非数字。
-     */
-    get fromEnd() { return this.fromStart + 3; }
+    from: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitExportDirective(this);
@@ -3957,17 +3356,13 @@ export class ExportDirective extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return this.elements.each(callback, scope) &&
-            callback.call(scope, this.from, "from", this) !== false;
+            callback.call(scope, this.target, "target", this) !== false;
     }
 
 }
@@ -3978,14 +3373,9 @@ export class ExportDirective extends Statement {
 export class ExportEqualsDirective extends Statement {
 
     /**
-     * 获取当前导入声明的等号开始位置。
+     * 获取当前导入声明的等号位置。
      */
-    equalStart: number;
-
-    /**
-     * 获取当前导入声明的等号结束位置。
-     */
-    get equalEnd() { return this.equalStart + 3; }
+    equal: number;
 
     /**
      * 获取当前导出项的值部分。
@@ -3995,6 +3385,7 @@ export class ExportEqualsDirective extends Statement {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitExportEqualsDirective(this);
@@ -4002,15 +3393,11 @@ export class ExportEqualsDirective extends Statement {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.value, "value", this) !== false;
     }
 
@@ -4018,78 +3405,37 @@ export class ExportEqualsDirective extends Statement {
 
 // #endregion
 
-// #region 声明
+// #region 绑定名称
 
 /**
- * 表示一个声明。
+ * 表示绑定名称类型。
  */
-export abstract class Declaration extends Node {
-
-    /**
-     * 获取当前声明的名字部分。
-     */
-    name: Identifier | ArrayBindingPattern | ObjectBindingPattern;
-
-}
+type BindingName = Identifier | NodeList<ArrayBindingElement | ObjectBindingElement>;
 
 /**
- * 表示一个数组绑定模式([xx, ...])
+ * 表示属性名称类型。
  */
-export class ArrayBindingPattern extends Node {
-
-    /**
-     * 获取当前绑定模式的元素列表。
-     */
-    elements: NodeList<ArrayBindingElement>;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitArrayBindingPattern(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.elements.each(callback, scope);
-    }
-
-}
+type PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName;
 
 /**
  * 表示一个数组绑定模式项(xx, ..)
  */
-export class ArrayBindingElement extends Declaration {
+export class ArrayBindingElement extends Node {
 
     /**
-     * 获取当前绑定模式项的点点点开始位置。如果当前绑定模式项不含点点点则返回 undefined。
+     * 获取当前声明的名字部分。
      */
-    dotDotDotStart: number;
+    name: BindingName;
 
     /**
-     * 获取当前绑定模式项的点点点结束位置。如果当前绑定模式项不含点点点则返回非数字。
+     * 获取当前绑定模式项的点点点位置。如果当前绑定模式项不含点点点则返回 undefined。
      */
-    get dotDotDotEnd() { return this.dotDotDotStart + 3; }
+    dotDotDot: number;
 
     /**
-     * 获取当前绑定模式项的等号开始位置。如果当前绑定模式项不含等号则返回 undefined。
+     * 获取当前绑定模式项的等号位置。如果当前绑定模式项不含等号则返回 undefined。
      */
-    equalStart: number;
-
-    /**
-     * 获取当前绑定模式项的等号结束位置。如果当前绑定模式项不含等号则返回非数字。
-     */
-    get equalEnd() { return this.equalStart + 1; }
+    equal: number;
 
     /**
      * 获取当前绑定模式项的初始值。
@@ -4099,6 +3445,7 @@ export class ArrayBindingElement extends Declaration {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitArrayBindingElement(this);
@@ -4106,51 +3453,12 @@ export class ArrayBindingElement extends Declaration {
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
+     * @param callback 对每个子节点执行的回调函数。
      * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.initializer, "initializer", this) !== false &&
-            callback.call(scope, this.name, "name", this) !== false;
-    }
-
-}
-
-/**
- * 表示一个对象绑定模式({xx, ...})
- */
-export class ObjectBindingPattern extends Node {
-
-    /**
-     * 获取当前绑定模式的元素列表。
-     */
-    elements: NodeList<ObjectBindingElement>;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitObjectBindingPattern(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.elements.each(callback, scope);
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.initializer, "initializer", this) !== false;
     }
 
 }
@@ -4158,206 +3466,61 @@ export class ObjectBindingPattern extends Node {
 /**
  * 表示一个对象绑定模式项(xx: y)
  */
-export class ObjectBindingElement extends Declaration {
+export class ObjectBindingElement extends Node {
 
     /**
      * 获取对象绑定模式项的属性名。
      */
-    propertyName: Identifier | NumericLiteral | StringLiteral;
+    propertyName: PropertyName;
 
     /**
-     * 获取当前属性名后冒号的开始位置。如果当前属性后不跟冒号则返回 undefined。
+     * 获取当前属性名后冒号的位置。如果当前属性后不跟冒号则返回 undefined。
      */
-    colonStart: number;
+    colon: number;
 
     /**
-     * 获取当前属性名后冒号的结束位置。如果当前属性后不跟冒号则返回非数字。
+     * 获取当前声明的名字部分。
      */
-    get colonEnd() { return this.colonEnd + 1; }
+    name: BindingName;
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitObjectBindingElement(this);
     }
 
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.propertyName, "propertyName", this) !== false &&
-            callback.call(scope, this.name, "name", this) !== false;
-    }
-
 }
 
 /**
- * 表示一个变量声明(xx = ...)。
+ * 表示一个已计算的属性名。
  */
-export class VariableDeclaration extends Declaration {
+export class ComputedPropertyName extends Node {
 
     /**
-     * 获取当前节点的开始位置。如果当前节点是生成的则返回 undefined。
+     * 获取当前属性名的主体部分。
      */
-    get start() { return this.name.start; }
+    body: Expression;
 
     /**
-     * 获取当前节点的结束位置。如果当前节点是生成的则返回 undefined。
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
-    get end() { return this.initializer ? this.initializer.end : this.type ? this.type.end : this.name.end; }
-
-    /**
-     * 获取当前变量名后冒号的开始位置。如果当前变量后不跟冒号则返回 undefined。
-     */
-    colonStart: number;
-
-    /**
-     * 获取当前变量名后冒号的结束位置。如果当前变量后不跟冒号则返回非数字。
-     */
-    get colonEnd() { return this.colonEnd + 1; }
-
-    /**
-     * 获取当前变量定义的类型。
-     */
-    type: Expression;
-
-    /**
-     * 获取当前变量名后等号的开始位置。如果当前变量后不跟等号则返回 undefined。
-     */
-    equalStart: number;
-
-    /**
-     * 获取当前变量名后等号的结束位置。如果当前变量后不跟等号则返回非数字。
-     */
-    get equalEnd() { return this.equalStart + 1; }
-
-    /**
-     * 获取当前变量的初始值。
-     */
-    initializer: Expression;
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.body, "body", this) !== false;
+    }
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitVariableDeclaration(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.type, "type", this) !== false &&
-            callback.call(scope, this.initializer, "initializer", this) !== false &&
-            callback.call(scope, this.name, "name", this) !== false;
-    }
-
-}
-
-/**
- * 表示一个参数声明。
- */
-export class ParameterDeclaration extends Declaration {
-
-    /**
-     * 获取当前参数的所有注解。
-     */
-    decorators: NodeList<Decorator>;
-
-    /**
-     * 获取当前参数的修饰符。
-     */
-    modifiers: NodeList<Modifier>;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitParameterDeclaration(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return this.decorators.each(callback, scope) &&
-            this.modifiers.each(callback, scope) &&
-            callback.call(scope, this.name, "name", this) !== false;
-    }
-
-}
-
-/**
- * 表示一个泛型参数。
- */
-export class GenericParameterDeclaration extends Declaration {
-
-    /**
-     * 获取当前泛型参数的名字部分。
-     */
-    name: Identifier;
-
-    /**
-     * 获取 extends 关键字的开始位置。如果不存在约束部分则返回 undefined。
-     */
-    extendsStart: number;
-
-    /**
-     * 获取 extends 关键字的开始位置。如果不存在约束部分则返回 undefined。
-     */
-    extendsEnd: number;
-
-    /**
-     * 获取当前泛型参数的约束部分。如果不存在约束部分则返回 undefined。
-     */
-    constraint: Expression;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitGenericParameterDeclaration(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每一项执行的回调函数。
-     * * param value 当前项的值。
-     * * param key 当前项的索引或键。
-     * * param target 当前正在遍历的目标对象。
-     * * returns 函数可以返回 false 以终止循环。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果循环是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
-        return callback.call(scope, this.name, "name", this) !== false &&
-            (!this.constraint || callback.call(scope, this.constraint, "constraint", this) !== false);
+        return vistior.visitComputedPropertyName(this);
     }
 
 }
@@ -4374,6 +3537,7 @@ export class Comment extends Node {
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitComment(this);
@@ -4384,11 +3548,12 @@ export class Comment extends Node {
 /**
  * 表示一个 JS 文档注释。
  */
-export class JsDocComment extends Node {
+export class JsDocComment extends Comment {
 
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitJsDocComment(this);

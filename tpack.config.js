@@ -14,7 +14,7 @@ tpack.task("gen-nodes", function () {
         var nodes = {};
         for (var _i = 0, _a = sourceFile.statements; _i < _a.length; _i++) {
             var statement = _a[_i];
-            if (statement.kind !== ts.SyntaxKind.ClassDeclaration) {
+            if (statement.kind !== ts.SyntaxKind.ClassDeclaration || !(statement.flags & ts.NodeFlags.Export)) {
                 continue;
             }
             var clazz = statement;
@@ -38,7 +38,7 @@ tpack.task("gen-nodes", function () {
             }
             nodes[clazz.name.text] = {
                 summary: getDocComment(clazz),
-                isAbstract: clazz.modifiers.some(function (t) { return t.kind === ts.SyntaxKind.AbstractKeyword; }),
+                isAbstract: clazz.modifiers && clazz.modifiers.some(function (t) { return t.kind === ts.SyntaxKind.AbstractKeyword; }),
                 name: clazz.name.text,
                 extends: baseClazzType && sourceFile.text.substring(baseClazzType.pos, baseClazzType.end).trim() || null,
                 members: members,
@@ -105,7 +105,7 @@ tpack.task("gen-nodes", function () {
                 eachContentItems.push(tpl);
             }
             if (eachContentItems.length) {
-                var eachContent = "\n\n    " + eachSummary + "\n    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {\n        return " + eachContentItems.join(" &&\n            ") + ";\n    }";
+                var eachContent = "\n\n    " + eachSummary + "\n    each(callback: EachCallback, scope?: any) {\n        return " + eachContentItems.join(" &&\n            ") + ";\n    }";
                 changes.push({
                     insert: true,
                     pos: each ? each.pos : type.node.members.end,
@@ -206,7 +206,7 @@ tpack.task("gen-nodes", function () {
             };
             data[member.name.text] = info;
         }
-        generateKeywordLexer(data, 0);
+        // generateKeywordLexer(data, 0);
         // 第三步：生成优先级数组。
         // 第四步：生成优先级数组。
         function getDocComment(node, removeSpace) {

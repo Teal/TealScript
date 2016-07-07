@@ -16,7 +16,7 @@ tpack.task("gen-nodes", function () {
         // 第二步：提取类型信息。
         const nodes = {};
         for (const statement of sourceFile.statements) {
-            if (statement.kind !== ts.SyntaxKind.ClassDeclaration) {
+            if (statement.kind !== ts.SyntaxKind.ClassDeclaration || !(statement.flags & ts.NodeFlags.Export)) {
                 continue;
             }
             const clazz = <ts.ClassDeclaration>statement;
@@ -40,7 +40,7 @@ tpack.task("gen-nodes", function () {
 
             nodes[clazz.name.text] = {
                 summary: getDocComment(clazz),
-                isAbstract: clazz.modifiers.some(t => t.kind === ts.SyntaxKind.AbstractKeyword),
+                isAbstract: clazz.modifiers && clazz.modifiers.some(t => t.kind === ts.SyntaxKind.AbstractKeyword),
                 name: clazz.name.text,
                 extends: baseClazzType && sourceFile.text.substring(baseClazzType.pos, baseClazzType.end).trim() || null,
                 members,
@@ -118,7 +118,7 @@ tpack.task("gen-nodes", function () {
                 const eachContent = `
 
     ${eachSummary}
-    each(callback: (node: Node, key: string | number, target: Node | NodeList<Node>) => boolean | void, scope?: any) {
+    each(callback: EachCallback, scope?: any) {
         return ${eachContentItems.join(" &&\n            ")};
     }`;
 
@@ -275,7 +275,7 @@ ${memberList.join("\n")}
             data[(<ts.Identifier>member.name).text] = info;
         }
 
-        generateKeywordLexer(data, 0);
+       // generateKeywordLexer(data, 0);
 
         // 第三步：生成优先级数组。
 
