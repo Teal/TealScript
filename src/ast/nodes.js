@@ -2301,7 +2301,7 @@ var TemplateCallExpression = (function (_super) {
     });
     Object.defineProperty(TemplateCallExpression.prototype, "end", {
         /**
-         * 获取当前节点的开始位置。
+         * 获取当前节点的结束位置。
          */
         get: function () { return this.argument.end; },
         enumerable: true,
@@ -2392,11 +2392,11 @@ var UnaryExpression = (function (_super) {
     function UnaryExpression() {
         _super.apply(this, arguments);
     }
-    Object.defineProperty(UnaryExpression.prototype, "isPostfix", {
+    Object.defineProperty(UnaryExpression.prototype, "end", {
         /**
-         * 判断当前表达式是否是后缀表达式。
+         * 获取当前节点的结束位置。
          */
-        get: function () { return this.end > this.operand.end; },
+        get: function () { return this.operand.end; },
         enumerable: true,
         configurable: true
     });
@@ -2420,6 +2420,42 @@ var UnaryExpression = (function (_super) {
     return UnaryExpression;
 }(Expression));
 exports.UnaryExpression = UnaryExpression;
+/**
+ * 表示一个增量运算表达式(x++、--x)。
+ */
+var IncrementExpression = (function (_super) {
+    __extends(IncrementExpression, _super);
+    function IncrementExpression() {
+        _super.apply(this, arguments);
+    }
+    Object.defineProperty(IncrementExpression.prototype, "isPostfix", {
+        /**
+         * 判断当前表达式是否是后缀表达式。
+         */
+        get: function () { return this.end > this.operand.end; },
+        enumerable: true,
+        configurable: true
+    });
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    IncrementExpression.prototype.accept = function (vistior) {
+        return vistior.visitIncrementExpression(this);
+    };
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    IncrementExpression.prototype.each = function (callback, scope) {
+        return callback.call(scope, this.operand, "operand", this) !== false;
+    };
+    return IncrementExpression;
+}(Expression));
+exports.IncrementExpression = IncrementExpression;
 /**
  * 表示一个二元运算表达式(x + y、x = y、...)。
  */

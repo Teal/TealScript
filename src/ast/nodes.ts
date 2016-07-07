@@ -2960,7 +2960,7 @@ export class TemplateCallExpression extends Expression {
     get start() { return this.target.start; }
 
     /**
-     * 获取当前节点的开始位置。
+     * 获取当前节点的结束位置。
      */
     get end() { return this.argument.end; }
 
@@ -3055,7 +3055,48 @@ export class NewTargetExpression extends Expression {
 export class UnaryExpression extends Expression {
 
     /**
-     * 获取当前运算的类型。合法的值有：...、++、--、+、-、delete、void、typeof、~、!。
+     * 获取当前运算的类型。合法的值有：...、+、-、delete、void、typeof、~、!。
+     */
+    type: TokenType;
+
+    /**
+     * 获取当前表达式的运算数。
+     */
+    operand: Expression;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.operand.end; }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitUnaryExpression(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.operand, "operand", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个增量运算表达式(x++、--x)。
+ */
+export class IncrementExpression extends Expression {
+
+    /**
+     * 获取当前运算的类型。合法的值有：++、--。
      */
     type: TokenType;
 
@@ -3075,7 +3116,7 @@ export class UnaryExpression extends Expression {
      * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitUnaryExpression(this);
+        return vistior.visitIncrementExpression(this);
     }
 
     /**
@@ -3199,9 +3240,19 @@ export class ConditionalExpression extends Expression {
     condition: Expression;
 
     /**
+     * 获取当前条件表达式问号的位置。
+     */
+    question: number;
+
+    /**
      * 获取当前条件表达式的则部分。
      */
     then: Expression;
+
+    /**
+     * 获取当前条件表达式冒号的位置。
+     */
+    colon: number;
 
     /**
      * 获取当前条件表达式的否则部分。

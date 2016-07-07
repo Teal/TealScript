@@ -941,41 +941,57 @@ export class Parser {
 
     /**
      * 解析一个成员调用表达式(x.y)。
+     * @param parsed 已解析的表达式部分。
      */
-    private parseMemberCallExpression() {
-
-
+    private parseMemberCallExpression(parsed: nodes.Expression) {
+        console.assert(this.lexer.peek().type === TokenType.dot);
+        const result = new nodes.MemberCallExpression();
+        result.target = parsed;
+        result.dot = this.expectToken(TokenType.dot);
+        result.argument = this.expectIdentifier();
+        return result;
     }
 
     /**
      * 解析一个函数调用表达式(x())。
+     * @param parsed 已解析的表达式部分。
      */
-    private parseFunctionCallExpression() {
-
-
+    private parseFunctionCallExpression(parsed: nodes.Expression) {
+        console.assert(this.lexer.peek().type === TokenType.openParen);
+        const result = new nodes.FunctionCallExpression();
+        result.target = parsed;
+        //return result;
     }
 
     /**
      * 解析一个索引调用表达式(x[y])。
+     * @param parsed 已解析的表达式部分。
      */
-    private parseIndexCallExpression() {
-
-
+    private parseIndexCallExpression(parsed: nodes.Expression) {
+        console.assert(this.lexer.peek().type === TokenType.openBracket);
+        const result = new nodes.IndexCallExpression();
+        result.target = parsed;
+        //result.argument = this.parseTemplateLiteral();
+        //return result;
     }
 
     /**
      * 解析一个模板调用表达式(x`abc`)。
+     * @param parsed 已解析的表达式部分。
      */
-    private parseTemplateCallExpression() {
-
-
+    private parseTemplateCallExpression(parsed: nodes.Expression) {
+        console.assert(this.lexer.peek().type === TokenType.noSubstitutionTemplateLiteral || this.lexer.peek().type === TokenType.templateHead);
+        const result = new nodes.TemplateCallExpression();
+        result.target = parsed;
+        result.argument = this.parseTemplateLiteral();
+        return result;
     }
 
     /**
      * 解析一个 new 表达式(new x())。
      */
     private parseNewExpression() {
-
+        console.assert(this.lexer.peek().type === TokenType.new);
 
     }
 
@@ -990,15 +1006,52 @@ export class Parser {
      * 解析一个一元运算表达式(+x、typeof x、...)。
      */
     private parseUnaryExpression() {
+        console.assert(isUnaryOperator(this.lexer.peek().type));
+        const result = new nodes.UnaryExpression();
+        result.start = this.lexer.read().start;
+        result.operand = this.parseExpression();
+        return result;
+    }
 
+    /**
+     * 解析一个一元运算表达式(+x、typeof x、...)。
+     */
+    private parsePrefixIncrementExpression() {
+        console.assert(this.lexer.peek().type === TokenType.plusPlus || this.lexer.peek().type === TokenType.minusMinus);
+        const result = new nodes.IncrementExpression();
+        result.start = this.lexer.read().start;
+        result.type = this.lexer.current.type;
+        result.operand = this.parseExpression();
+        result.end = this.lexer.current.end;
+        return result;
+    }
+
+    /**
+     * 解析一个一元运算表达式(+x、typeof x、...)。
+     * @param parsed 已解析的表达式部分。
+     */
+    private parsePostfixIncrementExpression(parsed: nodes.Expression) {
+        console.assert(this.lexer.peek().type === TokenType.plusPlus || this.lexer.peek().type === TokenType.minusMinus);
+        const result = new nodes.IncrementExpression();
+        result.start = this.lexer.read().start;
+        result.type = this.lexer.current.type;
+        result.operand = parsed;
+        result.end = this.lexer.current.end;
+        return result;
     }
 
     /**
      * 解析一个二元运算表达式(x + y、x = y、...)。
+     * @param parsed 已解析的表达式部分。
      */
-    private parseBinaryExpression() {
-
-
+    private parseBinaryExpression(parsed: nodes.Expression) {
+        console.assert(isBinaryOperator(this.lexer.peek().type));
+        const result = new nodes.BinaryExpression();
+        result.leftOperand = parsed;
+        result.operator = this.lexer.read().start;
+        result.type = this.lexer.current.type;
+        result.rightOperand = this.parseExpression();
+        return result;
     }
 
     /**
@@ -1010,11 +1063,17 @@ export class Parser {
 
     /**
      * 解析一个条件表达式(x ? y : z)。
+     * @param parsed 已解析的表达式部分。
      */
-    private parseConditionalExpression() {
-
-
-
+    private parseConditionalExpression(parsed: nodes.Expression) {
+        console.assert(this.lexer.peek().type === TokenType.question);
+        const result = new nodes.ConditionalExpression();
+        result.condition = parsed;
+        result.question = this.lexer.read().start;
+        result.then = this.parseExpression();
+        result.colon = this.expectToken(TokenType.colon);
+        result.else = this.parseExpression();
+        return result;
     }
 
     /**
@@ -1027,16 +1086,18 @@ export class Parser {
 
     /**
      * 解析一个泛型表达式(Array<T>)。
+     * @param parsed 已解析的表达式部分。
      */
-    private parseGenericTypeExpression() {
+    private parseGenericTypeExpression(parsed: nodes.Expression) {
 
 
     }
 
     /**
      * 解析一个数组类型表达式(T[])。
+     * @param parsed 已解析的表达式部分。
      */
-    private parseArrayTypeExpression() {
+    private parseArrayTypeExpression(parsed: nodes.Expression) {
 
     }
 
