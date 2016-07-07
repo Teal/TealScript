@@ -796,28 +796,52 @@ export class Parser {
      * 解析一个标识符(x)。
      */
     private parseIdentifier() {
-
+        console.assert(this.lexer.peek().type === TokenType.identifier);
+        const result = new nodes.Identifier();
+        result.start = this.lexer.read().start;
+        result.value = this.lexer.current.data;
+        result.end = this.lexer.read().end;
+        return result;
     }
 
     /**
      * 解析一个简单字面量(this、super、null、true、false)。
      */
     private parseSimpleLiteral() {
-
+        console.assert(this.lexer.peek().type === TokenType.this ||
+            this.lexer.peek().type === TokenType.super ||
+            this.lexer.peek().type === TokenType.null ||
+            this.lexer.peek().type === TokenType.true ||
+            this.lexer.peek().type === TokenType.false);
+        const result = new nodes.SimpleLiteral();
+        result.start = this.lexer.read().start;
+        result.type = this.lexer.current.type;
+        result.end = this.lexer.read().end;
+        return result;
     }
 
     /**
      * 解析一个数字字面量(1)。
      */
     private parseNumericLiteral() {
-
+        console.assert(this.lexer.peek().type === TokenType.numericLiteral);
+        const result = new nodes.NumericLiteral();
+        result.start = this.lexer.read().start;
+        result.value = this.lexer.current.data;
+        result.end = this.lexer.read().end;
+        return result;
     }
 
     /**
      * 解析一个字符串字面量('abc'、"abc"、`abc`)。
      */
     private parseStringLiteral() {
-
+        console.assert(this.lexer.peek().type === TokenType.stringLiteral);
+        const result = new nodes.StringLiteral();
+        result.start = this.lexer.read().start;
+        result.value = this.lexer.current.data;
+        result.end = this.lexer.read().end;
+        return result;
     }
 
     /**
@@ -831,7 +855,13 @@ export class Parser {
      * 解析一个正则表达式字面量(/abc/)。
      */
     private parseRegularExpressionLiteral() {
-
+        console.assert(this.lexer.peek().type === TokenType.regularExpressionLiteral);
+        const result = new nodes.RegularExpressionLiteral();
+        result.start = this.lexer.read().start;
+        result.value = this.lexer.current.data.pattern;
+        result.flags = this.lexer.current.data.flags;
+        result.end = this.lexer.read().end;
+        return result;
     }
 
     /**

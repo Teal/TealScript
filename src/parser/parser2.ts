@@ -1524,18 +1524,6 @@ export class Parser {
 
 #region 解析表达式
 
-    /**
-     * 解析一个标识符。
-     */
-    * <returns></returns>
-        private Identifier parseIdentifier() {
-    return new Identifier() {
-        start = this.lexer.read().start,
-            value = this.lexer.current.buffer.ToString(),
-            endLocation = this.lexer.current.endLocation
-    };
-}
-
         /**
          * 解析一个魔法变量。
          */
@@ -1556,22 +1544,6 @@ export class Parser {
 
         
 
-        private Expression parseIntOrLongLiteral(long value) {
-    if (value <= int.MaxValue) {
-        return new IntLiteral() {
-            start = this.lexer.read().start,
-                value = (int)value,
-                    endLocation = this.lexer.current.endLocation
-        };
-    }
-
-    return new LongLiteral() {
-        start = this.lexer.read().start,
-            value = value,
-            endLocation = this.lexer.current.endLocation
-    };
-
-}
 
         private Expression parseListOrDictLiteral(TokenType stopBrack, ErrorCode errorCode) {
 
