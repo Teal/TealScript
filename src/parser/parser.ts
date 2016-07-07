@@ -931,7 +931,12 @@ export class Parser {
      * 解析一个括号表达式((x))。
      */
     private parseParenthesizedExpression() {
-
+        console.assert(this.lexer.peek().type === TokenType.openParen);
+        const result = new nodes.ParenthesizedExpression();
+        result.start = this.lexer.read().start;
+        result.body = this.parseExpression();
+        result.end = this.expectToken(TokenType.closeParen);
+        return result;
     }
 
     /**
