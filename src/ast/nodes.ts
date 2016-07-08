@@ -1444,7 +1444,7 @@ export class FunctionDeclaration extends Declaration {
     /**
      * 获取当前函数的所有泛型参数(可能不存在)。
      */
-    genericParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<GenericParameterDeclaration>;
 
     /**
      * 获取当前函数的所有参数。
@@ -1485,7 +1485,7 @@ export class FunctionDeclaration extends Declaration {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             callback.call(scope, this.name, "name", this) !== false &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.parameters.each(callback, scope) &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
             (!this.body || callback.call(scope, this.body, "body", this) !== false);
@@ -1627,7 +1627,7 @@ export class ClassDeclaration extends Declaration {
     /**
      * 获取当前类的所有泛型参数(可能不存在)。
      */
-    genericParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<GenericParameterDeclaration>;
 
     /**
      * 获取当前类的所有成员(可能不存在)。
@@ -1660,7 +1660,7 @@ export class ClassDeclaration extends Declaration {
             callback.call(scope, this.name, "name", this) !== false &&
             (!this.extends || this.extends.each(callback, scope)) &&
             (!this.implements || this.implements.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             (!this.members || this.members.each(callback, scope));
     }
 
@@ -1744,7 +1744,7 @@ export class MethodDeclaration extends TypeMemberDeclaration {
     /**
      * 获取当前方法的所有泛型参数(可能不存在)。
      */
-    genericParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<GenericParameterDeclaration>;
 
     /**
      * 获取当前方法的所有参数。
@@ -1799,7 +1799,7 @@ export class MethodDeclaration extends TypeMemberDeclaration {
     each(callback: EachCallback, scope?: any) {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.parameters.each(callback, scope) &&
             callback.call(scope, this.name, "name", this) !== false &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
@@ -1846,7 +1846,7 @@ export class AccessorDeclaration extends MethodDeclaration {
     each(callback: EachCallback, scope?: any) {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.parameters.each(callback, scope) &&
             callback.call(scope, this.name, "name", this) !== false &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
@@ -1868,7 +1868,7 @@ export class InterfaceDeclaration extends Declaration {
     /**
      * 获取当前接口的所有泛型参数(可能不存在)。
      */
-    genericParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<GenericParameterDeclaration>;
 
     /**
      * 获取当前接口的所有成员(可能不存在)。
@@ -1900,7 +1900,7 @@ export class InterfaceDeclaration extends Declaration {
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             callback.call(scope, this.name, "name", this) !== false &&
             (!this.extends || this.extends.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             (!this.members || this.members.each(callback, scope));
     }
 
@@ -2285,14 +2285,19 @@ export abstract class Expression extends Node {
     /**
      * 获取错误表达式。该表达式可作为语法解析错误时的替代表达式使用。
      */
-    static error = Object.freeze(new ErrorExpression());
+    static error = Object.freeze(new EmptyExpression());
+
+    /**
+     * 获取空表达式。
+     */
+    static empty = Object.freeze(new EmptyExpression());
 
 }
 
 /**
- * 表示一个错误表达式。
+ * 表示一个空表达式。
  */
-class ErrorExpression extends Expression {
+class EmptyExpression extends Expression {
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2524,7 +2529,7 @@ export class ObjectLiteral extends Expression {
     /**
      * 获取当前对象字面量的所有项。
      */
-    elements: NodeList<PropertyDeclaration | MethodDeclaration | AccessorDeclaration>;
+    elements: NodeList<>;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2548,6 +2553,11 @@ export class ObjectLiteral extends Expression {
 }
 
 /**
+ * 表示一个对象字面量的项(x: y、x(){...}、get x() {...}、set x(value) {...})。
+ */
+export type ObjectLiteralElement = PropertyDeclaration | MethodDeclaration | AccessorDeclaration;
+
+/**
  * 表示一个函数表达式(function () {})。
  */
 export class FunctionExpression extends Expression {
@@ -2565,7 +2575,7 @@ export class FunctionExpression extends Expression {
     /**
      * 获取成员的泛型参数。
      */
-    genericParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<GenericParameterDeclaration>;
 
     /**
      * 获取当前函数定义的参数列表。
@@ -2604,7 +2614,7 @@ export class FunctionExpression extends Expression {
      */
     each(callback: EachCallback, scope?: any) {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
-            this.genericParameters.each(callback, scope) &&
+            this.typeParameters.each(callback, scope) &&
             this.parameters.each(callback, scope) &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
             (!this.body || callback.call(scope, this.body, "body", this) !== false);
@@ -2671,9 +2681,19 @@ export class ClassExpression extends Expression {
     name: Identifier;
 
     /**
+     * 获取 extends 标记的位置(可能不存在)。
+     */
+    extendsToken: number;
+
+    /**
      * 获取当前类型的继承列表(可能不存在)。
      */
     extends: NodeList<Expression>;
+
+    /**
+     * 获取 implements 标记的位置(可能不存在)。
+     */
+    implementsToken: number;
 
     /**
      * 获取当前类型的实现列表(可能不存在)。
@@ -2683,7 +2703,7 @@ export class ClassExpression extends Expression {
     /**
      * 获取当前类型定义的泛型参数列表(可能不存在)。
      */
-    genericParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<GenericParameterDeclaration>;
 
     /**
      * 获取当前容器内的所有成员。
@@ -2709,7 +2729,7 @@ export class ClassExpression extends Expression {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
             (!this.extends || this.extends.each(callback, scope)) &&
             (!this.implements || this.implements.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.members.each(callback, scope);
     }
 
@@ -2733,7 +2753,7 @@ export class InterfaceExpression extends Expression {
     /**
      * 获取当前类型定义的泛型参数列表(可能不存在)。
      */
-    genericParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<GenericParameterDeclaration>;
 
     /**
      * 获取当前容器内的所有成员。
@@ -2758,7 +2778,7 @@ export class InterfaceExpression extends Expression {
     each(callback: EachCallback, scope?: any) {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
             (!this.extends || this.extends.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.members.each(callback, scope);
     }
 
@@ -3702,6 +3722,11 @@ export class ArrayBindingElement extends Node {
      * 获取当前节点的结束位置。
      */
     get end() { return (this.initializer || this.name).end; }
+
+    /**
+     * 获取空绑定。
+     */
+    static empty = Object.freeze(new ArrayBindingElement());
 
     /**
      * 使用指定的节点访问器处理当前节点。

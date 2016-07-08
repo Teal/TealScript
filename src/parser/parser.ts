@@ -457,13 +457,14 @@ export class Parser {
         while (true) {
             switch (this.lexer.peek().type) {
                 case TokenType.comma:
+                    result.elements.push(nodes.ArrayBindingElement.empty);
                     result.elements.seperators.push(this.lexer.read().start);
                     continue;
                 case TokenType.closeBracket:
                     result.end = this.lexer.read().end;
                     return result;
                 case TokenType.endOfFile:
-                    result.end = this.expectToken(TokenType.closeBracket);
+                    result.end = this.expectToken(TokenType.closeBracket).end;
                     return result;
             }
 
@@ -496,7 +497,7 @@ export class Parser {
                     result.end = this.lexer.read().end;
                     return result;
                 case TokenType.endOfFile:
-                    result.end = this.expectToken(TokenType.closeBrace);
+                    result.end = this.expectToken(TokenType.closeBrace).end;
                     return result;
             }
 
@@ -1117,13 +1118,17 @@ export class Parser {
         while (true) {
             switch (this.lexer.peek().type) {
                 case TokenType.comma:
+                    result.elements.push(nodes.Expression.empty);
                     result.elements.seperators.push(this.lexer.read().start);
                     continue;
                 case TokenType.closeBracket:
+                    result.end = this.lexer.read().start;
                     return result;
-                default:
-                    result.elements.push(this.parseExpressionWith(ParseFlags.disallowComma));
+                case TokenType.endOfFile:
+                    result.end = this.expectToken(TokenType.closeBracket).end;
+                    return result;
             }
+            result.elements.push(this.parseExpression(ParseFlags.disallowComma));
         }
     }
 
@@ -1134,19 +1139,37 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.openBrace);
         const result = new nodes.ObjectLiteral();
         result.start = this.lexer.read().start;
-        result.elements = new nodes.NodeList<nodes.PropertyDeclaration | nodes.MethodDeclaration | nodes.AccessorDeclaration>();
+        result.elements = new nodes.NodeList<nodes.ObjectLiteralElement>();
         result.elements.seperators = [];
         while (true) {
             switch (this.lexer.peek().type) {
-                case TokenType.comma:
-                    result.elements.seperators.push(this.lexer.read().start);
-                    continue;
                 case TokenType.closeBrace:
-                // return result;
-                default:
-
-                // result.elements.push(this.parseExpressionWith(ParseFlags.disallowComma));
+                    result.end = this.lexer.read().end;
+                    return result;
+                case TokenType.endOfFile:
+                    result.end = this.expectToken(TokenType.closeBrace).end;
+                    return result;
             }
+
+            //const start = this.lexer.peek().start;
+            //const decorators = this.parseDecorators();
+            //const modifiers = this.parseModifiers();
+
+            // todo
+            //const element = new nodes.ObjectBindingElement();
+            //element.property = this.parsePropertyName();
+            //if (this.lexer.peek().type === TokenType.colon) {
+            //    element.colon = this.lexer.read().start;
+            //    element.name = this.parseBindingName();
+            //}
+            //if (this.lexer.peek().type === TokenType.equals) {
+            //    element.equal = this.lexer.read().start;
+            //    element.initializer = this.parseExpression(ParseFlags.disallowComma);
+            //}
+            //if (this.lexer.peek().type === TokenType.comma) {
+            //    result.elements.seperators.push(this.lexer.read().start);
+            //}
+            result.elements.push(element);
         }
     }
 
@@ -1174,11 +1197,50 @@ export class Parser {
      * 解析一个类表达式(class xx {})。
      */
     private parseClassExpression() {
+        console.assert(this.lexer.peek().type === TokenType.class);
+        const result = new nodes.ClassExpression();
+        result.start = this.lexer.read().start;
+        switch (this.lexer.peek().type) {
+            case TokenType.identifier:
+                result.name = this.parseIdentifier();
+                break;
+            case TokenType.implements:
+                // implements 可能是关键字或类名。
+                if (!this.isImplements()) {
+                    result.name = this.parseIdentifier();
+                }
+                break;
+        }
+        result.typeParameters = this.parseTypeParameters();
+        if (this.lexer.peek().type === TokenType.extends) {
+            result.extendsToken = this.lexer.read().type;
+            result.extends = this.parseHeritageClause();
+        }
+        if (this.lexer.peek().type === TokenType.implements) {
+            result.implementsToken = this.lexer.read().type;
+            result.implements = this.parseHeritageClause();
+        }
+    }
 
+    private parseHeritageClause() {
+        const result = new nodes.NodeList<nodes.Expression>();
+        result.seperators = [];
+        while (true) {
+            result.push(this.parseTypeExpression());
+            if (this.lexer.peek().type === TokenType.comma) {
+                result.seperators.push(this.lexer.read().start);
+                continue;
+            }
+            return result;
+        }
+    }
 
-
-
-
+    private isImplements() {
+        this.lexer.stashSave();
+        this.lexer.read();
+        const result = isIdentifierOrKeyword(this.lexer.peek().type);
+        this.lexer.stashRestore();
+        return result;
     }
 
     /**
@@ -1206,7 +1268,7 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.openParen);
         const result = new nodes.ParenthesizedExpression();
         result.start = this.lexer.read().start;
-        result.body = this.parseExpression();
+        result.body = this.parseExpression(ParseFlags.allowIn);
         result.end = this.expectToken(TokenType.closeParen).end;
         return result;
     }

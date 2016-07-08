@@ -3443,14 +3443,6 @@ namespace ts {
             return parseIdentifier(Diagnostics.Expression_expected);
         }
 
-        function parseParenthesizedExpression(): ParenthesizedExpression {
-            const node = <ParenthesizedExpression>createNode(SyntaxKind.ParenthesizedExpression);
-            parseExpected(SyntaxKind.OpenParenToken);
-            node.expression = allowInAnd(parseExpression);
-            parseExpected(SyntaxKind.CloseParenToken);
-            return finishNode(node);
-        }
-
         function parseSpreadElement(): Expression {
             const node = <SpreadElementExpression>createNode(SyntaxKind.SpreadElementExpression);
             parseExpected(SyntaxKind.DotDotDotToken);
@@ -3458,25 +3450,8 @@ namespace ts {
             return finishNode(node);
         }
 
-        function parseArgumentOrArrayLiteralElement(): Expression {
-            return token === SyntaxKind.DotDotDotToken ? parseSpreadElement() :
-                token === SyntaxKind.CommaToken ? <Expression>createNode(SyntaxKind.OmittedExpression) :
-                    parseAssignmentExpressionOrHigher();
-        }
-
         function parseArgumentExpression(): Expression {
             return doOutsideOfContext(disallowInAndDecoratorContext, parseArgumentOrArrayLiteralElement);
-        }
-
-        function parseArrayLiteralExpression(): ArrayLiteralExpression {
-            const node = <ArrayLiteralExpression>createNode(SyntaxKind.ArrayLiteralExpression);
-            parseExpected(SyntaxKind.OpenBracketToken);
-            if (scanner.hasPrecedingLineBreak()) {
-                node.multiLine = true;
-            }
-            node.elements = parseDelimitedList(ParsingContext.ArrayLiteralMembers, parseArgumentOrArrayLiteralElement);
-            parseExpected(SyntaxKind.CloseBracketToken);
-            return finishNode(node);
         }
 
         function tryParseAccessorDeclaration(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): AccessorDeclaration {
@@ -3538,18 +3513,6 @@ namespace ts {
                 propertyAssignment.initializer = allowInAnd(parseAssignmentExpressionOrHigher);
                 return addJSDocComment(finishNode(propertyAssignment));
             }
-        }
-
-        function parseObjectLiteralExpression(): ObjectLiteralExpression {
-            const node = <ObjectLiteralExpression>createNode(SyntaxKind.ObjectLiteralExpression);
-            parseExpected(SyntaxKind.OpenBraceToken);
-            if (scanner.hasPrecedingLineBreak()) {
-                node.multiLine = true;
-            }
-
-            node.properties = parseDelimitedList(ParsingContext.ObjectLiteralMembers, parseObjectLiteralElement, /*considerSemicolonAsDelimiter*/ true);
-            parseExpected(SyntaxKind.CloseBraceToken);
-            return finishNode(node);
         }
 
         function parseFunctionExpression(): FunctionExpression {
@@ -4261,44 +4224,6 @@ namespace ts {
             }
 
             return finishNode(node);
-        }
-
-        function parseNameOfClassDeclarationOrExpression(): Identifier {
-            // implements is a future reserved word so
-            // 'class implements' might mean either
-            // - class expression with omitted name, 'implements' starts heritage clause
-            // - class with name 'implements'
-            // 'isImplementsClause' helps to disambiguate between these two cases
-            return isIdentifier() && !isImplementsClause()
-                ? parseIdentifier()
-                : undefined;
-        }
-
-        function isImplementsClause() {
-            return token === SyntaxKind.ImplementsKeyword && lookAhead(nextTokenIsIdentifierOrKeyword);
-        }
-
-        function parseHeritageClauses(isClassHeritageClause: boolean): NodeArray<HeritageClause> {
-            // ClassTail[Yield,Await] : (Modified) See 14.5
-            //      ClassHeritage[?Yield,?Await]opt { ClassBody[?Yield,?Await]opt }
-
-            if (isHeritageClause()) {
-                return parseList(ParsingContext.HeritageClauses, parseHeritageClause);
-            }
-
-            return undefined;
-        }
-
-        function parseHeritageClause() {
-            if (token === SyntaxKind.ExtendsKeyword || token === SyntaxKind.ImplementsKeyword) {
-                const node = <HeritageClause>createNode(SyntaxKind.HeritageClause);
-                node.token = token;
-                nextToken();
-                node.types = parseDelimitedList(ParsingContext.HeritageClauseElement, parseExpressionWithTypeArguments);
-                return finishNode(node);
-            }
-
-            return undefined;
         }
 
         function parseExpressionWithTypeArguments(): ExpressionWithTypeArguments {

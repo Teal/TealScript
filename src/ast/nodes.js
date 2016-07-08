@@ -385,7 +385,7 @@ var IfStatement = (function (_super) {
         /**
          * 获取当前节点的结束位置。
          */
-        get: function () { return (this.else || this.then).end; },
+        get: function () { return (this.elseStatement || this.thenStatement).end; },
         enumerable: true,
         configurable: true
     });
@@ -405,8 +405,8 @@ var IfStatement = (function (_super) {
      */
     IfStatement.prototype.each = function (callback, scope) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
-            callback.call(scope, this.then, "then", this) !== false &&
-            (!this.else || callback.call(scope, this.else, "else", this) !== false);
+            callback.call(scope, this.thenStatement, "thenStatement", this) !== false &&
+            (!this.elseStatement || callback.call(scope, this.elseStatement, "elseStatement", this) !== false);
     };
     return IfStatement;
 }(Statement));
@@ -1140,7 +1140,7 @@ var FunctionDeclaration = (function (_super) {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             callback.call(scope, this.name, "name", this) !== false &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.parameters.each(callback, scope) &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
             (!this.body || callback.call(scope, this.body, "body", this) !== false);
@@ -1260,7 +1260,7 @@ var ClassDeclaration = (function (_super) {
             callback.call(scope, this.name, "name", this) !== false &&
             (!this.extends || this.extends.each(callback, scope)) &&
             (!this.implements || this.implements.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             (!this.members || this.members.each(callback, scope));
     };
     return ClassDeclaration;
@@ -1364,7 +1364,7 @@ var MethodDeclaration = (function (_super) {
     MethodDeclaration.prototype.each = function (callback, scope) {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.parameters.each(callback, scope) &&
             callback.call(scope, this.name, "name", this) !== false &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
@@ -1406,7 +1406,7 @@ var AccessorDeclaration = (function (_super) {
     AccessorDeclaration.prototype.each = function (callback, scope) {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.parameters.each(callback, scope) &&
             callback.call(scope, this.name, "name", this) !== false &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
@@ -1450,7 +1450,7 @@ var InterfaceDeclaration = (function (_super) {
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             callback.call(scope, this.name, "name", this) !== false &&
             (!this.extends || this.extends.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             (!this.members || this.members.each(callback, scope));
     };
     return InterfaceDeclaration;
@@ -1757,16 +1757,20 @@ var Expression = (function (_super) {
     /**
      * 获取错误表达式。该表达式可作为语法解析错误时的替代表达式使用。
      */
-    Expression.error = Object.freeze(new ErrorExpression());
+    Expression.error = Object.freeze(new EmptyExpression());
+    /**
+     * 获取空表达式。
+     */
+    Expression.empty = Object.freeze(new EmptyExpression());
     return Expression;
 }(Node));
 exports.Expression = Expression;
 /**
- * 表示一个错误表达式。
+ * 表示一个空表达式。
  */
-var ErrorExpression = (function (_super) {
-    __extends(ErrorExpression, _super);
-    function ErrorExpression() {
+var EmptyExpression = (function (_super) {
+    __extends(EmptyExpression, _super);
+    function EmptyExpression() {
         _super.apply(this, arguments);
     }
     /**
@@ -1774,8 +1778,8 @@ var ErrorExpression = (function (_super) {
      * @param vistior 要使用的节点访问器。
      * @returns 返回访问器的处理结果。
      */
-    ErrorExpression.prototype.accept = function (vistior) { };
-    return ErrorExpression;
+    EmptyExpression.prototype.accept = function (vistior) { };
+    return EmptyExpression;
 }(Expression));
 /**
  * 表示一个标识符(x)。
@@ -2023,7 +2027,7 @@ var FunctionExpression = (function (_super) {
      */
     FunctionExpression.prototype.each = function (callback, scope) {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
-            this.genericParameters.each(callback, scope) &&
+            this.typeParameters.each(callback, scope) &&
             this.parameters.each(callback, scope) &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
             (!this.body || callback.call(scope, this.body, "body", this) !== false);
@@ -2087,7 +2091,7 @@ var ClassExpression = (function (_super) {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
             (!this.extends || this.extends.each(callback, scope)) &&
             (!this.implements || this.implements.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.members.each(callback, scope);
     };
     return ClassExpression;
@@ -2118,7 +2122,7 @@ var InterfaceExpression = (function (_super) {
     InterfaceExpression.prototype.each = function (callback, scope) {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
             (!this.extends || this.extends.each(callback, scope)) &&
-            (!this.genericParameters || this.genericParameters.each(callback, scope)) &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             this.members.each(callback, scope);
     };
     return InterfaceExpression;
@@ -2594,8 +2598,8 @@ var ConditionalExpression = (function (_super) {
      */
     ConditionalExpression.prototype.each = function (callback, scope) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
-            callback.call(scope, this.then, "then", this) !== false &&
-            callback.call(scope, this.else, "else", this) !== false;
+            callback.call(scope, this.thenExpression, "thenExpression", this) !== false &&
+            callback.call(scope, this.elseExpression, "elseExpression", this) !== false;
     };
     return ConditionalExpression;
 }(Expression));
@@ -2877,6 +2881,14 @@ var ArrayBindingElement = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(ArrayBindingElement.prototype, "end", {
+        /**
+         * 获取当前节点的结束位置。
+         */
+        get: function () { return (this.initializer || this.name).end; },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -2894,6 +2906,10 @@ var ArrayBindingElement = (function (_super) {
     ArrayBindingElement.prototype.each = function (callback, scope) {
         return callback.call(scope, this.initializer, "initializer", this) !== false;
     };
+    /**
+     * 获取空绑定。
+     */
+    ArrayBindingElement.empty = Object.freeze(new ArrayBindingElement());
     return ArrayBindingElement;
 }(Node));
 exports.ArrayBindingElement = ArrayBindingElement;
@@ -2933,6 +2949,22 @@ var ObjectBindingElement = (function (_super) {
     function ObjectBindingElement() {
         _super.apply(this, arguments);
     }
+    Object.defineProperty(ObjectBindingElement.prototype, "start", {
+        /**
+         * 获取当前节点的开始位置。
+         */
+        get: function () { return this.propertyName.start; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ObjectBindingElement.prototype, "end", {
+        /**
+         * 获取当前节点的结束位置。
+         */
+        get: function () { return (this.initializer || this.name || this.propertyName).end; },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -2940,6 +2972,15 @@ var ObjectBindingElement = (function (_super) {
      */
     ObjectBindingElement.prototype.accept = function (vistior) {
         return vistior.visitObjectBindingElement(this);
+    };
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    ObjectBindingElement.prototype.each = function (callback, scope) {
+        return callback.call(scope, this.initializer, "initializer", this) !== false;
     };
     return ObjectBindingElement;
 }(Node));
