@@ -82,7 +82,7 @@ export class SourceFile extends Node {
     /**
      * 获取当前源文件的所有注释(可能不存在)。
      */
-    comments: NodeList<Comment>;
+    comments: Comment[];
 
     /**
      * 获取当前源文件的文档注释头(可能不存在)。
@@ -570,6 +570,11 @@ export class CaseClause extends Node {
     label: Expression;
 
     /**
+     * 获取当前标签名后 else 的位置。
+     */
+    else: number;
+
+    /**
      * 获取当前标签名后冒号的位置。
      */
     colon: number;
@@ -693,7 +698,7 @@ export class ForInStatement extends Statement {
     /**
      * 获取当前 for..in 语句的初始化部分。
      */
-    initializer: VariableStatement;
+    initializer: VariableStatement | Expression;
 
     /**
      * 获取关键字 in 的位置。
@@ -756,7 +761,7 @@ export class ForOfStatement extends Statement {
     /**
      * 获取当前 for..of 语句的初始化部分。
      */
-    initializer: VariableStatement;
+    initializer: VariableStatement | Expression;
 
     /**
      * 获取关键字 of 的位置。
@@ -819,7 +824,7 @@ export class ForToStatement extends Statement {
     /**
      * 获取当前 for..to 语句的初始化部分(可能不存在)。
      */
-    initializer: VariableStatement;
+    initializer: VariableStatement | Expression;
 
     /**
      * 获取关键字 to 的位置。
@@ -1143,6 +1148,11 @@ export class TryStatement extends Statement {
     finally: FinallyClause;
 
     /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return (this.finally || this.catch).end; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      * @returns 返回访问器的处理结果。
@@ -1191,6 +1201,11 @@ export class CatchClause extends Node {
     body: Statement;
 
     /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.body.end; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      * @returns 返回访问器的处理结果。
@@ -1220,6 +1235,11 @@ export class FinallyClause extends Node {
      * 获取当前 finally 分句的主体部分。
      */
     body: Statement;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.body.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -1287,6 +1307,11 @@ export class WithStatement extends Statement {
      * 获取当前的 with 语句的主体部分。
      */
     body: Statement;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.body.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3729,32 +3754,21 @@ export class ComputedPropertyName extends Node {
 /**
  * 表示一个 JS 注释。
  */
-export class Comment extends Node {
+export interface Comment {
 
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitComment(this);
-    }
+}
+
+/**
+ * 表示一个包含 \<reference /> 的注释。
+ */
+export interface ReferenceComment extends Comment {
 
 }
 
 /**
  * 表示一个 JS 文档注释。
  */
-export class JsDocComment extends Comment {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitJsDocComment(this);
-    }
+export interface JsDocComment extends Comment {
 
 }
 

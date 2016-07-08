@@ -4,6 +4,7 @@
 
 import {TokenType, tokenToString, isNonReservedWord, isUnaryOperator, isExpressionStart, getPrecedence, isStatementStart} from '../ast/tokenType';
 import * as nodes from '../ast/nodes';
+import {CharCode} from './charCode';
 import {Lexer, Token} from './lexer';
 import {options, error, ErrorType} from '../compiler/compiler';
 
@@ -27,8 +28,7 @@ export class Parser {
      * @param fileName 解析的源码位置。
      */
     private parse(text: string, start?: number, fileName?: string) {
-        this.lexer.setSource(text, start, fileName);
-        return this.parseSourceFile();
+        return this.parseSourceFile(text || "", start || 0, fileName || "");
     }
 
     /**
@@ -60,6 +60,7 @@ export class Parser {
      * @param fileName 解析的源码位置。
      */
     private parseAsTypeExpression(text: string, start?: number, fileName?: string) {
+        delete this.lexer.comment;
         this.lexer.setSource(text, start, fileName);
         return this.parseTypeExpression();
     }
@@ -78,10 +79,10 @@ export class Parser {
         error(ErrorType.syntaxError, this.lexer.fileName, token.start, token.end, message, ...args);
     }
 
-    /**
-     * 存储解析的内部标记。
-     */
-    private flags: ParseFlags = 0;
+    ///**
+    // * 存储解析的内部标记。
+    // */
+    //private flags: ParseFlags = 0;
 
     /**
      * 如果下一个标记是指定的类型，则读取下一个标记。
@@ -94,12 +95,13 @@ export class Parser {
             return true;
         }
         return false;
+
     }
 
     /**
-     * 读取下一个标记。如如果下一个标记不是指定的类型则输出一条错误。
+     * 读取下一个标记。如果下一个标记不是指定的类型则输出一条错误。
      * @param token 期待的标记。
-     * @returns 如果已读取标记则返回下一个标记的开始位置，否则返回 undefined。
+     * @returns 返回标记的开始位置。
      */
     private expectToken(token: TokenType) {
         if (this.lexer.peek().type === token) {
@@ -107,23 +109,24 @@ export class Parser {
         }
 
         this.error(this.lexer.peek(), token === TokenType.identifier ? isKeyword(this.lexer.peek().type) ? "应输入标识符；“{0}”是关键字。" : "应输入标识符。" : "应输入“{0}”。", tokenToString(token));
+        return this.lexer.current.end;
     }
 
-    /**
-     * 解析一个逗号隔开的节点列表(<..., ...>。
-     * @param nodes 要解析的节点列表。
-     */
-    private parseNodeList<T extends Node>(start: TokenType, parseElement: () => T, end: TokenType) {
-        const result = new nodes.NodeList<T>();
+    ///**
+    // * 解析一个逗号隔开的节点列表(<..., ...>。
+    // * @param nodes 要解析的节点列表。
+    // */
+    //private parseNodeList<T extends Node>(start: TokenType, parseElement: () => T, end: TokenType) {
+    //    const result = new nodes.NodeList<T>();
 
-        return result;
-    }
+    //    return result;
+    //}
 
     /**
-     * 尝试在当前位置自动插入分号。
-     * @return 返回插入或补齐分号后的结束位置。
+     * 读取一个分号，如果不存在则自动插入。
+     * @return 返回分号或自动插入点的结束位置。
      */
-    private autoInsertSemicolon() {
+    private expectSemicolon() {
         switch (this.lexer.peek().type) {
             case TokenType.semicolon:
                 return this.lexer.read().end;
@@ -133,7 +136,9 @@ export class Parser {
                     this.expectToken(TokenType.semicolon) :
                     this.lexer.current.end;
             default:
-                return options.autoInsertSemicolon === false || !this.lexer.peek().onNewLine ?
+                // 根据标准：只有出现换行时才允许自动插入分号。
+                // 当启用 smartSemicolonInsertion 时，将允许在未换行时自动插入分号。
+                return options.autoInsertSemicolon === false || (options.smartSemicolonInsertion === false && !this.lexer.peek().onNewLine) ?
                     this.expectToken(TokenType.semicolon) :
                     this.lexer.current.end;
         }
@@ -146,10 +151,129 @@ export class Parser {
     /**
      * 解析一个源文件。
      */
-    private parseSourceFile() {
+    private parseSourceFile(text: string, start: number, fileName: string) {
+        const result = new nodes.SourceFile();
+        result.path = fileName;
+        result.content = text;
+        result.start = start;
+
+        this.lexer.setSource(text, start, fileName);
+
+        if (this.lexer.comments) {
+            for (const comment of this.lexer.comments) {
+                // 只处理 /// 开头的注释。
+                if (this.lexer.source.charCodeAt(comment.start) !== CharCode.slash ||
+                    this.lexer.source.charCodeAt(comment.start - 1) !== CharCode.slash) {
+                    continue;
+                }
+            }
+        }
+
+        //// 解析文件主文档注释。
+        //if (options.parseJsDoc !== false) {
+
+        //}
+
+        //// 解析 <reference /> 注释。
+        //if (options.parseReferenceComments !== false) {
+        //    this.parseReferenceComments();
+        //}
+
+        result.statements = new nodes.NodeList<nodes.Statement>();
+        while (this.lexer.peek().type !== TokenType.endOfFile) {
+            result.statements.push(this.parseStatement());
+        }
+        result.comments = this.lexer.comments;
+        result.end = this.lexer.peek().start;
+        return result;
+    }
+
+    ///**
+    // * 当解析到一个全局注释时执行。
+    // * @param multiLineComment 标记是否是多行注释。
+    // * @param start 注释的开始位置。
+    // * @param end 注释的结束位置。
+    // */
+    //private parseGlobalComment(multiLineComment: boolean, start: number, end: number) {
 
 
 
+    //}
+
+    ///**
+    // * 当解析到一个注释时执行。
+    // * @param multiLineComment 标记是否是多行注释。
+    // * @param start 注释的开始位置。
+    // * @param end 注释的结束位置。
+    // */
+    //private parseComment(multiLineComment: boolean, start: number, end: number) {
+
+    //}
+
+    /**
+     * 解析 \<reference /> 注释。
+     */
+    private parseReferenceComment() {
+
+        //const referencedFiles: FileReference[] = [];
+        //const typeReferenceDirectives: FileReference[] = [];
+        //const amdDependencies: { path: string; name: string }[] = [];
+        //let amdModuleName: string;
+
+        //// Keep scanning all the leading trivia in the file until we get to something that
+        //// isn't trivia.  Any single line comment will be analyzed to see if it is a
+        //// reference comment.
+        //while (true) {
+
+        //    const range = { pos: triviaScanner.getTokenPos(), end: triviaScanner.getTextPos(), kind: triviaScanner.getToken() };
+
+        //    const comment = sourceText.substring(range.pos, range.end);
+        //    const referencePathMatchResult = getFileReferenceFromReferencePath(comment, range);
+        //    if (referencePathMatchResult) {
+        //        const fileReference = referencePathMatchResult.fileReference;
+        //        sourceFile.hasNoDefaultLib = referencePathMatchResult.isNoDefaultLib;
+        //        const diagnosticMessage = referencePathMatchResult.diagnosticMessage;
+        //        if (fileReference) {
+        //            if (referencePathMatchResult.isTypeReferenceDirective) {
+        //                typeReferenceDirectives.push(fileReference);
+        //            }
+        //            else {
+        //                referencedFiles.push(fileReference);
+        //            }
+        //        }
+        //        if (diagnosticMessage) {
+        //            parseDiagnostics.push(createFileDiagnostic(sourceFile, range.pos, range.end - range.pos, diagnosticMessage));
+        //        }
+        //    }
+        //    else {
+        //        const amdModuleNameRegEx = /^\/\/\/\s*<amd-module\s+name\s*=\s*('|")(.+?)\1/gim;
+        //        const amdModuleNameMatchResult = amdModuleNameRegEx.exec(comment);
+        //        if (amdModuleNameMatchResult) {
+        //            if (amdModuleName) {
+        //                parseDiagnostics.push(createFileDiagnostic(sourceFile, range.pos, range.end - range.pos, Diagnostics.An_AMD_module_cannot_have_multiple_name_assignments));
+        //            }
+        //            amdModuleName = amdModuleNameMatchResult[2];
+        //        }
+
+        //        const amdDependencyRegEx = /^\/\/\/\s*<amd-dependency\s/gim;
+        //        const pathRegex = /\spath\s*=\s*('|")(.+?)\1/gim;
+        //        const nameRegex = /\sname\s*=\s*('|")(.+?)\1/gim;
+        //        const amdDependencyMatchResult = amdDependencyRegEx.exec(comment);
+        //        if (amdDependencyMatchResult) {
+        //            const pathMatchResult = pathRegex.exec(comment);
+        //            const nameMatchResult = nameRegex.exec(comment);
+        //            if (pathMatchResult) {
+        //                const amdDependency = { path: pathMatchResult[2], name: nameMatchResult ? nameMatchResult[2] : undefined };
+        //                amdDependencies.push(amdDependency);
+        //            }
+        //        }
+        //    }
+        //}
+
+        //sourceFile.referencedFiles = referencedFiles;
+        //sourceFile.typeReferenceDirectives = typeReferenceDirectives;
+        //sourceFile.amdDependencies = amdDependencies;
+        //sourceFile.moduleName = amdModuleName;
     }
 
     // #endregion
@@ -238,34 +362,24 @@ export class Parser {
     }
 
     /**
-     * 解析一个语句列表(...; ...)。
-     */
-    private parseStatementList(end?: TokenType) {
-        const result = new nodes.NodeList<nodes.Statement>();
-        while (true) {
-            switch (this.lexer.peek().type) {
-                case end:
-                    return result;
-                case TokenType.endOfFile:
-                    if (end != undefined) {
-                        this.expectToken(end);
-                    }
-                    return result;
-            }
-            result.push(this.parseStatement());
-        }
-    }
-
-    /**
      * 解析一个语句块({...})。
      */
     private parseBlockStatement() {
         console.assert(this.lexer.peek().type === TokenType.openBrace);
         const result = new nodes.BlockStatement();
         result.start = this.lexer.read().start;
-        result.statements = this.parseStatementList(TokenType.closeBrace);
-        result.end = this.lexer.read().end;
-        return result;
+        result.statements = new nodes.NodeList<nodes.Statement>();
+        while (true) {
+            switch (this.lexer.peek().type) {
+                case TokenType.closeBrace:
+                    result.end = this.lexer.read().end;
+                    return result;
+                case TokenType.endOfFile:
+                    result.end = this.expectToken(TokenType.closeBrace);
+                    return result;
+            }
+            result.statements.push(this.parseStatement());
+        }
     }
 
     /**
@@ -277,7 +391,7 @@ export class Parser {
         result.start = this.lexer.read().start; // var、let、const
         result.type = this.lexer.current.type;
         result.variables = this.parseVariableDeclarationList();
-        result.end = this.autoInsertSemicolon();
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -358,7 +472,7 @@ export class Parser {
         console.assert(isExpressionStart(this.lexer.peek().type));
         const result = new nodes.ExpressionStatement();
         result.body = this.parseExpression();
-        result.end = this.autoInsertSemicolon();
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -370,7 +484,7 @@ export class Parser {
         console.assert(isExpressionStart(this.lexer.peek().type));
         const result = new nodes.ExpressionStatement();
         result.body = this.parseRestExpression(parsed);
-        result.end = this.autoInsertSemicolon();
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -391,17 +505,18 @@ export class Parser {
 
     /**
      * 解析条件表达式。
+     * @param result 存放结果的语句。
      */
     private parseCondition(result: nodes.IfStatement | nodes.SwitchStatement | nodes.WhileStatement | nodes.DoWhileStatement) {
         if (this.lexer.peek().type === TokenType.openParen) {
             result.openParan = this.lexer.read().type;
-            result.condition = this.parseExpression();
+            result.condition = this.parseExpression(ParseFlags.allowIn);
             result.closeParan = this.expectToken(TokenType.closeParen);
         } else {
             if (options.autoInsertParenthese === false) {
-                this.error(this.lexer.peek(), "应输入“(”");
+                this.expectToken(TokenType.openParen);
             }
-            result.condition = this.parseExpression();
+            result.condition = this.parseExpression(ParseFlags.allowIn);
         }
     }
 
@@ -434,20 +549,14 @@ export class Parser {
         console.assert(this.lexer.peek().type == TokenType.switch);
         const result = new nodes.SwitchStatement();
         result.start = this.lexer.read().start;
-        if (this.lexer.peek().type !== TokenType.openBrace) {
+        if (options.autoInsertSwitchCondition === false || this.lexer.peek().type !== TokenType.openBrace) {
             this.parseCondition(result);
         }
         result.cases = new nodes.NodeList<nodes.CaseClause>();
         result.cases.start = this.expectToken(TokenType.openBrace);
         while (true) {
-            const start = this.lexer.peek().start;
-            let label: nodes.Expression;
-            switch (this.lexer.peek().start) {
+            switch (this.lexer.peek().type) {
                 case TokenType.case:
-                    if (options.allowCaseElse === false || !this.readToken(TokenType.else)) {
-                        label = this.parseExpression();
-                    }
-                    break;
                 case TokenType.default:
                     break;
                 default:
@@ -456,8 +565,14 @@ export class Parser {
             }
 
             const caseCaluse = new nodes.CaseClause();
-            caseCaluse.start = start;
-            caseCaluse.label = label;
+            caseCaluse.start = this.lexer.read().start;
+            if (this.lexer.current.type === TokenType.case) {
+                if (options.allowCaseElse !== false && this.lexer.peek().type === TokenType.else) {
+                    caseCaluse.else = this.lexer.read().start;
+                } else {
+                    caseCaluse.label = this.parseExpression(ParseFlags.allowIn);
+                }
+            }
             caseCaluse.colon = this.expectToken(TokenType.colon);
             caseCaluse.statements = new nodes.NodeList<nodes.Statement>();
             while (this.lexer.peek().type !== TokenType.closeBrace &&
@@ -475,35 +590,76 @@ export class Parser {
     private parseForStatement() {
         console.assert(this.lexer.peek().type == TokenType.for);
         const start = this.lexer.read().start;
-        const hasParan = this.readToken(TokenType.openParen);
-        if (options.autoInsertParenthese === false && !hasParan) {
-            this.error(this.lexer.peek(), "应输入“(”");
+        const openParan = this.lexer.peek().type === TokenType.openParen ?
+            this.lexer.read().start :
+            undefined;
+        if (openParan == undefined && options.autoInsertParenthese === false) {
+            this.expectToken(TokenType.openParen);
         }
+
+        const initializer = this.lexer.peek().type === TokenType.semicolon ? undefined : this.isVariableStatement() ? this.parseVariableStatement() : this.parseExpression(ParseFlags.disallowIn);
+
         let result: nodes.ForStatement | nodes.ForInStatement | nodes.ForOfStatement | nodes.ForToStatement;
-        if (this.isVariableStatement()) {
-            const variableStatement = this.parseVariableStatement();
-            switch (this.lexer.peek().type) {
-                case TokenType.semicolon:
-                    result = this.parseForStatementHeader(variableStatement);
-                    break;
-                case TokenType.in:
-                    result = this.parseForInStatementHeader(variableStatement);
-                    break;
-                case TokenType.of:
-                    result = options.allowForOf !== false ? this.parseForOfStatementHeader(variableStatement) : this.parseForStatementHeader(variableStatement);
-                    break;
-                case TokenType.to:
-                    result = options.allowForTo !== false ? this.parseForToStatementHeader(variableStatement) : this.parseForStatementHeader(variableStatement);
-                    break;
-                default:
-                    result = this.parseForStatementHeader(variableStatement);
-                    break;
-            }
-        } else {
-            result = this.parseForStatementHeader();
+
+        let type = this.lexer.peek().type;
+        switch (type) {
+            case TokenType.semicolon:
+            case TokenType.in:
+                break;
+            case TokenType.of:
+                if (options.allowForOf === false) {
+                    type = TokenType.semicolon;
+                }
+                break;
+            case TokenType.to:
+                if (options.allowForTo === false) {
+                    type = TokenType.semicolon;
+                }
+                break;
+            default:
+                type = TokenType.semicolon;
+                break;
         }
-        if (hasParan) this.expectToken(TokenType.closeParen);
+
+        switch (type) {
+            case TokenType.semicolon:
+                result = new nodes.ForStatement();
+                (<nodes.ForStatement>result).firstSemicolon = this.expectToken(TokenType.semicolon);
+                if (this.lexer.peek().type !== TokenType.semicolon) {
+                    result.condition = this.parseExpression(ParseFlags.allowIn);
+                }
+                (<nodes.ForStatement>result).secondSemicolon = this.expectToken(TokenType.semicolon);
+                if (openParan != undefined ? this.lexer.peek().type !== TokenType.closeParen : isExpressionStart(this.lexer.peek().type)) {
+                    (<nodes.ForStatement>result).iterator = this.parseExpression(ParseFlags.allowIn);
+                }
+                break;
+            case TokenType.in:
+                result = new nodes.ForInStatement();
+                (<nodes.ForInStatement>result).in = this.lexer.read().start;
+                result.condition = this.parseExpression(ParseFlags.allowIn);
+                break;
+            case TokenType.of:
+                result = new nodes.ForOfStatement();
+                (<nodes.ForOfStatement>result).of = this.lexer.read().start;
+                result.condition = this.parseExpression(ParseFlags.allowIn | ParseFlags.disallowComma);
+                break;
+            case TokenType.to:
+                result = new nodes.ForToStatement();
+                (<nodes.ForToStatement>result).to = this.lexer.read().start;
+                result.condition = this.parseExpression(ParseFlags.allowIn);
+                break;
+        }
+
         result.start = start;
+        if (initializer) {
+            result.initializer = initializer;
+            // "“for in/of/to”语句中最多只能有一个变量"
+            // todo
+        }
+        if (openParan != undefined) {
+            result.openParan = openParan;
+            result.closeParan = this.expectToken(TokenType.closeParen);
+        }
         result.body = this.parseEmbeddedStatement();
         return result;
     }
@@ -542,73 +698,6 @@ export class Parser {
     }
 
     /**
-     * 解析一个 for 语句(for(var i = 0; i < 9; i++) ...)的语句头。
-     * @param initializer 已解析的变量定义部分。
-     */
-    private parseForStatementHeader(initializer?: nodes.VariableStatement) {
-        const result = new nodes.ForStatement();
-        if (initializer) {
-            result.initializer = initializer;
-        } else if (isExpressionStart(this.lexer.peek().type)) {
-            result.initializer = this.parseExpression();
-        }
-        result.firstSemicolon = this.expectToken(TokenType.semicolon);
-        if (isExpressionStart(this.lexer.peek().type)) {
-            result.condition = this.parseExpression();
-        }
-        result.secondSemicolon = this.expectToken(TokenType.semicolon);
-        if (isExpressionStart(this.lexer.peek().type)) {
-            result.iterator = this.parseExpression();
-        }
-        return result;
-    }
-
-    /**
-     * 解析一个 for..in 语句(for(var x in y) ...)的语句头。
-     * @param initializer 已解析的变量定义部分。
-     */
-    private parseForInStatementHeader(initializer: nodes.VariableStatement) {
-        console.assert(this.lexer.peek().type === TokenType.in);
-        const result = new nodes.ForInStatement();
-        result.initializer = initializer;
-        result.in = this.lexer.read().start;
-        // "“for in”语句中最多只能有一个变量"
-        // todo
-        result.condition = this.parseExpression();
-        return result;
-    }
-
-    /**
-     * 解析一个 for..of 语句(for(var x of y) ...)的语句头。
-     * @param initializer 已解析的变量定义部分。
-     */
-    private parseForOfStatementHeader(initializer: nodes.VariableStatement) {
-        console.assert(this.lexer.peek().type === TokenType.of);
-        const result = new nodes.ForOfStatement();
-        result.initializer = initializer;
-        // "“for of”语句中变量不允许有初始值"
-        // todo
-        result.of = this.lexer.read().start;
-        result.condition = this.parseExpression();
-        return result;
-    }
-
-    /**
-     * 解析一个 for..to 语句(for(var x = 0 to 10) ...)的语句头。
-     * @param initializer 已解析的变量定义部分。
-     */
-    private parseForToStatementHeader(initializer: nodes.VariableStatement) {
-        console.assert(this.lexer.peek().type === TokenType.to);
-        const result = new nodes.ForToStatement();
-        result.initializer = initializer;
-        result.to = this.lexer.read().start;
-        // "“for to”语句中变量不允许有初始值"
-        // todo
-        result.condition = this.parseExpression();
-        return result;
-    }
-
-    /**
      * 解析一个 while 语句(while(...) ...)。
      */
     private parseWhileStatement() {
@@ -630,7 +719,7 @@ export class Parser {
         result.body = this.parseEmbeddedStatement();
         result.while = this.expectToken(TokenType.while);
         this.parseCondition(result);
-        result.end = this.autoInsertSemicolon();
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -638,10 +727,13 @@ export class Parser {
      * 解析一个 continue 语句(continue xx;)。
      */
     private parseContinueStatement() {
-        console.assert(this.lexer.peek().type == TokenType.continue);
+        console.assert(this.lexer.peek().type === TokenType.continue);
         const result = new nodes.ContinueStatement();
         result.start = this.lexer.read().start;
-        result.end = this.autoInsertSemicolon();
+        if (this.lexer.peek().type === TokenType.identifier) {
+            result.label = this.parseIdentifier();
+        }
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -649,10 +741,13 @@ export class Parser {
      * 解析一个 break 语句(break xx;)。
      */
     private parseBreakStatement() {
-        console.assert(this.lexer.peek().type == TokenType.break);
+        console.assert(this.lexer.peek().type === TokenType.break);
         const result = new nodes.BreakStatement();
         result.start = this.lexer.read().start;
-        result.end = this.autoInsertSemicolon();
+        if (this.lexer.peek().type === TokenType.identifier) {
+            result.label = this.parseIdentifier();
+        }
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -663,11 +758,12 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.return);
         const result = new nodes.ReturnStatement();
         result.start = this.lexer.read().start;
-        if ((options.smartSemicolonInsertion !== false || !this.lexer.peek().onNewLine) &&
+        if (options.smartSemicolonInsertion === false ?
+            !this.lexer.peek().onNewLine :
             isExpressionStart(this.lexer.peek().type)) {
-            result.value = this.parseExpression();
+            result.value = this.parseExpression(ParseFlags.allowIn);
         }
-        result.end = this.autoInsertSemicolon();
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -678,14 +774,14 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.throw);
         const result = new nodes.ThrowStatement();
         result.start = this.lexer.read().start;
-        if (isExpressionStart(this.lexer.peek().type)) {
-            if ((options.smartSemicolonInsertion !== false || !this.lexer.peek().onNewLine)) {
-                result.value = this.parseExpression();
-            }
+        if (options.smartSemicolonInsertion === false ?
+            !this.lexer.peek().onNewLine :
+            isExpressionStart(this.lexer.peek().type)) {
+            result.value = this.parseExpression(ParseFlags.allowIn);
         } else if (options.allowRethrow === false) {
-            this.error(this.lexer.peek(), "应输入表达式。");
+            this.error(this.lexer.current, "应输入表达式。");
         }
-        result.end = this.autoInsertSemicolon();
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -701,7 +797,6 @@ export class Parser {
         if (this.lexer.peek().type === TokenType.catch) {
             result.catch = new nodes.CatchClause();
             result.catch.start = this.lexer.read().start;
-
             if (this.lexer.peek().type === TokenType.openParen) {
                 result.catch.openParan = this.lexer.read().start;
                 result.catch.variable = this.parseBindingName();
@@ -720,9 +815,7 @@ export class Parser {
             result.finally.body = this.parseTryClauseBody();
         }
 
-        result.end = this.autoInsertSemicolon();
         return result;
-
     }
 
     /**
@@ -750,7 +843,7 @@ export class Parser {
         console.assert(this.lexer.peek().type == TokenType.debugger);
         const result = new nodes.DebuggerStatement();
         result.start = this.lexer.read().start;
-        result.end = this.autoInsertSemicolon();
+        result.end = this.expectSemicolon();
         return result;
     }
 
@@ -758,18 +851,24 @@ export class Parser {
      * 解析一个 with 语句(with(...) ...)。
      */
     private parseWithStatement() {
-        console.assert(this.lexer.peek().type == TokenType.debugger);
+        console.assert(this.lexer.peek().type == TokenType.with);
         const result = new nodes.WithStatement();
         result.start = this.lexer.read().start;
-        const hasParan = this.readToken(TokenType.openParen);
-        if (options.autoInsertParenthese === false && !hasParan) {
-            this.error(this.lexer.peek(), "应输入“(”");
+        if (this.lexer.peek().type === TokenType.openParen) {
+            result.openParan = this.lexer.read().start;
+            result.value = options.allowWithVaribale !== false && this.isVariableStatement() ?
+                this.parseVariableStatement() :
+                this.parseExpression(ParseFlags.allowIn);
+            result.closeParan = this.expectToken(TokenType.closeParen);
+        } else {
+            if (options.autoInsertParenthese === false) {
+                this.expectToken(TokenType.openParen);
+            }
+            result.value = options.allowWithVaribale !== false && this.isVariableStatement() ?
+                this.parseVariableStatement() :
+                this.parseExpression(ParseFlags.allowIn);
         }
-        result.value = options.allowWithVaribale !== false && this.isVariableStatement() ?
-            this.parseVariableStatement() :
-            this.parseExpression();
-        if (hasParan) this.expectToken(TokenType.closeParen);
-        result.end = this.autoInsertSemicolon();
+        result.body = this.parseEmbeddedStatement();
         return result;
     }
 
@@ -777,7 +876,7 @@ export class Parser {
 
     // #region 表达式
 
-    private parseExpression(): nodes.Expression {
+    private parseExpression(a): nodes.Expression {
 
         //    case TokenType.endOfFile:
         //this.error(this.lexer.peek(), "应输入语句。");
@@ -932,10 +1031,10 @@ export class Parser {
                     result.elements.seperators.push(this.lexer.read().start);
                     continue;
                 case TokenType.closeBrace:
-                   // return result;
+                // return result;
                 default:
 
-                    // result.elements.push(this.parseExpressionWith(ParseFlags.disallowComma));
+                // result.elements.push(this.parseExpressionWith(ParseFlags.disallowComma));
             }
         }
     }
@@ -1453,6 +1552,8 @@ export class Parser {
 }
 
 enum ParseFlags {
+
+    allowIn,
 
     disallowComma,
 

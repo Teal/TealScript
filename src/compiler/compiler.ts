@@ -17,7 +17,7 @@ export interface CompileOptions {
     /**
      * 设置是否解析注释。
      */
-    parseComments?: ParseCommentsOption;
+    parseComments?: boolean;
 
     /**
      * 跳过 Unix #! 标记。
@@ -55,6 +55,11 @@ export interface CompileOptions {
     autoInsertParenthese?: boolean;
 
     /**
+     * 自动插入 switch 语句的条件。
+     */
+    autoInsertSwitchCondition?: boolean;
+
+    /**
      * 允许使用 case else 语法代替 default。
      */
     allowCaseElse?: boolean;
@@ -89,6 +94,16 @@ export interface CompileOptions {
      */
     allowTryStatementCatchMissingVaribale?: boolean;
 
+    /**
+     * 解析 <reference /> 注释。
+     */
+    parseReferenceComments: boolean;
+
+    /**
+     * 解析 Js 文档注释。
+     */
+    parseJsDoc: boolean;
+
 }
 
 /**
@@ -115,38 +130,6 @@ export enum LanguageVersion {
      * JavaScript 3(ECMAScript-262, the 3rd verison)。
      */
     javaScript3,
-
-}
-
-/**
- * 指示如何解析注释。
- */
-export enum ParseCommentsOption {
-
-    /**
-     * 不解析注释。
-     */
-    none,
-
-    /**
-     * 仅解析单行注释。
-     */
-    singleLine = 1 << 0,
-
-    /**
-     * 仅解析多行注释。
-     */
-    multiLine = 1 << 1,
-
-    /**
-     * 仅解析文档注释。
-     */
-    jsDoc = ParseCommentsOption.multiLine | 1 << 2,
-
-    /**
-     * 解析全部注释。
-     */
-    all = ParseCommentsOption.singleLine | ParseCommentsOption.multiLine,
 
 }
 

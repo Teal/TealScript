@@ -137,6 +137,19 @@ export class Lexer {
     }
 
     /**
+     * 当解析到一个注释时执行。
+     * @param multiLineComment 标记是否是多行注释。
+     * @param start 注释的开始位置。
+     * @param end 注释的结束位置。
+     */
+    comment(multiLineComment: boolean, start: number, end: number) {
+        if (options.parseComments) {
+            this.comments = this.comments || [];
+            this.comments.push({ start, end });
+        }
+    }
+
+    /**
      * 跳过开头的 #! 标记。
      */
     private skipShebang() {
@@ -198,10 +211,7 @@ export class Lexer {
                         case CharCode.slash:
                             const singleCommentStart = this.pos;
                             this.skipLine();
-                            if (options.parseComments & ParseCommentsOption.singleLine) {
-                                this.comments = this.comments || [];
-                                this.comments.push({ start: singleCommentStart, end: this.pos });
-                            }
+                            this.comment(false, singleCommentStart, this.pos);
                             continue;
                         case CharCode.asterisk:
                             const multiCommentStart = this.pos;
@@ -219,10 +229,7 @@ export class Lexer {
                             if (multiCommentEnd == null && options.languageVersion !== LanguageVersion.tealScript) {
                                 this.error("多行注释未关闭；应输入“*/”。");
                             }
-                            if ((options.parseComments & ParseCommentsOption.jsDoc) ? this.source.charCodeAt(multiCommentStart) === CharCode.asterisk : (options.parseComments & ParseCommentsOption.multiLine)) {
-                                this.comments = this.comments || [];
-                                this.comments.push({ start: multiCommentStart, end: multiCommentEnd });
-                            }
+                            this.comment(true, multiCommentStart, multiCommentEnd);
                             continue;
                         case CharCode.equals:
                             result.type = TokenType.slashEquals;

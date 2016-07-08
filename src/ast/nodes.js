@@ -866,6 +866,14 @@ var TryStatement = (function (_super) {
     function TryStatement() {
         _super.apply(this, arguments);
     }
+    Object.defineProperty(TryStatement.prototype, "end", {
+        /**
+         * 获取当前节点的结束位置。
+         */
+        get: function () { return (this.finally || this.catch).end; },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -896,6 +904,14 @@ var CatchClause = (function (_super) {
     function CatchClause() {
         _super.apply(this, arguments);
     }
+    Object.defineProperty(CatchClause.prototype, "end", {
+        /**
+         * 获取当前节点的结束位置。
+         */
+        get: function () { return this.body.end; },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -924,6 +940,14 @@ var FinallyClause = (function (_super) {
     function FinallyClause() {
         _super.apply(this, arguments);
     }
+    Object.defineProperty(FinallyClause.prototype, "end", {
+        /**
+         * 获取当前节点的结束位置。
+         */
+        get: function () { return this.body.end; },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -979,6 +1003,14 @@ var WithStatement = (function (_super) {
     function WithStatement() {
         _super.apply(this, arguments);
     }
+    Object.defineProperty(WithStatement.prototype, "end", {
+        /**
+         * 获取当前节点的结束位置。
+         */
+        get: function () { return this.body.end; },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -1839,6 +1871,22 @@ var TemplateLiteral = (function (_super) {
     function TemplateLiteral() {
         _super.apply(this, arguments);
     }
+    Object.defineProperty(TemplateLiteral.prototype, "start", {
+        /**
+         * 获取当前节点的开始位置。
+         */
+        get: function () { return this.spans[0].start; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(TemplateLiteral.prototype, "end", {
+        /**
+         * 获取当前节点的结束位置。
+         */
+        get: function () { return this.spans[this.spans.length - 1].end; },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -1859,6 +1907,25 @@ var TemplateLiteral = (function (_super) {
     return TemplateLiteral;
 }(Expression));
 exports.TemplateLiteral = TemplateLiteral;
+/**
+ * 表示一个模板字面量的一个文本区域(\`abc${、}abc${、}abc\`)。
+ */
+var TemplateSpan = (function (_super) {
+    __extends(TemplateSpan, _super);
+    function TemplateSpan() {
+        _super.apply(this, arguments);
+    }
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    TemplateSpan.prototype.accept = function (vistior) {
+        return vistior.visitTemplateSpan(this);
+    };
+    return TemplateSpan;
+}(Node));
+exports.TemplateSpan = TemplateSpan;
 /**
  * 表示一个正则表达式字面量(/abc/)。
  */
@@ -1886,22 +1953,6 @@ var ArrayLiteral = (function (_super) {
     function ArrayLiteral() {
         _super.apply(this, arguments);
     }
-    Object.defineProperty(ArrayLiteral.prototype, "start", {
-        /**
-         * 获取当前节点的开始位置。
-         */
-        get: function () { return this.elements.start; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ArrayLiteral.prototype, "end", {
-        /**
-         * 获取当前节点的结束位置。
-         */
-        get: function () { return this.elements.end; },
-        enumerable: true,
-        configurable: true
-    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -1930,22 +1981,6 @@ var ObjectLiteral = (function (_super) {
     function ObjectLiteral() {
         _super.apply(this, arguments);
     }
-    Object.defineProperty(ObjectLiteral.prototype, "start", {
-        /**
-         * 获取当前节点的开始位置。
-         */
-        get: function () { return this.elements.start; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ObjectLiteral.prototype, "end", {
-        /**
-         * 获取当前节点的结束位置。
-         */
-        get: function () { return this.elements.end; },
-        enumerable: true,
-        configurable: true
-    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -2875,45 +2910,5 @@ var ComputedPropertyName = (function (_super) {
     return ComputedPropertyName;
 }(Node));
 exports.ComputedPropertyName = ComputedPropertyName;
-// #endregion
-// #region 注释
-/**
- * 表示一个 JS 注释。
- */
-var Comment = (function (_super) {
-    __extends(Comment, _super);
-    function Comment() {
-        _super.apply(this, arguments);
-    }
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    Comment.prototype.accept = function (vistior) {
-        return vistior.visitComment(this);
-    };
-    return Comment;
-}(Node));
-exports.Comment = Comment;
-/**
- * 表示一个 JS 文档注释。
- */
-var JsDocComment = (function (_super) {
-    __extends(JsDocComment, _super);
-    function JsDocComment() {
-        _super.apply(this, arguments);
-    }
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    JsDocComment.prototype.accept = function (vistior) {
-        return vistior.visitJsDocComment(this);
-    };
-    return JsDocComment;
-}(Comment));
-exports.JsDocComment = JsDocComment;
 // #endregion
 //# sourceMappingURL=nodes.js.map

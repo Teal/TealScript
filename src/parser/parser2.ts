@@ -2284,13 +2284,6 @@ parseSuperLiteral(node: nodes.SuperLiteral) {
 }
 
 /**
- * 解析一个括号表达式((...))。
- */
-parseParenthesizedExpression(node: nodes.ParenthesizedExpression) {
-    node.body.accept(this);
-}
-
-/**
  * 解析一个条件表达式(... ? ... : ...)。
  */
 parseConditionalExpression(node: nodes.ConditionalExpression) {
