@@ -62,9 +62,7 @@ var SourceFile = (function (_super) {
      * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     SourceFile.prototype.each = function (callback, scope) {
-        return (!this.comments || this.comments.each(callback, scope)) &&
-            (!this.jsDoc || callback.call(scope, this.jsDoc, "jsDoc", this) !== false) &&
-            this.statements.each(callback, scope);
+        return this.statements.each(callback, scope);
     };
     return SourceFile;
 }(Node));
@@ -2836,13 +2834,49 @@ var JsxClosingElement = (function (_super) {
 }(JsxNode));
 exports.JsxClosingElement = JsxClosingElement;
 /**
- * 表示一个数组绑定模式项(xx, ..)
+ * 表示一个数组绑定模式项([xx])。
+ */
+var ArrayBindingPattern = (function (_super) {
+    __extends(ArrayBindingPattern, _super);
+    function ArrayBindingPattern() {
+        _super.apply(this, arguments);
+    }
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    ArrayBindingPattern.prototype.accept = function (vistior) {
+        return vistior.visitArrayBindingPattern(this);
+    };
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    ArrayBindingPattern.prototype.each = function (callback, scope) {
+        return this.elements.each(callback, scope);
+    };
+    return ArrayBindingPattern;
+}(Node));
+exports.ArrayBindingPattern = ArrayBindingPattern;
+/**
+ * 表示一个数组绑定模式项(xx、..)
  */
 var ArrayBindingElement = (function (_super) {
     __extends(ArrayBindingElement, _super);
     function ArrayBindingElement() {
         _super.apply(this, arguments);
     }
+    Object.defineProperty(ArrayBindingElement.prototype, "dotDotDot", {
+        /**
+         * 获取当前绑定模式项的点点点位置(可能不存在)。
+         */
+        get: function () { return this.name.start > this.start; },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -2863,6 +2897,34 @@ var ArrayBindingElement = (function (_super) {
     return ArrayBindingElement;
 }(Node));
 exports.ArrayBindingElement = ArrayBindingElement;
+/**
+ * 表示一个对象绑定模式项({xx: xx})。
+ */
+var ObjectBindingPattern = (function (_super) {
+    __extends(ObjectBindingPattern, _super);
+    function ObjectBindingPattern() {
+        _super.apply(this, arguments);
+    }
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    ObjectBindingPattern.prototype.each = function (callback, scope) {
+        return this.elements.each(callback, scope);
+    };
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    ObjectBindingPattern.prototype.accept = function (vistior) {
+        return vistior.visitObjectBindingPattern(this);
+    };
+    return ObjectBindingPattern;
+}(Node));
+exports.ObjectBindingPattern = ObjectBindingPattern;
 /**
  * 表示一个对象绑定模式项(xx: y)
  */

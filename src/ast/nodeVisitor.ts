@@ -25,8 +25,6 @@ export abstract class NodeVisitor {
      * @param node 要访问的节点。
      */
     visitSourceFile(node: nodes.SourceFile) {
-        node.comments && node.comments.accept(this);
-        node.jsDoc && node.jsDoc.accept(this);
         node.statements.accept(this);
     }
 
@@ -86,8 +84,8 @@ export abstract class NodeVisitor {
      */
     visitIfStatement(node: nodes.IfStatement) {
         node.condition.accept(this);
-        node.then.accept(this);
-        node.else && node.else.accept(this);
+        node.thenStatement.accept(this);
+        node.elseStatement && node.elseStatement.accept(this);
     }
 
     /**
@@ -480,7 +478,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个模板字面量的一个文本区域(`abc`)。
+     * 访问一个模板字面量的一个文本区域(\`abc${、}abc${、}abc\`)。
      * @param node 要访问的节点。
      */
     visitTemplateSpan(node: nodes.TemplateSpan) {
@@ -665,8 +663,8 @@ export abstract class NodeVisitor {
      */
     visitConditionalExpression(node: nodes.ConditionalExpression) {
         node.condition.accept(this);
-        node.then.accept(this);
-        node.else.accept(this);
+        node.thenExpression.accept(this);
+        node.elseExpression.accept(this);
     }
 
     /**
@@ -739,7 +737,15 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个数组绑定模式项(xx, ..)
+     * 访问一个数组绑定模式项([xx])。
+     * @param node 要访问的节点。
+     */
+    visitArrayBindingPattern(node: nodes.ArrayBindingPattern) {
+        node.elements.accept(this);
+    }
+
+    /**
+     * 访问一个数组绑定模式项(xx、..)
      * @param node 要访问的节点。
      */
     visitArrayBindingElement(node: nodes.ArrayBindingElement) {
@@ -747,11 +753,19 @@ export abstract class NodeVisitor {
     }
 
     /**
+     * 访问一个对象绑定模式项({xx: xx})。
+     * @param node 要访问的节点。
+     */
+    visitObjectBindingPattern(node: nodes.ObjectBindingPattern) {
+        node.elements.accept(this);
+    }
+
+    /**
      * 访问一个对象绑定模式项(xx: y)
      * @param node 要访问的节点。
      */
     visitObjectBindingElement(node: nodes.ObjectBindingElement) {
-
+        node.initializer.accept(this);
     }
 
     /**
@@ -760,22 +774,6 @@ export abstract class NodeVisitor {
      */
     visitComputedPropertyName(node: nodes.ComputedPropertyName) {
         node.body.accept(this);
-    }
-
-    /**
-     * 访问一个 JS 注释。
-     * @param node 要访问的节点。
-     */
-    visitComment(node: nodes.Comment) {
-
-    }
-
-    /**
-     * 访问一个 JS 文档注释。
-     * @param node 要访问的节点。
-     */
-    visitJsDocComment(node: nodes.JsDocComment) {
-
     }
 
 }

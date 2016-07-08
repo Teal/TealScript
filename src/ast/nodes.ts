@@ -110,9 +110,7 @@ export class SourceFile extends Node {
      * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: EachCallback, scope?: any) {
-        return (!this.comments || this.comments.each(callback, scope)) &&
-            (!this.jsDoc || callback.call(scope, this.jsDoc, "jsDoc", this) !== false) &&
-            this.statements.each(callback, scope);
+        return this.statements.each(callback, scope);
     }
 
 }
@@ -472,17 +470,22 @@ export class IfStatement extends Statement {
     /**
      * 获取当前 if 语句的则部分。
      */
-    then: Statement;
+    thenStatement: Statement;
+
+    /**
+     * 获取关键字 else 语句的位置(可能不存在)。
+     */
+    else: number;
 
     /**
      * 获取当前 if 语句的否则部分(可能不存在)。
      */
-    else: Statement;
+    elseStatement: Statement;
 
     /**
      * 获取当前节点的结束位置。
      */
-    get end() { return (this.else || this.then).end; }
+    get end() { return (this.elseStatement || this.thenStatement).end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -501,8 +504,8 @@ export class IfStatement extends Statement {
      */
     each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
-            callback.call(scope, this.then, "then", this) !== false &&
-            (!this.else || callback.call(scope, this.else, "else", this) !== false);
+            callback.call(scope, this.thenStatement, "thenStatement", this) !== false &&
+            (!this.elseStatement || callback.call(scope, this.elseStatement, "elseStatement", this) !== false);
     }
 
 }
@@ -3283,7 +3286,7 @@ export class ConditionalExpression extends Expression {
     /**
      * 获取当前条件表达式的则部分。
      */
-    then: Expression;
+    thenExpression: Expression;
 
     /**
      * 获取当前条件表达式冒号的位置。
@@ -3293,7 +3296,7 @@ export class ConditionalExpression extends Expression {
     /**
      * 获取当前条件表达式的否则部分。
      */
-    else: Expression;
+    elseExpression: Expression;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3312,8 +3315,8 @@ export class ConditionalExpression extends Expression {
      */
     each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
-            callback.call(scope, this.then, "then", this) !== false &&
-            callback.call(scope, this.else, "else", this) !== false;
+            callback.call(scope, this.thenExpression, "thenExpression", this) !== false &&
+            callback.call(scope, this.elseExpression, "elseExpression", this) !== false;
     }
 
 }
@@ -3630,17 +3633,48 @@ export class JsxClosingElement extends JsxNode {
 // #region 绑定名称
 
 /**
- * 表示一个绑定名称(xx, [xx], {x:x})。
+ * 表示一个绑定名称(xx、[xx]、{x:x})。
  */
-type BindingName = Identifier | NodeList<ArrayBindingElement | ObjectBindingElement>;
+export type BindingName = Identifier | ArrayBindingPattern | ObjectBindingPattern;
 
 /**
- * 表示一个属性名称(xx, "xx",  [xx])。
+ * 表示一个属性名称(xx、"xx"、[xx])。
  */
-type PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName;
+export type PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName;
 
 /**
- * 表示一个数组绑定模式项(xx, ..)
+ * 表示一个数组绑定模式项([xx])。
+ */
+export class ArrayBindingPattern extends Node {
+
+    /**
+     * 获取当前数组绑定模式项的所有元素。
+     */
+    elements: NodeList<ArrayBindingElement>;
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrayBindingPattern(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return this.elements.each(callback, scope);
+    }
+
+}
+
+/**
+ * 表示一个数组绑定模式项(xx、..)
  */
 export class ArrayBindingElement extends Node {
 
@@ -3652,7 +3686,7 @@ export class ArrayBindingElement extends Node {
     /**
      * 获取当前绑定模式项的点点点位置(可能不存在)。
      */
-    dotDotDot: number;
+    get dotDotDot() { return this.name.start > this.start; }
 
     /**
      * 获取当前绑定模式项的等号位置(可能不存在)。
@@ -3663,6 +3697,11 @@ export class ArrayBindingElement extends Node {
      * 获取当前绑定模式项的初始值。
      */
     initializer: Expression;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return (this.initializer || this.name).end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3686,6 +3725,37 @@ export class ArrayBindingElement extends Node {
 }
 
 /**
+ * 表示一个对象绑定模式项({xx: xx})。
+ */
+export class ObjectBindingPattern extends Node {
+
+    /**
+     * 获取当前对象绑定模式项的所有元素。
+     */
+    elements: NodeList<ObjectBindingElement>;
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return this.elements.each(callback, scope);
+    }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitObjectBindingPattern(this);
+    }
+
+}
+
+/**
  * 表示一个对象绑定模式项(xx: y)
  */
 export class ObjectBindingElement extends Node {
@@ -3693,7 +3763,7 @@ export class ObjectBindingElement extends Node {
     /**
      * 获取对象绑定模式项的属性名。
      */
-    propertyName: PropertyName;
+    property: PropertyName;
 
     /**
      * 获取当前属性名后冒号的位置(可能不存在)。
@@ -3701,9 +3771,29 @@ export class ObjectBindingElement extends Node {
     colon: number;
 
     /**
-     * 获取当前声明的名字部分。
+     * 获取当前声明的名字部分(可能不存在)。
      */
     name: BindingName;
+
+    /**
+     * 获取当前绑定模式项的等号位置(可能不存在)。
+     */
+    equal: number;
+
+    /**
+     * 获取当前绑定模式项的初始值。
+     */
+    initializer: Expression;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.propertyName.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return (this.initializer || this.name || this.propertyName).end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3712,6 +3802,16 @@ export class ObjectBindingElement extends Node {
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitObjectBindingElement(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.initializer, "initializer", this) !== false;
     }
 
 }

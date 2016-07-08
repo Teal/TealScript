@@ -85,31 +85,17 @@ export class Parser {
     //private flags: ParseFlags = 0;
 
     /**
-     * 如果下一个标记是指定的类型，则读取下一个标记。
-     * @param token 期待的标记类型。
-     * @returns 如果已读取标记则返回 true，否则返回 false。
-     */
-    private readToken(token: TokenType) {
-        if (this.lexer.peek().type === token) {
-            this.lexer.read();
-            return true;
-        }
-        return false;
-
-    }
-
-    /**
      * 读取下一个标记。如果下一个标记不是指定的类型则输出一条错误。
      * @param token 期待的标记。
-     * @returns 返回标记的开始位置。
+     * @returns 返回读取的标记。
      */
     private expectToken(token: TokenType) {
         if (this.lexer.peek().type === token) {
-            return this.lexer.read().start;
+            return this.lexer.read();
         }
 
         this.error(this.lexer.peek(), token === TokenType.identifier ? isKeyword(this.lexer.peek().type) ? "应输入标识符；“{0}”是关键字。" : "应输入标识符。" : "应输入“{0}”。", tokenToString(token));
-        return this.lexer.current.end;
+        return this.lexer.current;
     }
 
     ///**
@@ -133,15 +119,23 @@ export class Parser {
             case TokenType.closeBrace:
             case TokenType.endOfFile:
                 return options.autoInsertSemicolon === false ?
-                    this.expectToken(TokenType.semicolon) :
+                    this.expectToken(TokenType.semicolon).end :
                     this.lexer.current.end;
             default:
                 // 根据标准：只有出现换行时才允许自动插入分号。
                 // 当启用 smartSemicolonInsertion 时，将允许在未换行时自动插入分号。
                 return options.autoInsertSemicolon === false || (options.smartSemicolonInsertion === false && !this.lexer.peek().onNewLine) ?
-                    this.expectToken(TokenType.semicolon) :
+                    this.expectToken(TokenType.semicolon).end :
                     this.lexer.current.end;
         }
+    }
+
+    /**
+     * 读取一个标识符，如果是关键字则自动转换。
+     * @return 返回标识符节点。
+     */
+    private expectIdentifier(): nodes.Identifier {
+
     }
 
     // #endregion
@@ -287,16 +281,20 @@ export class Parser {
         switch (this.lexer.peek().type) {
             case TokenType.identifier:
                 const identifier = this.parseIdentifier();
-                return this.readToken(TokenType.colon) ?
+                return this.lexer.peek().type === TokenType.colon ?
                     this.parseLabeledStatement(identifier) :
                     this.parseRestExpressionStatement(identifier);
 
             case TokenType.openBrace:
                 return this.parseBlockStatement();
             case TokenType.var:
+                return this.parseVariableStatement();
             case TokenType.let:
             case TokenType.const:
-                return this.parseVariableStatement();
+                if (this.isVariableStatement()) {
+                    return this.parseVariableStatement();
+                }
+                break;
             case TokenType.function:
                 return this.parseFunctionDeclaration();
             case TokenType.class:
@@ -375,7 +373,7 @@ export class Parser {
                     result.end = this.lexer.read().end;
                     return result;
                 case TokenType.endOfFile:
-                    result.end = this.expectToken(TokenType.closeBrace);
+                    result.end = this.expectToken(TokenType.closeBrace).end;
                     return result;
             }
             result.statements.push(this.parseStatement());
@@ -392,6 +390,8 @@ export class Parser {
         result.type = this.lexer.current.type;
         result.variables = this.parseVariableDeclarationList();
         result.end = this.expectSemicolon();
+
+        // todo: JsDoc
         return result;
     }
 
@@ -400,9 +400,15 @@ export class Parser {
      */
     private parseVariableDeclarationList() {
         const result = new nodes.NodeList<nodes.VariableDeclaration>();
-        do {
+        result.seperators = [];
+        while (true) {
             result.push(this.parseVariableDeclaration());
-        } while (this.readToken(TokenType.comma));
+            if (this.lexer.peek().type === TokenType.comma) {
+                result.seperators.push(this.lexer.read().start);
+                continue;
+            }
+            break;
+        };
         return result;
     }
 
@@ -418,7 +424,7 @@ export class Parser {
         }
         if (this.lexer.peek().type === TokenType.equals) {
             result.equal = this.lexer.read().start;
-            result.initialiser = this.parseExpressionWith(ParseFlags.disallowComma);
+            result.initializer = this.parseExpression(ParseFlags.disallowComma);
         }
         return result;
     }
@@ -426,20 +432,119 @@ export class Parser {
     /**
      * 解析一个绑定名称(xx, [xx], {x:x})。
      */
-    private parseBindingName(): any {
+    private parseBindingName() {
         switch (this.lexer.peek().type) {
             case TokenType.identifier:
                 return this.parseIdentifier();
             case TokenType.openBracket:
-            //    return this.parseArrayBindingPattern();
-            // todo
+                return this.parseArrayBindingPattern();
             case TokenType.openBrace:
-            //  return this.parseObjectBindingPattern();
-            // todo
+                return this.parseObjectBindingPattern();
             default:
-                this.expectToken(TokenType.identifier);
-                return nodes.Expression.error;
+                return this.expectIdentifier();
         }
+    }
+
+    /**
+     * 解析一个数组绑定模式项([xx])。
+     */
+    private parseArrayBindingPattern() {
+        console.assert(this.lexer.peek().type === TokenType.openBracket);
+        const result = new nodes.ArrayBindingPattern();
+        result.start = this.lexer.read().start;
+        result.elements = new nodes.NodeList<nodes.ArrayBindingElement>();
+        result.elements.seperators = [];
+        while (true) {
+            switch (this.lexer.peek().type) {
+                case TokenType.comma:
+                    result.elements.seperators.push(this.lexer.read().start);
+                    continue;
+                case TokenType.closeBracket:
+                    result.end = this.lexer.read().end;
+                    return result;
+                case TokenType.endOfFile:
+                    result.end = this.expectToken(TokenType.closeBracket);
+                    return result;
+            }
+
+            const element = new nodes.ArrayBindingElement();
+            element.start = this.lexer.current.start;
+            if (this.lexer.peek().type === TokenType.dotDotDot) {
+                this.lexer.read();
+            }
+            element.name = this.parseBindingName();
+            if (this.lexer.peek().type === TokenType.equals) {
+                element.equal = this.lexer.read().start;
+                element.initializer = this.parseExpression(ParseFlags.disallowComma);
+            }
+            result.elements.push(element);
+        }
+    }
+
+    /**
+     * 解析一个对象绑定模式项({xx: xx})。
+     */
+    private parseObjectBindingPattern() {
+        console.assert(this.lexer.peek().type === TokenType.openBrace);
+        const result = new nodes.ObjectBindingPattern();
+        result.start = this.lexer.read().start;
+        result.elements = new nodes.NodeList<nodes.ObjectBindingElement>();
+        result.elements.seperators = [];
+        while (true) {
+            switch (this.lexer.peek().type) {
+                case TokenType.closeBrace:
+                    result.end = this.lexer.read().end;
+                    return result;
+                case TokenType.endOfFile:
+                    result.end = this.expectToken(TokenType.closeBrace);
+                    return result;
+            }
+
+            const element = new nodes.ObjectBindingElement();
+            element.property = this.parsePropertyName();
+            if (this.lexer.peek().type === TokenType.colon) {
+                element.colon = this.lexer.read().start;
+                element.name = this.parseBindingName();
+            }
+            if (this.lexer.peek().type === TokenType.equals) {
+                element.equal = this.lexer.read().start;
+                element.initializer = this.parseExpression(ParseFlags.disallowComma);
+            }
+            if (this.lexer.peek().type === TokenType.comma) {
+                result.elements.seperators.push(this.lexer.read().start);
+            }
+            result.elements.push(element);
+        }
+    }
+
+    /**
+     * 解析一个属性名称(xx、"xx"、[xx])。
+     */
+    private parsePropertyName(): nodes.PropertyName {
+        switch (this.lexer.peek().type) {
+            case TokenType.identifier:
+                return this.parseIdentifier();
+            case TokenType.stringLiteral:
+                return this.parseStringLiteral();
+            case TokenType.numericLiteral:
+                return this.parseNumericLiteral();
+            case TokenType.openBracket:
+                return this.parseComputedPropertyName();
+            default:
+                return this.expectIdentifier();
+        }
+    }
+
+    /**
+     * 解析一个已计算的属性名。
+     */
+    private parseComputedPropertyName() {
+        console.assert(this.lexer.peek().type === TokenType.openBracket);
+        const result = new nodes.ComputedPropertyName();
+        result.start = this.lexer.read().start;
+        result.body = this.parseExpression(ParseFlags.allowIn);
+        result.end = this.expectToken(TokenType.closeBracket).end;
+        return result;
     }
 
     /**
@@ -496,9 +601,10 @@ export class Parser {
         const result = new nodes.IfStatement();
         result.start = this.lexer.read().start;
         this.parseCondition(result);
-        result.then = this.parseEmbeddedStatement();
-        if (this.readToken(TokenType.else)) {
-            result.else = this.parseEmbeddedStatement();
+        result.thenStatement = this.parseEmbeddedStatement();
+        if (this.lexer.peek().type === TokenType.else) {
+            result.else = this.lexer.read().start;
+            result.elseStatement = this.parseEmbeddedStatement();
         }
         return result;
     }
@@ -553,14 +659,18 @@ export class Parser {
             this.parseCondition(result);
         }
         result.cases = new nodes.NodeList<nodes.CaseClause>();
-        result.cases.start = this.expectToken(TokenType.openBrace);
+        result.cases.start = this.expectToken(TokenType.openBrace).start;
         while (true) {
             switch (this.lexer.peek().type) {
                 case TokenType.case:
                 case TokenType.default:
                     break;
+                case TokenType.closeBrace:
+                    result.cases.end = this.lexer.read().start;
+                    return result;
                 default:
-                    result.cases.end = this.expectToken(TokenType.closeBrace);
+                    this.error(this.lexer.peek(), "应输入“case”或“default”。");
+                    result.cases.end = this.lexer.current.end;
                     return result;
             }
 
@@ -573,7 +683,7 @@ export class Parser {
                     caseCaluse.label = this.parseExpression(ParseFlags.allowIn);
                 }
             }
-            caseCaluse.colon = this.expectToken(TokenType.colon);
+            caseCaluse.colon = this.expectToken(TokenType.colon).start;
             caseCaluse.statements = new nodes.NodeList<nodes.Statement>();
             while (this.lexer.peek().type !== TokenType.closeBrace &&
                 this.lexer.peek().type !== TokenType.case &&
@@ -601,6 +711,7 @@ export class Parser {
 
         let result: nodes.ForStatement | nodes.ForInStatement | nodes.ForOfStatement | nodes.ForToStatement;
 
+        // FIXME: 特殊处理：for (let of X) 的场景。
         let type = this.lexer.peek().type;
         switch (type) {
             case TokenType.semicolon:
@@ -624,11 +735,11 @@ export class Parser {
         switch (type) {
             case TokenType.semicolon:
                 result = new nodes.ForStatement();
-                (<nodes.ForStatement>result).firstSemicolon = this.expectToken(TokenType.semicolon);
+                (<nodes.ForStatement>result).firstSemicolon = this.expectToken(TokenType.semicolon).start;
                 if (this.lexer.peek().type !== TokenType.semicolon) {
                     result.condition = this.parseExpression(ParseFlags.allowIn);
                 }
-                (<nodes.ForStatement>result).secondSemicolon = this.expectToken(TokenType.semicolon);
+                (<nodes.ForStatement>result).secondSemicolon = this.expectToken(TokenType.semicolon).start;
                 if (openParan != undefined ? this.lexer.peek().type !== TokenType.closeParen : isExpressionStart(this.lexer.peek().type)) {
                     (<nodes.ForStatement>result).iterator = this.parseExpression(ParseFlags.allowIn);
                 }
@@ -658,7 +769,7 @@ export class Parser {
         }
         if (openParan != undefined) {
             result.openParan = openParan;
-            result.closeParan = this.expectToken(TokenType.closeParen);
+            result.closeParan = this.expectToken(TokenType.closeParen).start;
         }
         result.body = this.parseEmbeddedStatement();
         return result;
@@ -717,7 +828,7 @@ export class Parser {
         const result = new nodes.DoWhileStatement();
         result.start = this.lexer.read().type;
         result.body = this.parseEmbeddedStatement();
-        result.while = this.expectToken(TokenType.while);
+        result.while = this.expectToken(TokenType.while).start;
         this.parseCondition(result);
         result.end = this.expectSemicolon();
         return result;
@@ -800,7 +911,7 @@ export class Parser {
             if (this.lexer.peek().type === TokenType.openParen) {
                 result.catch.openParan = this.lexer.read().start;
                 result.catch.variable = this.parseBindingName();
-                result.catch.openParan = this.expectToken(TokenType.closeParen);
+                result.catch.openParan = this.expectToken(TokenType.closeParen).start;
             } else if (options.autoInsertParenthese !== false && this.isBindingName()) {
                 result.catch.variable = this.parseBindingName();
             } else if (options.allowTryStatementCatchMissingVaribale !== false) {
@@ -859,7 +970,7 @@ export class Parser {
             result.value = options.allowWithVaribale !== false && this.isVariableStatement() ?
                 this.parseVariableStatement() :
                 this.parseExpression(ParseFlags.allowIn);
-            result.closeParan = this.expectToken(TokenType.closeParen);
+            result.closeParan = this.expectToken(TokenType.closeParen).start;
         } else {
             if (options.autoInsertParenthese === false) {
                 this.expectToken(TokenType.openParen);
@@ -1096,7 +1207,7 @@ export class Parser {
         const result = new nodes.ParenthesizedExpression();
         result.start = this.lexer.read().start;
         result.body = this.parseExpression();
-        result.end = this.expectToken(TokenType.closeParen);
+        result.end = this.expectToken(TokenType.closeParen).end;
         return result;
     }
 
@@ -1108,7 +1219,7 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.dot);
         const result = new nodes.MemberCallExpression();
         result.target = parsed;
-        result.dot = this.expectToken(TokenType.dot);
+        result.dot = this.expectToken(TokenType.dot).start;
         result.argument = this.expectIdentifier();
         return result;
     }
@@ -1231,9 +1342,9 @@ export class Parser {
         const result = new nodes.ConditionalExpression();
         result.condition = parsed;
         result.question = this.lexer.read().start;
-        result.then = this.parseExpression();
-        result.colon = this.expectToken(TokenType.colon);
-        result.else = this.parseExpression();
+        result.thenExpression = this.parseExpression();
+        result.colon = this.expectToken(TokenType.colon).start;
+        result.elseExpression = this.parseExpression();
         return result;
     }
 
@@ -1492,31 +1603,6 @@ export class Parser {
     }
 
 
-
-    // #endregion
-
-    // #region 绑定名称
-
-    /**
-     * 解析一个数组绑定模式项(xx, ..)
-     */
-    private parseArrayBindingElement() {
-
-    }
-
-    /**
-     * 解析一个对象绑定模式项(xx: y)
-     */
-    private parseObjectBindingElement() {
-
-    }
-
-    /**
-     * 解析一个已计算的属性名。
-     */
-    private parseComputedPropertyName() {
-
-    }
 
     // #endregion
 
