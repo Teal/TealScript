@@ -84,8 +84,8 @@ export abstract class NodeVisitor {
      */
     visitIfStatement(node: nodes.IfStatement) {
         node.condition.accept(this);
-        node.thenStatement.accept(this);
-        node.elseStatement && node.elseStatement.accept(this);
+        node.then.accept(this);
+        node.else && node.else.accept(this);
     }
 
     /**
@@ -390,7 +390,7 @@ export abstract class NodeVisitor {
      * 访问一个 import 指令(import xx from '...';)。
      * @param node 要访问的节点。
      */
-    visitImportDirective(node: nodes.ImportDirective) {
+    visitImportDirective(node: nodes.ImportDeclaration) {
         node.elements.accept(this);
         node.target.accept(this);
     }
@@ -399,7 +399,7 @@ export abstract class NodeVisitor {
      * 访问一个 import = 指令(import xx = require("");)。
      * @param node 要访问的节点。
      */
-    visitImportEqualsDirective(node: nodes.ImportEqualsDirective) {
+    visitImportEqualsDirective(node: nodes.ImportAliasDeclaration) {
         node.value.accept(this);
     }
 

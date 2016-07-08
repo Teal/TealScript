@@ -419,11 +419,11 @@ export class Parser {
         const result = new nodes.VariableDeclaration();
         result.name = this.parseBindingName();
         if (this.lexer.peek().type === TokenType.colon) {
-            result.colon = this.lexer.read().start;
+            result.colonToken = this.lexer.read().start;
             result.type = this.parseTypeExpression();
         }
         if (this.lexer.peek().type === TokenType.equals) {
-            result.equal = this.lexer.read().start;
+            result.equalToken = this.lexer.read().start;
             result.initializer = this.parseExpression(ParseFlags.disallowComma);
         }
         return result;
@@ -453,12 +453,12 @@ export class Parser {
         const result = new nodes.ArrayBindingPattern();
         result.start = this.lexer.read().start;
         result.elements = new nodes.NodeList<nodes.ArrayBindingElement>();
-        result.elements.seperators = [];
+        result.elements.seperatorTokens = [];
         while (true) {
             switch (this.lexer.peek().type) {
                 case TokenType.comma:
                     result.elements.push(nodes.ArrayBindingElement.empty);
-                    result.elements.seperators.push(this.lexer.read().start);
+                    result.elements.seperatorTokens.push(this.lexer.read().start);
                     continue;
                 case TokenType.closeBracket:
                     result.end = this.lexer.read().end;
@@ -490,7 +490,7 @@ export class Parser {
         const result = new nodes.ObjectBindingPattern();
         result.start = this.lexer.read().start;
         result.elements = new nodes.NodeList<nodes.ObjectBindingElement>();
-        result.elements.seperators = [];
+        result.elements.seperatorTokens = [];
         while (true) {
             switch (this.lexer.peek().type) {
                 case TokenType.closeBrace:
@@ -504,15 +504,15 @@ export class Parser {
             const element = new nodes.ObjectBindingElement();
             element.property = this.parsePropertyName();
             if (this.lexer.peek().type === TokenType.colon) {
-                element.colon = this.lexer.read().start;
+                element.colonToken = this.lexer.read().start;
                 element.name = this.parseBindingName();
             }
             if (this.lexer.peek().type === TokenType.equals) {
-                element.equal = this.lexer.read().start;
+                element.equalToken = this.lexer.read().start;
                 element.initializer = this.parseExpression(ParseFlags.disallowComma);
             }
             if (this.lexer.peek().type === TokenType.comma) {
-                result.elements.seperators.push(this.lexer.read().start);
+                result.elements.seperatorTokens.push(this.lexer.read().start);
             }
             result.elements.push(element);
         }
@@ -566,7 +566,7 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.colon);
         const result = new nodes.LabeledStatement();
         result.label = label;
-        result.colon = this.lexer.read().type;
+        result.colonToken = this.lexer.read().type;
         result.body = this.parseStatement();
         return result;
     }
@@ -602,10 +602,10 @@ export class Parser {
         const result = new nodes.IfStatement();
         result.start = this.lexer.read().start;
         this.parseCondition(result);
-        result.thenStatement = this.parseEmbeddedStatement();
+        result.then = this.parseEmbeddedStatement();
         if (this.lexer.peek().type === TokenType.else) {
-            result.else = this.lexer.read().start;
-            result.elseStatement = this.parseEmbeddedStatement();
+            result.elseToken = this.lexer.read().start;
+            result.else = this.parseEmbeddedStatement();
         }
         return result;
     }
@@ -616,9 +616,9 @@ export class Parser {
      */
     private parseCondition(result: nodes.IfStatement | nodes.SwitchStatement | nodes.WhileStatement | nodes.DoWhileStatement) {
         if (this.lexer.peek().type === TokenType.openParen) {
-            result.openParan = this.lexer.read().type;
+            result.openParanToken = this.lexer.read().type;
             result.condition = this.parseExpression(ParseFlags.allowIn);
-            result.closeParan = this.expectToken(TokenType.closeParen);
+            result.closeParanToken = this.expectToken(TokenType.closeParen);
         } else {
             if (options.autoInsertParenthese === false) {
                 this.expectToken(TokenType.openParen);
@@ -679,12 +679,12 @@ export class Parser {
             caseCaluse.start = this.lexer.read().start;
             if (this.lexer.current.type === TokenType.case) {
                 if (options.allowCaseElse !== false && this.lexer.peek().type === TokenType.else) {
-                    caseCaluse.else = this.lexer.read().start;
+                    caseCaluse.elseToken = this.lexer.read().start;
                 } else {
                     caseCaluse.label = this.parseExpression(ParseFlags.allowIn);
                 }
             }
-            caseCaluse.colon = this.expectToken(TokenType.colon).start;
+            caseCaluse.colonToken = this.expectToken(TokenType.colon).start;
             caseCaluse.statements = new nodes.NodeList<nodes.Statement>();
             while (this.lexer.peek().type !== TokenType.closeBrace &&
                 this.lexer.peek().type !== TokenType.case &&
@@ -736,28 +736,28 @@ export class Parser {
         switch (type) {
             case TokenType.semicolon:
                 result = new nodes.ForStatement();
-                (<nodes.ForStatement>result).firstSemicolon = this.expectToken(TokenType.semicolon).start;
+                (<nodes.ForStatement>result).firstSemicolonToken = this.expectToken(TokenType.semicolon).start;
                 if (this.lexer.peek().type !== TokenType.semicolon) {
                     result.condition = this.parseExpression(ParseFlags.allowIn);
                 }
-                (<nodes.ForStatement>result).secondSemicolon = this.expectToken(TokenType.semicolon).start;
+                (<nodes.ForStatement>result).secondSemicolonToken = this.expectToken(TokenType.semicolon).start;
                 if (openParan != undefined ? this.lexer.peek().type !== TokenType.closeParen : isExpressionStart(this.lexer.peek().type)) {
                     (<nodes.ForStatement>result).iterator = this.parseExpression(ParseFlags.allowIn);
                 }
                 break;
             case TokenType.in:
                 result = new nodes.ForInStatement();
-                (<nodes.ForInStatement>result).in = this.lexer.read().start;
+                (<nodes.ForInStatement>result).inToken = this.lexer.read().start;
                 result.condition = this.parseExpression(ParseFlags.allowIn);
                 break;
             case TokenType.of:
                 result = new nodes.ForOfStatement();
-                (<nodes.ForOfStatement>result).of = this.lexer.read().start;
+                (<nodes.ForOfStatement>result).ofToken = this.lexer.read().start;
                 result.condition = this.parseExpression(ParseFlags.allowIn | ParseFlags.disallowComma);
                 break;
             case TokenType.to:
                 result = new nodes.ForToStatement();
-                (<nodes.ForToStatement>result).to = this.lexer.read().start;
+                (<nodes.ForToStatement>result).toToken = this.lexer.read().start;
                 result.condition = this.parseExpression(ParseFlags.allowIn);
                 break;
         }
@@ -769,8 +769,8 @@ export class Parser {
             // todo
         }
         if (openParan != undefined) {
-            result.openParan = openParan;
-            result.closeParan = this.expectToken(TokenType.closeParen).start;
+            result.openParanToken = openParan;
+            result.closeParanToken = this.expectToken(TokenType.closeParen).start;
         }
         result.body = this.parseEmbeddedStatement();
         return result;
@@ -829,7 +829,7 @@ export class Parser {
         const result = new nodes.DoWhileStatement();
         result.start = this.lexer.read().type;
         result.body = this.parseEmbeddedStatement();
-        result.while = this.expectToken(TokenType.while).start;
+        result.whileToken = this.expectToken(TokenType.while).start;
         this.parseCondition(result);
         result.end = this.expectSemicolon();
         return result;
@@ -910,9 +910,9 @@ export class Parser {
             result.catch = new nodes.CatchClause();
             result.catch.start = this.lexer.read().start;
             if (this.lexer.peek().type === TokenType.openParen) {
-                result.catch.openParan = this.lexer.read().start;
+                result.catch.openParanToken = this.lexer.read().start;
                 result.catch.variable = this.parseBindingName();
-                result.catch.openParan = this.expectToken(TokenType.closeParen).start;
+                result.catch.openParanToken = this.expectToken(TokenType.closeParen).start;
             } else if (options.autoInsertParenthese !== false && this.isBindingName()) {
                 result.catch.variable = this.parseBindingName();
             } else if (options.allowTryStatementCatchMissingVaribale !== false) {
@@ -967,11 +967,11 @@ export class Parser {
         const result = new nodes.WithStatement();
         result.start = this.lexer.read().start;
         if (this.lexer.peek().type === TokenType.openParen) {
-            result.openParan = this.lexer.read().start;
+            result.openParanToken = this.lexer.read().start;
             result.value = options.allowWithVaribale !== false && this.isVariableStatement() ?
                 this.parseVariableStatement() :
                 this.parseExpression(ParseFlags.allowIn);
-            result.closeParan = this.expectToken(TokenType.closeParen).start;
+            result.closeParanToken = this.expectToken(TokenType.closeParen).start;
         } else {
             if (options.autoInsertParenthese === false) {
                 this.expectToken(TokenType.openParen);
@@ -1114,12 +1114,12 @@ export class Parser {
         const result = new nodes.ArrayLiteral();
         result.start = this.lexer.read().start;
         result.elements = new nodes.NodeList<nodes.Expression>();
-        result.elements.seperators = [];
+        result.elements.seperatorTokens = [];
         while (true) {
             switch (this.lexer.peek().type) {
                 case TokenType.comma:
                     result.elements.push(nodes.Expression.empty);
-                    result.elements.seperators.push(this.lexer.read().start);
+                    result.elements.seperatorTokens.push(this.lexer.read().start);
                     continue;
                 case TokenType.closeBracket:
                     result.end = this.lexer.read().start;
@@ -1140,7 +1140,7 @@ export class Parser {
         const result = new nodes.ObjectLiteral();
         result.start = this.lexer.read().start;
         result.elements = new nodes.NodeList<nodes.ObjectLiteralElement>();
-        result.elements.seperators = [];
+        result.elements.seperatorTokens = [];
         while (true) {
             switch (this.lexer.peek().type) {
                 case TokenType.closeBrace:
@@ -1257,7 +1257,16 @@ export class Parser {
      * 解析一个枚举表达式(enum xx {})。
      */
     private parseEnumExpression() {
+        console.assert(this.lexer.peek().type === TokenType.enum);
+        const result = new nodes.EnumExpression();
+        result.start = this.lexer.read().start;
+        if (this.lexer.peek().type === TokenType.identifier) {
+            result.name = this.parseIdentifier();
+        }
 
+        if (this.lexer.peek().type === TokenType.openBrace) {
+            result.members
+        }
 
     }
 
@@ -1281,7 +1290,7 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.dot);
         const result = new nodes.MemberCallExpression();
         result.target = parsed;
-        result.dot = this.expectToken(TokenType.dot).start;
+        result.dotToken = this.expectToken(TokenType.dot).start;
         result.argument = this.expectIdentifier();
         return result;
     }
@@ -1382,7 +1391,7 @@ export class Parser {
         console.assert(isBinaryOperator(this.lexer.peek().type));
         const result = new nodes.BinaryExpression();
         result.leftOperand = parsed;
-        result.operator = this.lexer.read().start;
+        result.operatorToken = this.lexer.read().start;
         result.type = this.lexer.current.type;
         result.rightOperand = this.parseExpression();
         return result;
@@ -1403,9 +1412,9 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.question);
         const result = new nodes.ConditionalExpression();
         result.condition = parsed;
-        result.question = this.lexer.read().start;
+        result.questionToken = this.lexer.read().start;
         result.thenExpression = this.parseExpression();
-        result.colon = this.expectToken(TokenType.colon).start;
+        result.colonToken = this.expectToken(TokenType.colon).start;
         result.elseExpression = this.parseExpression();
         return result;
     }
@@ -1457,19 +1466,43 @@ export class Parser {
      * 解析一个函数声明(function fn() {...}、function * fn(){...})。
      */
     private parseFunctionDeclaration() {
+        console.assert(this.lexer.peek().type === TokenType.function);
+        const result = new nodes.FunctionDeclaration();
+        this.parseJSDocComment(result);
+        result.start = this.lexer.read().start;
+        if (this.lexer.peek().type === TokenType.asterisk) {
+            result.asteriskToken = this.lexer.read().type;
+        }
 
+        result.name = this.expectIdentifier();
+        result.typeParameters = this.parseTypeParameters();
+        switch (this.lexer.peek().type) {
+            case TokenType.openBrace:
+                result.body = this.parseBlockStatement();
+                break;
+            case TokenType.equalsGreaterThan:
+                result.body = this.parseArrowFunctionExpression();
+                break;
+            case TokenType.semicolon:
+                this.lexer.read();
+                break;
+            default:
+                this.expectToken(TokenType.openBrace);
+                break;
+        }
+        result.end = this.lexer.current.end;
 
+        return result;
+    }
 
-
-
-
+    private parseFunctionBody(result) {
 
     }
 
     /**
      * 解析一个泛型参数声明。
      */
-    private parseGenericParameterDeclaration() {
+    private parseTypeParametersDeclaration() {
 
 
     }
@@ -1580,7 +1613,26 @@ export class Parser {
      * 解析一个 import 指令(import xx from '...';)。
      */
     private parseImportDirective() {
+        console.assert(this.lexer.peek().type == TokenType.import);
+        const start = this.lexer.read().type;
 
+        let identifier: nodes.Identifier;
+        switch (this.lexer.peek().type) {
+            case TokenType.identifier:
+                identifier = this.parseIdentifier();
+                break;
+            case TokenType.stringLiteral:
+                break;
+            case TokenType.openBrace:
+                break;
+            case TokenType.asterisk:
+                break;
+            default:
+                identifier = this.expectIdentifier();
+                break;
+        }
+
+        const result = new nodes.ImportDeclaration();
 
     }
 
@@ -1679,12 +1731,11 @@ export class Parser {
 
     /**
      * 解析一个 JS 文档注释。
+     * @param node 所属的节点。
      */
-    private parseJsDocComment() {
+    private parseJsDocComment(node) {
 
     }
-
-
 
     // #endregion
 

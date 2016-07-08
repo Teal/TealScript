@@ -133,12 +133,12 @@ export class NodeList<T extends Node> extends Array<T> {
     /**
      * 获取当前节点列表所有分割符(如逗号)的位置(可能不存在)。
      */
-    seperators: number[];
+    seperatorTokens: number[];
 
     /**
      * 判断当前列表是否包含尾随的分隔符（如判断数组定义中的最后一项是否是逗号）。
      */
-    get hasTrailingSeperator() { return this.seperators.length === this.length; }
+    get hasTrailingSeperator() { return this.seperatorTokens.length === this.length; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -279,7 +279,7 @@ export class VariableDeclaration extends Node {
     /**
      * 获取当前变量名后冒号的位置(可能不存在)。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前变量定义的类型(可能不存在)。
@@ -289,7 +289,7 @@ export class VariableDeclaration extends Node {
     /**
      * 获取当前变量名后等号的位置(可能不存在)。
      */
-    equal: number;
+    equalToken: number;
 
     /**
      * 获取当前变量的初始值(可能不存在)。
@@ -367,7 +367,7 @@ export class LabeledStatement extends Statement {
     /**
      * 获取当前标签名后冒号的位置。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前标签语句的主体部分。
@@ -455,7 +455,7 @@ export class IfStatement extends Statement {
     /**
      * 获取当前开括号位置(可能不存在)。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 if 语句的条件部分。
@@ -465,27 +465,27 @@ export class IfStatement extends Statement {
     /**
      * 获取当前闭括号位置(可能不存在)。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 获取当前 if 语句的则部分。
      */
-    thenStatement: Statement;
+    then: Statement;
 
     /**
      * 获取关键字 else 语句的位置(可能不存在)。
      */
-    else: number;
+    elseToken: number;
 
     /**
      * 获取当前 if 语句的否则部分(可能不存在)。
      */
-    elseStatement: Statement;
+    else: Statement;
 
     /**
      * 获取当前节点的结束位置。
      */
-    get end() { return (this.elseStatement || this.thenStatement).end; }
+    get end() { return (this.else || this.then).end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -504,8 +504,8 @@ export class IfStatement extends Statement {
      */
     each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
-            callback.call(scope, this.thenStatement, "thenStatement", this) !== false &&
-            (!this.elseStatement || callback.call(scope, this.elseStatement, "elseStatement", this) !== false);
+            callback.call(scope, this.then, "thenStatement", this) !== false &&
+            (!this.else || callback.call(scope, this.else, "elseStatement", this) !== false);
     }
 
 }
@@ -518,7 +518,7 @@ export class SwitchStatement extends Statement {
     /**
      * 获取当前开括号位置(可能不存在)。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 switch 语句的条件部分(可能不存在)。
@@ -528,7 +528,7 @@ export class SwitchStatement extends Statement {
     /**
      * 获取当前闭括号位置(可能不存在)。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 获取当前 switch 语句的所有分支。
@@ -575,12 +575,12 @@ export class CaseClause extends Node {
     /**
      * 获取当前标签名后 else 的位置。
      */
-    else: number;
+    elseToken: number;
 
     /**
      * 获取当前标签名后冒号的位置。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前分支的所有语句。
@@ -590,7 +590,7 @@ export class CaseClause extends Node {
     /**
      * 获取当前节点的结束位置。
      */
-    get end() { return this.statements.length ? this.statements[this.statements.length - 1].end : this.colon; }
+    get end() { return this.statements.length ? this.statements[this.statements.length - 1].end : this.colonToken; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -622,7 +622,7 @@ export class ForStatement extends Statement {
     /**
      * 获取当前开括号位置(可能不存在)。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 for 语句的初始化部分(可能不存在)。
@@ -632,7 +632,7 @@ export class ForStatement extends Statement {
     /**
      * 获取条件部分中首个分号的位置。
      */
-    firstSemicolon: number;
+    firstSemicolonToken: number;
 
     /**
      * 获取当前 for 语句的条件部分(可能不存在)。
@@ -642,7 +642,7 @@ export class ForStatement extends Statement {
     /**
      * 获取条件部分中第二个分号的位置。
      */
-    secondSemicolon: number;
+    secondSemicolonToken: number;
 
     /**
      * 获取当前 for 语句的迭代器部分(可能不存在)。
@@ -652,7 +652,7 @@ export class ForStatement extends Statement {
     /**
      * 获取当前闭括号位置(可能不存在)。
      */
-    closeParan: number;
+    closeParanTokenToken: number;
 
     /**
      * 获取当前 for 语句的主体部分。
@@ -696,7 +696,7 @@ export class ForInStatement extends Statement {
     /**
      * 获取当前开括号位置(可能不存在)。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 for..in 语句的初始化部分。
@@ -706,7 +706,7 @@ export class ForInStatement extends Statement {
     /**
      * 获取关键字 in 的位置。
      */
-    in: number;
+    inToken: number;
 
     /**
      * 获取当前 for..in 语句的迭代部分。
@@ -716,7 +716,7 @@ export class ForInStatement extends Statement {
     /**
      * 获取当前闭括号位置(可能不存在)。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 获取当前 for..in 语句的主体部分。
@@ -759,7 +759,7 @@ export class ForOfStatement extends Statement {
     /**
      * 获取当前开括号位置(可能不存在)。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 for..of 语句的初始化部分。
@@ -769,7 +769,7 @@ export class ForOfStatement extends Statement {
     /**
      * 获取关键字 of 的位置。
      */
-    of: number;
+    ofToken: number;
 
     /**
      * 获取当前 for..of 语句的迭代部分。
@@ -779,7 +779,7 @@ export class ForOfStatement extends Statement {
     /**
      * 获取当前闭括号位置(可能不存在)。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 获取当前 for..of 语句的主体部分。
@@ -822,7 +822,7 @@ export class ForToStatement extends Statement {
     /**
      * 获取当前开括号位置(可能不存在)。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 for..to 语句的初始化部分(可能不存在)。
@@ -832,7 +832,7 @@ export class ForToStatement extends Statement {
     /**
      * 获取关键字 to 的位置。
      */
-    to: number;
+    toToken: number;
 
     /**
      * 获取当前 for..to 语句的迭代部分。
@@ -842,7 +842,7 @@ export class ForToStatement extends Statement {
     /**
      * 获取当前闭括号位置(可能不存在)。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 获取当前 for..of 语句的主体部分。
@@ -885,7 +885,7 @@ export class WhileStatement extends Statement {
     /**
      * 获取当前开括号位置(可能不存在)。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 while 语句的条件部分。
@@ -895,7 +895,7 @@ export class WhileStatement extends Statement {
     /**
      * 获取当前闭括号位置(可能不存在)。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 获取当前 while 语句的主体部分。
@@ -942,12 +942,12 @@ export class DoWhileStatement extends Statement {
     /**
      * 获取 while 关键字的位置。
      */
-    while: number;
+    whileToken: number;
 
     /**
      * 获取当前开括号位置(可能不存在)。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 do..while 语句的条件部分。
@@ -957,7 +957,7 @@ export class DoWhileStatement extends Statement {
     /**
      * 获取当前闭括号位置(可能不存在)。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 判断当前语句末尾是否包含分号。
@@ -1186,7 +1186,7 @@ export class CatchClause extends Node {
     /**
      * 获取异常变量的开括号的位置。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前 catch 分句的变量名(可能不存在)。
@@ -1196,7 +1196,7 @@ export class CatchClause extends Node {
     /**
      * 获取异常变量的闭括号的位置。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 获取当前 catch 分句的主体部分。
@@ -1294,7 +1294,7 @@ export class WithStatement extends Statement {
     /**
      * 获取异常变量的开括号的位置。
      */
-    openParan: number;
+    openParanToken: number;
 
     /**
      * 获取当前的 with 语句的值部分。
@@ -1304,7 +1304,7 @@ export class WithStatement extends Statement {
     /**
      * 获取异常变量的闭括号的位置。
      */
-    closeParan: number;
+    closeParanToken: number;
 
     /**
      * 获取当前的 with 语句的主体部分。
@@ -1439,12 +1439,12 @@ export class FunctionDeclaration extends Declaration {
     /**
      * 获取当前函数名前星号的位置(可能不存在)。
      */
-    asterisk: number;
+    asteriskToken: number;
 
     /**
      * 获取当前函数的所有泛型参数(可能不存在)。
      */
-    typeParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<TypeParametersDeclaration>;
 
     /**
      * 获取当前函数的所有参数。
@@ -1454,7 +1454,7 @@ export class FunctionDeclaration extends Declaration {
     /**
      * 获取当前函数返回类型前冒号的位置(可能不存在)。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前函数的返回类型(可能不存在)。
@@ -1496,7 +1496,7 @@ export class FunctionDeclaration extends Declaration {
 /**
  * 表示一个泛型参数声明。
  */
-export class GenericParameterDeclaration extends Node {
+export class TypeParametersDeclaration extends Node {
 
     /**
      * 获取当前泛型参数的名字部分。
@@ -1506,7 +1506,7 @@ export class GenericParameterDeclaration extends Node {
     /**
      * 获取 extends 关键字的位置(可能不存在)。
      */
-    extends: number;
+    extendsToken: number;
 
     /**
      * 获取当前泛型参数的约束部分(可能不存在)。
@@ -1519,7 +1519,7 @@ export class GenericParameterDeclaration extends Node {
      * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitGenericParameterDeclaration(this);
+        return vistior.visitTypeParametersDeclaration(this);
     }
 
     /**
@@ -1558,7 +1558,7 @@ export class ParameterDeclaration extends Node {
     /**
      * 获取当前变量名后冒号的位置(可能不存在)。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前声明的类型(可能不存在)。
@@ -1568,7 +1568,7 @@ export class ParameterDeclaration extends Node {
     /**
      * 获取当前变量名后等号的位置(可能不存在)。
      */
-    equal: number;
+    equalToken: number;
 
     /**
      * 获取当前声明的默认值(可能不存在)。
@@ -1627,7 +1627,7 @@ export class ClassDeclaration extends Declaration {
     /**
      * 获取当前类的所有泛型参数(可能不存在)。
      */
-    typeParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<TypeParametersDeclaration>;
 
     /**
      * 获取当前类的所有成员(可能不存在)。
@@ -1696,7 +1696,7 @@ export class PropertyDeclaration extends TypeMemberDeclaration {
     /**
      * 获取当前变量名后冒号的位置(可能不存在)。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前属性的值部分(可能不存在)。
@@ -1744,7 +1744,7 @@ export class MethodDeclaration extends TypeMemberDeclaration {
     /**
      * 获取当前方法的所有泛型参数(可能不存在)。
      */
-    typeParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<TypeParametersDeclaration>;
 
     /**
      * 获取当前方法的所有参数。
@@ -1759,7 +1759,7 @@ export class MethodDeclaration extends TypeMemberDeclaration {
     /**
      * 获取当前方法返回类型前冒号的位置(可能不存在)。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前方法的返回类型(可能不存在)。
@@ -1816,17 +1816,17 @@ export class AccessorDeclaration extends MethodDeclaration {
     /**
      * 获取 get 关键字的位置(可能不存在)。
      */
-    get: number;
+    getToken: number;
 
     /**
      * 获取 set 关键字的位置(可能不存在)。
      */
-    set: number;
+    setToken: number;
 
     /**
      * 获取当前节点的开始位置。
      */
-    get start() { return this.get != null ? this.get : this.set; }
+    get start() { return this.getToken != undefined ? this.getToken : this.setToken; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -1868,7 +1868,7 @@ export class InterfaceDeclaration extends Declaration {
     /**
      * 获取当前接口的所有泛型参数(可能不存在)。
      */
-    typeParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<TypeParametersDeclaration>;
 
     /**
      * 获取当前接口的所有成员(可能不存在)。
@@ -1953,7 +1953,7 @@ export class EnumMemberDeclaration extends Declaration {
     /**
      * 获取当前枚举成员名后的等号位置(可能不存在)。
      */
-    equal: number;
+    equalToken: number;
 
     /**
      * 获取当前枚举成员的初始值(可能不存在)。
@@ -2041,9 +2041,9 @@ export class NamespaceDeclaration extends Node {
 // #region 导入和导出
 
 /**
- * 表示一个 import 指令(import xx from '...';)。
+ * 表示一个 import 声明(import xx from '...';)。
  */
-export class ImportDirective extends Statement {
+export class ImportDeclaration extends Statement {
 
     /**
      * 获取当前导入的元素列表。
@@ -2051,14 +2051,14 @@ export class ImportDirective extends Statement {
     elements: NodeList<NameImportClause | NamespaceImportClause>;
 
     /**
+     * 获取当前导入声明的 from 位置(可能不存在)。
+     */
+    fromToken: number;
+
+    /**
      * 获取当前导入项的值部分。
      */
     target: StringLiteral;
-
-    /**
-     * 获取当前导入声明的 from 位置(可能不存在)。
-     */
-    from: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2085,7 +2085,7 @@ export class ImportDirective extends Statement {
 /**
  * 表示一个 import = 指令(import xx = require("");)。
  */
-export class ImportEqualsDirective extends Statement {
+export class ImportAliasDeclaration extends Statement {
 
     /**
      * 获取当前导入的元素列表。
@@ -2095,7 +2095,7 @@ export class ImportEqualsDirective extends Statement {
     /**
      * 获取当前导入声明的等号位置。
      */
-    equal: number;
+    equalToken: number;
 
     /**
      * 获取当前导入项的值部分。
@@ -2136,7 +2136,7 @@ export class NameImportClause extends Node {
     /**
      * 获取当前导入声明的 as 位置(可能不存在)。
      */
-    as: number;
+    asToken: number;
 
     /**
      * 获取当前导入的别名。
@@ -2213,7 +2213,7 @@ export class ExportDirective extends Statement {
     /**
      * 获取当前导入声明的 from 位置(可能不存在)。
      */
-    from: number;
+    fromToken: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2245,7 +2245,7 @@ export class ExportEqualsDirective extends Statement {
     /**
      * 获取当前导入声明的等号位置。
      */
-    equal: number;
+    equalToken: number;
 
     /**
      * 获取当前导出项的值部分。
@@ -2565,7 +2565,7 @@ export class FunctionExpression extends Expression {
     /**
      * 获取当前星号的位置(可能不存在)。
      */
-    asterisk: number;
+    asteriskToken: number;
 
     /**
      * 获取当前函数的名字(可能不存在)。
@@ -2575,7 +2575,7 @@ export class FunctionExpression extends Expression {
     /**
      * 获取成员的泛型参数。
      */
-    typeParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<TypeParametersDeclaration>;
 
     /**
      * 获取当前函数定义的参数列表。
@@ -2585,7 +2585,7 @@ export class FunctionExpression extends Expression {
     /**
      * 获取当前返回类型前冒号的位置(可能不存在)。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前函数声明的返回类型(可能不存在)。
@@ -2630,7 +2630,7 @@ export class ArrowFunctionExpression extends Expression {
     /**
      * 获取当前箭头函数的所有泛型参数。
      */
-    typeParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<TypeParametersDeclaration>;
 
     /**
      * 获取当前箭头函数的所有参数。
@@ -2640,7 +2640,7 @@ export class ArrowFunctionExpression extends Expression {
     /**
      * 获取当前表达式的箭头位置。
      */
-    arrow: number;
+    arrowToken: number;
 
     /**
      * 获取当前箭头函数的主体部分。
@@ -2703,10 +2703,10 @@ export class ClassExpression extends Expression {
     /**
      * 获取当前类型定义的泛型参数列表(可能不存在)。
      */
-    typeParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<TypeParametersDeclaration>;
 
     /**
-     * 获取当前容器内的所有成员。
+     * 获取当前容器内的所有成员(可能不存在)。
      */
     members: NodeList<TypeMemberDeclaration>;
 
@@ -2753,10 +2753,10 @@ export class InterfaceExpression extends Expression {
     /**
      * 获取当前类型定义的泛型参数列表(可能不存在)。
      */
-    typeParameters: NodeList<GenericParameterDeclaration>;
+    typeParameters: NodeList<TypeParametersDeclaration>;
 
     /**
-     * 获取当前容器内的所有成员。
+     * 获取当前容器内的所有成员(可能不存在)。
      */
     members: NodeList<TypeMemberDeclaration>;
 
@@ -2795,7 +2795,7 @@ export class EnumExpression extends Expression {
     name: Identifier;
 
     /**
-     * 获取当前容器内的所有成员。
+     * 获取当前容器内的所有成员(可能不存在)。
      */
     members: NodeList<EnumMemberDeclaration>;
 
@@ -2865,7 +2865,7 @@ export class MemberCallExpression extends Expression {
     /**
      * 获取点的位置。
      */
-    dot: number;
+    dotToken: number;
 
     /**
      * 获取当前调用的参数部分。
@@ -3095,7 +3095,7 @@ export class NewTargetExpression extends Expression {
     /**
      * 获取点的位置。
      */
-    dot: number;
+    dotToken: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3208,7 +3208,7 @@ export class BinaryExpression extends Expression {
     /**
      * 获取运算符的位置。
      */
-    operator: number;
+    operatorToken: number;
 
     /**
      * 获取当前表达式的右值部分。
@@ -3255,7 +3255,7 @@ export class YieldExpression extends Expression {
     /**
      * 获取当前表达式的 * 的位置(可能不存在)。
      */
-    asterisk: number;
+    asteriskToken: number;
 
     /**
      * 获取 yield 表达式的运算数部分(可能不存在)。
@@ -3301,7 +3301,7 @@ export class ConditionalExpression extends Expression {
     /**
      * 获取当前条件表达式问号的位置。
      */
-    question: number;
+    questionToken: number;
 
     /**
      * 获取当前条件表达式的则部分。
@@ -3311,7 +3311,7 @@ export class ConditionalExpression extends Expression {
     /**
      * 获取当前条件表达式冒号的位置。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前条件表达式的否则部分。
@@ -3354,7 +3354,7 @@ export class TypeCastExpression extends Expression {
     /**
      * 获取当前表达式的 > 的位置。
      */
-    greaterThan: number;
+    greaterThanToken: number;
 
     /**
      * 获取当前类型转换表达式的运算数部分。
@@ -3433,12 +3433,12 @@ export class ArrayTypeExpression extends Expression {
     /**
      * 获取当前表达式的 [ 的位置。
      */
-    openBracket: number;
+    openBracketToken: number;
 
     /**
      * 获取当前表达式的 ] 的位置。
      */
-    closeBracket: number;
+    closeBracketToken: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3495,7 +3495,7 @@ export class JsxElement extends JsxNode {
     /**
      * 获取斜杠的位置(可能不存在)。
      */
-    slash: number;
+    slashToken: number;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -3533,7 +3533,7 @@ export class JsxAttribute extends JsxNode {
     /**
      * 获取等号的位置。
      */
-    equal: number;
+    equalToken: number;
 
     /**
      * 获取当前属性的值(可能不存在)。
@@ -3625,7 +3625,7 @@ export class JsxClosingElement extends JsxNode {
     /**
      * 获取斜杠的位置。
      */
-    slashStart: number;
+    slashStartToken: number;
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
@@ -3711,7 +3711,7 @@ export class ArrayBindingElement extends Node {
     /**
      * 获取当前绑定模式项的等号位置(可能不存在)。
      */
-    equal: number;
+    equalToken: number;
 
     /**
      * 获取当前绑定模式项的初始值。
@@ -3793,7 +3793,7 @@ export class ObjectBindingElement extends Node {
     /**
      * 获取当前属性名后冒号的位置(可能不存在)。
      */
-    colon: number;
+    colonToken: number;
 
     /**
      * 获取当前声明的名字部分(可能不存在)。
@@ -3803,7 +3803,7 @@ export class ObjectBindingElement extends Node {
     /**
      * 获取当前绑定模式项的等号位置(可能不存在)。
      */
-    equal: number;
+    equalToken: number;
 
     /**
      * 获取当前绑定模式项的初始值。

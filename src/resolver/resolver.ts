@@ -206,7 +206,7 @@ class TypeResolver extends NodeVisitor {
     visitIfStatement(node: nodes.IfStatement) {
         node.condition.accept(this);
         node.then.accept(this);
-        node.else && node.else.accept(this);
+        node.elseToken && node.elseToken.accept(this);
     }
 
     /**
@@ -856,16 +856,16 @@ class TypeResolver extends NodeVisitor {
      * 访问一个 import 指令(import xx from '...';)。
      * @param node 要访问的节点。
      */
-    visitImportDirective(node: nodes.ImportDirective) {
+    visitImportDirective(node: nodes.ImportDeclaration) {
         node.elements.accept(this);
-        node.from.accept(this);
+        node.fromToken.accept(this);
     }
 
     /**
      * 访问一个 import = 指令(import xx = require("");)。
      * @param node 要访问的节点。
      */
-    visitImportEqualsDirective(node: nodes.ImportEqualsDirective) {
+    visitImportEqualsDirective(node: nodes.ImportAliasDeclaration) {
         node.variable.accept(this);
         node.value.accept(this);
     }
@@ -893,7 +893,7 @@ class TypeResolver extends NodeVisitor {
      */
     visitExportDirective(node: nodes.ExportDirective) {
         node.elements.accept(this);
-        node.from.accept(this);
+        node.fromToken.accept(this);
     }
 
     /**
