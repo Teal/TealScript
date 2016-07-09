@@ -24,6 +24,11 @@ export var options = {
      */
     allowGitConflictMarker: true,
 
+    /**
+     * 允许使用 Unicode 编码的关键字字符串。
+     */
+    allowEscapedKeyword: true,
+
     // #endregion
 
     // #region 语法
@@ -146,6 +151,19 @@ export enum LanguageVersion {
      */
     javaScript3,
 
+}
+
+/**
+ * 存储已共享的字符串。
+ */
+export var interns: { [key: string]: string; } = Object.create(null);
+
+/**
+ * 共享相同字符串的内存。
+ * @param value 要恭喜的字符串。
+ */
+export function intern(value: string) {
+    return interns[value] || (interns[value] = value);
 }
 
 /**

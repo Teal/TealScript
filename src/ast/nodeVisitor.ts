@@ -29,7 +29,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个语句块({...})。
+     * 访问一个语句块(`{...}`)。
      * @param node 要访问的节点。
      */
     visitBlockStatement(node: nodes.BlockStatement) {
@@ -37,7 +37,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个变量声明语句(var xx、let xx、const xx)。
+     * 访问一个变量声明语句(`var xx、let xx、const xx`)。
      * @param node 要访问的节点。
      */
     visitVariableStatement(node: nodes.VariableStatement) {
@@ -45,7 +45,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个变量声明(x = 1、[x] = [1]、{a: x} = {a: 1})。
+     * 访问一个变量声明(`x = 1、[x] = [1]、{a: x} = {a: 1}`)。
      * @param node 要访问的节点。
      */
     visitVariableDeclaration(node: nodes.VariableDeclaration) {
@@ -54,7 +54,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个空语句(;)。
+     * 访问一个空语句(`;`)。
      * @param node 要访问的节点。
      */
     visitEmptyStatement(node: nodes.EmptyStatement) {
@@ -62,7 +62,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个标签语句(xx: ...)。
+     * 访问一个标签语句(`xx: ...`)。
      * @param node 要访问的节点。
      */
     visitLabeledStatement(node: nodes.LabeledStatement) {
@@ -71,7 +71,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个表达式语句(x();)。
+     * 访问一个表达式语句(x(`);`)。
      * @param node 要访问的节点。
      */
     visitExpressionStatement(node: nodes.ExpressionStatement) {
@@ -79,7 +79,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 if 语句(if(xx) ...)。
+     * 访问一个 if 语句(if(`xx) ...`)。
      * @param node 要访问的节点。
      */
     visitIfStatement(node: nodes.IfStatement) {
@@ -89,7 +89,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 switch 语句(switch(xx){...})。
+     * 访问一个 switch 语句(switch(`xx){...}`)。
      * @param node 要访问的节点。
      */
     visitSwitchStatement(node: nodes.SwitchStatement) {
@@ -98,7 +98,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 case 分支(case ...:{...})。
+     * 访问一个 case 分支(`case ...:{...}`)。
      * @param node 要访问的节点。
      */
     visitCaseClause(node: nodes.CaseClause) {
@@ -107,7 +107,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 for 语句(for(var i = 0; i < 9; i++) ...)。
+     * 访问一个 for 语句(for(`var i = 0; i < 9; i++) ...`)。
      * @param node 要访问的节点。
      */
     visitForStatement(node: nodes.ForStatement) {
@@ -118,7 +118,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 for..in 语句(for(var x in y) ...)。
+     * 访问一个 for..in 语句(for(`var x in y) ...`)。
      * @param node 要访问的节点。
      */
     visitForInStatement(node: nodes.ForInStatement) {
@@ -128,7 +128,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 for..of 语句(for(var x of y) ...)。
+     * 访问一个 for..of 语句(for(`var x of y) ...`)。
      * @param node 要访问的节点。
      */
     visitForOfStatement(node: nodes.ForOfStatement) {
@@ -138,7 +138,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 for..to 语句(for(var x = 0 to 10) ...)。
+     * 访问一个 for..to 语句(for(`var x = 0 to 10) ...`)。
      * @param node 要访问的节点。
      */
     visitForToStatement(node: nodes.ForToStatement) {
@@ -148,7 +148,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 while 语句(while(...) ...)。
+     * 访问一个 while 语句(while(`...) ...`)。
      * @param node 要访问的节点。
      */
     visitWhileStatement(node: nodes.WhileStatement) {
@@ -157,7 +157,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 do..while 语句(do ... while(xx);)。
+     * 访问一个 do..while 语句(do ... while(`xx);`)。
      * @param node 要访问的节点。
      */
     visitDoWhileStatement(node: nodes.DoWhileStatement) {
@@ -166,7 +166,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 continue 语句(continue xx;)。
+     * 访问一个 continue 语句(`continue xx;`)。
      * @param node 要访问的节点。
      */
     visitContinueStatement(node: nodes.ContinueStatement) {
@@ -174,7 +174,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 break 语句(break xx;)。
+     * 访问一个 break 语句(`break xx;`)。
      * @param node 要访问的节点。
      */
     visitBreakStatement(node: nodes.BreakStatement) {
@@ -182,7 +182,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 return 语句(return xx;)。
+     * 访问一个 return 语句(`return xx;`)。
      * @param node 要访问的节点。
      */
     visitReturnStatement(node: nodes.ReturnStatement) {
@@ -190,7 +190,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 throw 语句(throw xx;)。
+     * 访问一个 throw 语句(`throw xx;`)。
      * @param node 要访问的节点。
      */
     visitThrowStatement(node: nodes.ThrowStatement) {
@@ -198,7 +198,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 try 语句(try {...} catch(e) {...})。
+     * 访问一个 try 语句(try {...} catch(`e) {...}`)。
      * @param node 要访问的节点。
      */
     visitTryStatement(node: nodes.TryStatement) {
@@ -208,7 +208,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 catch 分句(catch(e) {...})。
+     * 访问一个 catch 分句(catch(`e) {...}`)。
      * @param node 要访问的节点。
      */
     visitCatchClause(node: nodes.CatchClause) {
@@ -216,7 +216,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 finally 分句(finally {...})。
+     * 访问一个 finally 分句(`finally {...}`)。
      * @param node 要访问的节点。
      */
     visitFinallyClause(node: nodes.FinallyClause) {
@@ -224,7 +224,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 debugger 语句(debugger;)。
+     * 访问一个 debugger 语句(`debugger;`)。
      * @param node 要访问的节点。
      */
     visitDebuggerStatement(node: nodes.DebuggerStatement) {
@@ -232,7 +232,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 with 语句(with(xx) ...)。
+     * 访问一个 with 语句(with(`xx) ...`)。
      * @param node 要访问的节点。
      */
     visitWithStatement(node: nodes.WithStatement) {
@@ -241,7 +241,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个修饰器(@xx)。
+     * 访问一个修饰器(`@xx`)。
      * @param node 要访问的节点。
      */
     visitDecorator(node: nodes.Decorator) {
@@ -249,7 +249,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个修饰符(static、private、...)。
+     * 访问一个修饰符(`static、private、...`)。
      * @param node 要访问的节点。
      */
     visitModifier(node: nodes.Modifier) {
@@ -257,7 +257,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个类型参数声明(T、T extends R)。
+     * 访问一个类型参数声明(`T、T extends R`)。
      * @param node 要访问的节点。
      */
     visitTypeParametersDeclaration(node: nodes.TypeParametersDeclaration) {
@@ -266,7 +266,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个函数声明(function fn() {...}、function * fn(){...})。
+     * 访问一个函数声明(function fn() {...}、function * fn(`){...}`)。
      * @param node 要访问的节点。
      */
     visitFunctionDeclaration(node: nodes.FunctionDeclaration) {
@@ -280,7 +280,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个函数表达式(function () {})。
+     * 访问一个函数表达式(function (`) {}`)。
      * @param node 要访问的节点。
      */
     visitFunctionExpression(node: nodes.FunctionExpression) {
@@ -292,7 +292,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个参数声明(x、x = 1、...x)。
+     * 访问一个参数声明(`x、x = 1、...x`)。
      * @param node 要访问的节点。
      */
     visitParameterDeclaration(node: nodes.ParameterDeclaration) {
@@ -302,7 +302,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个类声明(class T {...})。
+     * 访问一个类声明(`class T {...}`)。
      * @param node 要访问的节点。
      */
     visitClassDeclaration(node: nodes.ClassDeclaration) {
@@ -316,7 +316,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个类表达式(class xx {})。
+     * 访问一个类表达式(`class xx {}`)。
      * @param node 要访问的节点。
      */
     visitClassExpression(node: nodes.ClassExpression) {
@@ -328,7 +328,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个属性声明(x: 1)。
+     * 访问一个属性声明(`x: 1`)。
      * @param node 要访问的节点。
      */
     visitPropertyDeclaration(node: nodes.PropertyDeclaration) {
@@ -339,7 +339,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个方法声明(fn() {...})。
+     * 访问一个方法声明(fn(`) {...}`)。
      * @param node 要访问的节点。
      */
     visitMethodDeclaration(node: nodes.MethodDeclaration) {
@@ -353,7 +353,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个访问器声明(get fn() {...}、set fn() {...})。
+     * 访问一个访问器声明(get fn() {...}、set fn(`) {...}`)。
      * @param node 要访问的节点。
      */
     visitAccessorDeclaration(node: nodes.AccessorDeclaration) {
@@ -367,7 +367,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个接口声明(interface T {...})。
+     * 访问一个接口声明(`interface T {...}`)。
      * @param node 要访问的节点。
      */
     visitInterfaceDeclaration(node: nodes.InterfaceDeclaration) {
@@ -380,7 +380,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个接口表达式(interface xx {})。
+     * 访问一个接口表达式(`interface xx {}`)。
      * @param node 要访问的节点。
      */
     visitInterfaceExpression(node: nodes.InterfaceExpression) {
@@ -391,7 +391,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个枚举声明(enum T {})。
+     * 访问一个枚举声明(`enum T {}`)。
      * @param node 要访问的节点。
      */
     visitEnumDeclaration(node: nodes.EnumDeclaration) {
@@ -403,7 +403,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个枚举表达式(enum xx {})。
+     * 访问一个枚举表达式(`enum xx {}`)。
      * @param node 要访问的节点。
      */
     visitEnumExpression(node: nodes.EnumExpression) {
@@ -412,7 +412,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个枚举成员声明(xx = 1)。
+     * 访问一个枚举成员声明(`xx = 1`)。
      * @param node 要访问的节点。
      */
     visitEnumMemberDeclaration(node: nodes.EnumMemberDeclaration) {
@@ -424,7 +424,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个命名空间声明(namespace abc {...}、module abc {...})。
+     * 访问一个命名空间声明(`namespace abc {...}、module abc {...}`)。
      * @param node 要访问的节点。
      */
     visitNamespaceDeclaration(node: nodes.NamespaceDeclaration) {
@@ -433,7 +433,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 import 声明(import xx from '...';)。
+     * 访问一个 import 声明(`import xx from '...';`)。
      * @param node 要访问的节点。
      */
     visitImportDeclaration(node: nodes.ImportDeclaration) {
@@ -442,7 +442,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 import = 指令(import xx = require("");)。
+     * 访问一个 import = 指令(import xx = require(`"");`)。
      * @param node 要访问的节点。
      */
     visitImportAliasDeclaration(node: nodes.ImportAliasDeclaration) {
@@ -450,7 +450,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个名字导入声明项(a as b)。
+     * 访问一个名字导入声明项(`a as b`)。
      * @param node 要访问的节点。
      */
     visitNameImportClause(node: nodes.NameImportClause) {
@@ -459,7 +459,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个命名空间导入声明项({a as b})。
+     * 访问一个命名空间导入声明项(`{a as b}`)。
      * @param node 要访问的节点。
      */
     visitNamespaceImportClause(node: nodes.NamespaceImportClause) {
@@ -467,7 +467,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 export 指令(export xx from '...';)。
+     * 访问一个 export 指令(`export xx from '...';`)。
      * @param node 要访问的节点。
      */
     visitExportDirective(node: nodes.ExportDirective) {
@@ -476,7 +476,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 export = 指令(export = 1;)。
+     * 访问一个 export = 指令(`export = 1;`)。
      * @param node 要访问的节点。
      */
     visitExportEqualsDirective(node: nodes.ExportEqualsDirective) {
@@ -484,7 +484,15 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个标识符(\u0088)。
+     * 访问一个错误表达式。
+     * @param node 要访问的节点。
+     */
+    visitErrorExpression(node: nodes.ErrorExpression) {
+
+    }
+
+    /**
+     * 访问一个标识符(`x`)。
      * @param node 要访问的节点。
      */
     visitIdentifier(node: nodes.Identifier) {
@@ -492,7 +500,16 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个简单字面量(this、super、null、true、false)。
+     * 访问一个泛型表达式。
+     * @param node 要访问的节点。
+     */
+    visitGenericExpression(node: nodes.GenericExpression) {
+        node.element.accept(this);
+        node.typeArguments.accept(this);
+    }
+
+    /**
+     * 访问一个简单字面量(`this`、`super`、`null`、`true`、`false`)。
      * @param node 要访问的节点。
      */
     visitSimpleLiteral(node: nodes.SimpleLiteral) {
@@ -500,7 +517,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个数字字面量(1)。
+     * 访问一个数字字面量(`1`)。
      * @param node 要访问的节点。
      */
     visitNumericLiteral(node: nodes.NumericLiteral) {
@@ -508,7 +525,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个字符串字面量('abc'、"abc"、`abc`)。
+     * 访问一个字符串字面量(`'abc'`、`"abc"`、`\`abc\``)。
      * @param node 要访问的节点。
      */
     visitStringLiteral(node: nodes.StringLiteral) {
@@ -516,7 +533,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个模板字面量(`abc${x + y}def`)。
+     * 访问一个模板字面量(``abc${x + y}def``)。
      * @param node 要访问的节点。
      */
     visitTemplateLiteral(node: nodes.TemplateLiteral) {
@@ -524,7 +541,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个模板字面量的一个文本区域(\`abc${、}abc${、}abc\`)。
+     * 访问一个模板字面量的一个文本区域(`\`abc${、}abc${、}abc\``)。
      * @param node 要访问的节点。
      */
     visitTemplateSpan(node: nodes.TemplateSpan) {
@@ -532,7 +549,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个正则表达式字面量(/abc/)。
+     * 访问一个正则表达式字面量(`/abc/`)。
      * @param node 要访问的节点。
      */
     visitRegularExpressionLiteral(node: nodes.RegularExpressionLiteral) {
@@ -540,7 +557,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个数组字面量([x, y])。
+     * 访问一个数组字面量(`[x, y]`)。
      * @param node 要访问的节点。
      */
     visitArrayLiteral(node: nodes.ArrayLiteral) {
@@ -548,7 +565,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个对象字面量({x: y})。
+     * 访问一个对象字面量(`{x: y}`)。
      * @param node 要访问的节点。
      */
     visitObjectLiteral(node: nodes.ObjectLiteral) {
@@ -556,7 +573,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个箭头函数表达式(x => y)。
+     * 访问一个箭头函数表达式(`x => y`)。
      * @param node 要访问的节点。
      */
     visitArrowFunctionExpression(node: nodes.ArrowFunctionExpression) {
@@ -566,7 +583,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个箭头函数表达式(=> xx)。
+     * 访问一个箭头函数表达式(`=> xx`)。
      * @param node 要访问的节点。
      */
     visitArrowExpression(node: nodes.ArrowExpression) {
@@ -574,7 +591,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个括号表达式((x))。
+     * 访问一个括号表达式((`x)`)。
      * @param node 要访问的节点。
      */
     visitParenthesizedExpression(node: nodes.ParenthesizedExpression) {
@@ -582,7 +599,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个成员调用表达式(x.y)。
+     * 访问一个成员调用表达式(`x.y`)。
      * @param node 要访问的节点。
      */
     visitMemberCallExpression(node: nodes.MemberCallExpression) {
@@ -591,7 +608,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个函数调用表达式(x())。
+     * 访问一个函数调用表达式(x(`)`)。
      * @param node 要访问的节点。
      */
     visitFunctionCallExpression(node: nodes.FunctionCallExpression) {
@@ -600,7 +617,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个索引调用表达式(x[y])。
+     * 访问一个索引调用表达式(`x[y]`)。
      * @param node 要访问的节点。
      */
     visitIndexCallExpression(node: nodes.IndexCallExpression) {
@@ -609,7 +626,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个模板调用表达式(x`abc`)。
+     * 访问一个模板调用表达式(`x\`abc\``)。
      * @param node 要访问的节点。
      */
     visitTemplateCallExpression(node: nodes.TemplateCallExpression) {
@@ -618,7 +635,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 new 表达式(new x())。
+     * 访问一个 new 表达式(`new x()`)。
      * @param node 要访问的节点。
      */
     visitNewExpression(node: nodes.NewExpression) {
@@ -627,7 +644,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 new.target 表达式(new.target)。
+     * 访问一个 new.target 表达式(`new.target`)。
      * @param node 要访问的节点。
      */
     visitNewTargetExpression(node: nodes.NewTargetExpression) {
@@ -635,7 +652,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个一元运算表达式(+x、typeof x、...)。
+     * 访问一个一元运算表达式(`+x、typeof x、...`)。
      * @param node 要访问的节点。
      */
     visitUnaryExpression(node: nodes.UnaryExpression) {
@@ -643,7 +660,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个增量运算表达式(x++、--x)。
+     * 访问一个增量运算表达式(`x++、--x`)。
      * @param node 要访问的节点。
      */
     visitIncrementExpression(node: nodes.IncrementExpression) {
@@ -651,7 +668,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个二元运算表达式(x + y、x = y、...)。
+     * 访问一个二元运算表达式(`x + y、x = y、...`)。
      * @param node 要访问的节点。
      */
     visitBinaryExpression(node: nodes.BinaryExpression) {
@@ -660,7 +677,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 yield 表达式(yield x、yield * x)。
+     * 访问一个 yield 表达式(`yield x、yield * x`)。
      * @param node 要访问的节点。
      */
     visitYieldExpression(node: nodes.YieldExpression) {
@@ -668,7 +685,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个条件表达式(x ? y : z)。
+     * 访问一个条件表达式(`x ? y : z`)。
      * @param node 要访问的节点。
      */
     visitConditionalExpression(node: nodes.ConditionalExpression) {
@@ -678,33 +695,16 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个类型转换表达式(<T>xx)。
+     * 访问一个类型转换表达式(`<T>xx`)。
      * @param node 要访问的节点。
      */
-    visitTypeCastExpression(node: nodes.TypeCastExpression) {
+    visitTypeCastExpression(node: nodes.TypeAssertionExpression) {
         node.type.accept(this);
         node.operand.accept(this);
     }
 
     /**
-     * 访问一个类型表达式(Array<T>)。
-     * @param node 要访问的节点。
-     */
-    visitGenericTypeExpression(node: nodes.GenericTypeExpression) {
-        node.element.accept(this);
-        node.genericArguments.accept(this);
-    }
-
-    /**
-     * 访问一个数组类型表达式(T[])。
-     * @param node 要访问的节点。
-     */
-    visitArrayTypeExpression(node: nodes.ArrayTypeExpression) {
-        node.element.accept(this);
-    }
-
-    /**
-     * 访问一个 JSX 标签(<div>...</div>)。
+     * 访问一个 JSX 标签(`<div>...</div>`)。
      * @param node 要访问的节点。
      */
     visitJsxElement(node: nodes.JsxElement) {
@@ -714,7 +714,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 JSX 标签属性(id="a")。
+     * 访问一个 JSX 标签属性(`id="a"`)。
      * @param node 要访问的节点。
      */
     visitJsxAttribute(node: nodes.JsxAttribute) {
@@ -723,7 +723,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 JSX 文本({...})。
+     * 访问一个 JSX 文本(`{...}`)。
      * @param node 要访问的节点。
      */
     visitJsxText(node: nodes.JsxText) {
@@ -731,7 +731,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 JSX 表达式({...})。
+     * 访问一个 JSX 表达式(`{...}`)。
      * @param node 要访问的节点。
      */
     visitJsxExpression(node: nodes.JsxExpression) {
@@ -739,7 +739,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 JSX 关闭元素({...})。
+     * 访问一个 JSX 关闭元素(`{...}`)。
      * @param node 要访问的节点。
      */
     visitJsxClosingElement(node: nodes.JsxClosingElement) {
@@ -747,7 +747,120 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个数组绑定模式项([xx])。
+     * 访问一个简单类型节点(`number`、`string`、...)。
+     * @param node 要访问的节点。
+     */
+    visitSimpleTypeNode(node: nodes.SimpleTypeNode) {
+
+    }
+
+    /**
+     * 访问一个泛型节点(`Array<T>`)。
+     * @param node 要访问的节点。
+     */
+    visitGenericTypeNode(node: nodes.GenericTypeNode) {
+        node.element.accept(this);
+        node.typeArguments.accept(this);
+    }
+
+    /**
+     * 访问一个数组类型节点(`T[]`)。
+     * @param node 要访问的节点。
+     */
+    visitArrayTypeNode(node: nodes.ArrayTypeNode) {
+        node.element.accept(this);
+    }
+
+    /**
+     * 访问一个函数类型节点(`()=>void`)。
+     * @param node 要访问的节点。
+     */
+    visitFunctionTypeNode(node: nodes.FunctionTypeNode) {
+        node.typeParameters && node.typeParameters.accept(this);
+    }
+
+    /**
+     * 访问一个构造函数类型节点(`new ()=>void`)。
+     * @param node 要访问的节点。
+     */
+    visitConstructorTypeNode(node: nodes.ConstructorTypeNode) {
+
+    }
+
+    /**
+     * 访问一个元祖类型节点(`[string, number]`)。
+     * @param node 要访问的节点。
+     */
+    visitTupleTypeNode(node: nodes.TupleTypeNode) {
+
+    }
+
+    /**
+     * 访问一个联合类型节点(`number | string`)。
+     * @param node 要访问的节点。
+     */
+    visitUnionTypeNode(node: nodes.UnionTypeNode) {
+
+    }
+
+    /**
+     * 访问一个交错类型节点(`number & string`)。
+     * @param node 要访问的节点。
+     */
+    visitIntersectionTypeNode(node: nodes.IntersectionTypeNode) {
+
+    }
+
+    /**
+     * 访问一个对象类型节点(`{x: string}`)。
+     * @param node 要访问的节点。
+     */
+    visitObjectTypeNode(node: nodes.ObjectTypeNode) {
+
+    }
+
+    /**
+     * 访问一个类型查询节点(`typeof x`)。
+     * @param node 要访问的节点。
+     */
+    visitTypeQueryNode(node: nodes.TypeQueryNode) {
+
+    }
+
+    /**
+     * 访问一个括号类型节点(`(number)`)。
+     * @param node 要访问的节点。
+     */
+    visitParenthesizedTypeNode(node: nodes.ParenthesizedTypeNode) {
+        node.body.accept(this);
+    }
+
+    /**
+     * 访问一个表达式类型节点(`"abc"`、`true`)。
+     * @param node 要访问的节点。
+     */
+    visitExpressionTypeNode(node: nodes.ExpressionTypeNode) {
+
+    }
+
+    /**
+     * 访问一个限定名称类型节点(`"abc"`、`true`)。
+     * @param node 要访问的节点。
+     */
+    visitQualifiedNameTypeNode(node: nodes.QualifiedNameTypeNode) {
+
+    }
+
+    /**
+     * 访问一个类型别名声明(`type A = number`)。
+     * @param node 要访问的节点。
+     */
+    visitTypeAliasDeclaration(node: nodes.TypeAliasDeclaration) {
+
+    }
+
+    /**
+     * 访问一个数组绑定模式项(`[xx]`)。
      * @param node 要访问的节点。
      */
     visitArrayBindingPattern(node: nodes.ArrayBindingPattern) {
@@ -763,7 +876,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个对象绑定模式项({xx: xx})。
+     * 访问一个对象绑定模式项(`{xx: xx}`)。
      * @param node 要访问的节点。
      */
     visitObjectBindingPattern(node: nodes.ObjectBindingPattern) {

@@ -534,35 +534,6 @@ namespace ts {
             return finishNode(result);
         }
 
-        function internIdentifier(text: string): string {
-            text = escapeIdentifier(text);
-            return hasProperty(identifiers, text) ? identifiers[text] : (identifiers[text] = text);
-        }
-
-        // An identifier that starts with two underscores has an extra underscore character prepended to it to avoid issues
-        // with magic property names like '__proto__'. The 'identifiers' object is used to share a single string instance for
-        // each identifier in order to reduce memory consumption.
-        function createIdentifier(isIdentifier: boolean, diagnosticMessage?: DiagnosticMessage): Identifier {
-            identifierCount++;
-            if (isIdentifier) {
-                const node = <Identifier>createNode(SyntaxKind.Identifier);
-
-                // Store original token kind if it is not just an Identifier so we can report appropriate error later in type checker
-                if (token !== SyntaxKind.Identifier) {
-                    node.originalKeywordKind = token;
-                }
-                node.text = internIdentifier(scanner.getTokenValue());
-                nextToken();
-                return finishNode(node);
-            }
-
-            return <Identifier>createMissingNode(SyntaxKind.Identifier, /*reportAtCurrentPosition*/ false, diagnosticMessage || Diagnostics.Identifier_expected);
-        }
-
-        function parseIdentifier(diagnosticMessage?: DiagnosticMessage): Identifier {
-            return createIdentifier(isIdentifier(), diagnosticMessage);
-        }
-
         function parseIdentifierName(): Identifier {
             return createIdentifier(tokenIsIdentifierOrKeyword(token));
         }
@@ -1357,45 +1328,8 @@ namespace ts {
             return <StringLiteralTypeNode>parseLiteralLikeNode(SyntaxKind.StringLiteralType, /*internName*/ true);
         }
 
-        function parseLiteralNode(internName?: boolean): LiteralExpression {
-            return <LiteralExpression>parseLiteralLikeNode(token, internName);
-        }
-
         function parseTemplateLiteralFragment(): TemplateLiteralFragment {
             return <TemplateLiteralFragment>parseLiteralLikeNode(token, /*internName*/ false);
-        }
-
-        function parseLiteralLikeNode(kind: SyntaxKind, internName: boolean): LiteralLikeNode {
-            const node = <LiteralExpression>createNode(kind);
-            const text = scanner.getTokenValue();
-            node.text = internName ? internIdentifier(text) : text;
-
-            if (scanner.hasExtendedUnicodeEscape()) {
-                node.hasExtendedUnicodeEscape = true;
-            }
-
-            if (scanner.isUnterminated()) {
-                node.isUnterminated = true;
-            }
-
-            const tokenPos = scanner.getTokenPos();
-            nextToken();
-            finishNode(node);
-
-            // Octal literals are not allowed in strict mode or ES5
-            // Note that theoretically the following condition would hold true literals like 009,
-            // which is not octal.But because of how the scanner separates the tokens, we would
-            // never get a token like this. Instead, we would get 00 and 9 as two separate tokens.
-            // We also do not need to check for negatives because any prefix operator would be part of a
-            // parent unary expression.
-            if (node.kind === SyntaxKind.NumericLiteral
-                && sourceText.charCodeAt(tokenPos) === CharacterCodes._0
-                && isOctalDigit(sourceText.charCodeAt(tokenPos + 1))) {
-
-                node.isOctalLiteral = true;
-            }
-
-            return node;
         }
 
         // TYPES
@@ -2721,27 +2655,6 @@ namespace ts {
             return finishNode(node);
         }
 
-        function parseDeleteExpression() {
-            const node = <DeleteExpression>createNode(SyntaxKind.DeleteExpression);
-            nextToken();
-            node.expression = parseSimpleUnaryExpression();
-            return finishNode(node);
-        }
-
-        function parseTypeOfExpression() {
-            const node = <TypeOfExpression>createNode(SyntaxKind.TypeOfExpression);
-            nextToken();
-            node.expression = parseSimpleUnaryExpression();
-            return finishNode(node);
-        }
-
-        function parseVoidExpression() {
-            const node = <VoidExpression>createNode(SyntaxKind.VoidExpression);
-            nextToken();
-            node.expression = parseSimpleUnaryExpression();
-            return finishNode(node);
-        }
-
         function isAwaitExpression(): boolean {
             if (token === SyntaxKind.AwaitKeyword) {
                 if (inAwaitContext()) {
@@ -2810,17 +2723,6 @@ namespace ts {
          */
         function parseSimpleUnaryExpression(): UnaryExpression {
             switch (token) {
-                case SyntaxKind.PlusToken:
-                case SyntaxKind.MinusToken:
-                case SyntaxKind.TildeToken:
-                case SyntaxKind.ExclamationToken:
-                    return parsePrefixUnaryExpression();
-                case SyntaxKind.DeleteKeyword:
-                    return parseDeleteExpression();
-                case SyntaxKind.TypeOfKeyword:
-                    return parseTypeOfExpression();
-                case SyntaxKind.VoidKeyword:
-                    return parseVoidExpression();
                 case SyntaxKind.LessThanToken:
                     // This is modified UnaryExpression grammar in TypeScript
                     //  UnaryExpression (modified):
@@ -3304,18 +3206,9 @@ namespace ts {
             while (true) {
                 expression = parseMemberExpressionRest(expression);
                 if (token === SyntaxKind.LessThanToken) {
-                    // See if this is the start of a generic invocation.  If so, consume it and
-                    // keep checking for postfix expressions.  Otherwise, it's just a '<' that's
-                    // part of an arithmetic expression.  Break out so we consume it higher in the
-                    // stack.
-                    const typeArguments = tryParse(parseTypeArgumentsInExpression);
-                    if (!typeArguments) {
-                        return expression;
-                    }
-
+                    
                     const callExpr = <CallExpression>createNode(SyntaxKind.CallExpression, expression.pos);
                     callExpr.expression = expression;
-                    callExpr.typeArguments = typeArguments;
                     callExpr.arguments = parseArgumentList();
                     expression = finishNode(callExpr);
                     continue;
@@ -3339,82 +3232,8 @@ namespace ts {
             return result;
         }
 
-        function parseTypeArgumentsInExpression() {
-            if (!parseOptional(SyntaxKind.LessThanToken)) {
-                return undefined;
-            }
-
-            const typeArguments = parseDelimitedList(ParsingContext.TypeArguments, parseType);
-            if (!parseExpected(SyntaxKind.GreaterThanToken)) {
-                // If it doesn't have the closing >  then it's definitely not an type argument list.
-                return undefined;
-            }
-
-            // If we have a '<', then only parse this as a argument list if the type arguments
-            // are complete and we have an open paren.  if we don't, rewind and return nothing.
-            return typeArguments && canFollowTypeArgumentsInExpression()
-                ? typeArguments
-                : undefined;
-        }
-
-        function canFollowTypeArgumentsInExpression(): boolean {
-            switch (token) {
-                case SyntaxKind.OpenParenToken:                 // foo<x>(
-                // this case are the only case where this token can legally follow a type argument
-                // list.  So we definitely want to treat this as a type arg list.
-
-                case SyntaxKind.DotToken:                       // foo<x>.
-                case SyntaxKind.CloseParenToken:                // foo<x>)
-                case SyntaxKind.CloseBracketToken:              // foo<x>]
-                case SyntaxKind.ColonToken:                     // foo<x>:
-                case SyntaxKind.SemicolonToken:                 // foo<x>;
-                case SyntaxKind.QuestionToken:                  // foo<x>?
-                case SyntaxKind.EqualsEqualsToken:              // foo<x> ==
-                case SyntaxKind.EqualsEqualsEqualsToken:        // foo<x> ===
-                case SyntaxKind.ExclamationEqualsToken:         // foo<x> !=
-                case SyntaxKind.ExclamationEqualsEqualsToken:   // foo<x> !==
-                case SyntaxKind.AmpersandAmpersandToken:        // foo<x> &&
-                case SyntaxKind.BarBarToken:                    // foo<x> ||
-                case SyntaxKind.CaretToken:                     // foo<x> ^
-                case SyntaxKind.AmpersandToken:                 // foo<x> &
-                case SyntaxKind.BarToken:                       // foo<x> |
-                case SyntaxKind.CloseBraceToken:                // foo<x> }
-                case SyntaxKind.EndOfFileToken:                 // foo<x>
-                    // these cases can't legally follow a type arg list.  However, they're not legal
-                    // expressions either.  The user is probably in the middle of a generic type. So
-                    // treat it as such.
-                    return true;
-
-                case SyntaxKind.CommaToken:                     // foo<x>,
-                case SyntaxKind.OpenBraceToken:                 // foo<x> {
-                // We don't want to treat these as type arguments.  Otherwise we'll parse this
-                // as an invocation expression.  Instead, we want to parse out the expression
-                // in isolation from the type arguments.
-
-                default:
-                    // Anything else treat as an expression.
-                    return false;
-            }
-        }
-
         function parsePrimaryExpression(): PrimaryExpression {
             switch (token) {
-                case SyntaxKind.NumericLiteral:
-                case SyntaxKind.StringLiteral:
-                case SyntaxKind.NoSubstitutionTemplateLiteral:
-                    return parseLiteralNode();
-                case SyntaxKind.ThisKeyword:
-                case SyntaxKind.SuperKeyword:
-                case SyntaxKind.NullKeyword:
-                case SyntaxKind.TrueKeyword:
-                case SyntaxKind.FalseKeyword:
-                    return parseTokenNode<PrimaryExpression>();
-                case SyntaxKind.OpenParenToken:
-                    return parseParenthesizedExpression();
-                case SyntaxKind.OpenBracketToken:
-                    return parseArrayLiteralExpression();
-                case SyntaxKind.OpenBraceToken:
-                    return parseObjectLiteralExpression();
                 case SyntaxKind.AsyncKeyword:
                     // Async arrow functions are parsed earlier in parseAssignmentExpressionOrHigher.
                     // If we encounter `async [no LineTerminator here] function` then this is an async
@@ -3428,8 +3247,6 @@ namespace ts {
                     return parseClassExpression();
                 case SyntaxKind.FunctionKeyword:
                     return parseFunctionExpression();
-                case SyntaxKind.NewKeyword:
-                    return parseNewExpression();
                 case SyntaxKind.SlashToken:
                 case SyntaxKind.SlashEqualsToken:
                     if (reScanSlashToken() === SyntaxKind.RegularExpressionLiteral) {
@@ -3551,18 +3368,6 @@ namespace ts {
 
         function parseOptionalIdentifier() {
             return isIdentifier() ? parseIdentifier() : undefined;
-        }
-
-        function parseNewExpression(): NewExpression {
-            const node = <NewExpression>createNode(SyntaxKind.NewExpression);
-            parseExpected(SyntaxKind.NewKeyword);
-            node.expression = parseMemberExpressionOrHigher();
-            node.typeArguments = tryParse(parseTypeArgumentsInExpression);
-            if (node.typeArguments || token === SyntaxKind.OpenParenToken) {
-                node.arguments = parseArgumentList();
-            }
-
-            return finishNode(node);
         }
 
         // STATEMENTS

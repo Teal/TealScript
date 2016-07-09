@@ -123,6 +123,13 @@ export class Lexer {
         delete this.stash;
     }
 
+    /**
+     * 清除之前保存的进度。
+     */
+    stashClear() {
+        delete this.stash;
+    }
+
     // #endregion
 
     // #region 解析
@@ -408,6 +415,7 @@ export class Lexer {
                         default:
                             // EcmaScript 规定 0 后必须跟八进制数字，
                             // 实际上大部分编译器将 08 和 09 解释为十进制数字。
+                            // todo: 严格模式需要输出语法错误。
                             result.data = Unicode.isOctalDigit(this.source.charCodeAt(--this.pos)) ?
                                 this.scanDights(8) :
                                 this.scanNumericLiteral(CharCode.num0);
