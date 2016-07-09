@@ -4269,17 +4269,6 @@ namespace ts {
             return finishNode(node);
         }
 
-        // In an ambient declaration, the grammar only allows integer literals as initializers.
-        // In a non-ambient declaration, the grammar allows uninitialized members only in a
-        // ConstantEnumMemberSection, which starts at the beginning of an enum declaration
-        // or any time an integer literal initializer is encountered.
-        function parseEnumMember(): EnumMember {
-            const node = <EnumMember>createNode(SyntaxKind.EnumMember, scanner.getStartPos());
-            node.name = parsePropertyName();
-            node.initializer = allowInAnd(parseNonParameterInitializer);
-            return finishNode(node);
-        }
-
         function parseEnumDeclaration(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): EnumDeclaration {
             const node = <EnumDeclaration>createNode(SyntaxKind.EnumDeclaration, fullStart);
             node.decorators = decorators;

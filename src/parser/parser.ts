@@ -618,7 +618,7 @@ export class Parser {
         if (this.lexer.peek().type === TokenType.openParen) {
             result.openParanToken = this.lexer.read().type;
             result.condition = this.parseExpression(ParseFlags.allowIn);
-            result.closeParanToken = this.expectToken(TokenType.closeParen);
+            result.closeParanToken = this.expectToken(TokenType.closeParen).start;
         } else {
             if (options.autoInsertParenthese === false) {
                 this.expectToken(TokenType.openParen);
@@ -1257,17 +1257,7 @@ export class Parser {
      * 解析一个枚举表达式(enum xx {})。
      */
     private parseEnumExpression() {
-        console.assert(this.lexer.peek().type === TokenType.enum);
-        const result = new nodes.EnumExpression();
-        result.start = this.lexer.read().start;
-        if (this.lexer.peek().type === TokenType.identifier) {
-            result.name = this.parseIdentifier();
-        }
-
-        if (this.lexer.peek().type === TokenType.openBrace) {
-            result.members
-        }
-
+        return this.parseEnumDeclarationOrExpression(true);
     }
 
     /**
@@ -1585,6 +1575,41 @@ export class Parser {
 
 
 
+    }
+
+    /**
+     * 解析一个枚举声明或表达式(enum xx {})。
+     */
+    private parseEnumDeclarationOrExpression(expression: boolean) {
+        console.assert(this.lexer.peek().type === TokenType.enum);
+        const result: nodes.EnumExpression | nodes.EnumDeclaration = expression ? new nodes.EnumExpression() : new nodes.EnumDeclaration();
+        result.start = this.lexer.read().start;
+        if (expression || this.lexer.peek().type === TokenType.identifier) {
+            result.name = this.parseIdentifier();
+        } else {
+            result.name = this.expectIdentifier();
+        }
+        if (this.lexer.peek().type === TokenType.openBrace) {
+            result.members = new nodes.NodeList<nodes.EnumMemberDeclaration>();
+            result.members.start = this.lexer.read().start;
+            while (true) {
+                switch (this.lexer.peek().type) {
+                    case TokenType.closeBrace:
+                        result.end = this.lexer.read().end;
+                        return result;
+                    case TokenType.endOfFile:
+                        result.end = this.expectToken(TokenType.closeBrace).end;
+                        return result;
+                }
+                const member = new nodes.EnumMemberDeclaration();
+                member.name = this.expectIdentifier();
+                if (this.lexer.peek().type === TokenType.equals) {
+                    member.equalToken = this.lexer.read().start;
+                    member.initializer = this.parseExpression(ParseFlags.allowIn);
+                }
+                result.members.push(member);
+            }
+        }
     }
 
     /**
