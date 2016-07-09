@@ -44,7 +44,7 @@ export class Lexer {
         delete this.comments;
 
         // 跳过开头的 #! 部分。
-        if (options.skipShebang !== false) {
+        if (options.allowShebang !== false) {
             this.skipShebang();
         }
 
@@ -294,7 +294,7 @@ export class Lexer {
                             this.pos++; // =
                             if (this.source.charCodeAt(this.pos) === CharCode.equals) {
                                 this.pos++; // =
-                                if (options.skipGitConflictMarker !== false && result.onNewLine && this.skipGitConflictMarker(CharCode.equals, 4)) {
+                                if (options.allowGitConflictMarker !== false && result.onNewLine && this.skipGitConflictMarker(CharCode.equals, 4)) {
                                     // 跳过冲突的第二个版本。
                                     while (this.pos < this.source.length) {
                                         if (this.skipGitConflictMarker(CharCode.greaterThan, 7)) {
@@ -488,7 +488,7 @@ export class Lexer {
                     switch (this.source.charCodeAt(this.pos)) {
                         case CharCode.lessThan:
                             this.pos++; // <
-                            if (options.skipGitConflictMarker !== false && result.onNewLine && this.skipGitConflictMarker(CharCode.lessThan, 5)) {
+                            if (options.allowGitConflictMarker !== false && result.onNewLine && this.skipGitConflictMarker(CharCode.lessThan, 5)) {
                                 continue;
                             }
                             if (this.source.charCodeAt(this.pos) === CharCode.equals) {
@@ -712,7 +712,7 @@ export class Lexer {
                     return this.source.substring(start, end);
                 }
             }
-            if (options.skipUnterminatedLiteral === false) {
+            if (options.allowUnterminatedLiteral === false) {
                 this.error("字符串未关闭；应输入“{0}”", String.fromCharCode(currentChar) + String.fromCharCode(currentChar) + String.fromCharCode(currentChar));
             }
             return this.source.substring(start, this.pos);

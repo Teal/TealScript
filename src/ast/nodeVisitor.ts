@@ -98,7 +98,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 switch 语句的 case 分支(case ...:{...})。
+     * 访问一个 case 分支(case ...:{...})。
      * @param node 要访问的节点。
      */
     visitCaseClause(node: nodes.CaseClause) {
@@ -208,7 +208,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 try 语句的 catch 分句(catch(e) {...})。
+     * 访问一个 catch 分句(catch(e) {...})。
      * @param node 要访问的节点。
      */
     visitCatchClause(node: nodes.CatchClause) {
@@ -216,7 +216,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 try 语句的 finally 分句(finally {...})。
+     * 访问一个 finally 分句(finally {...})。
      * @param node 要访问的节点。
      */
     visitFinallyClause(node: nodes.FinallyClause) {
@@ -232,7 +232,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 with 语句(with(...) ...)。
+     * 访问一个 with 语句(with(xx) ...)。
      * @param node 要访问的节点。
      */
     visitWithStatement(node: nodes.WithStatement) {
@@ -257,6 +257,15 @@ export abstract class NodeVisitor {
     }
 
     /**
+     * 访问一个类型参数声明(T、T extends R)。
+     * @param node 要访问的节点。
+     */
+    visitTypeParametersDeclaration(node: nodes.TypeParametersDeclaration) {
+        node.name.accept(this);
+        node.extends && node.extends.accept(this);
+    }
+
+    /**
      * 访问一个函数声明(function fn() {...}、function * fn(){...})。
      * @param node 要访问的节点。
      */
@@ -264,19 +273,22 @@ export abstract class NodeVisitor {
         node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
         node.name.accept(this);
-        node.genericParameters && node.genericParameters.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
         node.parameters.accept(this);
         node.returnType && node.returnType.accept(this);
         node.body && node.body.accept(this);
     }
 
     /**
-     * 访问一个泛型参数声明。
+     * 访问一个函数表达式(function () {})。
      * @param node 要访问的节点。
      */
-    visitGenericParameterDeclaration(node: nodes.GenericParameterDeclaration) {
-        node.name.accept(this);
-        node.constraint && node.constraint.accept(this);
+    visitFunctionExpression(node: nodes.FunctionExpression) {
+        node.name && node.name.accept(this);
+        node.typeParameters.accept(this);
+        node.parameters.accept(this);
+        node.returnType && node.returnType.accept(this);
+        node.body.accept(this);
     }
 
     /**
@@ -284,7 +296,6 @@ export abstract class NodeVisitor {
      * @param node 要访问的节点。
      */
     visitParameterDeclaration(node: nodes.ParameterDeclaration) {
-        node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
         node.type && node.type.accept(this);
         node.initializer && node.initializer.accept(this);
@@ -298,9 +309,21 @@ export abstract class NodeVisitor {
         node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
         node.name.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
         node.extends && node.extends.accept(this);
         node.implements && node.implements.accept(this);
-        node.genericParameters && node.genericParameters.accept(this);
+        node.members && node.members.accept(this);
+    }
+
+    /**
+     * 访问一个类表达式(class xx {})。
+     * @param node 要访问的节点。
+     */
+    visitClassExpression(node: nodes.ClassExpression) {
+        node.name && node.name.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
+        node.extends && node.extends.accept(this);
+        node.implements && node.implements.accept(this);
         node.members && node.members.accept(this);
     }
 
@@ -311,6 +334,7 @@ export abstract class NodeVisitor {
     visitPropertyDeclaration(node: nodes.PropertyDeclaration) {
         node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
+        node.type && node.type.accept(this);
         node.value && node.value.accept(this);
     }
 
@@ -321,7 +345,7 @@ export abstract class NodeVisitor {
     visitMethodDeclaration(node: nodes.MethodDeclaration) {
         node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
-        node.genericParameters && node.genericParameters.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
         node.parameters.accept(this);
         node.name.accept(this);
         node.returnType && node.returnType.accept(this);
@@ -335,7 +359,7 @@ export abstract class NodeVisitor {
     visitAccessorDeclaration(node: nodes.AccessorDeclaration) {
         node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
-        node.genericParameters && node.genericParameters.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
         node.parameters.accept(this);
         node.name.accept(this);
         node.returnType && node.returnType.accept(this);
@@ -350,8 +374,19 @@ export abstract class NodeVisitor {
         node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
         node.name.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
         node.extends && node.extends.accept(this);
-        node.genericParameters && node.genericParameters.accept(this);
+        node.members && node.members.accept(this);
+    }
+
+    /**
+     * 访问一个接口表达式(interface xx {})。
+     * @param node 要访问的节点。
+     */
+    visitInterfaceExpression(node: nodes.InterfaceExpression) {
+        node.name && node.name.accept(this);
+        node.extends && node.extends.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
         node.members && node.members.accept(this);
     }
 
@@ -363,6 +398,16 @@ export abstract class NodeVisitor {
         node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
         node.name.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
+        node.members && node.members.accept(this);
+    }
+
+    /**
+     * 访问一个枚举表达式(enum xx {})。
+     * @param node 要访问的节点。
+     */
+    visitEnumExpression(node: nodes.EnumExpression) {
+        node.name && node.name.accept(this);
         node.members && node.members.accept(this);
     }
 
@@ -374,6 +419,7 @@ export abstract class NodeVisitor {
         node.decorators && node.decorators.accept(this);
         node.modifiers && node.modifiers.accept(this);
         node.name.accept(this);
+        node.typeParameters && node.typeParameters.accept(this);
         node.initializer && node.initializer.accept(this);
     }
 
@@ -387,10 +433,10 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个 import 指令(import xx from '...';)。
+     * 访问一个 import 声明(import xx from '...';)。
      * @param node 要访问的节点。
      */
-    visitImportDirective(node: nodes.ImportDeclaration) {
+    visitImportDeclaration(node: nodes.ImportDeclaration) {
         node.elements.accept(this);
         node.target.accept(this);
     }
@@ -399,7 +445,7 @@ export abstract class NodeVisitor {
      * 访问一个 import = 指令(import xx = require("");)。
      * @param node 要访问的节点。
      */
-    visitImportEqualsDirective(node: nodes.ImportAliasDeclaration) {
+    visitImportAliasDeclaration(node: nodes.ImportAliasDeclaration) {
         node.value.accept(this);
     }
 
@@ -438,7 +484,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个标识符(x)。
+     * 访问一个标识符(\u0088)。
      * @param node 要访问的节点。
      */
     visitIdentifier(node: nodes.Identifier) {
@@ -510,18 +556,6 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个函数表达式(function () {})。
-     * @param node 要访问的节点。
-     */
-    visitFunctionExpression(node: nodes.FunctionExpression) {
-        node.name && node.name.accept(this);
-        node.genericParameters.accept(this);
-        node.parameters.accept(this);
-        node.returnType && node.returnType.accept(this);
-        node.body && node.body.accept(this);
-    }
-
-    /**
      * 访问一个箭头函数表达式(x => y)。
      * @param node 要访问的节点。
      */
@@ -532,35 +566,11 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个类表达式(class xx {})。
+     * 访问一个箭头函数表达式(=> xx)。
      * @param node 要访问的节点。
      */
-    visitClassExpression(node: nodes.ClassExpression) {
-        node.name && node.name.accept(this);
-        node.extends && node.extends.accept(this);
-        node.implements && node.implements.accept(this);
-        node.genericParameters && node.genericParameters.accept(this);
-        node.members.accept(this);
-    }
-
-    /**
-     * 访问一个接口表达式(interface xx {})。
-     * @param node 要访问的节点。
-     */
-    visitInterfaceExpression(node: nodes.InterfaceExpression) {
-        node.name && node.name.accept(this);
-        node.extends && node.extends.accept(this);
-        node.genericParameters && node.genericParameters.accept(this);
-        node.members.accept(this);
-    }
-
-    /**
-     * 访问一个枚举表达式(enum xx {})。
-     * @param node 要访问的节点。
-     */
-    visitEnumExpression(node: nodes.EnumExpression) {
-        node.name && node.name.accept(this);
-        node.members.accept(this);
+    visitArrowExpression(node: nodes.ArrowExpression) {
+        node.body.accept(this);
     }
 
     /**
@@ -677,7 +687,7 @@ export abstract class NodeVisitor {
     }
 
     /**
-     * 访问一个泛型表达式(Array<T>)。
+     * 访问一个类型表达式(Array<T>)。
      * @param node 要访问的节点。
      */
     visitGenericTypeExpression(node: nodes.GenericTypeExpression) {

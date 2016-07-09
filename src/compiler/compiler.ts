@@ -1,110 +1,125 @@
-﻿
-/**
- * 表示当前的编译器配置。
+﻿/**
+ * @fileOverview 全局编译器功能
  */
-export var options: CompileOptions = {};
 
 /**
- * 表示一个编译器配置。
+ * 获取全局配置。
  */
-export interface CompileOptions {
+export var options = {
+
+    // #region 词法
 
     /**
-     * 获取或设置当前解析的语法版本。
+     * 允许出现 Unix #! 标记。
      */
-    languageVersion?: LanguageVersion;
+    allowShebang: true,
 
     /**
-     * 设置是否解析注释。
+     * 允许出现未关闭的多行字符串和注释。
      */
-    parseComments?: boolean;
+    allowUnterminatedLiteral: true,
 
     /**
-     * 跳过 Unix #! 标记。
+     * 允许出现 Git 冲突标记(<<<<<<<)。
      */
-    skipShebang?: boolean;
+    allowGitConflictMarker: true,
+
+    // #endregion
+
+    // #region 语法
 
     /**
-     * 跳过未关闭的多行字符串和注释。
+     * 允许省略语句末尾的分号。
      */
-    skipUnterminatedLiteral?: boolean;
+    allowMissingSemicolon: true,
 
     /**
-     * 跳过 Git 冲突标记(<<<<<<<)。
+     * 使用智能分号插入策略。使用该策略可以减少省略分号引发的语法错误。
      */
-    skipGitConflictMarker?: boolean;
+    smartSemicolonInsertion: true,
 
     /**
-     * 跳过 Jsx 语法(<xx/>)。
+     * 允许省略条件表达式的括号。
      */
-    parseJsx?: boolean;
+    allowMissingParenthese: true,
 
     /**
-     * 自动插入分号。
+     * 允许省略 switch (true) 中的 (true)。
      */
-    autoInsertSemicolon?: boolean;
-
-    /**
-     * 启用更智能的分号插入方式。
-     */
-    smartSemicolonInsertion: boolean;
-
-    /**
-     * 自动插入条件表达式的括号。
-     */
-    autoInsertParenthese?: boolean;
-
-    /**
-     * 自动插入 switch 语句的条件。
-     */
-    autoInsertSwitchCondition?: boolean;
+    allowMissingSwitchCondition: true,
 
     /**
      * 允许使用 case else 语法代替 default。
      */
-    allowCaseElse?: boolean;
+    allowCaseElse: true,
 
     /**
      * 允许使用 for..of 语法。
      */
-    allowForOf?: boolean;
+    allowForOf: true,
 
     /**
      * 允许使用 for..to 语法。
      */
-    allowForTo?: boolean;
+    allowForTo: true,
 
     /**
      * 允许使用 throw 空参数语法。
      */
-    allowRethrow?: boolean;
+    allowRethrow: true,
 
     /**
      * 允许使用 with 语句定义语法。
      */
-    allowWithVaribale?: boolean;
+    allowWithVaribale: true,
 
     /**
-     * 自动插入 try 语句块。
+     * 允许省略 try 语句块的 {}。
      */
-    autoInsertTryStatementBlock?: boolean;
+    allowMissingTryBlock: true,
 
     /**
-     * 自动插入 try 语句块。
+     * 允许省略 catch 分句的变量名。
      */
-    allowTryStatementCatchMissingVaribale?: boolean;
+    allowMissingCatchVaribale: true,
+
+    // #endregion
+
+    // #region 功能
 
     /**
-     * 解析 <reference /> 注释。
+     * 设置是否解析注释。
      */
-    parseReferenceComments: boolean;
+    parseComments: true,
 
     /**
-     * 解析 Js 文档注释。
+     * 解析 <reference /> 注释。此选项要求 {@link parseComments} 为 true。
      */
-    parseJsDoc: boolean;
+    parseReferenceComments: true,
 
-}
+    /**
+     * 解析 JsDoc 文档注释(/** 段)。此选项要求 {@link parseComments} 为 true。
+     */
+    parseJsDocComments: true,
+
+    /**
+     * 解析 TealDoc 文档注释(/// 段)。此选项要求 {@link parseComments} 为 true。
+     */
+    parseTealDocComments: true,
+
+    /**
+     * 跳过 Jsx 语法(<xx/>)。
+     */
+    parseJsx: true,
+
+    // #endregion
+
+    ///**
+    // * 获取或设置当前解析的语法版本。
+    // */
+    //languageVersion: LanguageVersion;
+
+};
 
 /**
  * 表示支持的语法版本。

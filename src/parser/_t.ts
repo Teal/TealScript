@@ -1,3 +1,10 @@
-﻿enum A {
-    [a] = 2
+﻿class B {
+
+}
+
+class A extends B {
+    @super.f()
+    aa() {
+
+    };
 }

@@ -118,13 +118,13 @@ export class Parser {
                 return this.lexer.read().end;
             case TokenType.closeBrace:
             case TokenType.endOfFile:
-                return options.autoInsertSemicolon === false ?
+                return options.allowMissingSemicolon === false ?
                     this.expectToken(TokenType.semicolon).end :
                     this.lexer.current.end;
             default:
                 // 根据标准：只有出现换行时才允许自动插入分号。
                 // 当启用 smartSemicolonInsertion 时，将允许在未换行时自动插入分号。
-                return options.autoInsertSemicolon === false || (options.smartSemicolonInsertion === false && !this.lexer.peek().onNewLine) ?
+                return options.allowMissingSemicolon === false || (options.smartSemicolonInsertion === false && !this.lexer.peek().onNewLine) ?
                     this.expectToken(TokenType.semicolon).end :
                     this.lexer.current.end;
         }
@@ -360,7 +360,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个语句块({...})。
+     * 解析一个语句块(`{...}`)。
      */
     private parseBlockStatement() {
         console.assert(this.lexer.peek().type === TokenType.openBrace);
@@ -381,7 +381,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个变量声明语句(var xx、let xx、const xx)。
+     * 解析一个变量声明语句(`var xx、let xx、const xx`)。
      */
     private parseVariableStatement() {
         console.assert(this.lexer.peek().type === TokenType.var || this.lexer.peek().type === TokenType.let || this.lexer.peek().type === TokenType.const);
@@ -396,7 +396,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个变量声明列表(xx = 1, ...)。
+     * 解析一个变量声明列表(`xx = 1, ...`)。
      */
     private parseVariableDeclarationList() {
         const result = new nodes.NodeList<nodes.VariableDeclaration>();
@@ -413,7 +413,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个变量声明(x = 1、[x] = [1]、{a: x} = {a: 1})。
+     * 解析一个变量声明(`x = 1、[x] = [1]、{a: x} = {a: 1}`)。
      */
     private parseVariableDeclaration() {
         const result = new nodes.VariableDeclaration();
@@ -430,7 +430,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个绑定名称(xx, [xx], {x:x})。
+     * 解析一个绑定名称(`xx, [xx], {x:x}`)。
      */
     private parseBindingName() {
         switch (this.lexer.peek().type) {
@@ -446,7 +446,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个数组绑定模式项([xx])。
+     * 解析一个数组绑定模式项(`[xx]`)。
      */
     private parseArrayBindingPattern() {
         console.assert(this.lexer.peek().type === TokenType.openBracket);
@@ -483,7 +483,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个对象绑定模式项({xx: xx})。
+     * 解析一个对象绑定模式项(`{xx: xx}`)。
      */
     private parseObjectBindingPattern() {
         console.assert(this.lexer.peek().type === TokenType.openBrace);
@@ -519,7 +519,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个属性名称(xx、"xx"、[xx])。
+     * 解析一个属性名称(`xx、"xx"、[xx]`)。
      */
     private parsePropertyName(): nodes.PropertyName {
         switch (this.lexer.peek().type) {
@@ -549,7 +549,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个空语句(;)。
+     * 解析一个空语句(`;`)。
      */
     private parseEmptyStatement() {
         console.assert(this.lexer.peek().type === TokenType.semicolon);
@@ -559,7 +559,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个标签语句(xx: ...)。
+     * 解析一个标签语句(`xx: ...`)。
      * @param label 已解析的标签部分。
      */
     private parseLabeledStatement(label: nodes.Identifier) {
@@ -572,7 +572,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个表达式语句(x();)。
+     * 解析一个表达式语句(x(`);`)。
      */
     private parseExpressionStatement() {
         console.assert(isExpressionStart(this.lexer.peek().type));
@@ -583,7 +583,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个表达式语句(x();)。
+     * 解析一个表达式语句(x(`);`)。
      * @param parsed 已解析的表达式。
      */
     private parseRestExpressionStatement(parsed: nodes.Expression) {
@@ -595,7 +595,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 if 语句(if(xx) ...)。
+     * 解析一个 if 语句(if(`xx) ...`)。
      */
     private parseIfStatement() {
         console.assert(this.lexer.peek().type === TokenType.if);
@@ -620,7 +620,7 @@ export class Parser {
             result.condition = this.parseExpression(ParseFlags.allowIn);
             result.closeParanToken = this.expectToken(TokenType.closeParen).start;
         } else {
-            if (options.autoInsertParenthese === false) {
+            if (options.allowMissingParenthese === false) {
                 this.expectToken(TokenType.openParen);
             }
             result.condition = this.parseExpression(ParseFlags.allowIn);
@@ -650,13 +650,13 @@ export class Parser {
     }
 
     /**
-     * 解析一个 switch 语句(switch(xx){...})。
+     * 解析一个 switch 语句(switch(`xx){...}`)。
      */
     private parseSwitchStatement() {
         console.assert(this.lexer.peek().type == TokenType.switch);
         const result = new nodes.SwitchStatement();
         result.start = this.lexer.read().start;
-        if (options.autoInsertSwitchCondition === false || this.lexer.peek().type !== TokenType.openBrace) {
+        if (options.allowMissingSwitchCondition === false || this.lexer.peek().type !== TokenType.openBrace) {
             this.parseCondition(result);
         }
         result.cases = new nodes.NodeList<nodes.CaseClause>();
@@ -696,7 +696,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 for 语句(for(var i = 0; i < 9; i++) ...)。
+     * 解析一个 for 语句(for(`var i = 0; i < 9; i++) ...`)。
      */
     private parseForStatement() {
         console.assert(this.lexer.peek().type == TokenType.for);
@@ -704,7 +704,7 @@ export class Parser {
         const openParan = this.lexer.peek().type === TokenType.openParen ?
             this.lexer.read().start :
             undefined;
-        if (openParan == undefined && options.autoInsertParenthese === false) {
+        if (openParan == undefined && options.allowMissingParenthese === false) {
             this.expectToken(TokenType.openParen);
         }
 
@@ -810,7 +810,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 while 语句(while(...) ...)。
+     * 解析一个 while 语句(while(`...) ...`)。
      */
     private parseWhileStatement() {
         console.assert(this.lexer.peek().type === TokenType.while);
@@ -822,7 +822,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 do..while 语句(do ... while(xx);)。
+     * 解析一个 do..while 语句(do ... while(`xx);`)。
      */
     private parseDoWhileStatement() {
         console.assert(this.lexer.peek().type === TokenType.do);
@@ -836,7 +836,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 continue 语句(continue xx;)。
+     * 解析一个 continue 语句(`continue xx;`)。
      */
     private parseContinueStatement() {
         console.assert(this.lexer.peek().type === TokenType.continue);
@@ -850,7 +850,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 break 语句(break xx;)。
+     * 解析一个 break 语句(`break xx;`)。
      */
     private parseBreakStatement() {
         console.assert(this.lexer.peek().type === TokenType.break);
@@ -864,7 +864,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 return 语句(return xx;)。
+     * 解析一个 return 语句(`return xx;`)。
      */
     private parseReturnStatement() {
         console.assert(this.lexer.peek().type === TokenType.return);
@@ -880,7 +880,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 throw 语句(throw xx;)。
+     * 解析一个 throw 语句(`throw xx;`)。
      */
     private parseThrowStatement() {
         console.assert(this.lexer.peek().type === TokenType.throw);
@@ -898,7 +898,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 try 语句(try {...} catch(e) {...})。
+     * 解析一个 try 语句(try {...} catch(`e) {...}`)。
      */
     private parseTryStatement() {
         console.assert(this.lexer.peek().type == TokenType.try);
@@ -913,9 +913,9 @@ export class Parser {
                 result.catch.openParanToken = this.lexer.read().start;
                 result.catch.variable = this.parseBindingName();
                 result.catch.openParanToken = this.expectToken(TokenType.closeParen).start;
-            } else if (options.autoInsertParenthese !== false && this.isBindingName()) {
+            } else if (options.allowMissingParenthese !== false && this.isBindingName()) {
                 result.catch.variable = this.parseBindingName();
-            } else if (options.allowTryStatementCatchMissingVaribale !== false) {
+            } else if (options.allowMissingCatchVaribale !== false) {
                 this.expectToken(TokenType.openParen);
             }
             result.catch.body = this.parseTryClauseBody();
@@ -934,7 +934,7 @@ export class Parser {
      * 解析一个 try 语句的语句块。
      */
     private parseTryClauseBody() {
-        if (options.autoInsertTryStatementBlock !== false) {
+        if (options.allowMissingTryBlock !== false) {
             return this.parseEmbeddedStatement();
         }
 
@@ -949,7 +949,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 debugger 语句(debugger;)。
+     * 解析一个 debugger 语句(`debugger;`)。
      */
     private parseDebuggerStatement() {
         console.assert(this.lexer.peek().type == TokenType.debugger);
@@ -960,7 +960,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 with 语句(with(...) ...)。
+     * 解析一个 with 语句(with(`...) ...`)。
      */
     private parseWithStatement() {
         console.assert(this.lexer.peek().type == TokenType.with);
@@ -973,7 +973,7 @@ export class Parser {
                 this.parseExpression(ParseFlags.allowIn);
             result.closeParanToken = this.expectToken(TokenType.closeParen).start;
         } else {
-            if (options.autoInsertParenthese === false) {
+            if (options.allowMissingParenthese === false) {
                 this.expectToken(TokenType.openParen);
             }
             result.value = options.allowWithVaribale !== false && this.isVariableStatement() ?
@@ -983,6 +983,294 @@ export class Parser {
         result.body = this.parseEmbeddedStatement();
         return result;
     }
+
+    // #endregion
+
+    // #region 声明
+
+    /**
+     * 解析修饰器列表(`@xx`)。
+     * @param result 存放结果的对象。
+     */
+    private parseDecoratorList(result: nodes.Declaration) {
+
+        // 无修饰器。
+        if (this.lexer.peek().type !== TokenType.at) {
+            return;
+        }
+
+        result.decorators = new nodes.NodeList<nodes.Decorator>();
+        do {
+            const decorator = new nodes.Decorator();
+            decorator.start = this.lexer.read().start;
+            decorator.body = this.parseExpression();
+
+            // 检查修饰器是否是合法的表达式。
+
+            result.decorators.push(decorator);
+        } while (this.lexer.peek().type === TokenType.at);
+    }
+
+    /**
+     * 解析一个修饰符(`static、private、...`)。
+     */
+    private parseModifier() {
+
+    }
+
+    /**
+     * 解析一个函数声明(function fn() {...}、function * fn(`){...}`)。
+     */
+    private parseFunctionDeclaration() {
+        console.assert(this.lexer.peek().type === TokenType.function);
+        const result = new nodes.FunctionDeclaration();
+        this.parseJSDocComment(result);
+        result.start = this.lexer.read().start;
+        if (this.lexer.peek().type === TokenType.asterisk) {
+            result.asteriskToken = this.lexer.read().type;
+        }
+
+        result.name = this.expectIdentifier();
+        result.typeParameters = this.parseTypeParameters();
+        switch (this.lexer.peek().type) {
+            case TokenType.openBrace:
+                result.body = this.parseBlockStatement();
+                break;
+            case TokenType.equalsGreaterThan:
+                result.body = this.parseArrowFunctionExpression();
+                break;
+            case TokenType.semicolon:
+                this.lexer.read();
+                break;
+            default:
+                this.expectToken(TokenType.openBrace);
+                break;
+        }
+        result.end = this.lexer.current.end;
+
+        return result;
+    }
+
+    private parseFunctionBody(result) {
+
+    }
+
+    /**
+     * 解析一个泛型参数声明。
+     */
+    private parseTypeParametersDeclaration() {
+
+
+    }
+
+    /**
+     * 解析一个函数表达式(function (`) {}`)。
+     */
+    private parseFunctionExpression() {
+
+
+
+
+
+    }
+
+    /**
+     * 解析一个参数声明(`x、x = 1、...x`)。
+     */
+    private parseParameterDeclaration() {
+
+
+
+
+    }
+
+    /**
+     * 解析一个类声明(`class T {...}`)。
+     */
+    private parseClassDeclaration() {
+
+
+
+
+
+
+
+    }
+
+    /**
+     * 解析一个属性声明(`x: 1`)。
+     */
+    private parsePropertyDeclaration() {
+
+
+
+    }
+
+    /**
+     * 解析一个方法声明(fn(`) {...}`)。
+     */
+    private parseMethodDeclaration() {
+
+
+
+
+
+
+
+    }
+
+    /**
+     * 解析一个解析器声明(get fn() {...}、set fn(`) {...}`)。
+     */
+    private parseAccessorDeclaration() {
+
+
+
+
+
+
+
+    }
+
+    /**
+     * 解析一个接口声明(`interface T {...}`)。
+     */
+    private parseInterfaceDeclaration() {
+
+
+
+
+
+
+    }
+
+    /**
+     * 解析一个枚举声明(`enum T {}`)。
+     */
+    private parseEnumDeclaration() {
+
+
+
+
+    }
+
+    /**
+     * 解析一个枚举声明或表达式(`enum xx {}`)。
+     */
+    private parseEnumDeclarationOrExpression(expression: boolean) {
+        console.assert(this.lexer.peek().type === TokenType.enum);
+        const result: nodes.EnumExpression | nodes.EnumDeclaration = expression ? new nodes.EnumExpression() : new nodes.EnumDeclaration();
+        result.start = this.lexer.read().start;
+        if (expression || this.lexer.peek().type === TokenType.identifier) {
+            result.name = this.parseIdentifier();
+        } else {
+            result.name = this.expectIdentifier();
+        }
+        if (this.lexer.peek().type === TokenType.openBrace) {
+            result.members = new nodes.NodeList<nodes.EnumMemberDeclaration>();
+            result.members.start = this.lexer.read().start;
+            while (true) {
+                switch (this.lexer.peek().type) {
+                    case TokenType.closeBrace:
+                        result.end = this.lexer.read().end;
+                        return result;
+                    case TokenType.endOfFile:
+                        result.end = this.expectToken(TokenType.closeBrace).end;
+                        return result;
+                }
+                const member = new nodes.EnumMemberDeclaration();
+                member.name = this.expectIdentifier();
+                if (this.lexer.peek().type === TokenType.equals) {
+                    member.equalToken = this.lexer.read().start;
+                    member.initializer = this.parseExpression(ParseFlags.allowIn);
+                }
+                result.members.push(member);
+            }
+        }
+    }
+
+    /**
+     * 解析一个枚举成员声明(`xx = 1`)。
+     */
+    private parseEnumMemberDeclaration() {
+
+
+
+
+    }
+
+    /**
+     * 解析一个命名空间声明(`namespace abc {...}、module abc {...}`)。
+     */
+    private parseNamespaceDeclaration() {
+
+
+    }
+
+    /**
+     * 解析一个 import 指令(`import xx from '...';`)。
+     */
+    private parseImportDirective() {
+        console.assert(this.lexer.peek().type == TokenType.import);
+        const start = this.lexer.read().type;
+
+        let identifier: nodes.Identifier;
+        switch (this.lexer.peek().type) {
+            case TokenType.identifier:
+                identifier = this.parseIdentifier();
+                break;
+            case TokenType.stringLiteral:
+                break;
+            case TokenType.openBrace:
+                break;
+            case TokenType.asterisk:
+                break;
+            default:
+                identifier = this.expectIdentifier();
+                break;
+        }
+
+        const result = new nodes.ImportDeclaration();
+
+    }
+
+    /**
+     * 解析一个 import = 指令(import xx = require(`"");`)。
+     */
+    private parseImportEqualsDirective() {
+
+    }
+
+    /**
+     * 解析一个名字导入声明项(`a as b`)。
+     */
+    private parseNameImportClause() {
+
+
+    }
+
+    /**
+     * 解析一个命名空间导入声明项(`{a as b}`)。
+     */
+    private parseNamespaceImportClause() {
+
+    }
+
+    /**
+     * 解析一个 export 指令(`export xx from '...';`)。
+     */
+    private parseExportDirective() {
+
+
+    }
+
+    /**
+     * 解析一个 export = 指令(`export = 1;`)。
+     */
+    private parseExportEqualsDirective() {
+
+    }
+
 
     // #endregion
 
@@ -1004,7 +1292,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个标识符(x)。
+     * 解析一个标识符(`x`)。
      */
     private parseIdentifier() {
         console.assert(this.lexer.peek().type === TokenType.identifier);
@@ -1016,7 +1304,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个简单字面量(this、super、null、true、false)。
+     * 解析一个简单字面量(`this、super、null、true、false`)。
      */
     private parseSimpleLiteral() {
         console.assert(this.lexer.peek().type === TokenType.this ||
@@ -1032,7 +1320,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个数字字面量(1)。
+     * 解析一个数字字面量(`1`)。
      */
     private parseNumericLiteral() {
         console.assert(this.lexer.peek().type === TokenType.numericLiteral);
@@ -1044,7 +1332,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个字符串字面量('abc'、"abc"、`abc`)。
+     * 解析一个字符串字面量(`'abc'、"abc"、`abc``)。
      */
     private parseStringLiteral() {
         console.assert(this.lexer.peek().type === TokenType.stringLiteral || this.lexer.peek().type === TokenType.noSubstitutionTemplateLiteral);
@@ -1056,7 +1344,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个模板字面量(`abc${x + y}def`)。
+     * 解析一个模板字面量(``abc${x + y}def``)。
      */
     private parseTemplateLiteral() {
         console.assert(this.lexer.peek().type === TokenType.templateHead);
@@ -1094,7 +1382,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个正则表达式字面量(/abc/)。
+     * 解析一个正则表达式字面量(`/abc/`)。
      */
     private parseRegularExpressionLiteral() {
         console.assert(this.lexer.peek().type === TokenType.slash || this.lexer.peek().type === TokenType.slashEquals);
@@ -1107,7 +1395,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个数组字面量([x, y])。
+     * 解析一个数组字面量(`[x, y]`)。
      */
     private parseArrayLiteral() {
         console.assert(this.lexer.peek().type === TokenType.openBracket);
@@ -1133,7 +1421,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个对象字面量({x: y})。
+     * 解析一个对象字面量(`{x: y}`)。
      */
     private parseObjectLiteral() {
         console.assert(this.lexer.peek().type === TokenType.openBrace);
@@ -1174,18 +1462,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个函数表达式(function () {})。
-     */
-    private parseFunctionExpression() {
-
-
-
-
-
-    }
-
-    /**
-     * 解析一个箭头函数表达式(x => y)。
+     * 解析一个箭头函数表达式(`x => y`)。
      */
     private parseArrowFunctionExpression() {
 
@@ -1194,7 +1471,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个类表达式(class xx {})。
+     * 解析一个类表达式(`class xx {}`)。
      */
     private parseClassExpression() {
         console.assert(this.lexer.peek().type === TokenType.class);
@@ -1244,7 +1521,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个接口表达式(interface xx {})。
+     * 解析一个接口表达式(`interface xx {}`)。
      */
     private parseInterfaceExpression() {
 
@@ -1254,14 +1531,14 @@ export class Parser {
     }
 
     /**
-     * 解析一个枚举表达式(enum xx {})。
+     * 解析一个枚举表达式(`enum xx {}`)。
      */
     private parseEnumExpression() {
         return this.parseEnumDeclarationOrExpression(true);
     }
 
     /**
-     * 解析一个括号表达式((x))。
+     * 解析一个括号表达式((`x)`)。
      */
     private parseParenthesizedExpression() {
         console.assert(this.lexer.peek().type === TokenType.openParen);
@@ -1273,7 +1550,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个成员调用表达式(x.y)。
+     * 解析一个成员调用表达式(`x.y`)。
      * @param parsed 已解析的表达式部分。
      */
     private parseMemberCallExpression(parsed: nodes.Expression) {
@@ -1286,7 +1563,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个函数调用表达式(x())。
+     * 解析一个函数调用表达式(x(`)`)。
      * @param parsed 已解析的表达式部分。
      */
     private parseFunctionCallExpression(parsed: nodes.Expression) {
@@ -1297,7 +1574,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个索引调用表达式(x[y])。
+     * 解析一个索引调用表达式(`x[y]`)。
      * @param parsed 已解析的表达式部分。
      */
     private parseIndexCallExpression(parsed: nodes.Expression) {
@@ -1309,7 +1586,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个模板调用表达式(x`abc`)。
+     * 解析一个模板调用表达式(`x`abc``)。
      * @param parsed 已解析的表达式部分。
      */
     private parseTemplateCallExpression(parsed: nodes.Expression) {
@@ -1321,7 +1598,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 new 表达式(new x())。
+     * 解析一个 new 表达式(new x(`)`)。
      */
     private parseNewExpression() {
         console.assert(this.lexer.peek().type === TokenType.new);
@@ -1329,14 +1606,14 @@ export class Parser {
     }
 
     /**
-     * 解析一个 new.target 表达式(new.target)。
+     * 解析一个 new.target 表达式(`new.target`)。
      */
     private parseNewTargetExpression() {
 
     }
 
     /**
-     * 解析一个一元运算表达式(+x、typeof x、...)。
+     * 解析一个一元运算表达式(`+x、typeof x、...`)。
      */
     private parseUnaryExpression() {
         console.assert(isUnaryOperator(this.lexer.peek().type));
@@ -1347,7 +1624,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个一元运算表达式(+x、typeof x、...)。
+     * 解析一个一元运算表达式(`+x、typeof x、...`)。
      */
     private parsePrefixIncrementExpression() {
         console.assert(this.lexer.peek().type === TokenType.plusPlus || this.lexer.peek().type === TokenType.minusMinus);
@@ -1360,7 +1637,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个一元运算表达式(+x、typeof x、...)。
+     * 解析一个一元运算表达式(`+x、typeof x、...`)。
      * @param parsed 已解析的表达式部分。
      */
     private parsePostfixIncrementExpression(parsed: nodes.Expression) {
@@ -1374,7 +1651,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个二元运算表达式(x + y、x = y、...)。
+     * 解析一个二元运算表达式(`x + y、x = y、...`)。
      * @param parsed 已解析的表达式部分。
      */
     private parseBinaryExpression(parsed: nodes.Expression) {
@@ -1388,14 +1665,14 @@ export class Parser {
     }
 
     /**
-     * 解析一个 yield 表达式(yield x、yield * x)。
+     * 解析一个 yield 表达式(`yield x、yield * x`)。
      */
     private parseYieldExpression() {
 
     }
 
     /**
-     * 解析一个条件表达式(x ? y : z)。
+     * 解析一个条件表达式(`x ? y : z`)。
      * @param parsed 已解析的表达式部分。
      */
     private parseConditionalExpression(parsed: nodes.Expression) {
@@ -1410,7 +1687,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个类型转换表达式(<T>xx)。
+     * 解析一个类型转换表达式(`<T>xx`)。
      */
     private parseTypeCastExpression() {
 
@@ -1418,7 +1695,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个泛型表达式(Array<T>)。
+     * 解析一个泛型表达式(`Array<T>`)。
      * @param parsed 已解析的表达式部分。
      */
     private parseGenericTypeExpression(parsed: nodes.Expression) {
@@ -1427,7 +1704,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个数组类型表达式(T[])。
+     * 解析一个数组类型表达式(`T[]`)。
      * @param parsed 已解析的表达式部分。
      */
     private parseArrayTypeExpression(parsed: nodes.Expression) {
@@ -1436,275 +1713,10 @@ export class Parser {
 
     // #endregion
 
-    // #region 成员声明
-
-    /**
-     * 解析一个修饰器(@xx)。
-     */
-    private parseDecorator() {
-
-    }
-
-    /**
-     * 解析一个修饰符(static、private、...)。
-     */
-    private parseModifier() {
-
-    }
-
-    /**
-     * 解析一个函数声明(function fn() {...}、function * fn(){...})。
-     */
-    private parseFunctionDeclaration() {
-        console.assert(this.lexer.peek().type === TokenType.function);
-        const result = new nodes.FunctionDeclaration();
-        this.parseJSDocComment(result);
-        result.start = this.lexer.read().start;
-        if (this.lexer.peek().type === TokenType.asterisk) {
-            result.asteriskToken = this.lexer.read().type;
-        }
-
-        result.name = this.expectIdentifier();
-        result.typeParameters = this.parseTypeParameters();
-        switch (this.lexer.peek().type) {
-            case TokenType.openBrace:
-                result.body = this.parseBlockStatement();
-                break;
-            case TokenType.equalsGreaterThan:
-                result.body = this.parseArrowFunctionExpression();
-                break;
-            case TokenType.semicolon:
-                this.lexer.read();
-                break;
-            default:
-                this.expectToken(TokenType.openBrace);
-                break;
-        }
-        result.end = this.lexer.current.end;
-
-        return result;
-    }
-
-    private parseFunctionBody(result) {
-
-    }
-
-    /**
-     * 解析一个泛型参数声明。
-     */
-    private parseTypeParametersDeclaration() {
-
-
-    }
-
-    /**
-     * 解析一个参数声明(x、x = 1、...x)。
-     */
-    private parseParameterDeclaration() {
-
-
-
-
-    }
-
-    /**
-     * 解析一个类声明(class T {...})。
-     */
-    private parseClassDeclaration() {
-
-
-
-
-
-
-
-    }
-
-    /**
-     * 解析一个属性声明(x: 1)。
-     */
-    private parsePropertyDeclaration() {
-
-
-
-    }
-
-    /**
-     * 解析一个方法声明(fn() {...})。
-     */
-    private parseMethodDeclaration() {
-
-
-
-
-
-
-
-    }
-
-    /**
-     * 解析一个解析器声明(get fn() {...}、set fn() {...})。
-     */
-    private parseAccessorDeclaration() {
-
-
-
-
-
-
-
-    }
-
-    /**
-     * 解析一个接口声明(interface T {...})。
-     */
-    private parseInterfaceDeclaration() {
-
-
-
-
-
-
-    }
-
-    /**
-     * 解析一个枚举声明(enum T {})。
-     */
-    private parseEnumDeclaration() {
-
-
-
-
-    }
-
-    /**
-     * 解析一个枚举声明或表达式(enum xx {})。
-     */
-    private parseEnumDeclarationOrExpression(expression: boolean) {
-        console.assert(this.lexer.peek().type === TokenType.enum);
-        const result: nodes.EnumExpression | nodes.EnumDeclaration = expression ? new nodes.EnumExpression() : new nodes.EnumDeclaration();
-        result.start = this.lexer.read().start;
-        if (expression || this.lexer.peek().type === TokenType.identifier) {
-            result.name = this.parseIdentifier();
-        } else {
-            result.name = this.expectIdentifier();
-        }
-        if (this.lexer.peek().type === TokenType.openBrace) {
-            result.members = new nodes.NodeList<nodes.EnumMemberDeclaration>();
-            result.members.start = this.lexer.read().start;
-            while (true) {
-                switch (this.lexer.peek().type) {
-                    case TokenType.closeBrace:
-                        result.end = this.lexer.read().end;
-                        return result;
-                    case TokenType.endOfFile:
-                        result.end = this.expectToken(TokenType.closeBrace).end;
-                        return result;
-                }
-                const member = new nodes.EnumMemberDeclaration();
-                member.name = this.expectIdentifier();
-                if (this.lexer.peek().type === TokenType.equals) {
-                    member.equalToken = this.lexer.read().start;
-                    member.initializer = this.parseExpression(ParseFlags.allowIn);
-                }
-                result.members.push(member);
-            }
-        }
-    }
-
-    /**
-     * 解析一个枚举成员声明(xx = 1)。
-     */
-    private parseEnumMemberDeclaration() {
-
-
-
-
-    }
-
-    /**
-     * 解析一个命名空间声明(namespace abc {...}、module abc {...})。
-     */
-    private parseNamespaceDeclaration() {
-
-
-    }
-
-    // #endregion
-
-    // #region 导入和导出
-
-    /**
-     * 解析一个 import 指令(import xx from '...';)。
-     */
-    private parseImportDirective() {
-        console.assert(this.lexer.peek().type == TokenType.import);
-        const start = this.lexer.read().type;
-
-        let identifier: nodes.Identifier;
-        switch (this.lexer.peek().type) {
-            case TokenType.identifier:
-                identifier = this.parseIdentifier();
-                break;
-            case TokenType.stringLiteral:
-                break;
-            case TokenType.openBrace:
-                break;
-            case TokenType.asterisk:
-                break;
-            default:
-                identifier = this.expectIdentifier();
-                break;
-        }
-
-        const result = new nodes.ImportDeclaration();
-
-    }
-
-    /**
-     * 解析一个 import = 指令(import xx = require("");)。
-     */
-    private parseImportEqualsDirective() {
-
-    }
-
-    /**
-     * 解析一个名字导入声明项(a as b)。
-     */
-    private parseNameImportClause() {
-
-
-    }
-
-    /**
-     * 解析一个命名空间导入声明项({a as b})。
-     */
-    private parseNamespaceImportClause() {
-
-    }
-
-    /**
-     * 解析一个 export 指令(export xx from '...';)。
-     */
-    private parseExportDirective() {
-
-
-    }
-
-    /**
-     * 解析一个 export = 指令(export = 1;)。
-     */
-    private parseExportEqualsDirective() {
-
-    }
-
-
-    // #endregion
-
     // #region Jsx 节点
 
     /**
-     * 解析一个 JSX 标签(<div>...</div>)。
+     * 解析一个 JSX 标签(`<div>...</div>`)。
      */
     private parseJsxElement() {
 
@@ -1713,7 +1725,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个 JSX 标签属性(id="a")。
+     * 解析一个 JSX 标签属性(`id="a"`)。
      */
     private parseJsxAttribute() {
 
@@ -1721,21 +1733,21 @@ export class Parser {
     }
 
     /**
-     * 解析一个 JSX 文本({...})。
+     * 解析一个 JSX 文本(`{...}`)。
      */
     private parseJsxText() {
 
     }
 
     /**
-     * 解析一个 JSX 表达式({...})。
+     * 解析一个 JSX 表达式(`{...}`)。
      */
     private parseJsxExpression() {
 
     }
 
     /**
-     * 解析一个 JSX 关闭元素({...})。
+     * 解析一个 JSX 关闭元素(`{...}`)。
      */
     private parseJsxClosingElement() {
 

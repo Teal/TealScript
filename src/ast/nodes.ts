@@ -196,7 +196,7 @@ export abstract class Statement extends Node {
 }
 
 /**
- * 表示一个语句块({...})。
+ * 表示一个语句块(`{...}`)。
  */
 export class BlockStatement extends Statement {
 
@@ -227,7 +227,7 @@ export class BlockStatement extends Statement {
 }
 
 /**
- * 表示一个变量声明语句(var xx、let xx、const xx)。
+ * 表示一个变量声明语句(`var xx、let xx、const xx`)。
  */
 export class VariableStatement extends Statement {
 
@@ -268,7 +268,7 @@ export class VariableStatement extends Statement {
 }
 
 /**
- * 表示一个变量声明(x = 1、[x] = [1]、{a: x} = {a: 1})。
+ * 表示一个变量声明(`x = 1、[x] = [1]、{a: x} = {a: 1}`)。
  */
 export class VariableDeclaration extends Node {
 
@@ -330,7 +330,7 @@ export class VariableDeclaration extends Node {
 }
 
 /**
- * 表示一个空语句(;)。
+ * 表示一个空语句(`;`)。
  */
 export class EmptyStatement extends Statement {
 
@@ -356,7 +356,7 @@ export class EmptyStatement extends Statement {
 }
 
 /**
- * 表示一个标签语句(xx: ...)。
+ * 表示一个标签语句(`xx: ...`)。
  */
 export class LabeledStatement extends Statement {
 
@@ -408,7 +408,7 @@ export class LabeledStatement extends Statement {
 }
 
 /**
- * 表示一个表达式语句(x();)。
+ * 表示一个表达式语句(x(`);`)。
  */
 export class ExpressionStatement extends Statement {
 
@@ -449,7 +449,7 @@ export class ExpressionStatement extends Statement {
 }
 
 /**
- * 表示一个 if 语句(if(xx) ...)。
+ * 表示一个 if 语句(if(`xx) ...`)。
  */
 export class IfStatement extends Statement {
 
@@ -505,14 +505,14 @@ export class IfStatement extends Statement {
      */
     each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.condition, "condition", this) !== false &&
-            callback.call(scope, this.then, "thenStatement", this) !== false &&
-            (!this.else || callback.call(scope, this.else, "elseStatement", this) !== false);
+            callback.call(scope, this.then, "then", this) !== false &&
+            (!this.else || callback.call(scope, this.else, "else", this) !== false);
     }
 
 }
 
 /**
- * 表示一个 switch 语句(switch(xx){...})。
+ * 表示一个 switch 语句(switch(`xx){...}`)。
  */
 export class SwitchStatement extends Statement {
 
@@ -564,7 +564,7 @@ export class SwitchStatement extends Statement {
 }
 
 /**
- * 表示一个 case 分支(case ...:{...})。
+ * 表示一个 case 分支(`case ...:{...}`)。
  */
 export class CaseClause extends Node {
 
@@ -616,7 +616,7 @@ export class CaseClause extends Node {
 }
 
 /**
- * 表示一个 for 语句(for(var i = 0; i < 9; i++) ...)。
+ * 表示一个 for 语句(for(`var i = 0; i < 9; i++) ...`)。
  */
 export class ForStatement extends Statement {
 
@@ -690,7 +690,7 @@ export class ForStatement extends Statement {
 }
 
 /**
- * 表示一个 for..in 语句(for(var x in y) ...)。
+ * 表示一个 for..in 语句(for(`var x in y) ...`)。
  */
 export class ForInStatement extends Statement {
 
@@ -753,7 +753,7 @@ export class ForInStatement extends Statement {
 }
 
 /**
- * 表示一个 for..of 语句(for(var x of y) ...)。
+ * 表示一个 for..of 语句(for(`var x of y) ...`)。
  */
 export class ForOfStatement extends Statement {
 
@@ -816,7 +816,7 @@ export class ForOfStatement extends Statement {
 }
 
 /**
- * 表示一个 for..to 语句(for(var x = 0 to 10) ...)。
+ * 表示一个 for..to 语句(for(`var x = 0 to 10) ...`)。
  */
 export class ForToStatement extends Statement {
 
@@ -879,7 +879,7 @@ export class ForToStatement extends Statement {
 }
 
 /**
- * 表示一个 while 语句(while(...) ...)。
+ * 表示一个 while 语句(while(`...) ...`)。
  */
 export class WhileStatement extends Statement {
 
@@ -931,7 +931,7 @@ export class WhileStatement extends Statement {
 }
 
 /**
- * 表示一个 do..while 语句(do ... while(xx);)。
+ * 表示一个 do..while 语句(do ... while(`xx);`)。
  */
 export class DoWhileStatement extends Statement {
 
@@ -988,7 +988,7 @@ export class DoWhileStatement extends Statement {
 }
 
 /**
- * 表示一个 continue 语句(continue xx;)。
+ * 表示一个 continue 语句(`continue xx;`)。
  */
 export class ContinueStatement extends Statement {
 
@@ -1024,7 +1024,7 @@ export class ContinueStatement extends Statement {
 }
 
 /**
- * 表示一个 break 语句(break xx;)。
+ * 表示一个 break 语句(`break xx;`)。
  */
 export class BreakStatement extends Statement {
 
@@ -1060,7 +1060,7 @@ export class BreakStatement extends Statement {
 }
 
 /**
- * 表示一个 return 语句(return xx;)。
+ * 表示一个 return 语句(`return xx;`)。
  */
 export class ReturnStatement extends Statement {
 
@@ -1096,7 +1096,7 @@ export class ReturnStatement extends Statement {
 }
 
 /**
- * 表示一个 throw 语句(throw xx;)。
+ * 表示一个 throw 语句(`throw xx;`)。
  */
 export class ThrowStatement extends Statement {
 
@@ -1132,7 +1132,7 @@ export class ThrowStatement extends Statement {
 }
 
 /**
- * 表示一个 try 语句(try {...} catch(e) {...})。
+ * 表示一个 try 语句(try {...} catch(`e) {...}`)。
  */
 export class TryStatement extends Statement {
 
@@ -1180,7 +1180,7 @@ export class TryStatement extends Statement {
 }
 
 /**
- * 表示一个 catch 分句(catch(e) {...})。
+ * 表示一个 catch 分句(catch(`e) {...}`)。
  */
 export class CatchClause extends Node {
 
@@ -1231,7 +1231,7 @@ export class CatchClause extends Node {
 }
 
 /**
- * 表示一个 finally 分句(finally {...})。
+ * 表示一个 finally 分句(`finally {...}`)。
  */
 export class FinallyClause extends Node {
 
@@ -1267,7 +1267,7 @@ export class FinallyClause extends Node {
 }
 
 /**
- * 表示一个 debugger 语句(debugger;)。
+ * 表示一个 debugger 语句(`debugger;`)。
  */
 export class DebuggerStatement extends Statement {
 
@@ -1288,7 +1288,7 @@ export class DebuggerStatement extends Statement {
 }
 
 /**
- * 表示一个 with 语句(with(xx) ...)。
+ * 表示一个 with 语句(with(`xx) ...`)。
  */
 export class WithStatement extends Statement {
 
@@ -1341,10 +1341,10 @@ export class WithStatement extends Statement {
 
 // #endregion
 
-// #region 成员声明
+// #region 声明
 
 /**
- * 表示一个声明(function fn() {...}、class T { ... }、...)。
+ * 表示一个声明(function fn(`) {...}、class T { ... }、...`)。
  */
 export abstract class Declaration extends Statement {
 
@@ -1371,7 +1371,7 @@ export abstract class Declaration extends Statement {
 }
 
 /**
- * 表示一个修饰器(@xx)。
+ * 表示一个修饰器(`@xx`)。
  */
 export class Decorator extends Node {
 
@@ -1407,7 +1407,7 @@ export class Decorator extends Node {
 }
 
 /**
- * 表示一个修饰符(static、private、...)。
+ * 表示一个修饰符(`static、private、...`)。
  */
 export class Modifier extends Node {
 
@@ -1433,7 +1433,7 @@ export class Modifier extends Node {
 }
 
 /**
- * 表示一个类型参数声明(T、T extends R)。
+ * 表示一个类型参数声明(`T、T extends R`)。
  */
 export class TypeParametersDeclaration extends Node {
 
@@ -1469,13 +1469,13 @@ export class TypeParametersDeclaration extends Node {
      */
     each(callback: EachCallback, scope?: any) {
         return callback.call(scope, this.name, "name", this) !== false &&
-            (!this.constraint || callback.call(scope, this.constraint, "constraint", this) !== false);
+            (!this.extends || callback.call(scope, this.extends, "extends", this) !== false);
     }
 
 }
 
 /**
- * 表示一个函数声明(function fn() {...}、function * fn(){...})。
+ * 表示一个函数声明(function fn() {...}、function * fn(`){...}`)。
  */
 export class FunctionDeclaration extends Declaration {
 
@@ -1542,7 +1542,7 @@ export class FunctionDeclaration extends Declaration {
 }
 
 /**
- * 表示一个函数表达式(function () {})。
+ * 表示一个函数表达式(function (`) {}`)。
  */
 export class FunctionExpression extends Expression {
 
@@ -1606,13 +1606,13 @@ export class FunctionExpression extends Expression {
             this.typeParameters.each(callback, scope) &&
             this.parameters.each(callback, scope) &&
             (!this.returnType || callback.call(scope, this.returnType, "returnType", this) !== false) &&
-            (!this.body || callback.call(scope, this.body, "body", this) !== false);
+            callback.call(scope, this.body, "body", this) !== false;
     }
 
 }
 
 /**
- * 表示一个参数声明(x、x = 1、...x)。
+ * 表示一个参数声明(`x、x = 1、...x`)。
  */
 export class ParameterDeclaration extends Node {
 
@@ -1677,8 +1677,7 @@ export class ParameterDeclaration extends Node {
      * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
      */
     each(callback: EachCallback, scope?: any) {
-        return (!this.decorators || this.decorators.each(callback, scope)) &&
-            (!this.modifiers || this.modifiers.each(callback, scope)) &&
+        return (!this.modifiers || this.modifiers.each(callback, scope)) &&
             (!this.type || callback.call(scope, this.type, "type", this) !== false) &&
             (!this.initializer || callback.call(scope, this.initializer, "initializer", this) !== false);
     }
@@ -1686,7 +1685,7 @@ export class ParameterDeclaration extends Node {
 }
 
 /**
- * 表示一个类声明(class T {...})。
+ * 表示一个类声明(`class T {...}`)。
  */
 export class ClassDeclaration extends Declaration {
 
@@ -1744,16 +1743,16 @@ export class ClassDeclaration extends Declaration {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             callback.call(scope, this.name, "name", this) !== false &&
-            (!this.extends || this.extends.each(callback, scope)) &&
-            (!this.implements || this.implements.each(callback, scope)) &&
             (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
+            (!this.extends || callback.call(scope, this.extends, "extends", this) !== false) &&
+            (!this.implements || this.implements.each(callback, scope)) &&
             (!this.members || this.members.each(callback, scope));
     }
 
 }
 
 /**
- * 表示一个类表达式(class xx {})。
+ * 表示一个类表达式(`class xx {}`)。
  */
 export class ClassExpression extends Expression {
 
@@ -1814,16 +1813,16 @@ export class ClassExpression extends Expression {
      */
     each(callback: EachCallback, scope?: any) {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
-            (!this.extends || this.extends.each(callback, scope)) &&
-            (!this.implements || this.implements.each(callback, scope)) &&
             (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
-            this.members.each(callback, scope);
+            (!this.extends || callback.call(scope, this.extends, "extends", this) !== false) &&
+            (!this.implements || this.implements.each(callback, scope)) &&
+            (!this.members || this.members.each(callback, scope));
     }
 
 }
 
 /**
- * 表示一个类型成员声明(x: 1、x() {}、get x(){}、set x(value){})。
+ * 表示一个类型成员声明(x: 1、x() {}、get x(){}、set x(`value){}`)。
  */
 export abstract class TypeMemberDeclaration extends Node {
 
@@ -1840,7 +1839,7 @@ export abstract class TypeMemberDeclaration extends Node {
 }
 
 /**
- * 表示一个属性声明(x: 1)。
+ * 表示一个属性声明(`x: 1`)。
  */
 export class PropertyDeclaration extends TypeMemberDeclaration {
 
@@ -1897,13 +1896,14 @@ export class PropertyDeclaration extends TypeMemberDeclaration {
     each(callback: EachCallback, scope?: any) {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
+            (!this.type || callback.call(scope, this.type, "type", this) !== false) &&
             (!this.value || callback.call(scope, this.value, "value", this) !== false);
     }
 
 }
 
 /**
- * 表示一个方法声明(fn() {...})。
+ * 表示一个方法声明(fn(`) {...}`)。
  */
 export class MethodDeclaration extends TypeMemberDeclaration {
 
@@ -1975,7 +1975,7 @@ export class MethodDeclaration extends TypeMemberDeclaration {
 }
 
 /**
- * 表示一个访问器声明(get fn() {...}、set fn() {...})。
+ * 表示一个访问器声明(get fn() {...}、set fn(`) {...}`)。
  */
 export class AccessorDeclaration extends MethodDeclaration {
 
@@ -2022,7 +2022,7 @@ export class AccessorDeclaration extends MethodDeclaration {
 }
 
 /**
- * 表示一个接口声明(interface T {...})。
+ * 表示一个接口声明(`interface T {...}`)。
  */
 export class InterfaceDeclaration extends Declaration {
 
@@ -2065,15 +2065,15 @@ export class InterfaceDeclaration extends Declaration {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             callback.call(scope, this.name, "name", this) !== false &&
-            (!this.extends || this.extends.each(callback, scope)) &&
             (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
+            (!this.extends || this.extends.each(callback, scope)) &&
             (!this.members || this.members.each(callback, scope));
     }
 
 }
 
 /**
- * 表示一个接口表达式(interface xx {})。
+ * 表示一个接口表达式(`interface xx {}`)。
  */
 export class InterfaceExpression extends Expression {
 
@@ -2116,13 +2116,13 @@ export class InterfaceExpression extends Expression {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
             (!this.extends || this.extends.each(callback, scope)) &&
             (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
-            this.members.each(callback, scope);
+            (!this.members || this.members.each(callback, scope));
     }
 
 }
 
 /**
- * 表示一个枚举声明(enum T {})。
+ * 表示一个枚举声明(`enum T {}`)。
  */
 export class EnumDeclaration extends Declaration {
 
@@ -2155,13 +2155,14 @@ export class EnumDeclaration extends Declaration {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             callback.call(scope, this.name, "name", this) !== false &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             (!this.members || this.members.each(callback, scope));
     }
 
 }
 
 /**
- * 表示一个枚举表达式(enum xx {})。
+ * 表示一个枚举表达式(`enum xx {}`)。
  */
 export class EnumExpression extends Expression {
 
@@ -2192,13 +2193,13 @@ export class EnumExpression extends Expression {
      */
     each(callback: EachCallback, scope?: any) {
         return (!this.name || callback.call(scope, this.name, "name", this) !== false) &&
-            this.members.each(callback, scope);
+            (!this.members || this.members.each(callback, scope));
     }
 
 }
 
 /**
- * 表示一个枚举成员声明(xx = 1)。
+ * 表示一个枚举成员声明(`xx = 1`)。
  */
 export class EnumMemberDeclaration extends Declaration {
 
@@ -2236,13 +2237,14 @@ export class EnumMemberDeclaration extends Declaration {
         return (!this.decorators || this.decorators.each(callback, scope)) &&
             (!this.modifiers || this.modifiers.each(callback, scope)) &&
             callback.call(scope, this.name, "name", this) !== false &&
+            (!this.typeParameters || this.typeParameters.each(callback, scope)) &&
             (!this.initializer || callback.call(scope, this.initializer, "initializer", this) !== false);
     }
 
 }
 
 /**
- * 表示一个命名空间声明(namespace abc {...}、module abc {...})。
+ * 表示一个命名空间声明(`namespace abc {...}、module abc {...}`)。
  */
 export class NamespaceDeclaration extends Node {
 
@@ -2288,12 +2290,8 @@ export class NamespaceDeclaration extends Node {
 
 }
 
-// #endregion
-
-// #region 导入和导出
-
 /**
- * 表示一个 import 声明(import xx from '...';)。
+ * 表示一个 import 声明(`import xx from '...';`)。
  */
 export class ImportDeclaration extends Statement {
 
@@ -2318,7 +2316,7 @@ export class ImportDeclaration extends Statement {
      * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitImportDirective(this);
+        return vistior.visitImportDeclaration(this);
     }
 
     /**
@@ -2335,7 +2333,7 @@ export class ImportDeclaration extends Statement {
 }
 
 /**
- * 表示一个 import = 指令(import xx = require("");)。
+ * 表示一个 import = 指令(import xx = require(`"");`)。
  */
 export class ImportAliasDeclaration extends Statement {
 
@@ -2360,7 +2358,7 @@ export class ImportAliasDeclaration extends Statement {
      * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitImportEqualsDirective(this);
+        return vistior.visitImportAliasDeclaration(this);
     }
 
     /**
@@ -2376,7 +2374,7 @@ export class ImportAliasDeclaration extends Statement {
 }
 
 /**
- * 表示一个名字导入声明项(a as b)。
+ * 表示一个名字导入声明项(`a as b`)。
  */
 export class NameImportClause extends Node {
 
@@ -2417,7 +2415,7 @@ export class NameImportClause extends Node {
 }
 
 /**
- * 表示一个命名空间导入声明项({a as b})。
+ * 表示一个命名空间导入声明项(`{a as b}`)。
  */
 export class NamespaceImportClause extends Node {
 
@@ -2448,7 +2446,7 @@ export class NamespaceImportClause extends Node {
 }
 
 /**
- * 表示一个 export 指令(export xx from '...';)。
+ * 表示一个 export 指令(`export xx from '...';`)。
  */
 export class ExportDirective extends Statement {
 
@@ -2490,7 +2488,7 @@ export class ExportDirective extends Statement {
 }
 
 /**
- * 表示一个 export = 指令(export = 1;)。
+ * 表示一个 export = 指令(`export = 1;`)。
  */
 export class ExportEqualsDirective extends Statement {
 
@@ -2561,7 +2559,7 @@ class EmptyExpression extends Expression {
 }
 
 /**
- * 表示一个标识符(x)。
+ * 表示一个标识符(`x`)。
  */
 export class Identifier extends Expression {
 
@@ -2569,6 +2567,27 @@ export class Identifier extends Expression {
      * 获取当前标识符的内容。
      */
     value: string;
+
+    /**
+     * 存储当前节点的结束位置。
+     */
+    private _end: number;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() {
+        return this._end != undefined ? this._end : this.start + this.value.length;
+    }
+
+    /**
+     * 设置当前节点的结束位置。
+     */
+    set end(value) {
+        if (this.start + this.value.length !== value) {
+            this._end = value;
+        }
+    }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2582,7 +2601,7 @@ export class Identifier extends Expression {
 }
 
 /**
- * 表示一个简单字面量(this、super、null、true、false)。
+ * 表示一个简单字面量(`this、super、null、true、false`)。
  */
 export class SimpleLiteral extends Expression {
 
@@ -2608,14 +2627,35 @@ export class SimpleLiteral extends Expression {
 }
 
 /**
- * 表示一个数字字面量(1)。
+ * 表示一个数字字面量(`1`)。
  */
 export class NumericLiteral extends Expression {
 
     /**
-     * 获取或设置当前浮点数的值。
+     * 获取当前数字的值。
      */
     value: number;
+
+    /**
+     * 存储当前节点的结束位置。
+     */
+    private _end: number;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() {
+        return this._end != undefined ? this._end : this.start + this.value.toString().length + 2;
+    }
+
+    /**
+     * 设置当前节点的结束位置。
+     */
+    set end(value) {
+        if (this.start + this.value.toString().length + 2 !== value) {
+            this._end = value;
+        }
+    }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2629,7 +2669,7 @@ export class NumericLiteral extends Expression {
 }
 
 /**
- * 表示一个字符串字面量('abc'、"abc"、`abc`)。
+ * 表示一个字符串字面量(`'abc'、"abc"、`abc``)。
  */
 export class StringLiteral extends Expression {
 
@@ -2639,9 +2679,30 @@ export class StringLiteral extends Expression {
     type: TokenType;
 
     /**
-     * 获取或设置当前字符串的内容。
+     * 获取当前字符串的值。
      */
     value: string;
+
+    /**
+     * 存储当前节点的结束位置。
+     */
+    private _end: number;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() {
+        return this._end != undefined ? this._end : this.start + this.value.length + 2;
+    }
+
+    /**
+     * 设置当前节点的结束位置。
+     */
+    set end(value) {
+        if (this.start + this.value.length + 2 !== value) {
+            this._end = value;
+        }
+    }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2655,7 +2716,7 @@ export class StringLiteral extends Expression {
 }
 
 /**
- * 表示一个模板字面量(`abc${x + y}def`)。
+ * 表示一个模板字面量(``abc${x + y}def``)。
  */
 export class TemplateLiteral extends Expression {
 
@@ -2696,12 +2757,12 @@ export class TemplateLiteral extends Expression {
 }
 
 /**
- * 表示一个模板字面量的一个文本区域(\`abc${、}abc${、}abc\`)。
+ * 表示一个模板字面量的一个文本区域(`\`abc${、}abc${、}abc\``)。
  */
 export class TemplateSpan extends Node {
 
     /**
-     * 获取当前区块的名字。
+     * 获取当前区块的值。
      */
     value: string;
 
@@ -2717,12 +2778,12 @@ export class TemplateSpan extends Node {
 }
 
 /**
- * 表示一个正则表达式字面量(/abc/)。
+ * 表示一个正则表达式字面量(`/abc/`)。
  */
 export class RegularExpressionLiteral extends Expression {
 
     /**
-     * 获取或设置当前正则表达式的内容。
+     * 获取当前正则表达式的值。
      */
     value: string;
 
@@ -2743,7 +2804,7 @@ export class RegularExpressionLiteral extends Expression {
 }
 
 /**
- * 表示一个数组字面量([x, y])。
+ * 表示一个数组字面量(`[x, y]`)。
  */
 export class ArrayLiteral extends Expression {
 
@@ -2774,14 +2835,14 @@ export class ArrayLiteral extends Expression {
 }
 
 /**
- * 表示一个对象字面量({x: y})。
+ * 表示一个对象字面量(`{x: y}`)。
  */
 export class ObjectLiteral extends Expression {
 
     /**
      * 获取当前对象字面量的所有项。
      */
-    elements: NodeList<>;
+    elements: NodeList<TypeMemberDeclaration>;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -2805,12 +2866,7 @@ export class ObjectLiteral extends Expression {
 }
 
 /**
- * 表示一个对象字面量的项(x: y、x(){...}、get x() {...}、set x(value) {...})。
- */
-export type ObjectLiteralElement = PropertyDeclaration | MethodDeclaration | AccessorDeclaration;
-
-/**
- * 表示一个箭头函数表达式(x => y)。
+ * 表示一个箭头函数表达式(`x => y`)。
  */
 export class ArrowFunctionExpression extends Expression {
 
@@ -2858,7 +2914,7 @@ export class ArrowFunctionExpression extends Expression {
 }
 
 /**
- * 表示一个箭头函数表达式(=> xx)。
+ * 表示一个箭头函数表达式(`=> xx`)。
  */
 export class ArrowExpression extends Expression {
 
@@ -2867,10 +2923,29 @@ export class ArrowExpression extends Expression {
      */
     body: Expression;
 
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.body, "body", this) !== false;
+    }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrowExpression(this);
+    }
+
 }
 
 /**
- * 表示一个括号表达式((x))。
+ * 表示一个括号表达式((`x)`)。
  */
 export class ParenthesizedExpression extends Expression {
 
@@ -2901,7 +2976,7 @@ export class ParenthesizedExpression extends Expression {
 }
 
 /**
- * 表示一个成员调用表达式(x.y)。
+ * 表示一个成员调用表达式(`x.y`)。
  */
 export class MemberCallExpression extends Expression {
 
@@ -2953,7 +3028,7 @@ export class MemberCallExpression extends Expression {
 }
 
 /**
- * 表示一个函数调用表达式(x())。
+ * 表示一个函数调用表达式(x(`)`)。
  */
 export class FunctionCallExpression extends Expression {
 
@@ -3000,7 +3075,7 @@ export class FunctionCallExpression extends Expression {
 }
 
 /**
- * 表示一个索引调用表达式(x[y])。
+ * 表示一个索引调用表达式(`x[y]`)。
  */
 export class IndexCallExpression extends Expression {
 
@@ -3047,7 +3122,7 @@ export class IndexCallExpression extends Expression {
 }
 
 /**
- * 表示一个模板调用表达式(x`abc`)。
+ * 表示一个模板调用表达式(`x\`abc\``)。
  */
 export class TemplateCallExpression extends Expression {
 
@@ -3094,7 +3169,7 @@ export class TemplateCallExpression extends Expression {
 }
 
 /**
- * 表示一个 new 表达式(new x())。
+ * 表示一个 new 表达式(`new x()`)。
  */
 export class NewExpression extends Expression {
 
@@ -3136,7 +3211,7 @@ export class NewExpression extends Expression {
 }
 
 /**
- * 表示一个 new.target 表达式(new.target)。
+ * 表示一个 new.target 表达式(`new.target`)。
  */
 export class NewTargetExpression extends Expression {
 
@@ -3157,7 +3232,7 @@ export class NewTargetExpression extends Expression {
 }
 
 /**
- * 表示一个一元运算表达式(+x、typeof x、...)。
+ * 表示一个一元运算表达式(`+x、typeof x、...`)。
  */
 export class UnaryExpression extends Expression {
 
@@ -3198,7 +3273,7 @@ export class UnaryExpression extends Expression {
 }
 
 /**
- * 表示一个增量运算表达式(x++、--x)。
+ * 表示一个增量运算表达式(`x++、--x`)。
  */
 export class IncrementExpression extends Expression {
 
@@ -3239,7 +3314,7 @@ export class IncrementExpression extends Expression {
 }
 
 /**
- * 表示一个二元运算表达式(x + y、x = y、...)。
+ * 表示一个二元运算表达式(`x + y、x = y、...`)。
  */
 export class BinaryExpression extends Expression {
 
@@ -3296,7 +3371,7 @@ export class BinaryExpression extends Expression {
 }
 
 /**
- * 表示一个 yield 表达式(yield x、yield * x)。
+ * 表示一个 yield 表达式(`yield x、yield * x`)。
  */
 export class YieldExpression extends Expression {
 
@@ -3337,7 +3412,7 @@ export class YieldExpression extends Expression {
 }
 
 /**
- * 表示一个条件表达式(x ? y : z)。
+ * 表示一个条件表达式(`x ? y : z`)。
  */
 export class ConditionalExpression extends Expression {
 
@@ -3390,7 +3465,7 @@ export class ConditionalExpression extends Expression {
 }
 
 /**
- * 表示一个类型转换表达式(<T>xx)。
+ * 表示一个类型转换表达式(`<T>xx`)。
  */
 export class TypeCastExpression extends Expression {
 
@@ -3432,7 +3507,7 @@ export class TypeCastExpression extends Expression {
 }
 
 /**
- * 表示一个类型表达式(Array<T>)。
+ * 表示一个类型表达式(`Array<T>`)。
  */
 export class GenericTypeExpression extends Expression {
 
@@ -3469,7 +3544,7 @@ export class GenericTypeExpression extends Expression {
 }
 
 /**
- * 表示一个数组类型表达式(T[])。
+ * 表示一个数组类型表达式(`T[]`)。
  */
 export class ArrayTypeExpression extends Expression {
 
@@ -3514,14 +3589,14 @@ export class ArrayTypeExpression extends Expression {
 // #region Jsx 节点
 
 /**
- * 表示一个 Jsx 节点(<div>...</div>)。
+ * 表示一个 Jsx 节点(`<div>...</div>`)。
  */
 export abstract class JsxNode extends Expression {
 
 }
 
 /**
- * 表示一个 JSX 标签(<div>...</div>)。
+ * 表示一个 JSX 标签(`<div>...</div>`)。
  */
 export class JsxElement extends JsxNode {
 
@@ -3569,7 +3644,7 @@ export class JsxElement extends JsxNode {
 }
 
 /**
- * 表示一个 JSX 标签属性(id="a")。
+ * 表示一个 JSX 标签属性(`id="a"`)。
  */
 export class JsxAttribute extends JsxNode {
 
@@ -3611,7 +3686,7 @@ export class JsxAttribute extends JsxNode {
 }
 
 /**
- * 表示一个 JSX 文本({...})。
+ * 表示一个 JSX 文本(`{...}`)。
  */
 export class JsxText extends JsxNode {
 
@@ -3631,7 +3706,7 @@ export class JsxText extends JsxNode {
 }
 
 /**
- * 表示一个 JSX 表达式({...})。
+ * 表示一个 JSX 表达式(`{...}`)。
  */
 export class JsxExpression extends JsxNode {
 
@@ -3661,7 +3736,7 @@ export class JsxExpression extends JsxNode {
 }
 
 /**
- * 表示一个 JSX 关闭元素({...})。
+ * 表示一个 JSX 关闭元素(`{...}`)。
  */
 export class JsxClosingElement extends JsxNode {
 
@@ -3701,17 +3776,17 @@ export class JsxClosingElement extends JsxNode {
 // #region 绑定名称
 
 /**
- * 表示一个绑定名称(xx、[xx]、{x:x})。
+ * 表示一个绑定名称(`xx、[xx]、{x:x}`)。
  */
 export type BindingName = Identifier | ArrayBindingPattern | ObjectBindingPattern;
 
 /**
- * 表示一个属性名称(xx、"xx"、[xx])。
+ * 表示一个属性名称(`xx、"xx"、[xx]`)。
  */
 export type PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName;
 
 /**
- * 表示一个数组绑定模式项([xx])。
+ * 表示一个数组绑定模式项(`[xx]`)。
  */
 export class ArrayBindingPattern extends Node {
 
@@ -3798,7 +3873,7 @@ export class ArrayBindingElement extends Node {
 }
 
 /**
- * 表示一个对象绑定模式项({xx: xx})。
+ * 表示一个对象绑定模式项(`{xx: xx}`)。
  */
 export class ObjectBindingPattern extends Node {
 
