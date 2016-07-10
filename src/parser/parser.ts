@@ -1012,9 +1012,9 @@ export class Parser {
     }
 
     /**
-     * 解析一个修饰符(`static、private、...`)。
+     * 解析所有修饰符(`static`、`private`、...)。
      */
-    private parseModifier() {
+    private parseModifiers() {
 
     }
 
@@ -1074,7 +1074,7 @@ export class Parser {
     /**
      * 解析一个函数表达式(function (`) {}`)。
      */
-    private parseFunctionExpression() {
+    private parseFunctionExpression(a) {
 
 
 
@@ -1165,7 +1165,7 @@ export class Parser {
     /**
      * 解析一个类表达式(`class xx {}`)。
      */
-    private parseClassExpression() {
+    private parseClassExpression(): nodes.Expression {
         console.assert(this.lexer.peek().type === TokenType.class);
         const result = new nodes.ClassExpression();
         result.start = this.lexer.read().start;
@@ -1215,7 +1215,7 @@ export class Parser {
     /**
      * 解析一个接口表达式(`interface xx {}`)。
      */
-    private parseInterfaceExpression() {
+    private parseInterfaceExpression(): nodes.Expression {
 
 
 
@@ -1225,7 +1225,7 @@ export class Parser {
     /**
      * 解析一个枚举表达式(`enum xx {}`)。
      */
-    private parseEnumExpression() {
+    private parseEnumExpression(): nodes.EnumExpression {
         return this.parseEnumDeclarationOrExpression(true);
     }
 
@@ -1372,13 +1372,16 @@ export class Parser {
     }
 
     /**
-     * 在允许解析 in 表达式的上下文中解析一个表达式。
+     * 在允许解析 in 和逗号表达式的上下文中解析一个表达式。
      */
-    private parseExpressionWithIn() {
-        if (this.disallowIn) {
-            this.disallowIn = false;
+    private parseExpressionWithInAndComma() {
+        if (this.disallowIn || this.disallowComma) {
+            const disallowIn = this.disallowIn;
+            const disallowComma = this.disallowComma;
+            this.disallowIn = this.disallowComma = false;
             const result = this.parseExpression();
-            this.disallowIn = true;
+            this.disallowIn = disallowIn;
+            this.disallowComma = disallowComma;
             return result;
         }
         return this.parseExpression();
@@ -1469,40 +1472,94 @@ export class Parser {
         return this.parseErrorExpression();
     }
 
-    private parseMemberExpression() {
-        let parsed;
-        //const type = this.lexer.peek().type;
-        //switch (type) {
+    // #region 独立表达式
 
-        //    // Identifier、Identifier<T>
-        //    case TokenType.identifier:
-        //        return this.parseIdentifierOrGenericExpression();
+    /**
+     * 解析一个独立表达式。
+     */
+    private parsePrimaryExpression() {
+        switch (this.lexer.peek().type) {
 
-        //    // (Expr)、(Expr) => {...}
-        //    case TokenType.openParen:
-        //        return this.parseParenthesizedExpressionOrArrowFunction();
+            // Identifier、Identifier<T>
+            case TokenType.identifier:
+                return this.parseIdentifierOrGenericExpression();
 
-        //    // new Expr
-        //    case TokenType.new:
-        //        return this.parseNewExpression();
+            // this、super、null、true、false
+            case TokenType.this:
+            case TokenType.null:
+            case TokenType.true:
+            case TokenType.false:
+            case TokenType.super:
+                return this.parseSimpleLiteral();
 
-        //    // yield ...
-        //    case TokenType.yield:
-        //        return this.parseYieldExpression();
+            // ""、''
+            case TokenType.stringLiteral:
+            case TokenType.noSubstitutionTemplateLiteral:
+                return this.parseStringLiteral();
 
-        //    // await ...
-        //    case TokenType.await:
-        //        return this.parseAwaitExpression();
+            // 0
+            case TokenType.numericLiteral:
+                return this.parseNumericLiteral();
 
-        //}
+            // (Expr)、(Expr) => {...}
+            case TokenType.openParen:
+                return this.parseParenthesizedExpressionOrArrowFunction();
 
-        //// this、super、null、true、false
-        //if (isSimpleLiteral(type)) {
-        //    return this.parseSimpleLiteral();
-        //}
+            // [Expr, ...]
+            case TokenType.openBracket:
+                return this.parseArrayLiteral();
 
-        //// 非法标记。
-        //return this.parseErrorExpression();
+            // {key: Expr, ...}
+            case TokenType.openBrace:
+                return this.parseObjectLiteral();
+
+            // new Expr
+            case TokenType.new:
+                return this.parseNewExpression();
+
+            // `abc${
+            case TokenType.templateHead:
+                return this.parseTemplateLiteral();
+
+            // => ...
+            case TokenType.equalsGreaterThan:
+                return this.parseArrowFunctionExpression(undefined, undefined, undefined);
+
+            // /、/=
+            case TokenType.slash:
+            case TokenType.slashEquals:
+                return this.parseRegularExpressionLiteral();
+
+            // function () {}
+            case TokenType.function:
+                return this.parseFunctionExpression();
+
+            // async () => ...、async function () {}、async
+            case TokenType.async:
+                return this.parseAsyncFunctionExpressionOrIdentifier();
+
+            // class {}
+            case TokenType.class:
+                return this.parseClassExpression();
+
+            // interface {}
+            case TokenType.interface:
+                return this.parseInterfaceExpression();
+
+            // enum {}
+            case TokenType.enum:
+                return this.parseEnumExpression();
+
+        }
+
+        // 其它关键字作为标识符处理。
+        if (isKeyword(this.lexer.peek().type)) {
+            return this.parseIdentifier();
+        }
+
+        // 非法标记。
+        return this.parseErrorExpression();
+
     }
 
     /**
@@ -1548,6 +1605,45 @@ export class Parser {
     }
 
     /**
+     * 解析一个简单字面量(`this`、`super`、`null`、`true`、`false`)。
+     */
+    private parseSimpleLiteral() {
+        console.assert(this.lexer.peek().type === TokenType.this ||
+            this.lexer.peek().type === TokenType.super ||
+            this.lexer.peek().type === TokenType.null ||
+            this.lexer.peek().type === TokenType.true ||
+            this.lexer.peek().type === TokenType.false);
+        const result = new nodes.SimpleLiteral();
+        result.start = this.lexer.read().start;
+        result.type = this.lexer.current.type;
+        return result;
+    }
+
+    /**
+     * 解析一个字符串字面量(`'abc'`、`"abc"`、`\`abc\``)。
+     */
+    private parseStringLiteral() {
+        console.assert(this.lexer.peek().type === TokenType.stringLiteral || this.lexer.peek().type === TokenType.noSubstitutionTemplateLiteral);
+        const result = new nodes.StringLiteral();
+        result.start = this.lexer.read().start;
+        result.value = this.lexer.current.data;
+        result.end = this.lexer.current.end;
+        return result;
+    }
+
+    /**
+     * 解析一个数字字面量(`1`)。
+     */
+    private parseNumericLiteral() {
+        console.assert(this.lexer.peek().type === TokenType.numericLiteral);
+        const result = new nodes.NumericLiteral();
+        result.start = this.lexer.read().start;
+        result.value = this.lexer.current.data;
+        result.end = this.lexer.current.end;
+        return result;
+    }
+
+    /**
      * 解析一个括号或箭头函数表达式(`(x)`、`(x) => {...}`)。
      */
     private parseParenthesizedExpressionOrArrowFunction() {
@@ -1569,7 +1665,7 @@ export class Parser {
         console.assert(this.lexer.peek().type === TokenType.openParen);
         const result = new nodes.ParenthesizedExpression();
         result.start = this.lexer.read().start;
-        result.body = this.parseExpressionWithIn();
+        result.body = this.parseExpressionWithInAndComma();
         result.end = this.expectToken(TokenType.closeParen).end;
         return result;
     }
@@ -1596,128 +1692,6 @@ export class Parser {
             result.arrowToken = this.lexer.read().start;
         }
         result.body = this.lexer.peek().type === TokenType.openBrace ? this.parseBlockStatement() : this.parseExpression();
-        return result;
-    }
-
-    /**
-     * 解析一个错误表达式。
-     */
-    private parseErrorExpression() {
-        const token = this.lexer.peek();
-        switch (token.type) {
-            case TokenType.closeParen:
-            case TokenType.closeBracket:
-            case TokenType.closeBrace:
-                this.error(token, "多余的“{0}”。", tokenToString(token.type));
-                break;
-            case TokenType.endOfFile:
-                this.error(token, "应输入表达式；文件意外结束。");
-                break;
-            default:
-                this.error(token, isStatementStart(token.type) ? "无效的表达式项“{0}”；“{0}”是语句关键字。" : "无效的表达式项“{0}”。", tokenToString(token.type));
-                break;
-        }
-        const result = new nodes.ErrorExpression();
-        result.start = this.lexer.read().start;
-        result.end = this.lexer.current.end;
-        return result;
-    }
-
-    private parseExpressionWith(flags: ParseFlags) {
-        const savedFlags = this.flags;
-        this.flags |= flags;
-        const result = this.parseExpression();
-        this.flags = savedFlags;
-        return result;
-    }
-
-    /**
-     * 解析一个简单字面量(`this`、`super`、`null`、`true`、`false`)。
-     */
-    private parseSimpleLiteral() {
-        console.assert(this.lexer.peek().type === TokenType.this ||
-            this.lexer.peek().type === TokenType.super ||
-            this.lexer.peek().type === TokenType.null ||
-            this.lexer.peek().type === TokenType.true ||
-            this.lexer.peek().type === TokenType.false);
-        const result = new nodes.SimpleLiteral();
-        result.start = this.lexer.read().start;
-        result.type = this.lexer.current.type;
-        return result;
-    }
-
-    /**
-     * 解析一个数字字面量(`1`)。
-     */
-    private parseNumericLiteral() {
-        console.assert(this.lexer.peek().type === TokenType.numericLiteral);
-        const result = new nodes.NumericLiteral();
-        result.start = this.lexer.read().start;
-        result.value = this.lexer.current.data;
-        result.end = this.lexer.read().end;
-        return result;
-    }
-
-    /**
-     * 解析一个字符串字面量(`'abc'`、`"abc"`、`\`abc\``)。
-     */
-    private parseStringLiteral() {
-        console.assert(this.lexer.peek().type === TokenType.stringLiteral || this.lexer.peek().type === TokenType.noSubstitutionTemplateLiteral);
-        const result = new nodes.StringLiteral();
-        result.start = this.lexer.read().start;
-        result.value = this.lexer.current.data;
-        result.end = this.lexer.current.end;
-        return result;
-    }
-
-    /**
-     * 解析一个模板字面量(``abc${x + y}def``)。
-     */
-    private parseTemplateLiteral() {
-        console.assert(this.lexer.peek().type === TokenType.templateHead);
-        const result = new nodes.TemplateLiteral();
-        result.spans = new nodes.NodeList<nodes.Expression>();
-
-        while (true) {
-
-            console.assert(this.lexer.peek().type === TokenType.templateHead || this.lexer.peek().type === TokenType.templateMiddle);
-            let span = new nodes.TemplateSpan();
-            span.start = this.lexer.read().start;
-            span.value = this.lexer.current.data;
-            span.end = this.lexer.current.end;
-            result.spans.push(span);
-
-            let expressions = this.parseExpression();
-            result.spans.push(expressions);
-
-            if (this.lexer.peek().type !== TokenType.closeBrace) {
-                this.expectToken(TokenType.closeBrace);
-                break;
-            }
-
-            if (this.lexer.readAsTemplateMiddleOrTail().type === TokenType.templateTail) {
-                let span = new nodes.TemplateSpan();
-                span.start = this.lexer.read().start;
-                span.value = this.lexer.current.data;
-                span.end = this.lexer.current.end;
-                result.spans.push(span);
-                break;
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * 解析一个正则表达式字面量(`/abc/`)。
-     */
-    private parseRegularExpressionLiteral() {
-        console.assert(this.lexer.peek().type === TokenType.slash || this.lexer.peek().type === TokenType.slashEquals);
-        const result = new nodes.RegularExpressionLiteral();
-        result.start = this.lexer.readAsRegularExpressionLiteral().start;
-        result.value = this.lexer.current.data.pattern;
-        result.flags = this.lexer.current.data.flags;
-        result.end = this.lexer.current.end;
         return result;
     }
 
@@ -1776,6 +1750,189 @@ export class Parser {
         }
     }
 
+    /**
+     * 解析一个 new 表达式(new x(`)`)。
+     */
+    private parseNewExpression() {
+        console.assert(this.lexer.peek().type === TokenType.new);
+        const result = new nodes.NewExpression();
+        result.start = this.lexer.read().start;
+        result.target = this.parseMemberExpression();
+        if (this.lexer.peek().type === TokenType.openParen) {
+            result.arguments = this.parseArguments();
+        }
+        return result;
+    }
+
+    /**
+     * 解析一个模板字面量(``abc${x + y}def``)。
+     */
+    private parseTemplateLiteral() {
+        console.assert(this.lexer.peek().type === TokenType.templateHead);
+        const result = new nodes.TemplateLiteral();
+        result.spans = new nodes.NodeList<nodes.Expression>();
+
+        while (true) {
+
+            console.assert(this.lexer.peek().type === TokenType.templateHead || this.lexer.peek().type === TokenType.templateMiddle);
+            let span = new nodes.TemplateSpan();
+            span.start = this.lexer.read().start;
+            span.value = this.lexer.current.data;
+            span.end = this.lexer.current.end;
+            result.spans.push(span);
+
+            let expressions = this.parseExpression();
+            result.spans.push(expressions);
+
+            if (this.lexer.peek().type !== TokenType.closeBrace) {
+                this.expectToken(TokenType.closeBrace);
+                break;
+            }
+
+            if (this.lexer.readAsTemplateMiddleOrTail().type === TokenType.templateTail) {
+                let span = new nodes.TemplateSpan();
+                span.start = this.lexer.read().start;
+                span.value = this.lexer.current.data;
+                span.end = this.lexer.current.end;
+                result.spans.push(span);
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 解析一个正则表达式字面量(`/abc/`)。
+     */
+    private parseRegularExpressionLiteral() {
+        console.assert(this.lexer.peek().type === TokenType.slash || this.lexer.peek().type === TokenType.slashEquals);
+        const result = new nodes.RegularExpressionLiteral();
+        result.start = this.lexer.readAsRegularExpressionLiteral().start;
+        result.value = this.lexer.current.data.pattern;
+        result.flags = this.lexer.current.data.flags;
+        result.end = this.lexer.current.end;
+        return result;
+    }
+
+    /**
+     * 解析一个 async 异步函数或标识符。
+     */
+    private parseAsyncFunctionExpressionOrIdentifier() {
+        console.assert(this.lexer.peek().type === TokenType.async);
+
+        this.lexer.stashSave();
+        this.lexer.read();
+
+        // 如果已换行，则认为不是 async 关键字。
+        if (options.smartSemicolonInsertion === false && this.lexer.peek().onNewLine) {
+            this.lexer.stashRestore();
+            return this.parseIdentifier();
+        }
+
+        switch (this.lexer.peek().type) {
+
+            // async function
+            case TokenType.function:
+                this.lexer.stashRestore();
+                return this.parseFunctionExpression(this.parseModifiers());
+
+            // async x
+            case TokenType.identifier:
+                this.lexer.stashRestore();
+                return this.parseArrowFunctionExpression(this.parseModifiers(), undefined, this.parseIdentifier());
+
+            // async <
+            case TokenType.lessThan:
+                return this.parseArrowFunctionExpression(this.parseModifiers());
+
+            // async (
+            case TokenType.openParen:
+                const parameters = this.parseParameterList(true);
+                if (!parameters || (this.lexer.peek().type !== TokenType.equalsGreaterThan && this.lexer.peek().type !== TokenType.colon)) {
+                    this.lexer.stashRestore();
+                    return this.parseIdentifier();
+                }
+                this.lexer.stashClear();
+                return this.parseArrowFunctionExpression(undefined, undefined, parameters);
+
+            default:
+                this.lexer.stashRestore();
+                return this.parseIdentifier();
+        }
+
+    }
+
+    // #endregion
+
+    private parseMemberExpression() {
+        let parsed;
+        //const type = this.lexer.peek().type;
+        //switch (type) {
+
+        //    // Identifier、Identifier<T>
+        //    case TokenType.identifier:
+        //        return this.parseIdentifierOrGenericExpression();
+
+        //    // (Expr)、(Expr) => {...}
+        //    case TokenType.openParen:
+        //        return this.parseParenthesizedExpressionOrArrowFunction();
+
+        //    // new Expr
+        //    case TokenType.new:
+        //        return this.parseNewExpression();
+
+        //    // yield ...
+        //    case TokenType.yield:
+        //        return this.parseYieldExpression();
+
+        //    // await ...
+        //    case TokenType.await:
+        //        return this.parseAwaitExpression();
+
+        //}
+
+        //// this、super、null、true、false
+        //if (isSimpleLiteral(type)) {
+        //    return this.parseSimpleLiteral();
+        //}
+
+        //// 非法标记。
+        //return this.parseErrorExpression();
+    }
+
+    /**
+     * 解析一个错误表达式。
+     */
+    private parseErrorExpression() {
+        const token = this.lexer.peek();
+        switch (token.type) {
+            case TokenType.closeParen:
+            case TokenType.closeBracket:
+            case TokenType.closeBrace:
+                this.error(token, "多余的“{0}”。", tokenToString(token.type));
+                break;
+            case TokenType.endOfFile:
+                this.error(token, "应输入表达式；文件意外结束。");
+                break;
+            default:
+                this.error(token, isStatementStart(token.type) ? "无效的表达式项“{0}”；“{0}”是语句关键字。" : "无效的表达式项“{0}”。", tokenToString(token.type));
+                break;
+        }
+        const result = new nodes.ErrorExpression();
+        result.start = this.lexer.read().start;
+        result.end = this.lexer.current.end;
+        return result;
+    }
+
+    private parseExpressionWith(flags: ParseFlags) {
+        const savedFlags = this.flags;
+        this.flags |= flags;
+        const result = this.parseExpression();
+        this.flags = savedFlags;
+        return result;
+    }
+
     private parseTypeMemberDeclaration() {
 
         //const start = this.lexer.peek().start;
@@ -1793,20 +1950,6 @@ export class Parser {
         //    element.equal = this.lexer.read().start;
         //    element.initializer = this.parseExpression(ParseFlags.disallowComma);
         //}
-    }
-
-    /**
-     * 解析一个 new 表达式(new x(`)`)。
-     */
-    private parseNewExpression() {
-        console.assert(this.lexer.peek().type === TokenType.new);
-        const result = new nodes.NewExpression();
-        result.start = this.lexer.read().start;
-        result.target = this.parseMemberExpression();
-        if (this.lexer.peek().type === TokenType.openParen) {
-            result.arguments = this.parseArguments();
-        }
-        return result;
     }
 
     /**

@@ -3232,34 +3232,6 @@ namespace ts {
             return result;
         }
 
-        function parsePrimaryExpression(): PrimaryExpression {
-            switch (token) {
-                case SyntaxKind.AsyncKeyword:
-                    // Async arrow functions are parsed earlier in parseAssignmentExpressionOrHigher.
-                    // If we encounter `async [no LineTerminator here] function` then this is an async
-                    // function; otherwise, its an identifier.
-                    if (!lookAhead(nextTokenIsFunctionKeywordOnSameLine)) {
-                        break;
-                    }
-
-                    return parseFunctionExpression();
-                case SyntaxKind.ClassKeyword:
-                    return parseClassExpression();
-                case SyntaxKind.FunctionKeyword:
-                    return parseFunctionExpression();
-                case SyntaxKind.SlashToken:
-                case SyntaxKind.SlashEqualsToken:
-                    if (reScanSlashToken() === SyntaxKind.RegularExpressionLiteral) {
-                        return parseLiteralNode();
-                    }
-                    break;
-                case SyntaxKind.TemplateHead:
-                    return parseTemplateExpression();
-            }
-
-            return parseIdentifier(Diagnostics.Expression_expected);
-        }
-
         function parseSpreadElement(): Expression {
             const node = <SpreadElementExpression>createNode(SyntaxKind.SpreadElementExpression);
             parseExpected(SyntaxKind.DotDotDotToken);
