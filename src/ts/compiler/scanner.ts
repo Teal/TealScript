@@ -3,10 +3,6 @@
 
 namespace ts {
 
-    export interface ErrorCallback {
-        (message: DiagnosticMessage, length: number): void;
-    }
-
     /* @internal */
     export function tokenIsIdentifierOrKeyword(token: TokenType): boolean {
         return token >= TokenType.Identifier;
@@ -36,7 +32,6 @@ namespace ts {
         // Sets the text for the scanner to scan.  An optional subrange starting point and length
         // can be provided to have the scanner only scan a portion of the text.
         setText(text: string, start?: number, length?: number): void;
-        setOnError(onError: ErrorCallback): void;
         setScriptTarget(scriptTarget: ScriptTarget): void;
         setLanguageVariant(variant: LanguageVariant): void;
         setTextPos(textPos: number): void;
@@ -56,154 +51,7 @@ namespace ts {
         tryScan<T>(callback: () => T): T;
     }
 
-    const textToToken: Map<TokenType> = {
-        "abstract": TokenType.abstract,
-        "any": TokenType.any,
-        "as": TokenType.as,
-        "boolean": TokenType.boolean,
-        "break": TokenType.break,
-        "case": TokenType.case,
-        "catch": TokenType.catch,
-        "class": TokenType.class,
-        "continue": TokenType.continue,
-        "const": TokenType.const,
-        "constructor": TokenType.constructor,
-        "debugger": TokenType.debugger,
-        "declare": TokenType.declare,
-        "default": TokenType.default,
-        "delete": TokenType.delete,
-        "do": TokenType.do,
-        "else": TokenType.else,
-        "enum": TokenType.enum,
-        "export": TokenType.export,
-        "extends": TokenType.extends,
-        "false": TokenType.false,
-        "finally": TokenType.finally,
-        "for": TokenType.for,
-        "from": TokenType.from,
-        "function": TokenType.function,
-        "get": TokenType.get,
-        "if": TokenType.if,
-        "implements": TokenType.implements,
-        "import": TokenType.import,
-        "in": TokenType.in,
-        "instanceof": TokenType.instanceOf,
-        "interface": TokenType.interface,
-        "is": TokenType.is,
-        "let": TokenType.let,
-        "module": TokenType.module,
-        "namespace": TokenType.namespace,
-        "never": TokenType.never,
-        "new": TokenType.new,
-        "null": TokenType.null,
-        "number": TokenType.number,
-        "package": TokenType.package,
-        "private": TokenType.private,
-        "protected": TokenType.protected,
-        "public": TokenType.public,
-        "readonly": TokenType.readonly,
-        "require": TokenType.require,
-        "global": TokenType.global,
-        "return": TokenType.return,
-        "set": TokenType.set,
-        "static": TokenType.static,
-        "string": TokenType.string,
-        "super": TokenType.super,
-        "switch": TokenType.switch,
-        "symbol": TokenType.symbol,
-        "this": TokenType.this,
-        "throw": TokenType.throw,
-        "true": TokenType.true,
-        "try": TokenType.try,
-        "type": TokenType.type,
-        "typeof": TokenType.typeOf,
-        "undefined": TokenType.undefined,
-        "var": TokenType.var,
-        "void": TokenType.void,
-        "while": TokenType.while,
-        "with": TokenType.with,
-        "yield": TokenType.yield,
-        "async": TokenType.async,
-        "await": TokenType.await,
-        "of": TokenType.of,
-        "{": TokenType.openBrace,
-        "}": TokenType.closeBrace,
-        "(": TokenType.openParen,
-        ")": TokenType.closeParen,
-        "[": TokenType.openBracket,
-        "]": TokenType.closeBracket,
-        ".": TokenType.dot,
-        "...": TokenType.dotDotDot,
-        ";": TokenType.semicolon,
-        ",": TokenType.comma,
-        "<": TokenType.lessThan,
-        ">": TokenType.greaterThan,
-        "<=": TokenType.lessThanEquals,
-        ">=": TokenType.greaterThanEquals,
-        "==": TokenType.equalsEquals,
-        "!=": TokenType.exclamationEquals,
-        "===": TokenType.equalsEqualsEquals,
-        "!==": TokenType.exclamationEqualsEquals,
-        "=>": TokenType.equalsGreaterThan,
-        "+": TokenType.plus,
-        "-": TokenType.minus,
-        "**": TokenType.asteriskAsterisk,
-        "*": TokenType.asterisk,
-        "/": TokenType.slash,
-        "%": TokenType.percent,
-        "++": TokenType.plusPlus,
-        "--": TokenType.minusMinus,
-        "<<": TokenType.lessThanLessThan,
-        "</": TokenType.lessThanSlash,
-        ">>": TokenType.greaterThanGreaterThan,
-        ">>>": TokenType.greaterThanGreaterThanGreaterThan,
-        "&": TokenType.ampersand,
-        "|": TokenType.bar,
-        "^": TokenType.caret,
-        "!": TokenType.exclamation,
-        "~": TokenType.tilde,
-        "&&": TokenType.ampersandAmpersand,
-        "||": TokenType.barBar,
-        "?": TokenType.question,
-        ":": TokenType.colon,
-        "=": TokenType.equals,
-        "+=": TokenType.plusEquals,
-        "-=": TokenType.minusEquals,
-        "*=": TokenType.asteriskEquals,
-        "**=": TokenType.asteriskAsteriskEquals,
-        "/=": TokenType.slashEquals,
-        "%=": TokenType.percentEquals,
-        "<<=": TokenType.lessThanLessThanEquals,
-        ">>=": TokenType.greaterThanGreaterThanEquals,
-        ">>>=": TokenType.greaterThanGreaterThanGreaterThanEquals,
-        "&=": TokenType.ampersandEquals,
-        "|=": TokenType.barEquals,
-        "^=": TokenType.caretEquals,
-        "@": TokenType.at,
-    };
-
     
-    function makeReverseMap(source: Map<number>): string[] {
-        const result: string[] = [];
-        for (const name in source) {
-            if (source.hasOwnProperty(name)) {
-                result[source[name]] = name;
-            }
-        }
-        return result;
-    }
-
-    const tokenStrings = makeReverseMap(textToToken);
-
-    export function tokenToString(t: TokenType): string {
-        return tokenStrings[t];
-    }
-
-    /* @internal */
-    export function stringToToken(s: string): TokenType {
-        return textToToken[s];
-    }
-
     /* @internal */
     export function computeLineStarts(text: string): number[] {
         const result: number[] = new Array();
@@ -562,7 +410,6 @@ namespace ts {
         skipTrivia: boolean,
         languageVariant = LanguageVariant.Standard,
         text?: string,
-        onError?: ErrorCallback,
         start?: number,
         length?: number): Scanner {
         // Current position (end position of text of current token)
@@ -609,18 +456,11 @@ namespace ts {
             setText,
             setScriptTarget,
             setLanguageVariant,
-            setOnError,
             setTextPos,
             tryScan,
             lookAhead,
             scanRange,
         };
-
-        function error(message: DiagnosticMessage, length?: number): void {
-            if (onError) {
-                onError(message, length || 0);
-            }
-        }
 
         function scanNumber(): string {
             const start = pos;
@@ -1640,10 +1480,6 @@ namespace ts {
             text = newText || "";
             end = length === undefined ? text.length : start + length;
             setTextPos(start || 0);
-        }
-
-        function setOnError(errorCallback: ErrorCallback) {
-            onError = errorCallback;
         }
 
         function setScriptTarget(scriptTarget: ScriptTarget) {

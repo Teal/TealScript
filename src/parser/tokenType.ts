@@ -2,13 +2,15 @@
  * @fileOverview 标记和关键字
  */
 
+import {CharCode} from './charCode';
+
 /**
  * 表示一个标记类型。
  * @internal
  */
 export enum TokenType {
 
-    // #region 控制符（Control）
+    // #region 控制符(Control)
 
     /**
      * 未知标记。
@@ -22,27 +24,22 @@ export enum TokenType {
 
     // #endregion
 
-    // #region 定义（Definitions）
+    // #region 修饰符(Modifiers)
 
     /**
-     * 关键字 function。
+     * 最小的单目运算符。
      */
-    function,
+    MIN_UNARY_OPERATOR,
 
     /**
-     * 关键字 class(仅在 JavaScript 7)。
+     * 最小的修饰符前缀。
      */
-    class,
+    MIN_MODIFIER,
 
     /**
-     * 关键字 interface(仅在 JavaScript 7)。
+     * 关键字 export(仅在 JavaScript 7)。
      */
-    interface,
-
-    /**
-     * 关键字 enum(仅在 JavaScript 7)。
-     */
-    enum,
+    export,
 
     /**
      * 关键字 async(仅在 JavaScript 7)。
@@ -50,51 +47,105 @@ export enum TokenType {
     async,
 
     /**
-     * 关键字 namespace(仅在 TypeScript)。
+     * 关键字 private(仅在 JavaScript 7)。
      */
-    namespace,
+    private,
 
     /**
-     * 关键字 module(仅在 TypeScript)。
+     * 关键字 protected(仅在 JavaScript 7)。
      */
-    module,
+    protected,
 
     /**
-     * 关键字 type(仅在 TypeScript)。
+     * 关键字 public(仅在 JavaScript 7)。
      */
-    type,
+    public,
 
     /**
-     * 关键字 global(仅在 TypeScript)。
+     * 关键字 static(仅在 JavaScript 7)。
      */
-    global,
+    static,
+
+    /**
+     * 关键字 abstract(仅在 JavaScript 7)。
+     */
+    abstract,
+
+    /**
+     * 关键字 declare(仅在 TypeScript)。
+     */
+    declare,
+
+    /**
+     * 关键字 readonly(仅在 TypeScript)。
+     */
+    readonly,
+
+    /**
+     * 最大的修饰符前缀。
+     */
+    MAX_MODIFIER,
 
     // #endregion
 
-    // #region 字面量（Literal）
+    // #region 定义(Declarations)
 
     /**
-     * 标识符(xx)。
+     * 最小的定义前缀。
+     */
+    MIN_DECLARATION,
+
+    /**
+     * 关键字 enum(仅在 JavaScript 7)。
+     */
+    enum,
+
+    /**
+     * 关键字 interface(仅在 JavaScript 7)。
+     */
+    interface,
+
+    /**
+     * 关键字 class(仅在 JavaScript 7)。
+     */
+    class,
+
+    /**
+     * 关键字 function。
+     */
+    function,
+
+    /**
+     * 最大的定义前缀。
+     */
+    MAX_DECLARATION,
+
+    // #endregion
+
+    // #region 字面量(Literal)
+
+    /**
+     * 标识符(x)。
      */
     identifier,
 
     /**
-     * 数字常量(0x0)。
+     * 数字字面量(0x0)。
      */
     numericLiteral,
 
     /**
-     * 字符串常量('...')。
+     * 字符串字面量('...')。
      */
     stringLiteral,
 
     /**
-     * 正则表达式常量(/.../)。
+     * 正则表达式字面量(/.../)。
      */
     regularExpressionLiteral,
 
     /**
-     * 模板字符串常量(`...`)(仅在 JavaScript 7)。
+     * 简单模板字符串字面量(`...`)(仅在 JavaScript 7)。
      */
     noSubstitutionTemplateLiteral,
 
@@ -102,16 +153,6 @@ export enum TokenType {
      * 模板字符串头(`...${)(仅在 JavaScript 7)。
      */
     templateHead,
-
-    /**
-     * 模板字符串主体(}...${)(仅在 JavaScript 7)。
-     */
-    templateMiddle,
-
-    /**
-     * 模板字符串尾(}...`)(仅在 JavaScript 7)。
-     */
-    templateTail,
 
     /**
      * 关键字 null。
@@ -140,7 +181,7 @@ export enum TokenType {
 
     // #endregion
 
-    // #region 单目运算符（Unary Operators）
+    // #region 单目运算符(Unary Operators)
 
     /**
      * 开花括号({)。
@@ -174,6 +215,11 @@ export enum TokenType {
     void,
 
     /**
+     * 位反(~)。
+     */
+    tilde,
+
+    /**
      * 关键字 yield(仅在 JavaScript 7)。
      */
     yield,
@@ -184,11 +230,6 @@ export enum TokenType {
     await,
 
     /**
-     * 位反(~)。
-     */
-    tilde,
-
-    /**
      * 电子邮件符号(@)(仅在 JavaScript 7)。
      * @precedence 80
      */
@@ -196,7 +237,12 @@ export enum TokenType {
 
     // #endregion
 
-    // #region 单/双目运算符（Unary & Binary Operators）
+    // #region 单/双目运算符(Unary & Binary Operators)
+
+    /**
+     * 最小的双目运算符。
+     */
+    MIN_BINARY_OPERATOR,
 
     /**
      * 开括号(()。
@@ -250,9 +296,29 @@ export enum TokenType {
      */
     dotDotDot,
 
+    /**
+     * 最大的单目运算符。
+     */
+    MAX_UNARY_OPERATOR,
+
     // #endregion
 
-    // #region 双目运算符（Binary Operators）
+    // #region 双目运算符(Binary Operators)
+
+    /**
+     * 点(.)。
+     */
+    dot,
+
+    /**
+     * 点点(..)(仅在 TealScript)。
+     */
+    dotDot,
+
+    /**
+     * 问号点(?.)(仅在 TealScript)。
+     */
+    questionDot,
 
     /**
      * 星号(*)。
@@ -273,16 +339,6 @@ export enum TokenType {
      * 关键字 instanceOf。
      */
     instanceOf,
-
-    /**
-     * 点(.)。
-     */
-    dot,
-
-    /**
-     * 点点(..)(仅在 TealScript)。
-     */
-    dotDot,
 
     /**
      * 百分号(%)。
@@ -365,6 +421,11 @@ export enum TokenType {
     asteriskAsterisk,
 
     /**
+     * 最小的赋值运算符。
+     */
+    MIN_ASSIGN_OPERATOR,
+
+    /**
      * 等于(=)。
      */
     equals,
@@ -383,11 +444,6 @@ export enum TokenType {
      * 星号等于(*=)。
      */
     asteriskEquals,
-
-    /**
-     * 星号星号等于(**=)(仅在 JavaScript 7)。
-     */
-    asteriskAsteriskEquals,
 
     /**
      * 斜杠等于(/=)。
@@ -430,6 +486,16 @@ export enum TokenType {
     caretEquals,
 
     /**
+     * 星号星号等于(**=)(仅在 JavaScript 7)。
+     */
+    asteriskAsteriskEquals,
+
+    /**
+     * 最大的赋值运算符。
+     */
+    MAX_ASSIGN_OPERATOR,
+
+    /**
      * 问号(?)。
      */
     question,
@@ -450,9 +516,14 @@ export enum TokenType {
      */
     is,
 
+    /**
+     * 最大的双目运算符。
+     */
+    MAX_BINARY_OPERATOR,
+
     // #endregion
 
-    // #region 其它运算符（Other Operators）
+    // #region 其它运算符(Other Operators)
 
     /**
      * 闭括号())。
@@ -484,9 +555,24 @@ export enum TokenType {
      */
     semicolon,
 
+    /**
+     * 模板字符串主体(}...${)(仅在 JavaScript 7)。
+     */
+    templateMiddle,
+
+    /**
+     * 模板字符串尾(}...`)(仅在 JavaScript 7)。
+     */
+    templateTail,
+
     // #endregion
 
-    // #region 语句（Statements）
+    // #region 语句头(Statement Headers)
+
+    /**
+     * 最小的语句。
+     */
+    MIN_STATEMENT,
 
     /**
      * 关键字 if。
@@ -494,39 +580,14 @@ export enum TokenType {
     if,
 
     /**
-     * 关键字 else。
-     */
-    else,
-
-    /**
      * 关键字 switch。
      */
     switch,
 
     /**
-     * 关键字 case。
-     */
-    case,
-
-    /**
-     * 关键字 default。
-     */
-    default,
-
-    /**
      * 关键字 for。
      */
     for,
-
-    /**
-     * 关键字 of(仅在 JavaScript 7)。
-     */
-    of,
-
-    /**
-     * 关键字 to(仅在 TealScript)。
-     */
-    to,
 
     /**
      * 关键字 while。
@@ -564,16 +625,6 @@ export enum TokenType {
     try,
 
     /**
-     * 关键字 catch。
-     */
-    catch,
-
-    /**
-     * 关键字 finally。
-     */
-    finally,
-
-    /**
      * 关键字 var。
      */
     var,
@@ -604,14 +655,63 @@ export enum TokenType {
     import,
 
     /**
+     * 关键字 package(仅在 JavaScript 7)。
+     */
+    package,
+
+    /**
+     * 关键字 type(仅在 TypeScript)。
+     */
+    type,
+
+    /**
+     * 关键字 namespace(仅在 TypeScript)。
+     */
+    namespace,
+
+    /**
+     * 关键字 module(仅在 TypeScript)。
+     */
+    module,
+
+    /**
+     * 最大的语句。
+     */
+    MAX_STATEMENT,
+
+    // #endregion
+
+    // #region 其它语句(Other Statements)
+
+    /**
+     * 关键字 else。
+     */
+    else,
+
+    /**
+     * 关键字 case。
+     */
+    case,
+
+    /**
+     * 关键字 default。
+     */
+    default,
+
+    /**
+     * 关键字 catch。
+     */
+    catch,
+
+    /**
+     * 关键字 finally。
+     */
+    finally,
+
+    /**
      * 关键字 from(仅在 JavaScript 7)。
      */
     from,
-
-    /**
-     * 关键字 export(仅在 JavaScript 7)。
-     */
-    export,
 
     /**
      * 关键字 extends(仅在 JavaScript 7)。
@@ -624,110 +724,112 @@ export enum TokenType {
     implements,
 
     /**
-     * 关键字 package(仅在 JavaScript 7)。
+     * 关键字 of(仅在 JavaScript 7)。
      */
-    package,
+    of,
 
     /**
-     * 关键字 private(仅在 JavaScript 7)。
+     * 关键字 to(仅在 TealScript)。
      */
-    private,
+    to,
 
     /**
-     * 关键字 protected(仅在 JavaScript 7)。
+     * 关键字 get(仅在 JavaScript 7)。
      */
-    protected,
+    get,
 
     /**
-     * 关键字 public(仅在 JavaScript 7)。
+     * 关键字 set(仅在 JavaScript 7)。
      */
-    public,
+    set,
 
     /**
-     * 关键字 static(仅在 JavaScript 7)。
+     * 关键字 undefined(仅在 TypeScript)。
      */
-    static,
+    undefined,
 
     /**
-     * 关键字 abstract(仅在 JavaScript 7)。
+     * 关键字 constructor(仅在 TypeScript)。
      */
-    abstract,
+    constructor,
 
     /**
-     * 关键字 declare(仅在 TypeScript)。
+     * 关键字 global(仅在 TypeScript)。
      */
-    declare,
-
-    /**
-     * 关键字 readonly(仅在 TypeScript)。
-     */
-    readonly,
-
-    ///**
-    // * 关键字 constructor(仅在 TypeScript)。
-    // */
-    //constructor,
-
-    ///**
-    // * 关键字 require(仅在 TypeScript)。
-    // */
-    //require,
-
-    ///**
-    // * 关键字 get(仅在 JavaScript 7)。
-    // */
-    //get,
-
-    ///**
-    // * 关键字 set(仅在 JavaScript 7)。
-    // */
-    //set,
-
-    ///**
-    // * 关键字 any(仅在 TypeScript)。
-    // */
-    //any,
-
-    ///**
-    // * 关键字 boolean(仅在 TypeScript)。
-    // */
-    //boolean,
-
-    ///**
-    // * 关键字 type(仅在 TypeScript)。
-    // */
-    //type,
-
-    ///**
-    // * 关键字 number(仅在 TypeScript)。
-    // */
-    //number,
-
-    ///**
-    // * 关键字 string(仅在 TypeScript)。
-    // */
-    //string,
-
-    ///**
-    // * 关键字 symbol(仅在 TypeScript)。
-    // */
-    //symbol,
-
-    ///**
-    // * 关键字 never(仅在 TypeScript)。
-    // */
-    //never,
-
-    ///**
-    // * 关键字 undefined(仅在 TypeScript)。
-    // */
-    //undefined,
-
-    ///**
-    // * 关键字 global(仅在 TypeScript)。
-    // */
-    //global,
+    global,
 
     // #endregion
 
+    // #region 内置类型(Predefined Types)
+
+    /**
+     * 最小的内置类型。
+     */
+    MIN_PREDEFINED_TYPE,
+
+    /**
+     * 关键字 any(仅在 TypeScript)。
+     */
+    any,
+
+    /**
+     * 关键字 boolean(仅在 TypeScript)。
+     */
+    boolean,
+
+    /**
+     * 关键字 number(仅在 TypeScript)。
+     */
+    number,
+
+    /**
+     * 关键字 string(仅在 TypeScript)。
+     */
+    string,
+
+    /**
+     * 关键字 symbol(仅在 TypeScript)。
+     */
+    symbol,
+
+    /**
+     * 关键字 never(仅在 TypeScript)。
+     */
+    never,
+
+    /**
+     * 最大的内置类型。
+     */
+    MAX_PREDEFINED_TYPE,
+
+    // #endregion
+
+}
+
+/**
+ * 将指定的字符串转为对应的标记。
+ * @param token 要转换的字符串。
+ * @returns 返回等效的标记。如果字符串无效，则返回 undefined。
+ */
+export function stringToToken(token: string) {
+    return TokenType[token];
+}
+
+/**
+ * 将指定的标记转为对应的字符串。
+ * @param token 要转换的标记。
+ * @returns 返回等效的字符串。如果标记无效，则返回 undefined。
+ */
+export function tokenToString(token: TokenType) {
+    return TokenType[token];
+}
+
+/**
+ * 判断指定的标记是否是关键字。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isKeyword(token: TokenType) {
+    const ch = tokenToString(token).charCodeAt(0);
+    return ch >= CharCode.a && ch <= CharCode.z;
 }

@@ -1,7 +1,7 @@
 ﻿/**
  * @fileOverview 判断字符分类
  * @author xuld@vip.qq.com
- * @state statable
+ * @statable
  */
 
 import {CharCode} from './charCode';

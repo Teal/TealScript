@@ -1,7 +1,7 @@
 ﻿/**
  * @fileOverview ASCII 字符码表
  * @author xuld@vip.qq.com
- * @state statable
+ * @statable
  */
 
 /**

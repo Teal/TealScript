@@ -1,4 +1,5 @@
 /// <reference path="types.ts"/>
+/// <reference path="../del.ts"/>
 
 /* @internal */
 namespace ts {
