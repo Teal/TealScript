@@ -5455,7 +5455,7 @@ namespace ts {
                                 nodes = (<Node[]>(<ClassDeclaration>declaration).members).concat(declaration);
                             }
                             else {
-                                nodes = (<Block>container).statements;
+                                nodes = (<BlockStatement>container).statements;
                             }
                             break;
                         case SyntaxKind.Constructor:
@@ -5656,7 +5656,7 @@ namespace ts {
                     // If the "owner" is a function, then we equate 'return' and 'throw' statements in their
                     // ability to "jump out" of the function, and include occurrences for both.
                     if (isFunctionBlock(owner)) {
-                        forEachReturnStatement(<Block>owner, returnStatement => {
+                        forEachReturnStatement(<BlockStatement>owner, returnStatement => {
                             pushKeywordIf(keywords, returnStatement.getFirstToken(), SyntaxKind.ReturnKeyword);
                         });
                     }
@@ -5673,7 +5673,7 @@ namespace ts {
                     }
 
                     const keywords: Node[] = [];
-                    forEachReturnStatement(<Block>func.body, returnStatement => {
+                    forEachReturnStatement(<BlockStatement>func.body, returnStatement => {
                         pushKeywordIf(keywords, returnStatement.getFirstToken(), SyntaxKind.ReturnKeyword);
                     });
 

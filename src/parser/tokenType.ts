@@ -155,6 +155,11 @@ export enum TokenType {
     templateHead,
 
     /**
+     * 最小的简单字面量。
+     */
+    MIN_SIMPLE_LITERAL,
+
+    /**
      * 关键字 null。
      */
     null,
@@ -178,6 +183,11 @@ export enum TokenType {
      * 关键字 super(仅在 JavaScript 7)。
      */
     super,
+
+    /**
+     * 最大的简单字面量。
+     */
+    MAX_SIMPLE_LITERAL,
 
     // #endregion
 
@@ -822,6 +832,15 @@ export function stringToToken(token: string) {
  */
 export function tokenToString(token: TokenType) {
     return TokenType[token];
+}
+
+/**
+ * 判断指定的标记是否是表达式开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isSimpleLiteral(token: TokenType) {
+    return token > TokenType.MIN_SIMPLE_LITERAL && token < TokenType.MAX_SIMPLE_LITERAL;
 }
 
 /**

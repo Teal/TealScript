@@ -557,7 +557,7 @@ namespace ts {
      * Return an exact match if possible, or a pattern match, or undefined.
      * (These are verified by verifyCompilerOptions to have 0 or 1 "*" characters.)
      */
-    function matchPatternOrExact(patternStrings: string[], candidate: string): string | Pattern | undefined {
+    function matchPatternOrExact(patternStrings: string[], candidate: string): string | Pattern{
         const patterns: Pattern[] = [];
         for (const patternString of patternStrings) {
             const pattern = tryParsePattern(patternString);
@@ -588,8 +588,8 @@ namespace ts {
 
     /** Return the object corresponding to the best pattern to match `candidate`. */
     /* @internal */
-    export function findBestPatternMatch<T>(values: T[], getPattern: (value: T) => Pattern, candidate: string): T | undefined {
-        let matchedValue: T | undefined = undefined;
+    export function findBestPatternMatch<T>(values: T[], getPattern: (value: T) => Pattern, candidate: string): T {
+        let matchedValue: T = undefined;
         // use length of prefix as betterness criteria
         let longestMatchPrefixLength = -1;
 
@@ -611,7 +611,7 @@ namespace ts {
     }
 
     /* @internal */
-    export function tryParsePattern(pattern: string): Pattern | undefined {
+    export function tryParsePattern(pattern: string): Pattern {
         // This should be verified outside of here and a proper error thrown.
         Debug.assert(hasZeroOrOneAsteriskCharacter(pattern));
         const indexOfStar = pattern.indexOf("*");

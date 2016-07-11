@@ -1328,7 +1328,7 @@ namespace ts {
         function hasExportDeclarations(node: ModuleDeclaration | SourceFile): boolean {
             const body = node.kind === TokenType.SourceFile ? node : (<ModuleDeclaration>node).body;
             if (body && (body.kind === TokenType.SourceFile || body.kind === TokenType.ModuleBlock)) {
-                for (const stat of (<Block>body).statements) {
+                for (const stat of (<BlockStatement>body).statements) {
                     if (stat.kind === TokenType.ExportDeclaration || stat.kind === TokenType.ExportAssignment) {
                         return true;
                     }
@@ -1876,7 +1876,7 @@ namespace ts {
                     }
                     // Fall through
                 case TokenType.ModuleBlock:
-                    return updateStrictModeStatementList((<Block | ModuleBlock>node).statements);
+                    return updateStrictModeStatementList((<BlockStatement | ModuleBlock>node).statements);
             }
         }
 

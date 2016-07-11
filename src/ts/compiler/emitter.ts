@@ -2619,7 +2619,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitTypeOfExpression(node: TypeOfExpression) {
-                write(tokenToString(TokenType.typeOf));
+                write(tokenToString(TokenType.typeof));
                 write(" ");
                 emit(node.expression);
             }
@@ -2934,12 +2934,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 
             function isSingleLineEmptyBlock(node: Node) {
                 if (node && node.kind === TokenType.Block) {
-                    const block = <Block>node;
+                    const block = <BlockStatement>node;
                     return block.statements.length === 0 && nodeEndIsOnSameLineAsNodeStart(block, block);
                 }
             }
 
-            function emitBlock(node: Block) {
+            function emitBlock(node: BlockStatement) {
                 if (isSingleLineEmptyBlock(node)) {
                     emitToken(TokenType.openBrace, node.pos);
                     write(" ");
@@ -2965,7 +2965,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             function emitEmbeddedStatement(node: Node) {
                 if (node.kind === TokenType.Block) {
                     write(" ");
-                    emit(<Block>node);
+                    emit(<BlockStatement>node);
                 }
                 else {
                     increaseIndent();
@@ -3187,7 +3187,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 increaseIndent();
 
                 if (bodyIsBlock) {
-                    emitLines((<Block>node.statement).statements);
+                    emitLines((<BlockStatement>node.statement).statements);
                 }
                 else {
                     emit(node.statement);
@@ -3310,7 +3310,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     emitEmbeddedStatement(node.statement);
                 }
                 else if (node.statement.kind === TokenType.Block) {
-                    emitLines((<Block>node.statement).statements);
+                    emitLines((<BlockStatement>node.statement).statements);
                 }
                 else {
                     writeLine();
@@ -4883,7 +4883,7 @@ const _super = (function (geti, seti) {
                 }
                 else {
                     if (node.body.kind === TokenType.Block) {
-                        emitBlockFunctionBody(node, <Block>node.body);
+                        emitBlockFunctionBody(node, <BlockStatement>node.body);
                     }
                     else {
                         emitExpressionFunctionBody(node, <Expression>node.body);
@@ -5001,7 +5001,7 @@ const _super = (function (geti, seti) {
                 emitEnd(node.body);
             }
 
-            function emitBlockFunctionBody(node: FunctionLikeDeclaration, body: Block) {
+            function emitBlockFunctionBody(node: FunctionLikeDeclaration, body: BlockStatement) {
                 write(" {");
                 const initialTextPos = writer.getTextPos();
 
@@ -5365,7 +5365,7 @@ const _super = (function (geti, seti) {
                 }
                 emitPropertyDeclarations(node, getInitializedProperties(node, /*isStatic*/ false));
                 if (ctor) {
-                    let statements: Node[] = (<Block>ctor.body).statements;
+                    let statements: Node[] = (<BlockStatement>ctor.body).statements;
                     if (superCall) {
                         statements = statements.slice(1);
                     }
@@ -5374,10 +5374,10 @@ const _super = (function (geti, seti) {
                 emitTempDeclarations(/*newLine*/ true);
                 writeLine();
                 if (ctor) {
-                    emitLeadingCommentsOfPosition((<Block>ctor.body).statements.end);
+                    emitLeadingCommentsOfPosition((<BlockStatement>ctor.body).statements.end);
                 }
                 decreaseIndent();
-                emitToken(TokenType.closeBrace, ctor ? (<Block>ctor.body).statements.end : node.members.end);
+                emitToken(TokenType.closeBrace, ctor ? (<BlockStatement>ctor.body).statements.end : node.members.end);
                 emitEnd(<Node>ctor || node);
                 if (ctor) {
                     emitTrailingComments(ctor);
@@ -8105,7 +8105,7 @@ const _super = (function (geti, seti) {
                         return;
                     case TokenType.Block:
                     case TokenType.ModuleBlock:
-                        return emitBlock(<Block>node);
+                        return emitBlock(<BlockStatement>node);
                     case TokenType.VariableStatement:
                         return emitVariableStatement(<VariableStatement>node);
                     case TokenType.EmptyStatement:

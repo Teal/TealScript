@@ -3,12 +3,7 @@
 
 namespace ts {
 
-    /* @internal */
-    export function tokenIsIdentifierOrKeyword(token: TokenType): boolean {
-        return token >= TokenType.Identifier;
-    }
-
-    export interface Scanner {
+    export interface Lexer {
         getStartPos(): number;
         getToken(): TokenType;
         getTextPos(): number;
@@ -17,8 +12,6 @@ namespace ts {
         getTokenValue(): string;
         hasExtendedUnicodeEscape(): boolean;
         hasPrecedingLineBreak(): boolean;
-        isIdentifier(): boolean;
-        isReservedWord(): boolean;
         isUnterminated(): boolean;
         reScanGreaterToken(): TokenType;
         reScanSlashToken(): TokenType;
@@ -28,7 +21,6 @@ namespace ts {
         scanJsxToken(): TokenType;
         scanJSDocToken(): TokenType;
         scan(): TokenType;
-        getText(): string;
         // Sets the text for the scanner to scan.  An optional subrange starting point and length
         // can be provided to have the scanner only scan a portion of the text.
         setText(text: string, start?: number, length?: number): void;
@@ -49,78 +41,6 @@ namespace ts {
         // callback returns something truthy, then the scanner state is not rolled back.  The result
         // of invoking the callback is returned from this function.
         tryScan<T>(callback: () => T): T;
-    }
-
-    
-    /* @internal */
-    export function computeLineStarts(text: string): number[] {
-        const result: number[] = new Array();
-        let pos = 0;
-        let lineStart = 0;
-        while (pos < text.length) {
-            const ch = text.charCodeAt(pos);
-            pos++;
-            switch (ch) {
-                case CharCode.carriageReturn:
-                    if (text.charCodeAt(pos) === CharCode.lineFeed) {
-                        pos++;
-                    }
-                case CharCode.lineFeed:
-                    result.push(lineStart);
-                    lineStart = pos;
-                    break;
-                default:
-                    if (ch > CharCode.asciiMax && isLineBreak(ch)) {
-                        result.push(lineStart);
-                        lineStart = pos;
-                    }
-                    break;
-            }
-        }
-        result.push(lineStart);
-        return result;
-    }
-
-    export function getPositionOfLineAndCharacter(sourceFile: SourceFile, line: number, character: number): number {
-        return computePositionOfLineAndCharacter(getLineStarts(sourceFile), line, character);
-    }
-
-    /* @internal */
-    export function computePositionOfLineAndCharacter(lineStarts: number[], line: number, character: number): number {
-        Debug.assert(line >= 0 && line < lineStarts.length);
-        return lineStarts[line] + character;
-    }
-
-    /* @internal */
-    export function getLineStarts(sourceFile: SourceFile): number[] {
-        return sourceFile.lineMap || (sourceFile.lineMap = computeLineStarts(sourceFile.text));
-    }
-
-    /* @internal */
-    /**
-     * We assume the first line starts at position 0 and 'position' is non-negative.
-     */
-    export function computeLineAndCharacterOfPosition(lineStarts: number[], position: number) {
-        let lineNumber = binarySearch(lineStarts, position);
-        if (lineNumber < 0) {
-            // If the actual position was not found,
-            // the binary search returns the 2's-complement of the next line start
-            // e.g. if the line starts at [5, 10, 23, 80] and the position requested was 20
-            // then the search will return -2.
-            //
-            // We want the index of the previous line start, so we subtract 1.
-            // Review 2's-complement if this is confusing.
-            lineNumber = ~lineNumber - 1;
-            Debug.assert(lineNumber !== -1, "position cannot precede the beginning of the file");
-        }
-        return {
-            line: lineNumber,
-            character: position - lineStarts[lineNumber]
-        };
-    }
-
-    export function getLineAndCharacterOfPosition(sourceFile: SourceFile, position: number): LineAndCharacter {
-        return computeLineAndCharacterOfPosition(getLineStarts(sourceFile), position);
     }
 
     const hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -146,7 +66,7 @@ namespace ts {
                 // Only if its the beginning can we have #! trivia
                 return pos === 0;
             default:
-                return ch > CharCode.asciiMax;
+                return ch > CharCode.MAX_ASCII;
         }
     }
 
@@ -222,7 +142,7 @@ namespace ts {
                     break;
 
                 default:
-                    if (ch > CharCode.asciiMax && (isWhiteSpace(ch))) {
+                    if (ch > CharCode.MAX_ASCII && (isWhiteSpace(ch))) {
                         pos++;
                         continue;
                     }
@@ -258,7 +178,7 @@ namespace ts {
         return false;
     }
 
-    function scanConflictMarkerTrivia(text: string, pos: number, error?: ErrorCallback) {
+    function scanConflictMarkerTrivia(text: string, pos: number) {
         if (error) {
             error(Diagnostics.Merge_conflict_marker_encountered, mergeConflictMarkerLength);
         }
@@ -375,7 +295,7 @@ namespace ts {
                     }
                     break;
                 default:
-                    if (ch > CharCode.asciiMax && (isWhiteSpace(ch))) {
+                    if (ch > CharCode.MAX_ASCII && (isWhiteSpace(ch))) {
                         if (result && result.length && isLineBreak(ch)) {
                             lastOrUndefined(result).hasTrailingNewLine = true;
                         }
@@ -411,7 +331,7 @@ namespace ts {
         languageVariant = LanguageVariant.Standard,
         text?: string,
         start?: number,
-        length?: number): Scanner {
+        length?: number): Lexer {
         // Current position (end position of text of current token)
         let pos: number;
 
@@ -439,10 +359,8 @@ namespace ts {
             getTokenPos: () => tokenPos,
             getTokenText: () => text.substring(tokenPos, pos),
             getTokenValue: () => tokenValue,
-            hasExtendedUnicodeEscape: () => hasExtendedUnicodeEscape,
+            hasExtendedUnicodeEscape: () => false,
             hasPrecedingLineBreak: () => precedingLineBreak,
-            isIdentifier: () => token === TokenType.Identifier || token > TokenType.LastReservedWord,
-            isReservedWord: () => token >= TokenType.FirstReservedWord && token <= TokenType.LastReservedWord,
             isUnterminated: () => tokenIsUnterminated,
             reScanGreaterToken,
             reScanSlashToken,
@@ -514,7 +432,7 @@ namespace ts {
             let value = 0;
             while (digits < minCount || scanAsManyAsPossible) {
                 const ch = text.charCodeAt(pos);
-                if (ch >= CharCode.num0 && ch <= CharCode.9) {
+                if (ch >= CharCode.num0 && ch <= CharCode.num9) {
                     value = value * 16 + ch - CharCode.num0;
                 }
                 else if (ch >= CharCode.A && ch <= CharCode.F) {
@@ -799,18 +717,6 @@ namespace ts {
             return result;
         }
 
-        function getIdentifierToken(): TokenType {
-            // Reserved words are between 2 and 11 characters long and start with a lowercase letter
-            const len = tokenValue.length;
-            if (len >= 2 && len <= 11) {
-                const ch = tokenValue.charCodeAt(0);
-                if (ch >= CharCode.a && ch <= CharCode.z && hasOwnProperty.call(textToToken, tokenValue)) {
-                    return token = textToToken[tokenValue];
-                }
-            }
-            return token = TokenType.Identifier;
-        }
-
         function scanBinaryOrOctalDigits(base: number): number {
             Debug.assert(base !== 2 || base !== 8, "Expected either base 2 or base 8");
 
@@ -1068,15 +974,15 @@ namespace ts {
                     // This fall-through is a deviation from the EcmaScript grammar. The grammar says that a leading zero
                     // can only be followed by an octal digit, a dot, or the end of the number literal. However, we are being
                     // permissive and allowing decimal digits of the form 08* and 09* (which many browsers also do).
-                    case CharCode.1:
-                    case CharCode.2:
-                    case CharCode.3:
-                    case CharCode.4:
+                    case CharCode.num1:
+                    case CharCode.num2:
+                    case CharCode.num3:
+                    case CharCode.num4:
                     case CharCode.num5:
-                    case CharCode.6:
+                    case CharCode.num6:
                     case CharCode.num7:
-                    case CharCode.8:
-                    case CharCode.9:
+                    case CharCode.num8:
+                    case CharCode.num9:
                         tokenValue = scanNumber();
                         return token = TokenType.NumericLiteral;
                     case CharCode.colon:

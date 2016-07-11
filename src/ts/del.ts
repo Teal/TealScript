@@ -1,47 +1,13 @@
 ﻿namespace ts {
 
-    function getBinaryOperatorPrecedence(): number {
-        switch (token) {
-            case TokenType.barBar:
-                return 1;
-            case TokenType.ampersandAmpersand:
-                return 2;
-            case TokenType.bar:
-                return 3;
-            case TokenType.caret:
-                return 4;
-            case TokenType.ampersand:
-                return 5;
-            case TokenType.equalsEquals:
-            case TokenType.exclamationEquals:
-            case TokenType.equalsEqualsEquals:
-            case TokenType.exclamationEqualsEquals:
-                return 6;
-            case TokenType.lessThan:
-            case TokenType.greaterThan:
-            case TokenType.lessThanEquals:
-            case TokenType.greaterThanEquals:
-            case TokenType.instanceOf:
-            case TokenType.in:
-            case TokenType.as:
-                return 7;
-            case TokenType.lessThanLessThan:
-            case TokenType.greaterThanGreaterThan:
-            case TokenType.greaterThanGreaterThanGreaterThan:
-                return 8;
-            case TokenType.plus:
-            case TokenType.minus:
-                return 9;
-            case TokenType.asterisk:
-            case TokenType.slash:
-            case TokenType.percent:
-                return 10;
-            case TokenType.asteriskAsterisk:
-                return 11;
-        }
+    export  function error(a: any) { return }
 
-        // -1 is lower than all other precedences.  Returning it will cause binary expression
-        // parsing to stop.
+    function getLanguageVariant(scriptKind: ScriptKind) {
+        // .tsx and .jsx files are treated as jsx language variant.
+        return scriptKind === ScriptKind.TSX || scriptKind === ScriptKind.JSX || scriptKind === ScriptKind.JS ? LanguageVariant.JSX : LanguageVariant.Standard;
+    }
+
+    function getBinaryOperatorPrecedence(): number {
         return -1;
     }
 
@@ -2044,7 +2010,7 @@
 
     export function isLineBreak(ch: number): boolean { return }
 
-    function isDecimalDigit(ch: number): boolean { return }
+    export function isDecimalDigit(ch: number): boolean { return }
 
     /* @internal */
     export function isOctalDigit(ch: number): boolean { return }

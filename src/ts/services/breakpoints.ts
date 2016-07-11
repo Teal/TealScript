@@ -95,11 +95,11 @@ namespace ts.BreakpointResolver {
 
                     case SyntaxKind.Block:
                         if (isFunctionBlock(node)) {
-                            return spanInFunctionBlock(<Block>node);
+                            return spanInFunctionBlock(<BlockStatement>node);
                         }
                     // Fall through
                     case SyntaxKind.ModuleBlock:
-                        return spanInBlock(<Block>node);
+                        return spanInBlock(<BlockStatement>node);
 
                     case SyntaxKind.CatchClause:
                         return spanInBlock((<CatchClause>node).block);
@@ -458,7 +458,7 @@ namespace ts.BreakpointResolver {
                 return spanInNode(functionDeclaration.body);
             }
 
-            function spanInFunctionBlock(block: Block): TextSpan {
+            function spanInFunctionBlock(block: BlockStatement): TextSpan {
                 const nodeForSpanInBlock = block.statements.length ? block.statements[0] : block.getLastToken();
                 if (canFunctionHaveSpanInWholeDeclaration(<FunctionLikeDeclaration>block.parent)) {
                     return spanInNodeIfStartsOnSameLine(block.parent, nodeForSpanInBlock);
@@ -467,7 +467,7 @@ namespace ts.BreakpointResolver {
                 return spanInNode(nodeForSpanInBlock);
             }
 
-            function spanInBlock(block: Block): TextSpan {
+            function spanInBlock(block: BlockStatement): TextSpan {
                 switch (block.parent.kind) {
                     case SyntaxKind.ModuleDeclaration:
                         if (getModuleInstanceState(block.parent) !== ModuleInstanceState.Instantiated) {
@@ -596,7 +596,7 @@ namespace ts.BreakpointResolver {
                         // fall through
 
                     case SyntaxKind.CatchClause:
-                        return spanInNode(lastOrUndefined((<Block>node.parent).statements));
+                        return spanInNode(lastOrUndefined((<BlockStatement>node.parent).statements));
 
                     case SyntaxKind.CaseBlock:
                         // breakpoint in last statement of the last clause

@@ -70,6 +70,11 @@ export var options = {
     disallowForOf: false,
 
     /**
+     * 允许使用 for..of 逗号语法。
+     */
+    disallowForOfCommaExpression: false,
+
+    /**
      * 允许使用 for..to 语法。
      */
     disallowForTo: false,

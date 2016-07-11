@@ -2246,7 +2246,7 @@ namespace ts {
                 }
 
                 function writeTypeOfSymbol(type: ObjectType, typeFormatFlags?: TypeFormatFlags) {
-                    writeKeyword(writer, TokenType.typeOf);
+                    writeKeyword(writer, TokenType.typeof);
                     writeSpace(writer);
                     buildSymbolDisplay(type.symbol, writer, enclosingDeclaration, SymbolFlags.Value, SymbolFormatFlags.None, typeFormatFlags);
                 }
@@ -11950,7 +11950,7 @@ namespace ts {
         function checkAndAggregateYieldOperandTypes(func: FunctionLikeDeclaration, contextualMapper: TypeMapper): Type[] {
             const aggregatedTypes: Type[] = [];
 
-            forEachYieldExpression(<Block>func.body, yieldExpression => {
+            forEachYieldExpression(<BlockStatement>func.body, yieldExpression => {
                 const expr = yieldExpression.expression;
                 if (expr) {
                     let type = checkExpressionCached(expr, contextualMapper);
@@ -11994,7 +11994,7 @@ namespace ts {
             if (!(func.flags & NodeFlags.HasImplicitReturn)) {
                 return false;
             }
-            const lastStatement = lastOrUndefined((<Block>func.body).statements);
+            const lastStatement = lastOrUndefined((<BlockStatement>func.body).statements);
             if (lastStatement && lastStatement.kind === TokenType.SwitchStatement && isExhaustiveSwitchStatement(<SwitchStatement>lastStatement)) {
                 return false;
             }
@@ -12006,7 +12006,7 @@ namespace ts {
             const aggregatedTypes: Type[] = [];
             let hasReturnWithNoExpression = functionHasImplicitReturn(func);
             let hasReturnOfTypeNever = false;
-            forEachReturnStatement(<Block>func.body, returnStatement => {
+            forEachReturnStatement(<BlockStatement>func.body, returnStatement => {
                 const expr = returnStatement.expression;
                 if (expr) {
                     let type = checkExpressionCached(expr, contextualMapper);
@@ -13504,7 +13504,7 @@ namespace ts {
                     // Skip past any prologue directives to find the first statement
                     // to ensure that it was a super call.
                     if (superCallShouldBeFirst) {
-                        const statements = (<Block>node.body).statements;
+                        const statements = (<BlockStatement>node.body).statements;
                         let superCallStatement: ExpressionStatement;
 
                         for (const statement of statements) {
@@ -14635,7 +14635,7 @@ namespace ts {
             }
         }
 
-        function checkBlock(node: Block) {
+        function checkBlock(node: BlockStatement) {
             // Grammar checking for SyntaxKind.Block
             if (node.kind === TokenType.Block) {
                 checkGrammarStatementInAmbientContext(node);
@@ -16915,7 +16915,7 @@ namespace ts {
                     return checkFunctionDeclaration(<FunctionDeclaration>node);
                 case TokenType.Block:
                 case TokenType.ModuleBlock:
-                    return checkBlock(<Block>node);
+                    return checkBlock(<BlockStatement>node);
                 case TokenType.VariableStatement:
                     return checkVariableStatement(<VariableStatement>node);
                 case TokenType.ExpressionStatement:

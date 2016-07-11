@@ -300,7 +300,7 @@ namespace ts {
 
         asteriskToken?: Node;
         questionToken?: Node;
-        body?: Block | Expression;
+        body?: BlockStatement | Expression;
     }
 
     // @kind(SyntaxKind.FunctionDeclaration)
@@ -541,7 +541,7 @@ namespace ts {
         whenFalse: Expression;
     }
 
-    export type FunctionBody = Block;
+    export type FunctionBody = BlockStatement;
     export type ConciseBody = FunctionBody | Expression;
 
     // @kind(SyntaxKind.FunctionExpression)
@@ -748,10 +748,10 @@ namespace ts {
         name?: Identifier;
     }
 
-    export type BlockLike = SourceFile | Block | ModuleBlock | CaseClause;
+    export type BlockLike = SourceFile | BlockStatement | ModuleBlock | CaseClause;
 
     // @kind(SyntaxKind.Block)
-    export interface Block extends Statement {
+    export interface BlockStatement extends Statement {
         statements: NodeArray<Statement>;
     }
 
@@ -866,15 +866,15 @@ namespace ts {
 
     // @kind(SyntaxKind.TryStatement)
     export interface TryStatement extends Statement {
-        tryBlock: Block;
+        tryBlock: BlockStatement;
         catchClause?: CatchClause;
-        finallyBlock?: Block;
+        finallyBlock?: BlockStatement;
     }
 
     // @kind(SyntaxKind.CatchClause)
     export interface CatchClause extends Node {
         variableDeclaration: VariableDeclaration;
-        block: Block;
+        block: BlockStatement;
     }
 
     export type DeclarationWithTypeParameters = SignatureDeclaration | ClassLikeDeclaration | InterfaceDeclaration | TypeAliasDeclaration;

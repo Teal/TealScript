@@ -718,7 +718,7 @@ namespace ts {
 
     // Warning: This has the same semantics as the forEach family of functions,
     //          in that traversal terminates in the event that 'visitor' supplies a truthy value.
-    export function forEachReturnStatement<T>(body: Block, visitor: (stmt: ReturnStatement) => T): T {
+    export function forEachReturnStatement<T>(body: BlockStatement, visitor: (stmt: ReturnStatement) => T): T {
 
         return traverse(body);
 
@@ -746,7 +746,7 @@ namespace ts {
         }
     }
 
-    export function forEachYieldExpression(body: Block, visitor: (expr: YieldExpression) => void): void {
+    export function forEachYieldExpression(body: BlockStatement, visitor: (expr: YieldExpression) => void): void {
 
         return traverse(body);
 

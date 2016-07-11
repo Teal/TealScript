@@ -175,11 +175,11 @@ namespace ts.formatting {
                 return rangeContainsRange((<InterfaceDeclaration>parent).members, node);
             case SyntaxKind.ModuleDeclaration:
                 const body = (<ModuleDeclaration>parent).body;
-                return body && body.kind === SyntaxKind.Block && rangeContainsRange((<Block>body).statements, node);
+                return body && body.kind === SyntaxKind.Block && rangeContainsRange((<BlockStatement>body).statements, node);
             case SyntaxKind.SourceFile:
             case SyntaxKind.Block:
             case SyntaxKind.ModuleBlock:
-                return rangeContainsRange((<Block>parent).statements, node);
+                return rangeContainsRange((<BlockStatement>parent).statements, node);
             case SyntaxKind.CatchClause:
                 return rangeContainsRange((<CatchClause>parent).block.statements, node);
         }
