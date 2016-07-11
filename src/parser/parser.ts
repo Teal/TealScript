@@ -161,10 +161,10 @@ export class Parser {
                 return this.parseWhileStatement();
             case TokenType.for:
                 return this.parseForStatement();
-            case TokenType.continue:
-                return this.parseBreakOrContinueStatement(TokenType.ContinueStatement);
             case TokenType.break:
                 return this.parseBreakOrContinueStatement(TokenType.BreakStatement);
+            case TokenType.continue:
+                return this.parseBreakOrContinueStatement(TokenType.ContinueStatement);
             case TokenType.return:
                 return this.parseReturnStatement();
             case TokenType.with:
@@ -414,43 +414,6 @@ export class Parser {
         }
     }
 
-    private parseForStatement(): Nodes.Statement {
-        const pos = this.getNodePos();
-        this.parseExpected(TokenType.for);
-        this.parseExpected(TokenType.openParen);
-
-        let initializer: Nodes.VariableDeclarationList | Nodes.Expression = undefined;
-        if (this.lexer.peek().type !== TokenType.semicolon) {
-            if (this.lexer.peek().type === TokenType.var || this.lexer.peek().type === TokenType.let || this.lexer.peek().type === TokenType.const) {
-                initializer = this.parseVariableDeclarationList(/*inForStatementInitializer*/ true);
-            }
-            else {
-                initializer = this.disallowInAnd(this.parseExpression);
-            }
-        }
-        let forOrForInOrForOfStatement: Nodes.IterationStatement;
-        if (this.parseOptional(TokenType.in)) {
-            const forInStatement = new Nodes.ForInStatement();
-            forInStatement.initializer = initializer;
-            forInStatement.expression = this.allowInAnd(this.parseExpression);
-            this.parseExpected(TokenType.closeParen);
-            forOrForInOrForOfStatement = forInStatement;
-        }
-        else if (this.parseOptional(TokenType.of)) {
-            const forOfStatement = new Nodes.ForOfStatement();
-            forOfStatement.initializer = initializer;
-            forOfStatement.expression = this.allowInAnd(this.parseAssignmentExpressionOrHigher);
-            this.parseExpected(TokenType.closeParen);
-            forOrForInOrForOfStatement = forOfStatement;
-        }
-        else {
-        }
-
-        forOrForInOrForOfStatement.statement = this.parseStatement();
-
-        return this.finishNode(forOrForInOrForOfStatement);
-    }
-
     /**
      * 解析一个 for 语句(`for(var i = 0; i < 9; i++) ...`)。
      */
@@ -489,7 +452,26 @@ export class Parser {
         }
 
         if (type !== TokenType.semicolon) {
-            
+            switch (initializer.constructor) {
+                case Nodes.VariableStatement:
+                    if (options.disallowCompatibleForInAndForOf) {
+                        const variables = (<Nodes.VariableStatement>initializer).variables;
+                        if (type !== TokenType.to && variables[0].initializer) this.error(variables[0].initializer, type === TokenType.in ? "在 for..in 语句变量不能有初始值。" : "在 for..of 语句变量不能有初始值。");
+                        if (variables.length > 1) {
+                            this.error(variables[1].name, type === TokenType.in ? "在 for..in 语句中只能定义一个变量。" :
+                                type === TokenType.of ? "在 for..of 语句中只能定义一个变量。" :
+                                    "在 for..to 语句中只能定义一个变量。");
+                        }
+                    }
+                    break;
+                case Nodes.Identifier:
+                    break;
+                default:
+                    this.error(initializer, type === TokenType.in ? "在 for..in 语句的左边只能是标识符。" :
+                        type === TokenType.of ? "在 for..of 语句的左边只能是标识符。" :
+                            "在 for..to 语句的左边只能是标识符。");
+                    break;
+            }
         }
 
         let result: Nodes.ForStatement | Nodes.ForInStatement | Nodes.ForOfStatement | Nodes.ForToStatement;
@@ -525,8 +507,6 @@ export class Parser {
         result.start = start;
         if (initializer) {
             result.initializer = initializer;
-            // "“for in/of/to”语句中最多只能有一个变量"
-            // todo
         }
         if (openParan != undefined) {
             result.openParanToken = openParan;
@@ -553,6 +533,86 @@ export class Parser {
             default:
                 return false;
         }
+    }
+
+    /**
+     * 判断下一个字符是否可作为变量名。
+     */
+    private isBindingName() {
+        switch (this.lexer.peek().type) {
+            case TokenType.identifier:
+            case TokenType.openBracket:
+            case TokenType.openBrace:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * 解析一个 while 语句(`while(x) ...`)。
+     */
+    private parseWhileStatement() {
+        console.assert(this.lexer.peek().type === TokenType.while);
+        const result = new Nodes.WhileStatement();
+        result.start = this.lexer.read().start;
+        this.parseCondition(result);
+        result.body = this.parseEmbeddedStatement();
+        return result;
+    }
+
+    /**
+     * 解析一个 do..while 语句(`do ... while(x);`)。
+     */
+    private parseDoWhileStatement() {
+        console.assert(this.lexer.peek().type === TokenType.do);
+        const result = new Nodes.DoWhileStatement();
+        result.start = this.lexer.read().type;
+        result.body = this.parseEmbeddedStatement();
+        result.whileToken = this.expectToken(TokenType.while).start;
+        this.parseCondition(result);
+        result.end = this.expectSemicolon();
+        return result;
+    }
+
+    /**
+     * 解析一个 break 语句(`break xx;`)。
+     */
+    private parseBreakStatement() {
+        console.assert(this.lexer.peek().type === TokenType.break);
+        const result = new Nodes.BreakStatement();
+        result.start = this.lexer.read().start;
+        if (this.lexer.peek().type === TokenType.identifier) {
+            result.label = this.parseIdentifier();
+        }
+        result.end = this.expectSemicolon();
+        return result;
+    }
+
+    /**
+     * 解析一个 continue 语句(`continue xx;`)。
+     */
+    private parseContinueStatement() {
+        console.assert(this.lexer.peek().type === TokenType.continue);
+        const result = new Nodes.ContinueStatement();
+        result.start = this.lexer.read().start;
+        if (this.lexer.peek().type === TokenType.identifier) {
+            result.label = this.parseIdentifier();
+        }
+        result.end = this.expectSemicolon();
+        return result;
+    }
+
+    private parseBreakOrContinueStatement(kind: TokenType): Nodes.BreakOrContinueStatement {
+        const result = new Nodes.BreakOrContinueStatement();
+
+        this.parseExpected(kind === TokenType.BreakStatement ? TokenType.break : TokenType.continue);
+        if (!this.canParseSemicolon()) {
+            result.label = this.parseIdentifier();
+        }
+
+        this.expectSemicolon();
+        return result;
     }
 
     // #endregion
@@ -4235,44 +4295,6 @@ export class Parser {
         return block;
     }
 
-    private parseDoStatement(): Nodes.DoStatement {
-        const result = new Nodes.DoStatement();
-        this.parseExpected(TokenType.do);
-        result.statement = this.parseStatement();
-        this.parseExpected(TokenType.while);
-        this.parseExpected(TokenType.openParen);
-        result.expression = this.allowInAnd(this.parseExpression);
-        this.parseExpected(TokenType.closeParen);
-
-        // Nodes.From: https://mail.mozilla.org/pipermail/es-discuss/2011-Nodes.August/016188.html
-        // 157 min --- Nodes.All allen at wirfs-brock.com Nodes.CONF --- "do{;}while(false)false" prohibited in
-        // spec but allowed in consensus reality. Nodes.Approved -- this is the de-facto standard whereby
-        //  do;while(0)x will have a semicolon inserted before x.
-        this.parseOptional(TokenType.semicolon);
-        return result;
-    }
-
-    private parseWhileStatement(): Nodes.WhileStatement {
-        const result = new Nodes.WhileStatement();
-        this.parseExpected(TokenType.while);
-        this.parseExpected(TokenType.openParen);
-        result.expression = this.allowInAnd(this.parseExpression);
-        this.parseExpected(TokenType.closeParen);
-        result.statement = this.parseStatement();
-        return result;
-    }
-
-    private parseBreakOrContinueStatement(kind: TokenType): Nodes.BreakOrContinueStatement {
-        const result = new Nodes.BreakOrContinueStatement();
-
-        this.parseExpected(kind === TokenType.BreakStatement ? TokenType.break : TokenType.continue);
-        if (!this.canParseSemicolon()) {
-            result.label = this.parseIdentifier();
-        }
-
-        this.expectSemicolon();
-        return result;
-    }
 
     private parseReturnStatement(): Nodes.ReturnStatement {
         const result = new Nodes.ReturnStatement();

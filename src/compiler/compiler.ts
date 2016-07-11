@@ -16,22 +16,22 @@ export var options = {
     useES3Identifier: false,
 
     /**
-     * 允许出现 Unix #! 标记。
+     * 禁止出现 Unix #! 标记。
      */
     disallowShebang: false,
 
     /**
-     * 允许出现未关闭的多行字符串和注释。
+     * 禁止出现未关闭的多行字符串和注释。
      */
     disallowUnterminatedLiteral: false,
 
     /**
-     * 允许出现 Git 冲突标记(<<<<<<<)。
+     * 禁止出现 Git 冲突标记(<<<<<<<)。
      */
     disallowGitConflictMarker: false,
 
     /**
-     * 允许使用 Unicode 编码的关键字字符串。
+     * 禁止使用 Unicode 编码的关键字字符串。
      */
     disallowEscapedKeyword: false,
 
@@ -40,7 +40,7 @@ export var options = {
     // #region 语法
 
     /**
-     * 允许省略语句末尾的分号。
+     * 禁止省略语句末尾的分号。
      */
     disallowMissingSemicolon: false,
 
@@ -50,52 +50,57 @@ export var options = {
     smartSemicolonInsertion: false,
 
     /**
-     * 允许省略条件表达式的括号。
+     * 禁止省略条件表达式的括号。
      */
     disallowMissingParenthese: false,
 
     /**
-     * 允许省略 switch (true) 中的 (true)。
+     * 禁止省略 switch (true) 中的 (true)。
      */
     disallowMissingSwitchCondition: false,
 
     /**
-     * 允许使用 case else 语法代替 default。
+     * 禁止使用 case else 语法代替 default。
      */
     disallowCaseElse: false,
 
     /**
-     * 允许使用 for..of 语法。
+     * 禁止使用 for..in 兼容变量定义。
+     */
+    disallowCompatibleForInAndForOf: true,
+
+    /**
+     * 禁止使用 for..of 语法。
      */
     disallowForOf: false,
 
     /**
-     * 允许使用 for..of 逗号语法。
+     * 禁止使用 for..of 逗号语法。
      */
     disallowForOfCommaExpression: false,
 
     /**
-     * 允许使用 for..to 语法。
+     * 禁止使用 for..to 语法。
      */
     disallowForTo: false,
 
     /**
-     * 允许使用 throw 空参数语法。
+     * 禁止使用 throw 空参数语法。
      */
     disallowRethrow: false,
 
     /**
-     * 允许使用 with 语句定义语法。
+     * 禁止使用 with 语句定义语法。
      */
     disallowWithVaribale: false,
 
     /**
-     * 允许省略 try 语句块的 {}。
+     * 禁止省略 try 语句块的 {}。
      */
     disallowMissingTryBlock: false,
 
     /**
-     * 允许省略 catch 分句的变量名。
+     * 禁止省略 catch 分句的变量名。
      */
     disallowMissingCatchVaribale: false,
 

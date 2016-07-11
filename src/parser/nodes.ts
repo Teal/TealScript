@@ -900,7 +900,7 @@ export class ForToStatement extends Statement {
 }
 
 /**
- * 表示一个 while 语句(while(`...) ...`)。
+ * 表示一个 while 语句(`while(x) ...`)。
  */
 export class WhileStatement extends Statement {
 
@@ -952,7 +952,7 @@ export class WhileStatement extends Statement {
 }
 
 /**
- * 表示一个 do..while 语句(do ... while(`xx);`)。
+ * 表示一个 do..while 语句(`do ... while(x);`)。
  */
 export class DoWhileStatement extends Statement {
 
@@ -1009,7 +1009,7 @@ export class DoWhileStatement extends Statement {
 }
 
 /**
- * 表示一个 continue 语句(`continue xx;`)。
+ * 表示一个 continue 语句(`continue x;`)。
  */
 export class ContinueStatement extends Statement {
 
@@ -1045,7 +1045,7 @@ export class ContinueStatement extends Statement {
 }
 
 /**
- * 表示一个 break 语句(`break xx;`)。
+ * 表示一个 break 语句(`break x;`)。
  */
 export class BreakStatement extends Statement {
 
