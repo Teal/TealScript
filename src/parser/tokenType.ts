@@ -27,9 +27,9 @@ export enum TokenType {
     // #region 修饰符(Modifiers)
 
     /**
-     * 最小的单目运算符。
+     * 最小的表达式开始。
      */
-    MIN_UNARY_OPERATOR,
+    MIN_EXPRESSION_START,
 
     /**
      * 最小的修饰符前缀。
@@ -184,8 +184,12 @@ export enum TokenType {
     // #region 单目运算符(Unary Operators)
 
     /**
+     * 最小的单目运算符。
+     */
+    MIN_UNARY_OPERATOR,
+
+    /**
      * 开花括号({)。
-     * @precedence 80
      */
     openBrace,
 
@@ -231,7 +235,6 @@ export enum TokenType {
 
     /**
      * 电子邮件符号(@)(仅在 JavaScript 7)。
-     * @precedence 80
      */
     at,
 
@@ -246,13 +249,11 @@ export enum TokenType {
 
     /**
      * 开括号(()。
-     * @precedence 80
      */
     openParen,
 
     /**
      * 开方括号([)。
-     * @precedence 80
      */
     openBracket,
 
@@ -300,6 +301,11 @@ export enum TokenType {
      * 最大的单目运算符。
      */
     MAX_UNARY_OPERATOR,
+
+    /**
+     * 最大的表达式开始。
+     */
+    MAX_EXPRESSION_START,
 
     // #endregion
 
@@ -502,7 +508,6 @@ export enum TokenType {
 
     /**
      * 逗号(,)。
-     * @precedence 8
      */
     comma,
 
@@ -527,31 +532,26 @@ export enum TokenType {
 
     /**
      * 闭括号())。
-     * @precedence 84
      */
     closeParen,
 
     /**
      * 闭方括号(])。
-     * @precedence 84
      */
     closeBracket,
 
     /**
      * 闭花括号(})。
-     * @precedence 84
      */
     closeBrace,
 
     /**
      * 冒号(:)。
-     * @precedence 82
      */
     colon,
 
     /**
      * 分号(;)。
-     * @precedence 100
      */
     semicolon,
 
@@ -570,9 +570,9 @@ export enum TokenType {
     // #region 语句头(Statement Headers)
 
     /**
-     * 最小的语句。
+     * 最小的语句开始。
      */
-    MIN_STATEMENT,
+    MIN_STATEMENT_START,
 
     /**
      * 关键字 if。
@@ -675,9 +675,9 @@ export enum TokenType {
     module,
 
     /**
-     * 最大的语句。
+     * 最大的语句开始。
      */
-    MAX_STATEMENT,
+    MAX_STATEMENT_START,
 
     // #endregion
 
@@ -825,6 +825,51 @@ export function tokenToString(token: TokenType) {
 }
 
 /**
+ * 判断指定的标记是否是单目运算符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isUnaryOperator(token: TokenType) {
+    return token > TokenType.MIN_UNARY_OPERATOR && token < TokenType.MAX_UNARY_OPERATOR;
+}
+
+/**
+ * 判断指定的标记是否是双目运算符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isBinaryOperator(token: TokenType) {
+    return token > TokenType.MIN_BINARY_OPERATOR && token < TokenType.MAX_BINARY_OPERATOR;
+}
+
+/**
+ * 判断指定的标记是否是修饰符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isModifier(token: TokenType) {
+    return token > TokenType.MIN_MODIFIER && token < TokenType.MAX_MODIFIER;
+}
+
+/**
+ * 判断指定的标记是否是语句开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isStatementStart(token: TokenType) {
+    return token > TokenType.MIN_STATEMENT_START && token < TokenType.MAX_STATEMENT_START;
+}
+
+/**
+ * 判断指定的标记是否是表达式开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isExpressionStart(token: TokenType) {
+    return token > TokenType.MIN_EXPRESSION_START && token < TokenType.MAX_EXPRESSION_START;
+}
+
+/**
  * 判断指定的标记是否是关键字。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
@@ -832,4 +877,70 @@ export function tokenToString(token: TokenType) {
 export function isKeyword(token: TokenType) {
     const ch = tokenToString(token).charCodeAt(0);
     return ch >= CharCode.a && ch <= CharCode.z;
+}
+
+/**
+ * 存储所有优先级。
+ */
+const precedences = {
+    [TokenType.comma]: 1,
+
+    [TokenType.equals]: 2,
+    [TokenType.plusEquals]: 2,
+    [TokenType.minusEquals]: 2,
+    [TokenType.asteriskEquals]: 2,
+    [TokenType.slashEquals]: 2,
+    [TokenType.percentEquals]: 2,
+    [TokenType.lessThanLessThanEquals]: 2,
+    [TokenType.greaterThanGreaterThanEquals]: 2,
+    [TokenType.greaterThanGreaterThanGreaterThanEquals]: 2,
+    [TokenType.ampersandEquals]: 2,
+    [TokenType.barEquals]: 2,
+    [TokenType.caretEquals]: 2,
+    [TokenType.asteriskEquals]: 2,
+    [TokenType.asteriskAsteriskEquals]: 2,
+
+    [TokenType.question]: 3,
+    [TokenType.barBar]: 4,
+    [TokenType.ampersandAmpersand]: 5,
+    [TokenType.bar]: 6,
+    [TokenType.caret]: 7,
+    [TokenType.ampersand]: 8,
+
+    [TokenType.equalsEquals]: 9,
+    [TokenType.exclamationEquals]: 9,
+    [TokenType.equalsEqualsEquals]: 9,
+    [TokenType.exclamationEqualsEquals]: 9,
+
+    [TokenType.lessThan]: 10,
+    [TokenType.greaterThan]: 10,
+    [TokenType.lessThanEquals]: 10,
+    [TokenType.greaterThanEquals]: 10,
+    [TokenType.instanceOf]: 10,
+    [TokenType.in]: 10,
+    [TokenType.is]: 10,
+    [TokenType.as]: 10,
+
+    [TokenType.lessThanLessThan]: 11,
+    [TokenType.greaterThanGreaterThan]: 11,
+    [TokenType.greaterThanGreaterThanGreaterThan]: 11,
+
+    [TokenType.plus]: 12,
+    [TokenType.minus]: 12,
+
+    [TokenType.asterisk]: 13,
+    [TokenType.slash]: 13,
+    [TokenType.percent]: 13,
+
+    [TokenType.asteriskAsterisk]: 14,
+
+};
+
+/**
+ * 获取操作符的优先级。
+ * @param token 要判断的标记。
+ * @returns 返回一个数字。数字越大说明优先级越高。
+ */
+export function getPrecedence(token: TokenType) {
+    return precedences[token] || 15;
 }
