@@ -676,8 +676,8 @@ namespace ts {
         let token: TokenType;
         while ((token = scanner.scan()) !== TokenType.endOfFile) {
             switch (token) {
-                case TokenType.SingleLineCommentTrivia:
-                case TokenType.MultiLineCommentTrivia:
+                case TokenType.singleLineComment:
+                case TokenType.multiLineComment:
                     // replace comments with whitespace to preserve original character positions
                     output += scanner.getTokenText().replace(/\S/g, " ");
                     break;

@@ -1074,7 +1074,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     forEach((<TemplateExpression>node.template).templateSpans, templateSpan => {
                         write(", ");
                         const needsParens = templateSpan.expression.kind === TokenType.BinaryExpression
-                            && (<BinaryExpression>templateSpan.expression).operatorToken.kind === TokenType.CommaToken;
+                            && (<BinaryExpression>templateSpan.expression).operatorToken.kind === TokenType.comma;
                         emitParenthesizedIf(templateSpan.expression, needsParens);
                     });
                 }
@@ -1192,12 +1192,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     switch (expression.kind) {
                         case TokenType.BinaryExpression:
                             switch ((<BinaryExpression>expression).operatorToken.kind) {
-                                case TokenType.AsteriskToken:
-                                case TokenType.SlashToken:
-                                case TokenType.PercentToken:
+                                case TokenType.asterisk:
+                                case TokenType.slash:
+                                case TokenType.percent:
                                     return Comparison.GreaterThan;
-                                case TokenType.PlusToken:
-                                case TokenType.MinusToken:
+                                case TokenType.plus:
+                                case TokenType.minus:
                                     return Comparison.EqualTo;
                                 default:
                                     return Comparison.LessThan;
@@ -1787,7 +1787,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitYieldExpression(node: YieldExpression) {
-                write(tokenToString(TokenType.YieldKeyword));
+                write(tokenToString(TokenType.yield));
                 if (node.asteriskToken) {
                     write("*");
                 }
@@ -1802,7 +1802,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 if (needsParenthesis) {
                     write("(");
                 }
-                write(tokenToString(TokenType.YieldKeyword));
+                write(tokenToString(TokenType.yield));
                 write(" ");
                 emit(node.expression);
                 if (needsParenthesis) {
@@ -2272,7 +2272,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 }
 
                 if (languageVersion === ScriptTarget.ES6 &&
-                    node.expression.kind === TokenType.SuperKeyword &&
+                    node.expression.kind === TokenType.super &&
                     isInAsyncMethodWithSuperInES6(node)) {
                     const name = <StringLiteral>createSynthesizedNode(TokenType.StringLiteral);
                     name.text = node.name.text;
@@ -2293,7 +2293,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     if (node.expression.kind === TokenType.NumericLiteral) {
                         // check if numeric literal was originally written with a dot
                         const text = getTextOfNodeFromSourceText(currentText, node.expression);
-                        shouldEmitSpace = text.indexOf(tokenToString(TokenType.DotToken)) < 0;
+                        shouldEmitSpace = text.indexOf(tokenToString(TokenType.dot)) < 0;
                     }
                     else {
                         // check if constant enum value is integer
@@ -2370,7 +2370,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 }
 
                 if (languageVersion === ScriptTarget.ES6 &&
-                    node.expression.kind === TokenType.SuperKeyword &&
+                    node.expression.kind === TokenType.super &&
                     isInAsyncMethodWithSuperInES6(node)) {
                     emitSuperAccessInAsyncMethod(node.expression, node.argumentExpression);
                     return;
@@ -2397,7 +2397,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitCallTarget(node: Expression): Expression {
-                if (node.kind === TokenType.Identifier || node.kind === TokenType.ThisKeyword || node.kind === TokenType.SuperKeyword) {
+                if (node.kind === TokenType.Identifier || node.kind === TokenType.this || node.kind === TokenType.super) {
                     emit(node);
                     return node;
                 }
@@ -2427,7 +2427,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     emit((<ElementAccessExpression>expr).argumentExpression);
                     write("]");
                 }
-                else if (expr.kind === TokenType.SuperKeyword) {
+                else if (expr.kind === TokenType.super) {
                     target = expr;
                     write("_super");
                 }
@@ -2436,7 +2436,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 }
                 write(".apply(");
                 if (target) {
-                    if (target.kind === TokenType.SuperKeyword) {
+                    if (target.kind === TokenType.super) {
                         // Calls of form super(...) and super.foo(...)
                         emitThis(target);
                     }
@@ -2482,7 +2482,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 const expression = node.expression;
                 let superCall = false;
                 let isAsyncMethodWithSuper = false;
-                if (expression.kind === TokenType.SuperKeyword) {
+                if (expression.kind === TokenType.super) {
                     emitSuper(expression);
                     superCall = true;
                 }
@@ -2607,19 +2607,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitDeleteExpression(node: DeleteExpression) {
-                write(tokenToString(TokenType.DeleteKeyword));
+                write(tokenToString(TokenType.delete));
                 write(" ");
                 emit(node.expression);
             }
 
             function emitVoidExpression(node: VoidExpression) {
-                write(tokenToString(TokenType.VoidKeyword));
+                write(tokenToString(TokenType.void));
                 write(" ");
                 emit(node.expression);
             }
 
             function emitTypeOfExpression(node: TypeOfExpression) {
-                write(tokenToString(TokenType.TypeOfKeyword));
+                write(tokenToString(TokenType.typeOf));
                 write(" ");
                 emit(node.expression);
             }
@@ -2649,8 +2649,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitPrefixUnaryExpression(node: PrefixUnaryExpression) {
-                const isPlusPlusOrMinusMinus = (node.operator === TokenType.PlusPlusToken
-                    || node.operator === TokenType.MinusMinusToken);
+                const isPlusPlusOrMinusMinus = (node.operator === TokenType.plusPlus
+                    || node.operator === TokenType.minusMinus);
                 const externalExportChanged = isPlusPlusOrMinusMinus &&
                     isNameOfExportedSourceLevelDeclarationInSystemExternalModule(node.operand);
 
@@ -2685,10 +2685,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 // The same is true of minus of course.
                 if (node.operand.kind === TokenType.PrefixUnaryExpression) {
                     const operand = <PrefixUnaryExpression>node.operand;
-                    if (node.operator === TokenType.PlusToken && (operand.operator === TokenType.PlusToken || operand.operator === TokenType.PlusPlusToken)) {
+                    if (node.operator === TokenType.plus && (operand.operator === TokenType.plus || operand.operator === TokenType.plusPlus)) {
                         write(" ");
                     }
-                    else if (node.operator === TokenType.MinusToken && (operand.operator === TokenType.MinusToken || operand.operator === TokenType.MinusMinusToken)) {
+                    else if (node.operator === TokenType.minus && (operand.operator === TokenType.minus || operand.operator === TokenType.minusMinus)) {
                         write(" ");
                     }
                 }
@@ -2714,7 +2714,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     write(tokenToString(node.operator));
                     emit(node.operand);
 
-                    if (node.operator === TokenType.PlusPlusToken) {
+                    if (node.operator === TokenType.plusPlus) {
                         write(") - 1)");
                     }
                     else {
@@ -2724,7 +2724,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 else if (internalExportChanged) {
                     emitAliasEqual(<Identifier> node.operand);
                     emit(node.operand);
-                    if (node.operator === TokenType.PlusPlusToken) {
+                    if (node.operator === TokenType.plusPlus) {
                         write(" += 1");
                     }
                     else {
@@ -2776,7 +2776,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
              */
             function emitExponentiationOperator(node: BinaryExpression) {
                 const leftHandSideExpression = node.left;
-                if (node.operatorToken.kind === TokenType.AsteriskAsteriskEqualsToken) {
+                if (node.operatorToken.kind === TokenType.asteriskAsteriskEquals) {
                     let synthesizedLHS: ElementAccessExpression | PropertyAccessExpression;
                     let shouldEmitParentheses = false;
                     if (isElementAccessExpression(leftHandSideExpression)) {
@@ -2849,7 +2849,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitBinaryExpression(node: BinaryExpression) {
-                if (languageVersion < ScriptTarget.ES6 && node.operatorToken.kind === TokenType.EqualsToken &&
+                if (languageVersion < ScriptTarget.ES6 && node.operatorToken.kind === TokenType.equals &&
                     (node.left.kind === TokenType.ObjectLiteralExpression || node.left.kind === TokenType.ArrayLiteralExpression)) {
                     emitDestructuring(node, node.parent.kind === TokenType.ExpressionStatement);
                 }
@@ -2875,7 +2875,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         emitAliasEqual(<Identifier>node.left);
                     }
 
-                    if (node.operatorToken.kind === TokenType.AsteriskAsteriskToken || node.operatorToken.kind === TokenType.AsteriskAsteriskEqualsToken) {
+                    if (node.operatorToken.kind === TokenType.asteriskAsterisk || node.operatorToken.kind === TokenType.asteriskAsteriskEquals) {
                         // Downleveled emit exponentiation operator using Math.pow
                         emitExponentiationOperator(node);
                     }
@@ -2888,7 +2888,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         //   emitted as
                         //      3
                         //          + 2;
-                        const indentedBeforeOperator = indentIfOnDifferentLines(node, node.left, node.operatorToken, node.operatorToken.kind !== TokenType.CommaToken ? " " : undefined);
+                        const indentedBeforeOperator = indentIfOnDifferentLines(node, node.left, node.operatorToken, node.operatorToken.kind !== TokenType.comma ? " " : undefined);
                         write(tokenToString(node.operatorToken.kind));
                         const indentedAfterOperator = indentIfOnDifferentLines(node, node.operatorToken, node.right, " ");
                         emit(node.right);
@@ -2941,13 +2941,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 
             function emitBlock(node: Block) {
                 if (isSingleLineEmptyBlock(node)) {
-                    emitToken(TokenType.OpenBraceToken, node.pos);
+                    emitToken(TokenType.openBrace, node.pos);
                     write(" ");
-                    emitToken(TokenType.CloseBraceToken, node.statements.end);
+                    emitToken(TokenType.closeBrace, node.statements.end);
                     return;
                 }
 
-                emitToken(TokenType.OpenBraceToken, node.pos);
+                emitToken(TokenType.openBrace, node.pos);
                 increaseIndent();
                 if (node.kind === TokenType.ModuleBlock) {
                     Debug.assert(node.parent.kind === TokenType.ModuleDeclaration);
@@ -2959,7 +2959,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 }
                 decreaseIndent();
                 writeLine();
-                emitToken(TokenType.CloseBraceToken, node.statements.end);
+                emitToken(TokenType.closeBrace, node.statements.end);
             }
 
             function emitEmbeddedStatement(node: Node) {
@@ -2981,15 +2981,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitIfStatement(node: IfStatement) {
-                let endPos = emitToken(TokenType.IfKeyword, node.pos);
+                let endPos = emitToken(TokenType.if, node.pos);
                 write(" ");
-                endPos = emitToken(TokenType.OpenParenToken, endPos);
+                endPos = emitToken(TokenType.openParen, endPos);
                 emit(node.expression);
-                emitToken(TokenType.CloseParenToken, node.expression.end);
+                emitToken(TokenType.closeParen, node.expression.end);
                 emitEmbeddedStatement(node.thenStatement);
                 if (node.elseStatement) {
                     writeLine();
-                    emitToken(TokenType.ElseKeyword, node.thenStatement.end);
+                    emitToken(TokenType.else, node.thenStatement.end);
                     if (node.elseStatement.kind === TokenType.IfStatement) {
                         write(" ");
                         emit(node.elseStatement);
@@ -3457,9 +3457,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitForStatementWorker(node: ForStatement, loop: ConvertedLoop) {
-                let endPos = emitToken(TokenType.ForKeyword, node.pos);
+                let endPos = emitToken(TokenType.for, node.pos);
                 write(" ");
-                endPos = emitToken(TokenType.OpenParenToken, endPos);
+                endPos = emitToken(TokenType.openParen, endPos);
                 if (node.initializer && node.initializer.kind === TokenType.VariableDeclarationList) {
                     const variableDeclarationList = <VariableDeclarationList>node.initializer;
                     const startIsEmitted = tryEmitStartOfVariableDeclarationList(variableDeclarationList);
@@ -3497,9 +3497,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitForInOrForOfStatementWorker(node: ForInStatement | ForOfStatement, loop: ConvertedLoop) {
-                let endPos = emitToken(TokenType.ForKeyword, node.pos);
+                let endPos = emitToken(TokenType.for, node.pos);
                 write(" ");
-                endPos = emitToken(TokenType.OpenParenToken, endPos);
+                endPos = emitToken(TokenType.openParen, endPos);
                 if (node.initializer.kind === TokenType.VariableDeclarationList) {
                     const variableDeclarationList = <VariableDeclarationList>node.initializer;
                     if (variableDeclarationList.declarations.length >= 1) {
@@ -3518,7 +3518,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     write(" of ");
                 }
                 emit(node.expression);
-                emitToken(TokenType.CloseParenToken, node.expression.end);
+                emitToken(TokenType.closeParen, node.expression.end);
 
                 if (loop) {
                     emitConvertedLoopCall(loop, /*emitAsBlock*/ true);
@@ -3550,9 +3550,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 // Note also that because an extra statement is needed to assign to the LHS,
                 // for-of bodies are always emitted as blocks.
 
-                let endPos = emitToken(TokenType.ForKeyword, node.pos);
+                let endPos = emitToken(TokenType.for, node.pos);
                 write(" ");
-                endPos = emitToken(TokenType.OpenParenToken, endPos);
+                endPos = emitToken(TokenType.openParen, endPos);
 
                 // Do not emit the LHS let declaration yet, because it might contain destructuring.
 
@@ -3605,7 +3605,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 emitNodeWithoutSourceMap(counter);
                 write("++");
                 emitEnd(node.expression);
-                emitToken(TokenType.CloseParenToken, node.expression.end);
+                emitToken(TokenType.closeParen, node.expression.end);
 
                 // Body
                 write(" {");
@@ -3645,7 +3645,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 else {
                     // Initializer is an expression. Emit the expression in the body, so that it's
                     // evaluated on every iteration.
-                    const assignmentExpression = createBinaryExpression(<Expression>node.initializer, TokenType.EqualsToken, rhsIterationValue, /*startsOnNewLine*/ false);
+                    const assignmentExpression = createBinaryExpression(<Expression>node.initializer, TokenType.equals, rhsIterationValue, /*startsOnNewLine*/ false);
                     if (node.initializer.kind === TokenType.ArrayLiteralExpression || node.initializer.kind === TokenType.ObjectLiteralExpression) {
                         // This is a destructuring pattern, so call emitDestructuring instead of emit. Calling emit will not work, because it will cause
                         // the BinaryExpression to be passed in instead of the expression statement, which will cause emitDestructuring to crash.
@@ -3714,7 +3714,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     }
                 }
 
-                emitToken(node.kind === TokenType.BreakStatement ? TokenType.BreakKeyword : TokenType.ContinueKeyword, node.pos);
+                emitToken(node.kind === TokenType.BreakStatement ? TokenType.break : TokenType.continue, node.pos);
                 emitOptional(" ", node.label);
                 write(";");
             }
@@ -3733,7 +3733,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     return;
                 }
 
-                emitToken(TokenType.ReturnKeyword, node.pos);
+                emitToken(TokenType.return, node.pos);
                 emitOptional(" ", node.expression);
                 write(";");
             }
@@ -3746,11 +3746,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitSwitchStatement(node: SwitchStatement) {
-                let endPos = emitToken(TokenType.SwitchKeyword, node.pos);
+                let endPos = emitToken(TokenType.switch, node.pos);
                 write(" ");
-                emitToken(TokenType.OpenParenToken, endPos);
+                emitToken(TokenType.openParen, endPos);
                 emit(node.expression);
-                endPos = emitToken(TokenType.CloseParenToken, node.expression.end);
+                endPos = emitToken(TokenType.closeParen, node.expression.end);
                 write(" ");
 
                 let saveAllowedNonLabeledJumps: Jump;
@@ -3766,12 +3766,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
 
             function emitCaseBlock(node: CaseBlock, startPos: number): void {
-                emitToken(TokenType.OpenBraceToken, startPos);
+                emitToken(TokenType.openBrace, startPos);
                 increaseIndent();
                 emitLines(node.clauses);
                 decreaseIndent();
                 writeLine();
-                emitToken(TokenType.CloseBraceToken, node.clauses.end);
+                emitToken(TokenType.closeBrace, node.clauses.end);
             }
 
             function nodeStartPositionsAreOnSameLine(node1: Node, node2: Node) {
@@ -3829,17 +3829,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 
             function emitCatchClause(node: CatchClause) {
                 writeLine();
-                const endPos = emitToken(TokenType.CatchKeyword, node.pos);
+                const endPos = emitToken(TokenType.catch, node.pos);
                 write(" ");
-                emitToken(TokenType.OpenParenToken, endPos);
+                emitToken(TokenType.openParen, endPos);
                 emit(node.variableDeclaration);
-                emitToken(TokenType.CloseParenToken, node.variableDeclaration ? node.variableDeclaration.end : endPos);
+                emitToken(TokenType.closeParen, node.variableDeclaration ? node.variableDeclaration.end : endPos);
                 write(" ");
                 emitBlock(node.block);
             }
 
             function emitDebuggerStatement(node: Node) {
-                emitToken(TokenType.DebuggerKeyword, node.pos);
+                emitToken(TokenType.debugger, node.pos);
                 write(";");
             }
 
@@ -4124,7 +4124,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     // Return the expression 'value === void 0 ? defaultValue : value'
                     const equals = <BinaryExpression>createSynthesizedNode(TokenType.BinaryExpression);
                     equals.left = value;
-                    equals.operatorToken = createSynthesizedNode(TokenType.EqualsEqualsEqualsToken);
+                    equals.operatorToken = createSynthesizedNode(TokenType.equalsEqualsEquals);
                     equals.right = createVoidZero();
                     return createConditionalExpression(equals, defaultValue, value);
                 }
@@ -4132,9 +4132,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 function createConditionalExpression(condition: Expression, whenTrue: Expression, whenFalse: Expression) {
                     const cond = <ConditionalExpression>createSynthesizedNode(TokenType.ConditionalExpression);
                     cond.condition = condition;
-                    cond.questionToken = createSynthesizedNode(TokenType.QuestionToken);
+                    cond.questionToken = createSynthesizedNode(TokenType.question);
                     cond.whenTrue = whenTrue;
-                    cond.colonToken = createSynthesizedNode(TokenType.ColonToken);
+                    cond.colonToken = createSynthesizedNode(TokenType.colon);
                     cond.whenFalse = whenFalse;
                     return cond;
                 }
@@ -4226,7 +4226,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         }
                         target = (<ShorthandPropertyAssignment>target).name;
                     }
-                    else if (target.kind === TokenType.BinaryExpression && (<BinaryExpression>target).operatorToken.kind === TokenType.EqualsToken) {
+                    else if (target.kind === TokenType.BinaryExpression && (<BinaryExpression>target).operatorToken.kind === TokenType.equals) {
                         value = createDefaultValueCheck(value, (<BinaryExpression>target).right, sourceMapNode);
                         target = (<BinaryExpression>target).left;
                     }
@@ -5035,7 +5035,7 @@ const _super = (function (geti, seti) {
                     decreaseIndent();
                 }
 
-                emitToken(TokenType.CloseBraceToken, body.statements.end);
+                emitToken(TokenType.closeBrace, body.statements.end);
             }
 
             /**
@@ -5377,7 +5377,7 @@ const _super = (function (geti, seti) {
                     emitLeadingCommentsOfPosition((<Block>ctor.body).statements.end);
                 }
                 decreaseIndent();
-                emitToken(TokenType.CloseBraceToken, ctor ? (<Block>ctor.body).statements.end : node.members.end);
+                emitToken(TokenType.closeBrace, ctor ? (<Block>ctor.body).statements.end : node.members.end);
                 emitEnd(<Node>ctor || node);
                 if (ctor) {
                     emitTrailingComments(ctor);
@@ -5572,7 +5572,7 @@ const _super = (function (geti, seti) {
                 emitMemberFunctionsForES6AndHigher(node);
                 decreaseIndent();
                 writeLine();
-                emitToken(TokenType.CloseBraceToken, node.members.end);
+                emitToken(TokenType.closeBrace, node.members.end);
 
                 if (rewriteAsClassExpression) {
                     if (decoratedClassAlias !== undefined) {
@@ -5690,7 +5690,7 @@ const _super = (function (geti, seti) {
                 writeLine();
                 emitDecoratorsOfClass(node, /*decoratedClassAlias*/ undefined);
                 writeLine();
-                emitToken(TokenType.CloseBraceToken, node.members.end, () => {
+                emitToken(TokenType.closeBrace, node.members.end, () => {
                     write("return ");
                     emitDeclarationName(node);
                 });
@@ -5706,7 +5706,7 @@ const _super = (function (geti, seti) {
                 computedPropertyNamesToGeneratedNames = saveComputedPropertyNamesToGeneratedNames;
                 decreaseIndent();
                 writeLine();
-                emitToken(TokenType.CloseBraceToken, node.members.end);
+                emitToken(TokenType.closeBrace, node.members.end);
                 emitStart(node);
                 write("(");
                 if (baseTypeNode) {
@@ -6015,7 +6015,7 @@ const _super = (function (geti, seti) {
             function emitSerializedTypeNode(node: TypeNode) {
                 if (node) {
                     switch (node.kind) {
-                        case TokenType.VoidKeyword:
+                        case TokenType.void:
                             write("void 0");
                             return;
 
@@ -6034,20 +6034,20 @@ const _super = (function (geti, seti) {
                             return;
 
                         case TokenType.TypePredicate:
-                        case TokenType.BooleanKeyword:
+                        case TokenType.boolean:
                             write("Boolean");
                             return;
 
-                        case TokenType.StringKeyword:
+                        case TokenType.string:
                         case TokenType.StringLiteralType:
                             write("String");
                             return;
 
-                        case TokenType.NumberKeyword:
+                        case TokenType.number:
                             write("Number");
                             return;
 
-                        case TokenType.SymbolKeyword:
+                        case TokenType.symbol:
                             write("Symbol");
                             return;
 
@@ -6059,7 +6059,7 @@ const _super = (function (geti, seti) {
                         case TokenType.TypeLiteral:
                         case TokenType.UnionType:
                         case TokenType.IntersectionType:
-                        case TokenType.AnyKeyword:
+                        case TokenType.any:
                         case TokenType.ThisType:
                             break;
 
@@ -6284,7 +6284,7 @@ const _super = (function (geti, seti) {
                 emitLines(node.members);
                 decreaseIndent();
                 writeLine();
-                emitToken(TokenType.CloseBraceToken, node.members.end);
+                emitToken(TokenType.closeBrace, node.members.end);
                 write(")(");
                 emitModuleMemberName(node);
                 write(" || (");
@@ -6422,7 +6422,7 @@ const _super = (function (geti, seti) {
                     decreaseIndent();
                     writeLine();
                     const moduleBlock = <ModuleBlock>getInnerMostModuleDeclarationFromDottedModule(node).body;
-                    emitToken(TokenType.CloseBraceToken, moduleBlock.statements.end);
+                    emitToken(TokenType.closeBrace, moduleBlock.statements.end);
                 }
                 write(")(");
                 // write moduleDecl = containingModule.m only if it is not exported es6 module member
@@ -6471,7 +6471,7 @@ const _super = (function (geti, seti) {
                         emitLiteral(<LiteralExpression>moduleName);
                         emitEnd(moduleName);
                     }
-                    emitToken(TokenType.CloseParenToken, moduleName.end);
+                    emitToken(TokenType.closeParen, moduleName.end);
                 }
                 else {
                     write("require()");
@@ -8014,15 +8014,15 @@ const _super = (function (geti, seti) {
                     case TokenType.GetAccessor:
                     case TokenType.SetAccessor:
                         return emitAccessor(<AccessorDeclaration>node);
-                    case TokenType.ThisKeyword:
+                    case TokenType.this:
                         return emitThis(node);
-                    case TokenType.SuperKeyword:
+                    case TokenType.super:
                         return emitSuper(node);
-                    case TokenType.NullKeyword:
+                    case TokenType.null:
                         return write("null");
-                    case TokenType.TrueKeyword:
+                    case TokenType.true:
                         return write("true");
-                    case TokenType.FalseKeyword:
+                    case TokenType.false:
                         return write("false");
                     case TokenType.NumericLiteral:
                     case TokenType.StringLiteral:

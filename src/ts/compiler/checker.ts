@@ -1964,17 +1964,17 @@ namespace ts {
                 const needsElementAccess = !isIdentifierStart(firstChar, languageVersion);
 
                 if (needsElementAccess) {
-                    writePunctuation(writer, TokenType.OpenBracketToken);
+                    writePunctuation(writer, TokenType.openBracket);
                     if (isSingleOrDoubleQuote(firstChar)) {
                         writer.writeStringLiteral(symbolName);
                     }
                     else {
                         writer.writeSymbol(symbolName, symbol);
                     }
-                    writePunctuation(writer, TokenType.CloseBracketToken);
+                    writePunctuation(writer, TokenType.closeBracket);
                 }
                 else {
-                    writePunctuation(writer, TokenType.DotToken);
+                    writePunctuation(writer, TokenType.dot);
                     writer.writeSymbol(symbolName, symbol);
                 }
             }
@@ -2101,24 +2101,24 @@ namespace ts {
                     else {
                         // Should never get here
                         // { ... }
-                        writePunctuation(writer, TokenType.OpenBraceToken);
+                        writePunctuation(writer, TokenType.openBrace);
                         writeSpace(writer);
-                        writePunctuation(writer, TokenType.DotDotDotToken);
+                        writePunctuation(writer, TokenType.dotDotDot);
                         writeSpace(writer);
-                        writePunctuation(writer, TokenType.CloseBraceToken);
+                        writePunctuation(writer, TokenType.closeBrace);
                     }
                 }
 
                 function writeTypeList(types: Type[], delimiter: TokenType) {
                     for (let i = 0; i < types.length; i++) {
                         if (i > 0) {
-                            if (delimiter !== TokenType.CommaToken) {
+                            if (delimiter !== TokenType.comma) {
                                 writeSpace(writer);
                             }
                             writePunctuation(writer, delimiter);
                             writeSpace(writer);
                         }
-                        writeType(types[i], delimiter === TokenType.CommaToken ? TypeFormatFlags.None : TypeFormatFlags.InElementType);
+                        writeType(types[i], delimiter === TokenType.comma ? TypeFormatFlags.None : TypeFormatFlags.InElementType);
                     }
                 }
 
@@ -2128,16 +2128,16 @@ namespace ts {
                         buildSymbolDisplay(symbol, writer, enclosingDeclaration, SymbolFlags.Type, SymbolFormatFlags.None, flags);
                     }
                     if (pos < end) {
-                        writePunctuation(writer, TokenType.LessThanToken);
+                        writePunctuation(writer, TokenType.lessThan);
                         writeType(typeArguments[pos], TypeFormatFlags.InFirstTypeArgument);
                         pos++;
                         while (pos < end) {
-                            writePunctuation(writer, TokenType.CommaToken);
+                            writePunctuation(writer, TokenType.comma);
                             writeSpace(writer);
                             writeType(typeArguments[pos], TypeFormatFlags.None);
                             pos++;
                         }
-                        writePunctuation(writer, TokenType.GreaterThanToken);
+                        writePunctuation(writer, TokenType.greaterThan);
                     }
                 }
 
@@ -2145,8 +2145,8 @@ namespace ts {
                     const typeArguments = type.typeArguments || emptyArray;
                     if (type.target === globalArrayType && !(flags & TypeFormatFlags.WriteArrayAsGenericType)) {
                         writeType(typeArguments[0], TypeFormatFlags.InElementType);
-                        writePunctuation(writer, TokenType.OpenBracketToken);
-                        writePunctuation(writer, TokenType.CloseBracketToken);
+                        writePunctuation(writer, TokenType.openBracket);
+                        writePunctuation(writer, TokenType.closeBracket);
                     }
                     else {
                         // Write the type reference in the format f<A>.g<B>.C<X, Y> where A and B are type arguments
@@ -2167,7 +2167,7 @@ namespace ts {
                                 // the default outer type arguments), we don't show the group.
                                 if (!rangeEquals(outerTypeParameters, typeArguments, start, i)) {
                                     writeSymbolTypeReference(parent, typeArguments, start, i, flags);
-                                    writePunctuation(writer, TokenType.DotToken);
+                                    writePunctuation(writer, TokenType.dot);
                                 }
                             }
                         }
@@ -2177,18 +2177,18 @@ namespace ts {
                 }
 
                 function writeTupleType(type: TupleType) {
-                    writePunctuation(writer, TokenType.OpenBracketToken);
-                    writeTypeList(type.elementTypes, TokenType.CommaToken);
-                    writePunctuation(writer, TokenType.CloseBracketToken);
+                    writePunctuation(writer, TokenType.openBracket);
+                    writeTypeList(type.elementTypes, TokenType.comma);
+                    writePunctuation(writer, TokenType.closeBracket);
                 }
 
                 function writeUnionOrIntersectionType(type: UnionOrIntersectionType, flags: TypeFormatFlags) {
                     if (flags & TypeFormatFlags.InElementType) {
-                        writePunctuation(writer, TokenType.OpenParenToken);
+                        writePunctuation(writer, TokenType.openParen);
                     }
-                    writeTypeList(type.types, type.flags & TypeFlags.Union ? TokenType.BarToken : TokenType.AmpersandToken);
+                    writeTypeList(type.types, type.flags & TypeFlags.Union ? TokenType.bar : TokenType.ampersand);
                     if (flags & TypeFormatFlags.InElementType) {
-                        writePunctuation(writer, TokenType.CloseParenToken);
+                        writePunctuation(writer, TokenType.closeParen);
                     }
                 }
 
@@ -2211,7 +2211,7 @@ namespace ts {
                             }
                             else {
                                 // Recursive usage, use any
-                                writeKeyword(writer, TokenType.AnyKeyword);
+                                writeKeyword(writer, TokenType.any);
                             }
                         }
                         else {
@@ -2246,7 +2246,7 @@ namespace ts {
                 }
 
                 function writeTypeOfSymbol(type: ObjectType, typeFormatFlags?: TypeFormatFlags) {
-                    writeKeyword(writer, TokenType.TypeOfKeyword);
+                    writeKeyword(writer, TokenType.typeOf);
                     writeSpace(writer);
                     buildSymbolDisplay(type.symbol, writer, enclosingDeclaration, SymbolFlags.Value, SymbolFormatFlags.None, typeFormatFlags);
                 }
@@ -2254,31 +2254,31 @@ namespace ts {
                 function writeIndexSignature(info: IndexInfo, keyword: TokenType) {
                     if (info) {
                         if (info.isReadonly) {
-                            writeKeyword(writer, TokenType.ReadonlyKeyword);
+                            writeKeyword(writer, TokenType.readonly);
                             writeSpace(writer);
                         }
-                        writePunctuation(writer, TokenType.OpenBracketToken);
+                        writePunctuation(writer, TokenType.openBracket);
                         writer.writeParameter(info.declaration ? declarationNameToString(info.declaration.parameters[0].name) : "x");
-                        writePunctuation(writer, TokenType.ColonToken);
+                        writePunctuation(writer, TokenType.colon);
                         writeSpace(writer);
                         writeKeyword(writer, keyword);
-                        writePunctuation(writer, TokenType.CloseBracketToken);
-                        writePunctuation(writer, TokenType.ColonToken);
+                        writePunctuation(writer, TokenType.closeBracket);
+                        writePunctuation(writer, TokenType.colon);
                         writeSpace(writer);
                         writeType(info.type, TypeFormatFlags.None);
-                        writePunctuation(writer, TokenType.SemicolonToken);
+                        writePunctuation(writer, TokenType.semicolon);
                         writer.writeLine();
                     }
                 }
 
                 function writePropertyWithModifiers(prop: Symbol) {
                     if (isReadonlySymbol(prop)) {
-                        writeKeyword(writer, TokenType.ReadonlyKeyword);
+                        writeKeyword(writer, TokenType.readonly);
                         writeSpace(writer);
                     }
                     buildSymbolDisplay(prop, writer);
                     if (prop.flags & SymbolFlags.Optional) {
-                        writePunctuation(writer, TokenType.QuestionToken);
+                        writePunctuation(writer, TokenType.question);
                     }
                 }
 
@@ -2299,31 +2299,31 @@ namespace ts {
                     const resolved = resolveStructuredTypeMembers(type);
                     if (!resolved.properties.length && !resolved.stringIndexInfo && !resolved.numberIndexInfo) {
                         if (!resolved.callSignatures.length && !resolved.constructSignatures.length) {
-                            writePunctuation(writer, TokenType.OpenBraceToken);
-                            writePunctuation(writer, TokenType.CloseBraceToken);
+                            writePunctuation(writer, TokenType.openBrace);
+                            writePunctuation(writer, TokenType.closeBrace);
                             return;
                         }
 
                         if (resolved.callSignatures.length === 1 && !resolved.constructSignatures.length) {
                             const parenthesizeSignature = shouldAddParenthesisAroundFunctionType(resolved.callSignatures[0], flags);
                             if (parenthesizeSignature) {
-                                writePunctuation(writer, TokenType.OpenParenToken);
+                                writePunctuation(writer, TokenType.openParen);
                             }
                             buildSignatureDisplay(resolved.callSignatures[0], writer, enclosingDeclaration, globalFlagsToPass | TypeFormatFlags.WriteArrowStyleSignature, /*kind*/ undefined, symbolStack);
                             if (parenthesizeSignature) {
-                                writePunctuation(writer, TokenType.CloseParenToken);
+                                writePunctuation(writer, TokenType.closeParen);
                             }
                             return;
                         }
                         if (resolved.constructSignatures.length === 1 && !resolved.callSignatures.length) {
                             if (flags & TypeFormatFlags.InElementType) {
-                                writePunctuation(writer, TokenType.OpenParenToken);
+                                writePunctuation(writer, TokenType.openParen);
                             }
-                            writeKeyword(writer, TokenType.NewKeyword);
+                            writeKeyword(writer, TokenType.new);
                             writeSpace(writer);
                             buildSignatureDisplay(resolved.constructSignatures[0], writer, enclosingDeclaration, globalFlagsToPass | TypeFormatFlags.WriteArrowStyleSignature, /*kind*/ undefined, symbolStack);
                             if (flags & TypeFormatFlags.InElementType) {
-                                writePunctuation(writer, TokenType.CloseParenToken);
+                                writePunctuation(writer, TokenType.closeParen);
                             }
                             return;
                         }
@@ -2331,21 +2331,21 @@ namespace ts {
 
                     const saveInObjectTypeLiteral = inObjectTypeLiteral;
                     inObjectTypeLiteral = true;
-                    writePunctuation(writer, TokenType.OpenBraceToken);
+                    writePunctuation(writer, TokenType.openBrace);
                     writer.writeLine();
                     writer.increaseIndent();
                     for (const signature of resolved.callSignatures) {
                         buildSignatureDisplay(signature, writer, enclosingDeclaration, globalFlagsToPass, /*kind*/ undefined, symbolStack);
-                        writePunctuation(writer, TokenType.SemicolonToken);
+                        writePunctuation(writer, TokenType.semicolon);
                         writer.writeLine();
                     }
                     for (const signature of resolved.constructSignatures) {
                         buildSignatureDisplay(signature, writer, enclosingDeclaration, globalFlagsToPass, SignatureKind.Construct, symbolStack);
-                        writePunctuation(writer, TokenType.SemicolonToken);
+                        writePunctuation(writer, TokenType.semicolon);
                         writer.writeLine();
                     }
-                    writeIndexSignature(resolved.stringIndexInfo, TokenType.StringKeyword);
-                    writeIndexSignature(resolved.numberIndexInfo, TokenType.NumberKeyword);
+                    writeIndexSignature(resolved.stringIndexInfo, TokenType.string);
+                    writeIndexSignature(resolved.numberIndexInfo, TokenType.number);
                     for (const p of resolved.properties) {
                         const t = getTypeOfSymbol(p);
                         if (p.flags & (SymbolFlags.Function | SymbolFlags.Method) && !getPropertiesOfObjectType(t).length) {
@@ -2353,21 +2353,21 @@ namespace ts {
                             for (const signature of signatures) {
                                 writePropertyWithModifiers(p);
                                 buildSignatureDisplay(signature, writer, enclosingDeclaration, globalFlagsToPass, /*kind*/ undefined, symbolStack);
-                                writePunctuation(writer, TokenType.SemicolonToken);
+                                writePunctuation(writer, TokenType.semicolon);
                                 writer.writeLine();
                             }
                         }
                         else {
                             writePropertyWithModifiers(p);
-                            writePunctuation(writer, TokenType.ColonToken);
+                            writePunctuation(writer, TokenType.colon);
                             writeSpace(writer);
                             writeType(t, TypeFormatFlags.None);
-                            writePunctuation(writer, TokenType.SemicolonToken);
+                            writePunctuation(writer, TokenType.semicolon);
                             writer.writeLine();
                         }
                     }
                     writer.decreaseIndent();
-                    writePunctuation(writer, TokenType.CloseBraceToken);
+                    writePunctuation(writer, TokenType.closeBrace);
                     inObjectTypeLiteral = saveInObjectTypeLiteral;
                 }
             }
@@ -2384,7 +2384,7 @@ namespace ts {
                 const constraint = getConstraintOfTypeParameter(tp);
                 if (constraint) {
                     writeSpace(writer);
-                    writeKeyword(writer, TokenType.ExtendsKeyword);
+                    writeKeyword(writer, TokenType.extends);
                     writeSpace(writer);
                     buildTypeDisplay(constraint, writer, enclosingDeclaration, flags, symbolStack);
                 }
@@ -2393,7 +2393,7 @@ namespace ts {
             function buildParameterDisplay(p: Symbol, writer: SymbolWriter, enclosingDeclaration?: Node, flags?: TypeFormatFlags, symbolStack?: Symbol[]) {
                 const parameterNode = <ParameterDeclaration>p.valueDeclaration;
                 if (isRestParameter(parameterNode)) {
-                    writePunctuation(writer, TokenType.DotDotDotToken);
+                    writePunctuation(writer, TokenType.dotDotDot);
                 }
                 if (isBindingPattern(parameterNode.name)) {
                     buildBindingPatternDisplay(<BindingPattern>parameterNode.name, writer, enclosingDeclaration, flags, symbolStack);
@@ -2402,9 +2402,9 @@ namespace ts {
                     appendSymbolNameOnly(p, writer);
                 }
                 if (isOptionalParameter(parameterNode)) {
-                    writePunctuation(writer, TokenType.QuestionToken);
+                    writePunctuation(writer, TokenType.question);
                 }
-                writePunctuation(writer, TokenType.ColonToken);
+                writePunctuation(writer, TokenType.colon);
                 writeSpace(writer);
 
                 buildTypeDisplay(getTypeOfSymbol(p), writer, enclosingDeclaration, flags, symbolStack);
@@ -2413,18 +2413,18 @@ namespace ts {
             function buildBindingPatternDisplay(bindingPattern: BindingPattern, writer: SymbolWriter, enclosingDeclaration?: Node, flags?: TypeFormatFlags, symbolStack?: Symbol[]) {
                 // We have to explicitly emit square bracket and bracket because these tokens are not stored inside the node.
                 if (bindingPattern.kind === TokenType.ObjectBindingPattern) {
-                    writePunctuation(writer, TokenType.OpenBraceToken);
+                    writePunctuation(writer, TokenType.openBrace);
                     buildDisplayForCommaSeparatedList(bindingPattern.elements, writer, e => buildBindingElementDisplay(e, writer, enclosingDeclaration, flags, symbolStack));
-                    writePunctuation(writer, TokenType.CloseBraceToken);
+                    writePunctuation(writer, TokenType.closeBrace);
                 }
                 else if (bindingPattern.kind === TokenType.ArrayBindingPattern) {
-                    writePunctuation(writer, TokenType.OpenBracketToken);
+                    writePunctuation(writer, TokenType.openBracket);
                     const elements = bindingPattern.elements;
                     buildDisplayForCommaSeparatedList(elements, writer, e => buildBindingElementDisplay(e, writer, enclosingDeclaration, flags, symbolStack));
                     if (elements && elements.hasTrailingComma) {
-                        writePunctuation(writer, TokenType.CommaToken);
+                        writePunctuation(writer, TokenType.comma);
                     }
-                    writePunctuation(writer, TokenType.CloseBracketToken);
+                    writePunctuation(writer, TokenType.closeBracket);
                 }
             }
 
@@ -2435,7 +2435,7 @@ namespace ts {
                 Debug.assert(bindingElement.kind === TokenType.BindingElement);
                 if (bindingElement.propertyName) {
                     writer.writeSymbol(getTextOfNode(bindingElement.propertyName), bindingElement.symbol);
-                    writePunctuation(writer, TokenType.ColonToken);
+                    writePunctuation(writer, TokenType.colon);
                     writeSpace(writer);
                 }
                 if (isBindingPattern(bindingElement.name)) {
@@ -2443,7 +2443,7 @@ namespace ts {
                 }
                 else {
                     if (bindingElement.dotDotDotToken) {
-                        writePunctuation(writer, TokenType.DotDotDotToken);
+                        writePunctuation(writer, TokenType.dotDotDot);
                     }
                     appendSymbolNameOnly(bindingElement.symbol, writer);
                 }
@@ -2451,16 +2451,16 @@ namespace ts {
 
             function buildDisplayForTypeParametersAndDelimiters(typeParameters: TypeParameter[], writer: SymbolWriter, enclosingDeclaration?: Node, flags?: TypeFormatFlags, symbolStack?: Symbol[]) {
                 if (typeParameters && typeParameters.length) {
-                    writePunctuation(writer, TokenType.LessThanToken);
+                    writePunctuation(writer, TokenType.lessThan);
                     buildDisplayForCommaSeparatedList(typeParameters, writer, p => buildTypeParameterDisplay(p, writer, enclosingDeclaration, flags, symbolStack));
-                    writePunctuation(writer, TokenType.GreaterThanToken);
+                    writePunctuation(writer, TokenType.greaterThan);
                 }
             }
 
             function buildDisplayForCommaSeparatedList<T>(list: T[], writer: SymbolWriter, action: (item: T) => void) {
                 for (let i = 0; i < list.length; i++) {
                     if (i > 0) {
-                        writePunctuation(writer, TokenType.CommaToken);
+                        writePunctuation(writer, TokenType.comma);
                         writeSpace(writer);
                     }
                     action(list[i]);
@@ -2469,33 +2469,33 @@ namespace ts {
 
             function buildDisplayForTypeArgumentsAndDelimiters(typeParameters: TypeParameter[], mapper: TypeMapper, writer: SymbolWriter, enclosingDeclaration?: Node, flags?: TypeFormatFlags, symbolStack?: Symbol[]) {
                 if (typeParameters && typeParameters.length) {
-                    writePunctuation(writer, TokenType.LessThanToken);
+                    writePunctuation(writer, TokenType.lessThan);
                     let flags = TypeFormatFlags.InFirstTypeArgument;
                     for (let i = 0; i < typeParameters.length; i++) {
                         if (i > 0) {
-                            writePunctuation(writer, TokenType.CommaToken);
+                            writePunctuation(writer, TokenType.comma);
                             writeSpace(writer);
                             flags = TypeFormatFlags.None;
                         }
                         buildTypeDisplay(mapper(typeParameters[i]), writer, enclosingDeclaration, flags);
                     }
-                    writePunctuation(writer, TokenType.GreaterThanToken);
+                    writePunctuation(writer, TokenType.greaterThan);
                 }
             }
 
             function buildDisplayForParametersAndDelimiters(thisParameter: Symbol, parameters: Symbol[], writer: SymbolWriter, enclosingDeclaration?: Node, flags?: TypeFormatFlags, symbolStack?: Symbol[]) {
-                writePunctuation(writer, TokenType.OpenParenToken);
+                writePunctuation(writer, TokenType.openParen);
                 if (thisParameter) {
                     buildParameterDisplay(thisParameter, writer, enclosingDeclaration, flags, symbolStack);
                 }
                 for (let i = 0; i < parameters.length; i++) {
                     if (i > 0 || thisParameter) {
-                        writePunctuation(writer, TokenType.CommaToken);
+                        writePunctuation(writer, TokenType.comma);
                         writeSpace(writer);
                     }
                     buildParameterDisplay(parameters[i], writer, enclosingDeclaration, flags, symbolStack);
                 }
-                writePunctuation(writer, TokenType.CloseParenToken);
+                writePunctuation(writer, TokenType.closeParen);
             }
 
             function buildTypePredicateDisplay(predicate: TypePredicate, writer: SymbolWriter, enclosingDeclaration?: Node, flags?: TypeFormatFlags, symbolStack?: Symbol[]): void {
@@ -2503,10 +2503,10 @@ namespace ts {
                     writer.writeParameter(predicate.parameterName);
                 }
                 else {
-                    writeKeyword(writer, TokenType.ThisKeyword);
+                    writeKeyword(writer, TokenType.this);
                 }
                 writeSpace(writer);
-                writeKeyword(writer, TokenType.IsKeyword);
+                writeKeyword(writer, TokenType.is);
                 writeSpace(writer);
                 buildTypeDisplay(predicate.type, writer, enclosingDeclaration, flags, symbolStack);
             }
@@ -2514,10 +2514,10 @@ namespace ts {
             function buildReturnTypeDisplay(signature: Signature, writer: SymbolWriter, enclosingDeclaration?: Node, flags?: TypeFormatFlags, symbolStack?: Symbol[]) {
                 if (flags & TypeFormatFlags.WriteArrowStyleSignature) {
                     writeSpace(writer);
-                    writePunctuation(writer, TokenType.EqualsGreaterThanToken);
+                    writePunctuation(writer, TokenType.equalsGreaterThan);
                 }
                 else {
-                    writePunctuation(writer, TokenType.ColonToken);
+                    writePunctuation(writer, TokenType.colon);
                 }
                 writeSpace(writer);
 
@@ -2532,7 +2532,7 @@ namespace ts {
 
             function buildSignatureDisplay(signature: Signature, writer: SymbolWriter, enclosingDeclaration?: Node, flags?: TypeFormatFlags, kind?: SignatureKind, symbolStack?: Symbol[]) {
                 if (kind === SignatureKind.Construct) {
-                    writeKeyword(writer, TokenType.NewKeyword);
+                    writeKeyword(writer, TokenType.new);
                     writeSpace(writer);
                 }
 
@@ -3753,15 +3753,15 @@ namespace ts {
         // considered independent.
         function isIndependentType(node: TypeNode): boolean {
             switch (node.kind) {
-                case TokenType.AnyKeyword:
-                case TokenType.StringKeyword:
-                case TokenType.NumberKeyword:
-                case TokenType.BooleanKeyword:
-                case TokenType.SymbolKeyword:
-                case TokenType.VoidKeyword:
-                case TokenType.UndefinedKeyword:
-                case TokenType.NullKeyword:
-                case TokenType.NeverKeyword:
+                case TokenType.any:
+                case TokenType.string:
+                case TokenType.number:
+                case TokenType.boolean:
+                case TokenType.symbol:
+                case TokenType.void:
+                case TokenType.undefined:
+                case TokenType.null:
+                case TokenType.never:
                 case TokenType.StringLiteralType:
                     return true;
                 case TokenType.ArrayType:
@@ -4713,7 +4713,7 @@ namespace ts {
         }
 
         function getIndexDeclarationOfSymbol(symbol: Symbol, kind: IndexKind): SignatureDeclaration {
-            const syntaxKind = kind === IndexKind.Number ? TokenType.NumberKeyword : TokenType.StringKeyword;
+            const syntaxKind = kind === IndexKind.Number ? TokenType.number : TokenType.string;
             const indexSymbol = getIndexSymbol(symbol);
             if (indexSymbol) {
                 for (const decl of indexSymbol.declarations) {
@@ -5300,28 +5300,28 @@ namespace ts {
 
         function getTypeFromTypeNode(node: TypeNode): Type {
             switch (node.kind) {
-                case TokenType.AnyKeyword:
+                case TokenType.any:
                 case TokenType.JSDocAllType:
                 case TokenType.JSDocUnknownType:
                     return anyType;
-                case TokenType.StringKeyword:
+                case TokenType.string:
                     return stringType;
-                case TokenType.NumberKeyword:
+                case TokenType.number:
                     return numberType;
-                case TokenType.BooleanKeyword:
+                case TokenType.boolean:
                     return booleanType;
-                case TokenType.SymbolKeyword:
+                case TokenType.symbol:
                     return esSymbolType;
-                case TokenType.VoidKeyword:
+                case TokenType.void:
                     return voidType;
-                case TokenType.UndefinedKeyword:
+                case TokenType.undefined:
                     return undefinedType;
-                case TokenType.NullKeyword:
+                case TokenType.null:
                     return nullType;
-                case TokenType.NeverKeyword:
+                case TokenType.never:
                     return neverType;
                 case TokenType.ThisType:
-                case TokenType.ThisKeyword:
+                case TokenType.this:
                     return getTypeFromThisTypeNode(node);
                 case TokenType.StringLiteralType:
                     return getTypeFromStringLiteralTypeNode(<StringLiteralTypeNode>node);
@@ -5641,7 +5641,7 @@ namespace ts {
                     return isContextSensitive((<ConditionalExpression>node).whenTrue) ||
                         isContextSensitive((<ConditionalExpression>node).whenFalse);
                 case TokenType.BinaryExpression:
-                    return (<BinaryExpression>node).operatorToken.kind === TokenType.BarBarToken &&
+                    return (<BinaryExpression>node).operatorToken.kind === TokenType.barBar &&
                         (isContextSensitive((<BinaryExpression>node).left) || isContextSensitive((<BinaryExpression>node).right));
                 case TokenType.PropertyAssignment:
                     return isContextSensitive((<PropertyAssignment>node).initializer);
@@ -7490,7 +7490,7 @@ namespace ts {
                 const symbol = getResolvedSymbol(<Identifier>node);
                 return symbol !== unknownSymbol ? "" + getSymbolId(symbol) : undefined;
             }
-            if (node.kind === TokenType.ThisKeyword) {
+            if (node.kind === TokenType.this) {
                 return "0";
             }
             if (node.kind === TokenType.PropertyAccessExpression) {
@@ -7501,14 +7501,14 @@ namespace ts {
         }
 
         function isNullOrUndefinedLiteral(node: Expression) {
-            return node.kind === TokenType.NullKeyword ||
+            return node.kind === TokenType.null ||
                 node.kind === TokenType.Identifier && getResolvedSymbol(<Identifier>node) === undefinedSymbol;
         }
 
         function getLeftmostIdentifierOrThis(node: Node): Node {
             switch (node.kind) {
                 case TokenType.Identifier:
-                case TokenType.ThisKeyword:
+                case TokenType.this:
                     return node;
                 case TokenType.PropertyAccessExpression:
                     return getLeftmostIdentifierOrThis((<PropertyAccessExpression>node).expression);
@@ -7521,7 +7521,7 @@ namespace ts {
                 switch (source.kind) {
                     case TokenType.Identifier:
                         return getResolvedSymbol(<Identifier>source) === getResolvedSymbol(<Identifier>target);
-                    case TokenType.ThisKeyword:
+                    case TokenType.this:
                         return true;
                     case TokenType.PropertyAccessExpression:
                         return (<PropertyAccessExpression>source).name.text === (<PropertyAccessExpression>target).name.text &&
@@ -7766,9 +7766,9 @@ namespace ts {
                     return getReferenceFromExpression((<ParenthesizedExpression>node).expression);
                 case TokenType.BinaryExpression:
                     switch ((<BinaryExpression>node).operatorToken.kind) {
-                        case TokenType.EqualsToken:
+                        case TokenType.equals:
                             return getReferenceFromExpression((<BinaryExpression>node).left);
-                        case TokenType.CommaToken:
+                        case TokenType.comma:
                             return getReferenceFromExpression((<BinaryExpression>node).right);
                     }
             }
@@ -8005,12 +8005,12 @@ namespace ts {
 
             function narrowTypeByBinaryExpression(type: Type, expr: BinaryExpression, assumeTrue: boolean): Type {
                 switch (expr.operatorToken.kind) {
-                    case TokenType.EqualsToken:
+                    case TokenType.equals:
                         return narrowTypeByTruthiness(type, expr.left, assumeTrue);
-                    case TokenType.EqualsEqualsToken:
-                    case TokenType.ExclamationEqualsToken:
-                    case TokenType.EqualsEqualsEqualsToken:
-                    case TokenType.ExclamationEqualsEqualsToken:
+                    case TokenType.equalsEquals:
+                    case TokenType.exclamationEquals:
+                    case TokenType.equalsEqualsEquals:
+                    case TokenType.exclamationEqualsEquals:
                         const left = expr.left;
                         const operator = expr.operatorToken.kind;
                         const right = expr.right;
@@ -8033,9 +8033,9 @@ namespace ts {
                             return narrowTypeByDiscriminant(type, <PropertyAccessExpression>right, operator, left, assumeTrue);
                         }
                         break;
-                    case TokenType.InstanceOfKeyword:
+                    case TokenType.instanceOf:
                         return narrowTypeByInstanceof(type, expr, assumeTrue);
-                    case TokenType.CommaToken:
+                    case TokenType.comma:
                         return narrowType(type, expr.right, assumeTrue);
                 }
                 return type;
@@ -8043,16 +8043,16 @@ namespace ts {
 
             function narrowTypeByNullCheck(type: Type, target: Expression, operator: TokenType, literal: Expression, assumeTrue: boolean): Type {
                 // We have '==', '!=', '===', or '!==' operator with 'null' or 'undefined' as value
-                if (operator === TokenType.ExclamationEqualsToken || operator === TokenType.ExclamationEqualsEqualsToken) {
+                if (operator === TokenType.exclamationEquals || operator === TokenType.exclamationEqualsEquals) {
                     assumeTrue = !assumeTrue;
                 }
                 if (!strictNullChecks || !isMatchingReference(reference, getReferenceFromExpression(target))) {
                     return type;
                 }
-                const doubleEquals = operator === TokenType.EqualsEqualsToken || operator === TokenType.ExclamationEqualsToken;
+                const doubleEquals = operator === TokenType.equalsEquals || operator === TokenType.exclamationEquals;
                 const facts = doubleEquals ?
                     assumeTrue ? TypeFacts.EQUndefinedOrNull : TypeFacts.NEUndefinedOrNull :
-                    literal.kind === TokenType.NullKeyword ?
+                    literal.kind === TokenType.null ?
                         assumeTrue ? TypeFacts.EQNull : TypeFacts.NENull :
                         assumeTrue ? TypeFacts.EQUndefined : TypeFacts.NEUndefined;
                 return getTypeWithFacts(type, facts);
@@ -8069,7 +8069,7 @@ namespace ts {
                     }
                     return type;
                 }
-                if (operator === TokenType.ExclamationEqualsToken || operator === TokenType.ExclamationEqualsEqualsToken) {
+                if (operator === TokenType.exclamationEquals || operator === TokenType.exclamationEqualsEquals) {
                     assumeTrue = !assumeTrue;
                 }
                 if (assumeTrue && !(type.flags & TypeFlags.Union)) {
@@ -8101,7 +8101,7 @@ namespace ts {
                 if (!isStringLiteralUnionType(discriminantType)) {
                     return type;
                 }
-                if (operator === TokenType.ExclamationEqualsToken || operator === TokenType.ExclamationEqualsEqualsToken) {
+                if (operator === TokenType.exclamationEquals || operator === TokenType.exclamationEqualsEquals) {
                     assumeTrue = !assumeTrue;
                 }
                 if (assumeTrue) {
@@ -8255,7 +8255,7 @@ namespace ts {
             function narrowType(type: Type, expr: Expression, assumeTrue: boolean): Type {
                 switch (expr.kind) {
                     case TokenType.Identifier:
-                    case TokenType.ThisKeyword:
+                    case TokenType.this:
                     case TokenType.PropertyAccessExpression:
                         return narrowTypeByTruthiness(type, expr, assumeTrue);
                     case TokenType.CallExpression:
@@ -8265,7 +8265,7 @@ namespace ts {
                     case TokenType.BinaryExpression:
                         return narrowTypeByBinaryExpression(type, <BinaryExpression>expr, assumeTrue);
                     case TokenType.PrefixUnaryExpression:
-                        if ((<PrefixUnaryExpression>expr).operator === TokenType.ExclamationToken) {
+                        if ((<PrefixUnaryExpression>expr).operator === TokenType.exclamation) {
                             return narrowType(type, (<PrefixUnaryExpression>expr).operand, !assumeTrue);
                         }
                         break;
@@ -8468,7 +8468,7 @@ namespace ts {
             }
             else if ((current.parent.kind === TokenType.PrefixUnaryExpression || current.parent.kind === TokenType.PostfixUnaryExpression)) {
                 const expr = <PrefixUnaryExpression | PostfixUnaryExpression>current.parent;
-                isAssigned = expr.operator === TokenType.PlusPlusToken || expr.operator === TokenType.MinusMinusToken;
+                isAssigned = expr.operator === TokenType.plusPlus || expr.operator === TokenType.minusMinus;
             }
 
             if (!isAssigned) {
@@ -9054,7 +9054,7 @@ namespace ts {
                     return checkExpression(binaryExpression.left);
                 }
             }
-            else if (operator === TokenType.BarBarToken) {
+            else if (operator === TokenType.barBar) {
                 // When an || expression has a contextual type, the operands are contextually typed by that type. When an ||
                 // expression has no contextual type, the right operand is contextually typed by the type of the left operand.
                 let type = getContextualType(binaryExpression);
@@ -9063,7 +9063,7 @@ namespace ts {
                 }
                 return type;
             }
-            else if (operator === TokenType.AmpersandAmpersandToken || operator === TokenType.CommaToken) {
+            else if (operator === TokenType.ampersandAmpersand || operator === TokenType.comma) {
                 if (node === binaryExpression.right) {
                     return getContextualType(binaryExpression);
                 }
@@ -9369,7 +9369,7 @@ namespace ts {
 
         function hasDefaultValue(node: BindingElement | Expression): boolean {
             return (node.kind === TokenType.BindingElement && !!(<BindingElement>node).initializer) ||
-                (node.kind === TokenType.BinaryExpression && (<BinaryExpression>node).operatorToken.kind === TokenType.EqualsToken);
+                (node.kind === TokenType.BinaryExpression && (<BinaryExpression>node).operatorToken.kind === TokenType.equals);
         }
 
         function checkArrayLiteral(node: ArrayLiteralExpression, contextualMapper?: TypeMapper): Type {
@@ -9674,7 +9674,7 @@ namespace ts {
          */
         function isJsxIntrinsicIdentifier(tagName: JsxTagNameExpression) {
             // TODO (yuisu): comment
-            if (tagName.kind === TokenType.PropertyAccessExpression || tagName.kind === TokenType.ThisKeyword) {
+            if (tagName.kind === TokenType.PropertyAccessExpression || tagName.kind === TokenType.this) {
                 return false;
             }
             else {
@@ -10119,7 +10119,7 @@ namespace ts {
             const errorNode = node.kind === TokenType.PropertyAccessExpression || node.kind === TokenType.VariableDeclaration ?
                 (<PropertyAccessExpression | VariableDeclaration>node).name :
                 (<QualifiedName>node).right;
-            if (left.kind === TokenType.SuperKeyword) {
+            if (left.kind === TokenType.super) {
                 // TS 1.0 spec (April 2014): 4.8.2
                 // - In a constructor, instance member function, instance member accessor, or
                 //   instance member variable initializer where this references a derived class instance,
@@ -10166,7 +10166,7 @@ namespace ts {
             // Property is known to be protected at this point
 
             // All protected properties of a supertype are accessible in a super access
-            if (left.kind === TokenType.SuperKeyword) {
+            if (left.kind === TokenType.super) {
                 return true;
             }
 
@@ -11161,7 +11161,7 @@ namespace ts {
                 typeArguments = (<CallExpression>node).typeArguments;
 
                 // We already perform checking on the type arguments on the class declaration itself.
-                if ((<CallExpression>node).expression.kind !== TokenType.SuperKeyword) {
+                if ((<CallExpression>node).expression.kind !== TokenType.super) {
                     forEach(typeArguments, checkSourceElement);
                 }
             }
@@ -11393,7 +11393,7 @@ namespace ts {
         }
 
         function resolveCallExpression(node: CallExpression, candidatesOutArray: Signature[]): Signature {
-            if (node.expression.kind === TokenType.SuperKeyword) {
+            if (node.expression.kind === TokenType.super) {
                 const superType = checkSuperExpression(node.expression);
                 if (superType !== unknownType) {
                     // In super call, the candidate signatures are the matching arity signatures of the base constructor function instantiated
@@ -11689,7 +11689,7 @@ namespace ts {
 
             const signature = getResolvedSignature(node);
 
-            if (node.expression.kind === TokenType.SuperKeyword) {
+            if (node.expression.kind === TokenType.super) {
                 return voidType;
             }
 
@@ -12226,7 +12226,7 @@ namespace ts {
                 // Allow assignments to readonly properties within constructors of the same class declaration.
                 if (symbol.flags & SymbolFlags.Property &&
                     (expr.kind === TokenType.PropertyAccessExpression || expr.kind === TokenType.ElementAccessExpression) &&
-                    (expr as PropertyAccessExpression | ElementAccessExpression).expression.kind === TokenType.ThisKeyword) {
+                    (expr as PropertyAccessExpression | ElementAccessExpression).expression.kind === TokenType.this) {
                     // Look for if this is the constructor for the class that `symbol` is a property of.
                     const func = getContainingFunction(expr);
                     if (!(func && func.kind === TokenType.Constructor))
@@ -12324,17 +12324,17 @@ namespace ts {
         function checkPrefixUnaryExpression(node: PrefixUnaryExpression): Type {
             const operandType = checkExpression(node.operand);
             switch (node.operator) {
-                case TokenType.PlusToken:
-                case TokenType.MinusToken:
-                case TokenType.TildeToken:
+                case TokenType.plus:
+                case TokenType.minus:
+                case TokenType.tilde:
                     if (maybeTypeOfKind(operandType, TypeFlags.ESSymbol)) {
                         error(node.operand, Diagnostics.The_0_operator_cannot_be_applied_to_type_symbol, tokenToString(node.operator));
                     }
                     return numberType;
-                case TokenType.ExclamationToken:
+                case TokenType.exclamation:
                     return booleanType;
-                case TokenType.PlusPlusToken:
-                case TokenType.MinusMinusToken:
+                case TokenType.plusPlus:
+                case TokenType.minusMinus:
                     const ok = checkArithmeticOperandType(node.operand, getNonNullableType(operandType),
                         Diagnostics.An_arithmetic_operand_must_be_of_type_any_number_or_an_enum_type);
                     if (ok) {
@@ -12527,7 +12527,7 @@ namespace ts {
                     }
                     else {
                         const restExpression = (<SpreadElementExpression>element).expression;
-                        if (restExpression.kind === TokenType.BinaryExpression && (<BinaryExpression>restExpression).operatorToken.kind === TokenType.EqualsToken) {
+                        if (restExpression.kind === TokenType.BinaryExpression && (<BinaryExpression>restExpression).operatorToken.kind === TokenType.equals) {
                             error((<BinaryExpression>restExpression).operatorToken, Diagnostics.A_rest_element_cannot_have_an_initializer);
                         }
                         else {
@@ -12558,7 +12558,7 @@ namespace ts {
                 target = <Expression>exprOrAssignment;
             }
 
-            if (target.kind === TokenType.BinaryExpression && (<BinaryExpression>target).operatorToken.kind === TokenType.EqualsToken) {
+            if (target.kind === TokenType.BinaryExpression && (<BinaryExpression>target).operatorToken.kind === TokenType.equals) {
                 checkBinaryExpression(<BinaryExpression>target, contextualMapper);
                 target = (<BinaryExpression>target).left;
             }
@@ -12589,34 +12589,34 @@ namespace ts {
 
         function checkBinaryLikeExpression(left: Expression, operatorToken: Node, right: Expression, contextualMapper?: TypeMapper, errorNode?: Node) {
             const operator = operatorToken.kind;
-            if (operator === TokenType.EqualsToken && (left.kind === TokenType.ObjectLiteralExpression || left.kind === TokenType.ArrayLiteralExpression)) {
+            if (operator === TokenType.equals && (left.kind === TokenType.ObjectLiteralExpression || left.kind === TokenType.ArrayLiteralExpression)) {
                 return checkDestructuringAssignment(left, checkExpression(right, contextualMapper), contextualMapper);
             }
             let leftType = checkExpression(left, contextualMapper);
             let rightType = checkExpression(right, contextualMapper);
             switch (operator) {
-                case TokenType.AsteriskToken:
-                case TokenType.AsteriskAsteriskToken:
-                case TokenType.AsteriskEqualsToken:
-                case TokenType.AsteriskAsteriskEqualsToken:
-                case TokenType.SlashToken:
-                case TokenType.SlashEqualsToken:
-                case TokenType.PercentToken:
-                case TokenType.PercentEqualsToken:
-                case TokenType.MinusToken:
-                case TokenType.MinusEqualsToken:
-                case TokenType.LessThanLessThanToken:
-                case TokenType.LessThanLessThanEqualsToken:
-                case TokenType.GreaterThanGreaterThanToken:
-                case TokenType.GreaterThanGreaterThanEqualsToken:
-                case TokenType.GreaterThanGreaterThanGreaterThanToken:
-                case TokenType.GreaterThanGreaterThanGreaterThanEqualsToken:
-                case TokenType.BarToken:
-                case TokenType.BarEqualsToken:
-                case TokenType.CaretToken:
-                case TokenType.CaretEqualsToken:
-                case TokenType.AmpersandToken:
-                case TokenType.AmpersandEqualsToken:
+                case TokenType.asterisk:
+                case TokenType.asteriskAsterisk:
+                case TokenType.asteriskEquals:
+                case TokenType.asteriskAsteriskEquals:
+                case TokenType.slash:
+                case TokenType.slashEquals:
+                case TokenType.percent:
+                case TokenType.percentEquals:
+                case TokenType.minus:
+                case TokenType.minusEquals:
+                case TokenType.lessThanLessThan:
+                case TokenType.lessThanLessThanEquals:
+                case TokenType.greaterThanGreaterThan:
+                case TokenType.greaterThanGreaterThanEquals:
+                case TokenType.greaterThanGreaterThanGreaterThan:
+                case TokenType.greaterThanGreaterThanGreaterThanEquals:
+                case TokenType.bar:
+                case TokenType.barEquals:
+                case TokenType.caret:
+                case TokenType.caretEquals:
+                case TokenType.ampersand:
+                case TokenType.ampersandEquals:
                     // TypeScript 1.0 spec (April 2014): 4.19.1
                     // These operators require their operands to be of type Any, the Number primitive type,
                     // or an enum type. Operands of an enum type are treated
@@ -12647,8 +12647,8 @@ namespace ts {
                     }
 
                     return numberType;
-                case TokenType.PlusToken:
-                case TokenType.PlusEqualsToken:
+                case TokenType.plus:
+                case TokenType.plusEquals:
                     // TypeScript 1.0 spec (April 2014): 4.19.2
                     // The binary + operator requires both operands to be of the Number primitive type or an enum type,
                     // or at least one of the operands to be of type Any or the String primitive type.
@@ -12688,40 +12688,40 @@ namespace ts {
                         return anyType;
                     }
 
-                    if (operator === TokenType.PlusEqualsToken) {
+                    if (operator === TokenType.plusEquals) {
                         checkAssignmentOperator(resultType);
                     }
                     return resultType;
-                case TokenType.LessThanToken:
-                case TokenType.GreaterThanToken:
-                case TokenType.LessThanEqualsToken:
-                case TokenType.GreaterThanEqualsToken:
+                case TokenType.lessThan:
+                case TokenType.greaterThan:
+                case TokenType.lessThanEquals:
+                case TokenType.greaterThanEquals:
                     if (checkForDisallowedESSymbolOperand(operator)) {
                         if (!isTypeComparableTo(leftType, rightType) && !isTypeComparableTo(rightType, leftType)) {
                             reportOperatorError();
                         }
                     }
                     return booleanType;
-                case TokenType.EqualsEqualsToken:
-                case TokenType.ExclamationEqualsToken:
-                case TokenType.EqualsEqualsEqualsToken:
-                case TokenType.ExclamationEqualsEqualsToken:
+                case TokenType.equalsEquals:
+                case TokenType.exclamationEquals:
+                case TokenType.equalsEqualsEquals:
+                case TokenType.exclamationEqualsEquals:
                     if (!isTypeEqualityComparableTo(leftType, rightType) && !isTypeEqualityComparableTo(rightType, leftType)) {
                         reportOperatorError();
                     }
                     return booleanType;
-                case TokenType.InstanceOfKeyword:
+                case TokenType.instanceOf:
                     return checkInstanceOfExpression(left, right, leftType, rightType);
-                case TokenType.InKeyword:
+                case TokenType.in:
                     return checkInExpression(left, right, leftType, rightType);
-                case TokenType.AmpersandAmpersandToken:
+                case TokenType.ampersandAmpersand:
                     return strictNullChecks ? addTypeKind(rightType, getCombinedTypeFlags(leftType) & TypeFlags.Falsy) : rightType;
-                case TokenType.BarBarToken:
+                case TokenType.barBar:
                     return getUnionType([getNonNullableType(leftType), rightType]);
-                case TokenType.EqualsToken:
+                case TokenType.equals:
                     checkAssignmentOperator(rightType);
                     return getRegularTypeOfObjectLiteral(rightType);
-                case TokenType.CommaToken:
+                case TokenType.comma:
                     return rightType;
             }
 
@@ -12741,15 +12741,15 @@ namespace ts {
 
             function getSuggestedBooleanOperator(operator: TokenType): TokenType {
                 switch (operator) {
-                    case TokenType.BarToken:
-                    case TokenType.BarEqualsToken:
-                        return TokenType.BarBarToken;
-                    case TokenType.CaretToken:
-                    case TokenType.CaretEqualsToken:
-                        return TokenType.ExclamationEqualsEqualsToken;
-                    case TokenType.AmpersandToken:
-                    case TokenType.AmpersandEqualsToken:
-                        return TokenType.AmpersandAmpersandToken;
+                    case TokenType.bar:
+                    case TokenType.barEquals:
+                        return TokenType.barBar;
+                    case TokenType.caret:
+                    case TokenType.caretEquals:
+                        return TokenType.exclamationEqualsEquals;
+                    case TokenType.ampersand:
+                    case TokenType.ampersandEquals:
+                        return TokenType.ampersandAmpersand;
                     default:
                         return undefined;
                 }
@@ -12977,14 +12977,14 @@ namespace ts {
             switch (node.kind) {
                 case TokenType.Identifier:
                     return checkIdentifier(<Identifier>node);
-                case TokenType.ThisKeyword:
+                case TokenType.this:
                     return checkThisExpression(node);
-                case TokenType.SuperKeyword:
+                case TokenType.super:
                     return checkSuperExpression(node);
-                case TokenType.NullKeyword:
+                case TokenType.null:
                     return nullWideningType;
-                case TokenType.TrueKeyword:
-                case TokenType.FalseKeyword:
+                case TokenType.true:
+                case TokenType.false:
                     return booleanType;
                 case TokenType.NumericLiteral:
                     return checkNumericLiteral(<LiteralExpression>node);
@@ -13294,7 +13294,7 @@ namespace ts {
                     }
                 }
                 else {
-                    const isStatic = forEach(member.modifiers, m => m.kind === TokenType.StaticKeyword);
+                    const isStatic = forEach(member.modifiers, m => m.kind === TokenType.static);
                     const names = isStatic ? staticNames : instanceNames;
 
                     const memberName = member.name && getPropertyNameForPropertyNameNode(member.name);
@@ -13379,7 +13379,7 @@ namespace ts {
                     const declaration = <SignatureDeclaration>decl;
                     if (declaration.parameters.length === 1 && declaration.parameters[0].type) {
                         switch (declaration.parameters[0].type.kind) {
-                            case TokenType.StringKeyword:
+                            case TokenType.string:
                                 if (!seenStringIndexer) {
                                     seenStringIndexer = true;
                                 }
@@ -13387,7 +13387,7 @@ namespace ts {
                                     error(declaration, Diagnostics.Duplicate_string_index_signature);
                                 }
                                 break;
-                            case TokenType.NumberKeyword:
+                            case TokenType.number:
                                 if (!seenNumericIndexer) {
                                     seenNumericIndexer = true;
                                 }
@@ -13466,7 +13466,7 @@ namespace ts {
             }
 
             function markThisReferencesAsErrors(n: Node): void {
-                if (n.kind === TokenType.ThisKeyword) {
+                if (n.kind === TokenType.this) {
                     error(n, Diagnostics.this_cannot_be_referenced_in_current_location);
                 }
                 else if (n.kind !== TokenType.FunctionExpression && n.kind !== TokenType.FunctionDeclaration) {
@@ -14578,7 +14578,7 @@ namespace ts {
         }
 
         function parameterIsThisKeyword(parameter: ParameterDeclaration) {
-            return parameter.name && (<Identifier>parameter.name).originalKeywordKind === TokenType.ThisKeyword;
+            return parameter.name && (<Identifier>parameter.name).originalKeywordKind === TokenType.this;
         }
 
         function parameterNameStartsWithUnderscore(parameter: ParameterDeclaration) {
@@ -16219,9 +16219,9 @@ namespace ts {
                                 return undefined;
                             }
                             switch ((<PrefixUnaryExpression>e).operator) {
-                                case TokenType.PlusToken: return value;
-                                case TokenType.MinusToken: return -value;
-                                case TokenType.TildeToken: return ~value;
+                                case TokenType.plus: return value;
+                                case TokenType.minus: return -value;
+                                case TokenType.tilde: return ~value;
                             }
                             return undefined;
                         case TokenType.BinaryExpression:
@@ -16234,17 +16234,17 @@ namespace ts {
                                 return undefined;
                             }
                             switch ((<BinaryExpression>e).operatorToken.kind) {
-                                case TokenType.BarToken: return left | right;
-                                case TokenType.AmpersandToken: return left & right;
-                                case TokenType.GreaterThanGreaterThanToken: return left >> right;
-                                case TokenType.GreaterThanGreaterThanGreaterThanToken: return left >>> right;
-                                case TokenType.LessThanLessThanToken: return left << right;
-                                case TokenType.CaretToken: return left ^ right;
-                                case TokenType.AsteriskToken: return left * right;
-                                case TokenType.SlashToken: return left / right;
-                                case TokenType.PlusToken: return left + right;
-                                case TokenType.MinusToken: return left - right;
-                                case TokenType.PercentToken: return left % right;
+                                case TokenType.bar: return left | right;
+                                case TokenType.ampersand: return left & right;
+                                case TokenType.greaterThanGreaterThan: return left >> right;
+                                case TokenType.greaterThanGreaterThanGreaterThan: return left >>> right;
+                                case TokenType.lessThanLessThan: return left << right;
+                                case TokenType.caret: return left ^ right;
+                                case TokenType.asterisk: return left * right;
+                                case TokenType.slash: return left / right;
+                                case TokenType.plus: return left + right;
+                                case TokenType.minus: return left - right;
+                                case TokenType.percent: return left % right;
                             }
                             return undefined;
                         case TokenType.NumericLiteral:
@@ -17425,7 +17425,7 @@ namespace ts {
                 case TokenType.QualifiedName:
                     return getSymbolOfEntityNameOrPropertyAccessExpression(<EntityName | PropertyAccessExpression>node);
 
-                case TokenType.ThisKeyword:
+                case TokenType.this:
                     const container = getThisContainer(node, /*includeArrowFunctions*/ false);
                     if (isFunctionLike(container)) {
                         const sig = getSignatureFromDeclaration(container);
@@ -17435,14 +17435,14 @@ namespace ts {
                     }
                     // fallthrough
 
-                case TokenType.SuperKeyword:
+                case TokenType.super:
                     const type = isExpression(node) ? checkExpression(<Expression>node) : getTypeFromTypeNode(<TypeNode>node);
                     return type.symbol;
 
                 case TokenType.ThisType:
                     return getTypeFromTypeNode(<TypeNode>node).symbol;
 
-                case TokenType.ConstructorKeyword:
+                case TokenType.constructor:
                     // constructor keyword for an overload, should take us to the definition if it exist
                     const constructorDeclaration = node.parent;
                     if (constructorDeclaration && constructorDeclaration.kind === TokenType.Constructor) {
@@ -18267,7 +18267,7 @@ namespace ts {
                 case TokenType.Parameter:
                     break;
                 case TokenType.FunctionDeclaration:
-                    if (node.modifiers && (node.modifiers.length > 1 || node.modifiers[0].kind !== TokenType.AsyncKeyword) &&
+                    if (node.modifiers && (node.modifiers.length > 1 || node.modifiers[0].kind !== TokenType.async) &&
                         node.parent.kind !== TokenType.ModuleBlock && node.parent.kind !== TokenType.SourceFile) {
                         return grammarErrorOnFirstToken(node, Diagnostics.Modifiers_cannot_appear_here);
                     }
@@ -18281,7 +18281,7 @@ namespace ts {
                     }
                     break;
                 case TokenType.EnumDeclaration:
-                    if (node.modifiers && (node.modifiers.length > 1 || node.modifiers[0].kind !== TokenType.ConstKeyword) &&
+                    if (node.modifiers && (node.modifiers.length > 1 || node.modifiers[0].kind !== TokenType.const) &&
                         node.parent.kind !== TokenType.ModuleBlock && node.parent.kind !== TokenType.SourceFile) {
                         return grammarErrorOnFirstToken(node, Diagnostics.Modifiers_cannot_appear_here);
                     }
@@ -18297,7 +18297,7 @@ namespace ts {
             let lastStatic: Node, lastPrivate: Node, lastProtected: Node, lastDeclare: Node, lastAsync: Node, lastReadonly: Node;
             let flags = 0;
             for (const modifier of node.modifiers) {
-                if (modifier.kind !== TokenType.ReadonlyKeyword) {
+                if (modifier.kind !== TokenType.readonly) {
                     if (node.kind === TokenType.PropertySignature || node.kind === TokenType.MethodSignature) {
                         return grammarErrorOnNode(modifier, Diagnostics._0_modifier_cannot_appear_on_a_type_member, tokenToString(modifier.kind));
                     }
@@ -18306,20 +18306,20 @@ namespace ts {
                     }
                 }
                 switch (modifier.kind) {
-                    case TokenType.ConstKeyword:
+                    case TokenType.const:
                         if (node.kind !== TokenType.EnumDeclaration && node.parent.kind === TokenType.ClassDeclaration) {
-                            return grammarErrorOnNode(node, Diagnostics.A_class_member_cannot_have_the_0_keyword, tokenToString(TokenType.ConstKeyword));
+                            return grammarErrorOnNode(node, Diagnostics.A_class_member_cannot_have_the_0_keyword, tokenToString(TokenType.const));
                         }
                         break;
-                    case TokenType.PublicKeyword:
-                    case TokenType.ProtectedKeyword:
-                    case TokenType.PrivateKeyword:
+                    case TokenType.public:
+                    case TokenType.protected:
+                    case TokenType.private:
                         let text = visibilityToString(modifierToFlag(modifier.kind));
 
-                        if (modifier.kind === TokenType.ProtectedKeyword) {
+                        if (modifier.kind === TokenType.protected) {
                             lastProtected = modifier;
                         }
-                        else if (modifier.kind === TokenType.PrivateKeyword) {
+                        else if (modifier.kind === TokenType.private) {
                             lastPrivate = modifier;
                         }
 
@@ -18339,7 +18339,7 @@ namespace ts {
                             return grammarErrorOnNode(modifier, Diagnostics._0_modifier_cannot_appear_on_a_module_or_namespace_element, text);
                         }
                         else if (flags & NodeFlags.Abstract) {
-                            if (modifier.kind === TokenType.PrivateKeyword) {
+                            if (modifier.kind === TokenType.private) {
                                 return grammarErrorOnNode(modifier, Diagnostics._0_modifier_cannot_be_used_with_1_modifier, text, "abstract");
                             }
                             else {
@@ -18349,7 +18349,7 @@ namespace ts {
                         flags |= modifierToFlag(modifier.kind);
                         break;
 
-                    case TokenType.StaticKeyword:
+                    case TokenType.static:
                         if (flags & NodeFlags.Static) {
                             return grammarErrorOnNode(modifier, Diagnostics._0_modifier_already_seen, "static");
                         }
@@ -18372,7 +18372,7 @@ namespace ts {
                         lastStatic = modifier;
                         break;
 
-                    case TokenType.ReadonlyKeyword:
+                    case TokenType.readonly:
                         if (flags & NodeFlags.Readonly) {
                             return grammarErrorOnNode(modifier, Diagnostics._0_modifier_already_seen, "readonly");
                         }
@@ -18384,7 +18384,7 @@ namespace ts {
                         lastReadonly = modifier;
                         break;
 
-                    case TokenType.ExportKeyword:
+                    case TokenType.export:
                         if (flags & NodeFlags.Export) {
                             return grammarErrorOnNode(modifier, Diagnostics._0_modifier_already_seen, "export");
                         }
@@ -18406,7 +18406,7 @@ namespace ts {
                         flags |= NodeFlags.Export;
                         break;
 
-                    case TokenType.DeclareKeyword:
+                    case TokenType.declare:
                         if (flags & NodeFlags.Ambient) {
                             return grammarErrorOnNode(modifier, Diagnostics._0_modifier_already_seen, "declare");
                         }
@@ -18426,7 +18426,7 @@ namespace ts {
                         lastDeclare = modifier;
                         break;
 
-                    case TokenType.AbstractKeyword:
+                    case TokenType.abstract:
                         if (flags & NodeFlags.Abstract) {
                             return grammarErrorOnNode(modifier, Diagnostics._0_modifier_already_seen, "abstract");
                         }
@@ -18451,7 +18451,7 @@ namespace ts {
                         flags |= NodeFlags.Abstract;
                         break;
 
-                    case TokenType.AsyncKeyword:
+                    case TokenType.async:
                         if (flags & NodeFlags.Async) {
                             return grammarErrorOnNode(modifier, Diagnostics._0_modifier_already_seen, "async");
                         }
@@ -18616,7 +18616,7 @@ namespace ts {
             if (!parameter.type) {
                 return grammarErrorOnNode(parameter.name, Diagnostics.An_index_signature_parameter_must_have_a_type_annotation);
             }
-            if (parameter.type.kind !== TokenType.StringKeyword && parameter.type.kind !== TokenType.NumberKeyword) {
+            if (parameter.type.kind !== TokenType.string && parameter.type.kind !== TokenType.number) {
                 return grammarErrorOnNode(parameter.name, Diagnostics.An_index_signature_parameter_type_must_be_string_or_number);
             }
             if (!node.type) {
@@ -18676,7 +18676,7 @@ namespace ts {
 
             if (!checkGrammarDecorators(node) && !checkGrammarModifiers(node) && node.heritageClauses) {
                 for (const heritageClause of node.heritageClauses) {
-                    if (heritageClause.token === TokenType.ExtendsKeyword) {
+                    if (heritageClause.token === TokenType.extends) {
                         if (seenExtendsClause) {
                             return grammarErrorOnFirstToken(heritageClause, Diagnostics.extends_clause_already_seen);
                         }
@@ -18692,7 +18692,7 @@ namespace ts {
                         seenExtendsClause = true;
                     }
                     else {
-                        Debug.assert(heritageClause.token === TokenType.ImplementsKeyword);
+                        Debug.assert(heritageClause.token === TokenType.implements);
                         if (seenImplementsClause) {
                             return grammarErrorOnFirstToken(heritageClause, Diagnostics.implements_clause_already_seen);
                         }
@@ -18711,7 +18711,7 @@ namespace ts {
 
             if (node.heritageClauses) {
                 for (const heritageClause of node.heritageClauses) {
-                    if (heritageClause.token === TokenType.ExtendsKeyword) {
+                    if (heritageClause.token === TokenType.extends) {
                         if (seenExtendsClause) {
                             return grammarErrorOnFirstToken(heritageClause, Diagnostics.extends_clause_already_seen);
                         }
@@ -18719,7 +18719,7 @@ namespace ts {
                         seenExtendsClause = true;
                     }
                     else {
-                        Debug.assert(heritageClause.token === TokenType.ImplementsKeyword);
+                        Debug.assert(heritageClause.token === TokenType.implements);
                         return grammarErrorOnFirstToken(heritageClause, Diagnostics.Interface_declaration_cannot_have_implements_clause);
                     }
 
@@ -18738,7 +18738,7 @@ namespace ts {
             }
 
             const computedPropertyName = <ComputedPropertyName>node;
-            if (computedPropertyName.expression.kind === TokenType.BinaryExpression && (<BinaryExpression>computedPropertyName.expression).operatorToken.kind === TokenType.CommaToken) {
+            if (computedPropertyName.expression.kind === TokenType.BinaryExpression && (<BinaryExpression>computedPropertyName.expression).operatorToken.kind === TokenType.comma) {
                 return grammarErrorOnNode(computedPropertyName.expression, Diagnostics.A_comma_expression_is_not_allowed_in_a_computed_property_name);
             }
         }
@@ -18790,7 +18790,7 @@ namespace ts {
 
                 // Modifiers are never allowed on properties except for 'async' on a method declaration
                 forEach(prop.modifiers, mod => {
-                    if (mod.kind !== TokenType.AsyncKeyword || prop.kind !== TokenType.MethodDeclaration) {
+                    if (mod.kind !== TokenType.async || prop.kind !== TokenType.MethodDeclaration) {
                         grammarErrorOnNode(mod, Diagnostics._0_modifier_cannot_be_used_here, getTextOfNode(mod));
                     }
                 });
@@ -18973,7 +18973,7 @@ namespace ts {
         function getAccessorThisParameter(accessor: AccessorDeclaration): ParameterDeclaration {
             if (accessor.parameters.length === (accessor.kind === TokenType.GetAccessor ? 1 : 2) &&
                 accessor.parameters[0].name.kind === TokenType.Identifier &&
-                (<Identifier>accessor.parameters[0].name).originalKeywordKind === TokenType.ThisKeyword) {
+                (<Identifier>accessor.parameters[0].name).originalKeywordKind === TokenType.this) {
                 return accessor.parameters[0];
             }
         }
@@ -18981,7 +18981,7 @@ namespace ts {
         function getFunctionLikeThisParameter(func: FunctionLikeDeclaration) {
             if (func.parameters.length &&
                 func.parameters[0].name.kind === TokenType.Identifier &&
-                (<Identifier>func.parameters[0].name).originalKeywordKind === TokenType.ThisKeyword) {
+                (<Identifier>func.parameters[0].name).originalKeywordKind === TokenType.this) {
                 return func.parameters[0];
             }
         }
@@ -19135,7 +19135,7 @@ namespace ts {
 
         function checkGrammarNameInLetOrConstDeclarations(name: Identifier | BindingPattern): boolean {
             if (name.kind === TokenType.Identifier) {
-                if ((<Identifier>name).originalKeywordKind === TokenType.LetKeyword) {
+                if ((<Identifier>name).originalKeywordKind === TokenType.let) {
                     return grammarErrorOnNode(name, Diagnostics.let_is_not_allowed_to_be_used_as_a_name_in_let_or_const_declarations);
                 }
             }

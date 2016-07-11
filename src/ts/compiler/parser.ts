@@ -936,13 +936,13 @@ namespace ts {
 
             // If we have a 'yield' keyword, and we're in the [yield] context, then 'yield' is
             // considered a keyword and is not an identifier.
-            if (token === TokenType.YieldKeyword && inYieldContext()) {
+            if (token === TokenType.yield && inYieldContext()) {
                 return false;
             }
 
             // If we have a 'await' keyword, and we're in the [Await] context, then 'await' is
             // considered a keyword and is not an identifier.
-            if (token === TokenType.AwaitKeyword && inAwaitContext()) {
+            if (token === TokenType.await && inAwaitContext()) {
                 return false;
             }
 
@@ -995,17 +995,17 @@ namespace ts {
 
         function canParseSemicolon() {
             // If there's a real semicolon, then we can always parse it out.
-            if (token === TokenType.SemicolonToken) {
+            if (token === TokenType.semicolon) {
                 return true;
             }
 
             // We can parse out an optional semicolon in ASI cases in the following cases.
-            return token === TokenType.CloseBraceToken || token === TokenType.endOfFile || scanner.hasPrecedingLineBreak();
+            return token === TokenType.closeBrace || token === TokenType.endOfFile || scanner.hasPrecedingLineBreak();
         }
 
         function parseSemicolon(): boolean {
             if (canParseSemicolon()) {
-                if (token === TokenType.SemicolonToken) {
+                if (token === TokenType.semicolon) {
                     // consume the semicolon if it was explicitly provided.
                     nextToken();
                 }
@@ -1013,7 +1013,7 @@ namespace ts {
                 return true;
             }
             else {
-                return parseExpected(TokenType.SemicolonToken);
+                return parseExpected(TokenType.semicolon);
             }
         }
 
@@ -1101,7 +1101,7 @@ namespace ts {
             if (token === TokenType.StringLiteral || token === TokenType.NumericLiteral) {
                 return parseLiteralNode(/*internName*/ true);
             }
-            if (allowComputedPropertyNames && token === TokenType.OpenBracketToken) {
+            if (allowComputedPropertyNames && token === TokenType.openBracket) {
                 return parseComputedPropertyName();
             }
             return parseIdentifierName();
@@ -1124,14 +1124,14 @@ namespace ts {
             //      LiteralPropertyName
             //      ComputedPropertyName[?Yield]
             const node = <ComputedPropertyName>createNode(TokenType.ComputedPropertyName);
-            parseExpected(TokenType.OpenBracketToken);
+            parseExpected(TokenType.openBracket);
 
             // We parse any expression (including a comma expression). But the grammar
             // says that only an assignment expression is allowed, so the grammar checker
             // will error if it sees a comma expression.
             node.expression = allowInAnd(parseExpression);
 
-            parseExpected(TokenType.CloseBracketToken);
+            parseExpected(TokenType.closeBracket);
             return finishNode(node);
         }
 
@@ -1148,21 +1148,21 @@ namespace ts {
         }
 
         function nextTokenCanFollowModifier() {
-            if (token === TokenType.ConstKeyword) {
+            if (token === TokenType.const) {
                 // 'const' is only a modifier if followed by 'enum'.
-                return nextToken() === TokenType.EnumKeyword;
+                return nextToken() === TokenType.enum;
             }
-            if (token === TokenType.ExportKeyword) {
+            if (token === TokenType.export) {
                 nextToken();
-                if (token === TokenType.DefaultKeyword) {
+                if (token === TokenType.default) {
                     return lookAhead(nextTokenIsClassOrFunctionOrAsync);
                 }
-                return token !== TokenType.AsteriskToken && token !== TokenType.AsKeyword && token !== TokenType.OpenBraceToken && canFollowModifier();
+                return token !== TokenType.asterisk && token !== TokenType.as && token !== TokenType.openBrace && canFollowModifier();
             }
-            if (token === TokenType.DefaultKeyword) {
+            if (token === TokenType.default) {
                 return nextTokenIsClassOrFunctionOrAsync();
             }
-            if (token === TokenType.StaticKeyword) {
+            if (token === TokenType.static) {
                 nextToken();
                 return canFollowModifier();
             }
@@ -1175,17 +1175,17 @@ namespace ts {
         }
 
         function canFollowModifier(): boolean {
-            return token === TokenType.OpenBracketToken
-                || token === TokenType.OpenBraceToken
-                || token === TokenType.AsteriskToken
-                || token === TokenType.DotDotDotToken
+            return token === TokenType.openBracket
+                || token === TokenType.openBrace
+                || token === TokenType.asterisk
+                || token === TokenType.dotDotDot
                 || isLiteralPropertyName();
         }
 
         function nextTokenIsClassOrFunctionOrAsync(): boolean {
             nextToken();
-            return token === TokenType.ClassKeyword || token === TokenType.FunctionKeyword ||
-                (token === TokenType.AsyncKeyword && lookAhead(nextTokenIsFunctionKeywordOnSameLine));
+            return token === TokenType.class || token === TokenType.function ||
+                (token === TokenType.async && lookAhead(nextTokenIsFunctionKeywordOnSameLine));
         }
 
         // True if positioned at the start of a list element
@@ -1205,9 +1205,9 @@ namespace ts {
                     // we're parsing.  For example, if we have a semicolon in the middle of a class, then
                     // we really don't want to assume the class is over and we're on a statement in the
                     // outer module.  We just want to consume and move on.
-                    return !(token === TokenType.SemicolonToken && inErrorRecovery) && isStartOfStatement();
+                    return !(token === TokenType.semicolon && inErrorRecovery) && isStartOfStatement();
                 case ParsingContext.SwitchClauses:
-                    return token === TokenType.CaseKeyword || token === TokenType.DefaultKeyword;
+                    return token === TokenType.case || token === TokenType.default;
                 case ParsingContext.TypeMembers:
                     return lookAhead(isTypeMemberStart);
                 case ParsingContext.ClassMembers:
@@ -1215,19 +1215,19 @@ namespace ts {
                     // not in error recovery.  If we're in error recovery, we don't want an errant
                     // semicolon to be treated as a class member (since they're almost always used
                     // for statements.
-                    return lookAhead(isClassMemberStart) || (token === TokenType.SemicolonToken && !inErrorRecovery);
+                    return lookAhead(isClassMemberStart) || (token === TokenType.semicolon && !inErrorRecovery);
                 case ParsingContext.EnumMembers:
                     // Include open bracket computed properties. This technically also lets in indexers,
                     // which would be a candidate for improved error reporting.
-                    return token === TokenType.OpenBracketToken || isLiteralPropertyName();
+                    return token === TokenType.openBracket || isLiteralPropertyName();
                 case ParsingContext.ObjectLiteralMembers:
-                    return token === TokenType.OpenBracketToken || token === TokenType.AsteriskToken || isLiteralPropertyName();
+                    return token === TokenType.openBracket || token === TokenType.asterisk || isLiteralPropertyName();
                 case ParsingContext.ObjectBindingElements:
-                    return token === TokenType.OpenBracketToken || isLiteralPropertyName();
+                    return token === TokenType.openBracket || isLiteralPropertyName();
                 case ParsingContext.HeritageClauseElement:
                     // If we see { } then only consume it as an expression if it is followed by , or {
                     // That way we won't consume the body of a class in its heritage clause.
-                    if (token === TokenType.OpenBraceToken) {
+                    if (token === TokenType.openBrace) {
                         return lookAhead(isValidHeritageClauseObjectLiteral);
                     }
 
@@ -1243,23 +1243,23 @@ namespace ts {
                 case ParsingContext.VariableDeclarations:
                     return isIdentifierOrPattern();
                 case ParsingContext.ArrayBindingElements:
-                    return token === TokenType.CommaToken || token === TokenType.DotDotDotToken || isIdentifierOrPattern();
+                    return token === TokenType.comma || token === TokenType.dotDotDot || isIdentifierOrPattern();
                 case ParsingContext.TypeParameters:
                     return isIdentifier();
                 case ParsingContext.ArgumentExpressions:
                 case ParsingContext.ArrayLiteralMembers:
-                    return token === TokenType.CommaToken || token === TokenType.DotDotDotToken || isStartOfExpression();
+                    return token === TokenType.comma || token === TokenType.dotDotDot || isStartOfExpression();
                 case ParsingContext.Parameters:
                     return isStartOfParameter();
                 case ParsingContext.TypeArguments:
                 case ParsingContext.TupleElementTypes:
-                    return token === TokenType.CommaToken || isStartOfType();
+                    return token === TokenType.comma || isStartOfType();
                 case ParsingContext.HeritageClauses:
                     return isHeritageClause();
                 case ParsingContext.ImportOrExportSpecifiers:
                     return tokenIsIdentifierOrKeyword(token);
                 case ParsingContext.JsxAttributes:
-                    return tokenIsIdentifierOrKeyword(token) || token === TokenType.OpenBraceToken;
+                    return tokenIsIdentifierOrKeyword(token) || token === TokenType.openBrace;
                 case ParsingContext.JsxChildren:
                     return true;
                 case ParsingContext.JSDocFunctionParameters:
@@ -1274,8 +1274,8 @@ namespace ts {
         }
 
         function isValidHeritageClauseObjectLiteral() {
-            Debug.assert(token === TokenType.OpenBraceToken);
-            if (nextToken() === TokenType.CloseBraceToken) {
+            Debug.assert(token === TokenType.openBrace);
+            if (nextToken() === TokenType.closeBrace) {
                 // if we see  "extends {}" then only treat the {} as what we're extending (and not
                 // the class body) if we have:
                 //
@@ -1285,7 +1285,7 @@ namespace ts {
                 //      extends {} implements
 
                 const next = nextToken();
-                return next === TokenType.CommaToken || next === TokenType.OpenBraceToken || next === TokenType.ExtendsKeyword || next === TokenType.ImplementsKeyword;
+                return next === TokenType.comma || next === TokenType.openBrace || next === TokenType.extends || next === TokenType.implements;
             }
 
             return true;
@@ -1302,8 +1302,8 @@ namespace ts {
         }
 
         function isHeritageClauseExtendsOrImplementsKeyword(): boolean {
-            if (token === TokenType.ImplementsKeyword ||
-                token === TokenType.ExtendsKeyword) {
+            if (token === TokenType.implements ||
+                token === TokenType.extends) {
 
                 return lookAhead(nextTokenIsStartOfExpression);
             }
@@ -1332,43 +1332,43 @@ namespace ts {
                 case ParsingContext.ObjectLiteralMembers:
                 case ParsingContext.ObjectBindingElements:
                 case ParsingContext.ImportOrExportSpecifiers:
-                    return token === TokenType.CloseBraceToken;
+                    return token === TokenType.closeBrace;
                 case ParsingContext.SwitchClauseStatements:
-                    return token === TokenType.CloseBraceToken || token === TokenType.CaseKeyword || token === TokenType.DefaultKeyword;
+                    return token === TokenType.closeBrace || token === TokenType.case || token === TokenType.default;
                 case ParsingContext.HeritageClauseElement:
-                    return token === TokenType.OpenBraceToken || token === TokenType.ExtendsKeyword || token === TokenType.ImplementsKeyword;
+                    return token === TokenType.openBrace || token === TokenType.extends || token === TokenType.implements;
                 case ParsingContext.VariableDeclarations:
                     return isVariableDeclaratorListTerminator();
                 case ParsingContext.TypeParameters:
                     // Tokens other than '>' are here for better error recovery
-                    return token === TokenType.GreaterThanToken || token === TokenType.OpenParenToken || token === TokenType.OpenBraceToken || token === TokenType.ExtendsKeyword || token === TokenType.ImplementsKeyword;
+                    return token === TokenType.greaterThan || token === TokenType.openParen || token === TokenType.openBrace || token === TokenType.extends || token === TokenType.implements;
                 case ParsingContext.ArgumentExpressions:
                     // Tokens other than ')' are here for better error recovery
-                    return token === TokenType.CloseParenToken || token === TokenType.SemicolonToken;
+                    return token === TokenType.closeParen || token === TokenType.semicolon;
                 case ParsingContext.ArrayLiteralMembers:
                 case ParsingContext.TupleElementTypes:
                 case ParsingContext.ArrayBindingElements:
-                    return token === TokenType.CloseBracketToken;
+                    return token === TokenType.closeBracket;
                 case ParsingContext.Parameters:
                     // Tokens other than ')' and ']' (the latter for index signatures) are here for better error recovery
-                    return token === TokenType.CloseParenToken || token === TokenType.CloseBracketToken /*|| token === SyntaxKind.OpenBraceToken*/;
+                    return token === TokenType.closeParen || token === TokenType.closeBracket /*|| token === SyntaxKind.OpenBraceToken*/;
                 case ParsingContext.TypeArguments:
                     // Tokens other than '>' are here for better error recovery
-                    return token === TokenType.GreaterThanToken || token === TokenType.OpenParenToken;
+                    return token === TokenType.greaterThan || token === TokenType.openParen;
                 case ParsingContext.HeritageClauses:
-                    return token === TokenType.OpenBraceToken || token === TokenType.CloseBraceToken;
+                    return token === TokenType.openBrace || token === TokenType.closeBrace;
                 case ParsingContext.JsxAttributes:
-                    return token === TokenType.GreaterThanToken || token === TokenType.SlashToken;
+                    return token === TokenType.greaterThan || token === TokenType.slash;
                 case ParsingContext.JsxChildren:
-                    return token === TokenType.LessThanToken && lookAhead(nextTokenIsSlash);
+                    return token === TokenType.lessThan && lookAhead(nextTokenIsSlash);
                 case ParsingContext.JSDocFunctionParameters:
-                    return token === TokenType.CloseParenToken || token === TokenType.ColonToken || token === TokenType.CloseBraceToken;
+                    return token === TokenType.closeParen || token === TokenType.colon || token === TokenType.closeBrace;
                 case ParsingContext.JSDocTypeArguments:
-                    return token === TokenType.GreaterThanToken || token === TokenType.CloseBraceToken;
+                    return token === TokenType.greaterThan || token === TokenType.closeBrace;
                 case ParsingContext.JSDocTupleTypes:
-                    return token === TokenType.CloseBracketToken || token === TokenType.CloseBraceToken;
+                    return token === TokenType.closeBracket || token === TokenType.closeBrace;
                 case ParsingContext.JSDocRecordMembers:
-                    return token === TokenType.CloseBraceToken;
+                    return token === TokenType.closeBrace;
             }
         }
 
@@ -1389,7 +1389,7 @@ namespace ts {
             // For better error recovery, if we see an '=>' then we just stop immediately.  We've got an
             // arrow function here and it's going to be very unlikely that we'll resynchronize and get
             // another variable declaration.
-            if (token === TokenType.EqualsGreaterThanToken) {
+            if (token === TokenType.equalsGreaterThan) {
                 return true;
             }
 
@@ -1604,7 +1604,7 @@ namespace ts {
                         // into an actual .ConstructorDeclaration.
                         let methodDeclaration = <MethodDeclaration>node;
                         let nameIsConstructor = methodDeclaration.name.kind === TokenType.Identifier &&
-                            (<Identifier>methodDeclaration.name).originalKeywordKind === TokenType.ConstructorKeyword;
+                            (<Identifier>methodDeclaration.name).originalKeywordKind === TokenType.constructor;
 
                         return !nameIsConstructor;
                 }
@@ -1770,7 +1770,7 @@ namespace ts {
                 if (isListElement(kind, /*inErrorRecovery*/ false)) {
                     result.push(parseListElement(kind, parseElement));
                     commaStart = scanner.getTokenPos();
-                    if (parseOptional(TokenType.CommaToken)) {
+                    if (parseOptional(TokenType.comma)) {
                         continue;
                     }
 
@@ -1781,14 +1781,14 @@ namespace ts {
 
                     // We didn't get a comma, and the list wasn't terminated, explicitly parse
                     // out a comma so we give a good error message.
-                    parseExpected(TokenType.CommaToken);
+                    parseExpected(TokenType.comma);
 
                     // If the token was a semicolon, and the caller allows that, then skip it and
                     // continue.  This ensures we get back on track and don't result in tons of
                     // parse errors.  For example, this can happen when people do things like use
                     // a semicolon to delimit object literal members.   Note: we'll have already
                     // reported an error when we called parseExpected above.
-                    if (considerSemicolonAsDelimiter && token === TokenType.SemicolonToken && !scanner.hasPrecedingLineBreak()) {
+                    if (considerSemicolonAsDelimiter && token === TokenType.semicolon && !scanner.hasPrecedingLineBreak()) {
                         nextToken();
                     }
                     continue;
@@ -1839,7 +1839,7 @@ namespace ts {
         // The allowReservedWords parameter controls whether reserved words are permitted after the first dot
         function parseEntityName(allowReservedWords: boolean, diagnosticMessage?: DiagnosticMessage): EntityName {
             let entity: EntityName = parseIdentifier(diagnosticMessage);
-            while (parseOptional(TokenType.DotToken)) {
+            while (parseOptional(TokenType.dot)) {
                 const node: QualifiedName = <QualifiedName>createNode(TokenType.QualifiedName, entity.pos);  // !!!
                 node.left = entity;
                 node.right = parseRightSideOfDot(allowReservedWords);
@@ -1908,12 +1908,12 @@ namespace ts {
 
             let literal: TemplateLiteralFragment;
 
-            if (token === TokenType.CloseBraceToken) {
+            if (token === TokenType.closeBrace) {
                 reScanTemplateToken();
                 literal = parseTemplateLiteralFragment();
             }
             else {
-                literal = <TemplateLiteralFragment>parseExpectedToken(TokenType.TemplateTail, /*reportAtCurrentPosition*/ false, Diagnostics._0_expected, tokenToString(TokenType.CloseBraceToken));
+                literal = <TemplateLiteralFragment>parseExpectedToken(TokenType.TemplateTail, /*reportAtCurrentPosition*/ false, Diagnostics._0_expected, tokenToString(TokenType.closeBrace));
             }
 
             span.literal = literal;
@@ -1971,8 +1971,8 @@ namespace ts {
             const typeName = parseEntityName(/*allowReservedWords*/ false, Diagnostics.Type_expected);
             const node = <TypeReferenceNode>createNode(TokenType.TypeReference, typeName.pos);
             node.typeName = typeName;
-            if (!scanner.hasPrecedingLineBreak() && token === TokenType.LessThanToken) {
-                node.typeArguments = parseBracketedList(ParsingContext.TypeArguments, parseType, TokenType.LessThanToken, TokenType.GreaterThanToken);
+            if (!scanner.hasPrecedingLineBreak() && token === TokenType.lessThan) {
+                node.typeArguments = parseBracketedList(ParsingContext.TypeArguments, parseType, TokenType.lessThan, TokenType.greaterThan);
             }
             return finishNode(node);
         }
@@ -1993,7 +1993,7 @@ namespace ts {
 
         function parseTypeQuery(): TypeQueryNode {
             const node = <TypeQueryNode>createNode(TokenType.TypeQuery);
-            parseExpected(TokenType.TypeOfKeyword);
+            parseExpected(TokenType.typeOf);
             node.exprName = parseEntityName(/*allowReservedWords*/ true);
             return finishNode(node);
         }
@@ -2001,7 +2001,7 @@ namespace ts {
         function parseTypeParameter(): TypeParameterDeclaration {
             const node = <TypeParameterDeclaration>createNode(TokenType.TypeParameter);
             node.name = parseIdentifier();
-            if (parseOptional(TokenType.ExtendsKeyword)) {
+            if (parseOptional(TokenType.extends)) {
                 // It's not uncommon for people to write improper constraints to a generic.  If the
                 // user writes a constraint that is an expression and not an actual type, then parse
                 // it out as an expression (so we can recover well), but report that a type is needed
@@ -2025,13 +2025,13 @@ namespace ts {
         }
 
         function parseTypeParameters(): NodeArray<TypeParameterDeclaration> {
-            if (token === TokenType.LessThanToken) {
-                return parseBracketedList(ParsingContext.TypeParameters, parseTypeParameter, TokenType.LessThanToken, TokenType.GreaterThanToken);
+            if (token === TokenType.lessThan) {
+                return parseBracketedList(ParsingContext.TypeParameters, parseTypeParameter, TokenType.lessThan, TokenType.greaterThan);
             }
         }
 
         function parseParameterType(): TypeNode {
-            if (parseOptional(TokenType.ColonToken)) {
+            if (parseOptional(TokenType.colon)) {
                 return parseType();
             }
 
@@ -2039,7 +2039,7 @@ namespace ts {
         }
 
         function isStartOfParameter(): boolean {
-            return token === TokenType.DotDotDotToken || isIdentifierOrPattern() || isModifierKind(token) || token === TokenType.AtToken || token === TokenType.ThisKeyword;
+            return token === TokenType.dotDotDot || isIdentifierOrPattern() || isModifierKind(token) || token === TokenType.at || token === TokenType.this;
         }
 
         function setModifiers(node: Node, modifiers: ModifiersArray) {
@@ -2051,7 +2051,7 @@ namespace ts {
 
         function parseParameter(): ParameterDeclaration {
             const node = <ParameterDeclaration>createNode(TokenType.Parameter);
-            if (token === TokenType.ThisKeyword) {
+            if (token === TokenType.this) {
                 node.name = createIdentifier(/*isIdentifier*/true, undefined);
                 node.type = parseParameterType();
                 return finishNode(node);
@@ -2059,7 +2059,7 @@ namespace ts {
 
             node.decorators = parseDecorators();
             setModifiers(node, parseModifiers());
-            node.dotDotDotToken = parseOptionalToken(TokenType.DotDotDotToken);
+            node.dotDotDotToken = parseOptionalToken(TokenType.dotDotDot);
 
             // FormalParameter [Yield,Await]:
             //      BindingElement[?Yield,?Await]
@@ -2076,7 +2076,7 @@ namespace ts {
                 nextToken();
             }
 
-            node.questionToken = parseOptionalToken(TokenType.QuestionToken);
+            node.questionToken = parseOptionalToken(TokenType.question);
             node.type = parseParameterType();
             node.initializer = parseBindingElementInitializer(/*inParameter*/ true);
 
@@ -2107,7 +2107,7 @@ namespace ts {
             requireCompleteParameterList: boolean,
             signature: SignatureDeclaration): void {
 
-            const returnTokenRequired = returnToken === TokenType.EqualsGreaterThanToken;
+            const returnTokenRequired = returnToken === TokenType.equalsGreaterThan;
             signature.typeParameters = parseTypeParameters();
             signature.parameters = parseParameterList(yieldContext, awaitContext, requireCompleteParameterList);
 
@@ -2134,7 +2134,7 @@ namespace ts {
             //
             // SingleNameBinding [Yield,Await]:
             //      BindingIdentifier[?Yield,?Await]Initializer [In, ?Yield,?Await] opt
-            if (parseExpected(TokenType.OpenParenToken)) {
+            if (parseExpected(TokenType.openParen)) {
                 const savedYieldContext = inYieldContext();
                 const savedAwaitContext = inAwaitContext();
 
@@ -2146,7 +2146,7 @@ namespace ts {
                 setYieldContext(savedYieldContext);
                 setAwaitContext(savedAwaitContext);
 
-                if (!parseExpected(TokenType.CloseParenToken) && requireCompleteParameterList) {
+                if (!parseExpected(TokenType.closeParen) && requireCompleteParameterList) {
                     // Caller insisted that we had to end with a )   We didn't.  So just return
                     // undefined here.
                     return undefined;
@@ -2164,7 +2164,7 @@ namespace ts {
         function parseTypeMemberSemicolon() {
             // We allow type members to be separated by commas or (possibly ASI) semicolons.
             // First check if it was a comma.  If so, we're done with the member.
-            if (parseOptional(TokenType.CommaToken)) {
+            if (parseOptional(TokenType.comma)) {
                 return;
             }
 
@@ -2175,15 +2175,15 @@ namespace ts {
         function parseSignatureMember(kind: TokenType): CallSignatureDeclaration | ConstructSignatureDeclaration {
             const node = <CallSignatureDeclaration | ConstructSignatureDeclaration>createNode(kind);
             if (kind === TokenType.ConstructSignature) {
-                parseExpected(TokenType.NewKeyword);
+                parseExpected(TokenType.new);
             }
-            fillSignature(TokenType.ColonToken, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, node);
+            fillSignature(TokenType.colon, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, node);
             parseTypeMemberSemicolon();
             return finishNode(node);
         }
 
         function isIndexSignature(): boolean {
-            if (token !== TokenType.OpenBracketToken) {
+            if (token !== TokenType.openBracket) {
                 return false;
             }
 
@@ -2208,7 +2208,7 @@ namespace ts {
             //   []
             //
             nextToken();
-            if (token === TokenType.DotDotDotToken || token === TokenType.CloseBracketToken) {
+            if (token === TokenType.dotDotDot || token === TokenType.closeBracket) {
                 return true;
             }
 
@@ -2229,27 +2229,27 @@ namespace ts {
             // A colon signifies a well formed indexer
             // A comma should be a badly formed indexer because comma expressions are not allowed
             // in computed properties.
-            if (token === TokenType.ColonToken || token === TokenType.CommaToken) {
+            if (token === TokenType.colon || token === TokenType.comma) {
                 return true;
             }
 
             // Question mark could be an indexer with an optional property,
             // or it could be a conditional expression in a computed property.
-            if (token !== TokenType.QuestionToken) {
+            if (token !== TokenType.question) {
                 return false;
             }
 
             // If any of the following tokens are after the question mark, it cannot
             // be a conditional expression, so treat it as an indexer.
             nextToken();
-            return token === TokenType.ColonToken || token === TokenType.CommaToken || token === TokenType.CloseBracketToken;
+            return token === TokenType.colon || token === TokenType.comma || token === TokenType.closeBracket;
         }
 
         function parseIndexSignatureDeclaration(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): IndexSignatureDeclaration {
             const node = <IndexSignatureDeclaration>createNode(TokenType.IndexSignature, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            node.parameters = parseBracketedList(ParsingContext.Parameters, parseParameter, TokenType.OpenBracketToken, TokenType.CloseBracketToken);
+            node.parameters = parseBracketedList(ParsingContext.Parameters, parseParameter, TokenType.openBracket, TokenType.closeBracket);
             node.type = parseTypeAnnotation();
             parseTypeMemberSemicolon();
             return finishNode(node);
@@ -2257,9 +2257,9 @@ namespace ts {
 
         function parsePropertyOrMethodSignature(fullStart: number, modifiers: ModifiersArray): PropertySignature | MethodSignature {
             const name = parsePropertyName();
-            const questionToken = parseOptionalToken(TokenType.QuestionToken);
+            const questionToken = parseOptionalToken(TokenType.question);
 
-            if (token === TokenType.OpenParenToken || token === TokenType.LessThanToken) {
+            if (token === TokenType.openParen || token === TokenType.lessThan) {
                 const method = <MethodSignature>createNode(TokenType.MethodSignature, fullStart);
                 setModifiers(method, modifiers);
                 method.name = name;
@@ -2267,7 +2267,7 @@ namespace ts {
 
                 // Method signatures don't exist in expression contexts.  So they have neither
                 // [Yield] nor [Await]
-                fillSignature(TokenType.ColonToken, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, method);
+                fillSignature(TokenType.colon, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, method);
                 parseTypeMemberSemicolon();
                 return finishNode(method);
             }
@@ -2278,7 +2278,7 @@ namespace ts {
                 property.questionToken = questionToken;
                 property.type = parseTypeAnnotation();
 
-                if (token === TokenType.EqualsToken) {
+                if (token === TokenType.equals) {
                     // Although type literal properties cannot not have initializers, we attempt
                     // to parse an initializer so we can report in the checker that an interface
                     // property or type literal property cannot have an initializer.
@@ -2293,7 +2293,7 @@ namespace ts {
         function isTypeMemberStart(): boolean {
             let idToken: TokenType;
             // Return true if we have the start of a signature member
-            if (token === TokenType.OpenParenToken || token === TokenType.LessThanToken) {
+            if (token === TokenType.openParen || token === TokenType.lessThan) {
                 return true;
             }
             // Eat up all modifiers, but hold on to the last one in case it is actually an identifier
@@ -2302,7 +2302,7 @@ namespace ts {
                 nextToken();
             }
             // Index signatures and computed property names are type members
-            if (token === TokenType.OpenBracketToken) {
+            if (token === TokenType.openBracket) {
                 return true;
             }
             // Try to get the first property-like token following all modifiers
@@ -2313,20 +2313,20 @@ namespace ts {
             // If we were able to get any potential identifier, check that it is
             // the start of a member declaration
             if (idToken) {
-                return token === TokenType.OpenParenToken ||
-                    token === TokenType.LessThanToken ||
-                    token === TokenType.QuestionToken ||
-                    token === TokenType.ColonToken ||
+                return token === TokenType.openParen ||
+                    token === TokenType.lessThan ||
+                    token === TokenType.question ||
+                    token === TokenType.colon ||
                     canParseSemicolon();
             }
             return false;
         }
 
         function parseTypeMember(): TypeElement {
-            if (token === TokenType.OpenParenToken || token === TokenType.LessThanToken) {
+            if (token === TokenType.openParen || token === TokenType.lessThan) {
                 return parseSignatureMember(TokenType.CallSignature);
             }
-            if (token === TokenType.NewKeyword && lookAhead(isStartOfConstructSignature)) {
+            if (token === TokenType.new && lookAhead(isStartOfConstructSignature)) {
                 return parseSignatureMember(TokenType.ConstructSignature);
             }
             const fullStart = getNodePos();
@@ -2339,7 +2339,7 @@ namespace ts {
 
         function isStartOfConstructSignature() {
             nextToken();
-            return token === TokenType.OpenParenToken || token === TokenType.LessThanToken;
+            return token === TokenType.openParen || token === TokenType.lessThan;
         }
 
         function parseTypeLiteral(): TypeLiteralNode {
@@ -2350,9 +2350,9 @@ namespace ts {
 
         function parseObjectTypeMembers(): NodeArray<TypeElement> {
             let members: NodeArray<TypeElement>;
-            if (parseExpected(TokenType.OpenBraceToken)) {
+            if (parseExpected(TokenType.openBrace)) {
                 members = parseList(ParsingContext.TypeMembers, parseTypeMember);
-                parseExpected(TokenType.CloseBraceToken);
+                parseExpected(TokenType.closeBrace);
             }
             else {
                 members = createMissingList<TypeElement>();
@@ -2363,65 +2363,65 @@ namespace ts {
 
         function parseTupleType(): TupleTypeNode {
             const node = <TupleTypeNode>createNode(TokenType.TupleType);
-            node.elementTypes = parseBracketedList(ParsingContext.TupleElementTypes, parseType, TokenType.OpenBracketToken, TokenType.CloseBracketToken);
+            node.elementTypes = parseBracketedList(ParsingContext.TupleElementTypes, parseType, TokenType.openBracket, TokenType.closeBracket);
             return finishNode(node);
         }
 
         function parseParenthesizedType(): ParenthesizedTypeNode {
             const node = <ParenthesizedTypeNode>createNode(TokenType.ParenthesizedType);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.openParen);
             node.type = parseType();
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             return finishNode(node);
         }
 
         function parseFunctionOrConstructorType(kind: TokenType): FunctionOrConstructorTypeNode {
             const node = <FunctionOrConstructorTypeNode>createNode(kind);
             if (kind === TokenType.ConstructorType) {
-                parseExpected(TokenType.NewKeyword);
+                parseExpected(TokenType.new);
             }
-            fillSignature(TokenType.EqualsGreaterThanToken, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, node);
+            fillSignature(TokenType.equalsGreaterThan, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, node);
             return finishNode(node);
         }
 
         function parseKeywordAndNoDot(): TypeNode {
             const node = parseTokenNode<TypeNode>();
-            return token === TokenType.DotToken ? undefined : node;
+            return token === TokenType.dot ? undefined : node;
         }
 
         function parseNonArrayType(): TypeNode {
             switch (token) {
-                case TokenType.AnyKeyword:
-                case TokenType.StringKeyword:
-                case TokenType.NumberKeyword:
-                case TokenType.BooleanKeyword:
-                case TokenType.SymbolKeyword:
-                case TokenType.UndefinedKeyword:
-                case TokenType.NeverKeyword:
+                case TokenType.any:
+                case TokenType.string:
+                case TokenType.number:
+                case TokenType.boolean:
+                case TokenType.symbol:
+                case TokenType.undefined:
+                case TokenType.never:
                     // If these are followed by a dot, then parse these out as a dotted type reference instead.
                     const node = tryParse(parseKeywordAndNoDot);
                     return node || parseTypeReference();
                 case TokenType.StringLiteral:
                     return parseStringLiteralTypeNode();
-                case TokenType.VoidKeyword:
-                case TokenType.NullKeyword:
+                case TokenType.void:
+                case TokenType.null:
                     return parseTokenNode<TypeNode>();
-                case TokenType.ThisKeyword: {
+                case TokenType.this: {
                     const thisKeyword = parseThisTypeNode();
-                    if (token === TokenType.IsKeyword && !scanner.hasPrecedingLineBreak()) {
+                    if (token === TokenType.is && !scanner.hasPrecedingLineBreak()) {
                         return parseThisTypePredicate(thisKeyword);
                     }
                     else {
                         return thisKeyword;
                     }
                 }
-                case TokenType.TypeOfKeyword:
+                case TokenType.typeOf:
                     return parseTypeQuery();
-                case TokenType.OpenBraceToken:
+                case TokenType.openBrace:
                     return parseTypeLiteral();
-                case TokenType.OpenBracketToken:
+                case TokenType.openBracket:
                     return parseTupleType();
-                case TokenType.OpenParenToken:
+                case TokenType.openParen:
                     return parseParenthesizedType();
                 default:
                     return parseTypeReference();
@@ -2430,24 +2430,24 @@ namespace ts {
 
         function isStartOfType(): boolean {
             switch (token) {
-                case TokenType.AnyKeyword:
-                case TokenType.StringKeyword:
-                case TokenType.NumberKeyword:
-                case TokenType.BooleanKeyword:
-                case TokenType.SymbolKeyword:
-                case TokenType.VoidKeyword:
-                case TokenType.UndefinedKeyword:
-                case TokenType.NullKeyword:
-                case TokenType.ThisKeyword:
-                case TokenType.TypeOfKeyword:
-                case TokenType.NeverKeyword:
-                case TokenType.OpenBraceToken:
-                case TokenType.OpenBracketToken:
-                case TokenType.LessThanToken:
-                case TokenType.NewKeyword:
+                case TokenType.any:
+                case TokenType.string:
+                case TokenType.number:
+                case TokenType.boolean:
+                case TokenType.symbol:
+                case TokenType.void:
+                case TokenType.undefined:
+                case TokenType.null:
+                case TokenType.this:
+                case TokenType.typeOf:
+                case TokenType.never:
+                case TokenType.openBrace:
+                case TokenType.openBracket:
+                case TokenType.lessThan:
+                case TokenType.new:
                 case TokenType.StringLiteral:
                     return true;
-                case TokenType.OpenParenToken:
+                case TokenType.openParen:
                     // Only consider '(' the start of a type if followed by ')', '...', an identifier, a modifier,
                     // or something that starts a type. We don't want to consider things like '(1)' a type.
                     return lookAhead(isStartOfParenthesizedOrFunctionType);
@@ -2458,13 +2458,13 @@ namespace ts {
 
         function isStartOfParenthesizedOrFunctionType() {
             nextToken();
-            return token === TokenType.CloseParenToken || isStartOfParameter() || isStartOfType();
+            return token === TokenType.closeParen || isStartOfParameter() || isStartOfType();
         }
 
         function parseArrayTypeOrHigher(): TypeNode {
             let type = parseNonArrayType();
-            while (!scanner.hasPrecedingLineBreak() && parseOptional(TokenType.OpenBracketToken)) {
-                parseExpected(TokenType.CloseBracketToken);
+            while (!scanner.hasPrecedingLineBreak() && parseOptional(TokenType.openBracket)) {
+                parseExpected(TokenType.closeBracket);
                 const node = <ArrayTypeNode>createNode(TokenType.ArrayType, type.pos);
                 node.elementType = type;
                 type = finishNode(node);
@@ -2489,18 +2489,18 @@ namespace ts {
         }
 
         function parseIntersectionTypeOrHigher(): TypeNode {
-            return parseUnionOrIntersectionType(TokenType.IntersectionType, parseArrayTypeOrHigher, TokenType.AmpersandToken);
+            return parseUnionOrIntersectionType(TokenType.IntersectionType, parseArrayTypeOrHigher, TokenType.ampersand);
         }
 
         function parseUnionTypeOrHigher(): TypeNode {
-            return parseUnionOrIntersectionType(TokenType.UnionType, parseIntersectionTypeOrHigher, TokenType.BarToken);
+            return parseUnionOrIntersectionType(TokenType.UnionType, parseIntersectionTypeOrHigher, TokenType.bar);
         }
 
         function isStartOfFunctionType(): boolean {
-            if (token === TokenType.LessThanToken) {
+            if (token === TokenType.lessThan) {
                 return true;
             }
-            return token === TokenType.OpenParenToken && lookAhead(isUnambiguouslyStartOfFunctionType);
+            return token === TokenType.openParen && lookAhead(isUnambiguouslyStartOfFunctionType);
         }
 
         function skipParameterStart(): boolean {
@@ -2508,11 +2508,11 @@ namespace ts {
                 // Skip modifiers
                 parseModifiers();
             }
-            if (isIdentifier() || token === TokenType.ThisKeyword) {
+            if (isIdentifier() || token === TokenType.this) {
                 nextToken();
                 return true;
             }
-            if (token === TokenType.OpenBracketToken || token === TokenType.OpenBraceToken) {
+            if (token === TokenType.openBracket || token === TokenType.openBrace) {
                 // Return true if we can parse an array or object binding pattern with no errors
                 const previousErrorCount = parseDiagnostics.length;
                 parseIdentifierOrPattern();
@@ -2523,7 +2523,7 @@ namespace ts {
 
         function isUnambiguouslyStartOfFunctionType() {
             nextToken();
-            if (token === TokenType.CloseParenToken || token === TokenType.DotDotDotToken) {
+            if (token === TokenType.closeParen || token === TokenType.dotDotDot) {
                 // ( )
                 // ( ...
                 return true;
@@ -2531,17 +2531,17 @@ namespace ts {
             if (skipParameterStart()) {
                 // We successfully skipped modifiers (if any) and an identifier or binding pattern,
                 // now see if we have something that indicates a parameter declaration
-                if (token === TokenType.ColonToken || token === TokenType.CommaToken ||
-                    token === TokenType.QuestionToken || token === TokenType.EqualsToken) {
+                if (token === TokenType.colon || token === TokenType.comma ||
+                    token === TokenType.question || token === TokenType.equals) {
                     // ( xxx :
                     // ( xxx ,
                     // ( xxx ?
                     // ( xxx =
                     return true;
                 }
-                if (token === TokenType.CloseParenToken) {
+                if (token === TokenType.closeParen) {
                     nextToken();
-                    if (token === TokenType.EqualsGreaterThanToken) {
+                    if (token === TokenType.equalsGreaterThan) {
                         // ( xxx ) =>
                         return true;
                     }
@@ -2566,7 +2566,7 @@ namespace ts {
 
         function parseTypePredicatePrefix() {
             const id = parseIdentifier();
-            if (token === TokenType.IsKeyword && !scanner.hasPrecedingLineBreak()) {
+            if (token === TokenType.is && !scanner.hasPrecedingLineBreak()) {
                 nextToken();
                 return id;
             }
@@ -2582,36 +2582,36 @@ namespace ts {
             if (isStartOfFunctionType()) {
                 return parseFunctionOrConstructorType(TokenType.FunctionType);
             }
-            if (token === TokenType.NewKeyword) {
+            if (token === TokenType.new) {
                 return parseFunctionOrConstructorType(TokenType.ConstructorType);
             }
             return parseUnionTypeOrHigher();
         }
 
         function parseTypeAnnotation(): TypeNode {
-            return parseOptional(TokenType.ColonToken) ? parseType() : undefined;
+            return parseOptional(TokenType.colon) ? parseType() : undefined;
         }
 
         // EXPRESSIONS
         function isStartOfLeftHandSideExpression(): boolean {
             switch (token) {
-                case TokenType.ThisKeyword:
-                case TokenType.SuperKeyword:
-                case TokenType.NullKeyword:
-                case TokenType.TrueKeyword:
-                case TokenType.FalseKeyword:
+                case TokenType.this:
+                case TokenType.super:
+                case TokenType.null:
+                case TokenType.true:
+                case TokenType.false:
                 case TokenType.NumericLiteral:
                 case TokenType.StringLiteral:
                 case TokenType.NoSubstitutionTemplateLiteral:
                 case TokenType.TemplateHead:
-                case TokenType.OpenParenToken:
-                case TokenType.OpenBracketToken:
-                case TokenType.OpenBraceToken:
-                case TokenType.FunctionKeyword:
-                case TokenType.ClassKeyword:
-                case TokenType.NewKeyword:
-                case TokenType.SlashToken:
-                case TokenType.SlashEqualsToken:
+                case TokenType.openParen:
+                case TokenType.openBracket:
+                case TokenType.openBrace:
+                case TokenType.function:
+                case TokenType.class:
+                case TokenType.new:
+                case TokenType.slash:
+                case TokenType.slashEquals:
                 case TokenType.Identifier:
                     return true;
                 default:
@@ -2625,18 +2625,18 @@ namespace ts {
             }
 
             switch (token) {
-                case TokenType.PlusToken:
-                case TokenType.MinusToken:
-                case TokenType.TildeToken:
-                case TokenType.ExclamationToken:
-                case TokenType.DeleteKeyword:
-                case TokenType.TypeOfKeyword:
-                case TokenType.VoidKeyword:
-                case TokenType.PlusPlusToken:
-                case TokenType.MinusMinusToken:
-                case TokenType.LessThanToken:
-                case TokenType.AwaitKeyword:
-                case TokenType.YieldKeyword:
+                case TokenType.plus:
+                case TokenType.minus:
+                case TokenType.tilde:
+                case TokenType.exclamation:
+                case TokenType.delete:
+                case TokenType.typeOf:
+                case TokenType.void:
+                case TokenType.plusPlus:
+                case TokenType.minusMinus:
+                case TokenType.lessThan:
+                case TokenType.await:
+                case TokenType.yield:
                     // Yield/await always starts an expression.  Either it is an identifier (in which case
                     // it is definitely an expression).  Or it's a keyword (either because we're in
                     // a generator or async function, or in strict mode (or both)) and it started a yield or await expression.
@@ -2656,10 +2656,10 @@ namespace ts {
 
         function isStartOfExpressionStatement(): boolean {
             // As per the grammar, none of '{' or 'function' or 'class' can start an expression statement.
-            return token !== TokenType.OpenBraceToken &&
-                token !== TokenType.FunctionKeyword &&
-                token !== TokenType.ClassKeyword &&
-                token !== TokenType.AtToken &&
+            return token !== TokenType.openBrace &&
+                token !== TokenType.function &&
+                token !== TokenType.class &&
+                token !== TokenType.at &&
                 isStartOfExpression();
         }
 
@@ -2676,7 +2676,7 @@ namespace ts {
 
             let expr = parseAssignmentExpressionOrHigher();
             let operatorToken: Node;
-            while ((operatorToken = parseOptionalToken(TokenType.CommaToken))) {
+            while ((operatorToken = parseOptionalToken(TokenType.comma))) {
                 expr = makeBinaryExpression(expr, operatorToken, parseAssignmentExpressionOrHigher());
             }
 
@@ -2687,7 +2687,7 @@ namespace ts {
         }
 
         function parseInitializer(inParameter: boolean): Expression {
-            if (token !== TokenType.EqualsToken) {
+            if (token !== TokenType.equals) {
                 // It's not uncommon during typing for the user to miss writing the '=' token.  Check if
                 // there is no newline after the last token and if we're on an expression.  If so, parse
                 // this as an equals-value clause with a missing equals.
@@ -2696,7 +2696,7 @@ namespace ts {
                 // it's more likely that a { would be a allowed (as an object literal).  While this
                 // is also allowed for parameters, the risk is that we consume the { as an object
                 // literal when it really will be for the block following the parameter.
-                if (scanner.hasPrecedingLineBreak() || (inParameter && token === TokenType.OpenBraceToken) || !isStartOfExpression()) {
+                if (scanner.hasPrecedingLineBreak() || (inParameter && token === TokenType.openBrace) || !isStartOfExpression()) {
                     // preceding line break, open brace in a parameter (likely a function body) or current token is not an expression -
                     // do not try to parse initializer
                     return undefined;
@@ -2706,7 +2706,7 @@ namespace ts {
             // Initializer[In, Yield] :
             //     = AssignmentExpression[?In, ?Yield]
 
-            parseExpected(TokenType.EqualsToken);
+            parseExpected(TokenType.equals);
             return parseAssignmentExpressionOrHigher();
         }
 
@@ -2757,7 +2757,7 @@ namespace ts {
             // To avoid a look-ahead, we did not handle the case of an arrow function with a single un-parenthesized
             // parameter ('x => ...') above. We handle it here by checking if the parsed expression was a single
             // identifier and the current token is an arrow.
-            if (expr.kind === TokenType.Identifier && token === TokenType.EqualsGreaterThanToken) {
+            if (expr.kind === TokenType.Identifier && token === TokenType.equalsGreaterThan) {
                 return parseSimpleArrowFunctionExpression(<Identifier>expr);
             }
 
@@ -2776,7 +2776,7 @@ namespace ts {
         }
 
         function isYieldExpression(): boolean {
-            if (token === TokenType.YieldKeyword) {
+            if (token === TokenType.yield) {
                 // If we have a 'yield' keyword, and this is a context where yield expressions are
                 // allowed, then definitely parse out a yield expression.
                 if (inYieldContext()) {
@@ -2818,8 +2818,8 @@ namespace ts {
             nextToken();
 
             if (!scanner.hasPrecedingLineBreak() &&
-                (token === TokenType.AsteriskToken || isStartOfExpression())) {
-                node.asteriskToken = parseOptionalToken(TokenType.AsteriskToken);
+                (token === TokenType.asterisk || isStartOfExpression())) {
+                node.asteriskToken = parseOptionalToken(TokenType.asterisk);
                 node.expression = parseAssignmentExpressionOrHigher();
                 return finishNode(node);
             }
@@ -2831,7 +2831,7 @@ namespace ts {
         }
 
         function parseSimpleArrowFunctionExpression(identifier: Identifier, asyncModifier?: ModifiersArray): ArrowFunction {
-            Debug.assert(token === TokenType.EqualsGreaterThanToken, "parseSimpleArrowFunctionExpression should only have been called if we had a =>");
+            Debug.assert(token === TokenType.equalsGreaterThan, "parseSimpleArrowFunctionExpression should only have been called if we had a =>");
 
             let node: ArrowFunction;
             if (asyncModifier) {
@@ -2850,7 +2850,7 @@ namespace ts {
             node.parameters.pos = parameter.pos;
             node.parameters.end = parameter.end;
 
-            node.equalsGreaterThanToken = parseExpectedToken(TokenType.EqualsGreaterThanToken, /*reportAtCurrentPosition*/ false, Diagnostics._0_expected, "=>");
+            node.equalsGreaterThanToken = parseExpectedToken(TokenType.equalsGreaterThan, /*reportAtCurrentPosition*/ false, Diagnostics._0_expected, "=>");
             node.body = parseArrowFunctionExpressionBody(/*isAsync*/ !!asyncModifier);
 
             return finishNode(node);
@@ -2881,8 +2881,8 @@ namespace ts {
             // If we have an arrow, then try to parse the body. Even if not, try to parse if we
             // have an opening brace, just in case we're in an error state.
             const lastToken = token;
-            arrowFunction.equalsGreaterThanToken = parseExpectedToken(TokenType.EqualsGreaterThanToken, /*reportAtCurrentPosition*/false, Diagnostics._0_expected, "=>");
-            arrowFunction.body = (lastToken === TokenType.EqualsGreaterThanToken || lastToken === TokenType.OpenBraceToken)
+            arrowFunction.equalsGreaterThanToken = parseExpectedToken(TokenType.equalsGreaterThan, /*reportAtCurrentPosition*/false, Diagnostics._0_expected, "=>");
+            arrowFunction.body = (lastToken === TokenType.equalsGreaterThan || lastToken === TokenType.openBrace)
                 ? parseArrowFunctionExpressionBody(isAsync)
                 : parseIdentifier();
 
@@ -2894,11 +2894,11 @@ namespace ts {
         //  Unknown     -> There *might* be a parenthesized arrow function here.
         //                 Speculatively look ahead to be sure, and rollback if not.
         function isParenthesizedArrowFunctionExpression(): Tristate {
-            if (token === TokenType.OpenParenToken || token === TokenType.LessThanToken || token === TokenType.AsyncKeyword) {
+            if (token === TokenType.openParen || token === TokenType.lessThan || token === TokenType.async) {
                 return lookAhead(isParenthesizedArrowFunctionExpressionWorker);
             }
 
-            if (token === TokenType.EqualsGreaterThanToken) {
+            if (token === TokenType.equalsGreaterThan) {
                 // ERROR RECOVERY TWEAK:
                 // If we see a standalone => try to parse it as an arrow function expression as that's
                 // likely what the user intended to write.
@@ -2909,12 +2909,12 @@ namespace ts {
         }
 
         function isParenthesizedArrowFunctionExpressionWorker() {
-            if (token === TokenType.AsyncKeyword) {
+            if (token === TokenType.async) {
                 nextToken();
                 if (scanner.hasPrecedingLineBreak()) {
                     return Tristate.False;
                 }
-                if (token !== TokenType.OpenParenToken && token !== TokenType.LessThanToken) {
+                if (token !== TokenType.openParen && token !== TokenType.lessThan) {
                     return Tristate.False;
                 }
             }
@@ -2922,17 +2922,17 @@ namespace ts {
             const first = token;
             const second = nextToken();
 
-            if (first === TokenType.OpenParenToken) {
-                if (second === TokenType.CloseParenToken) {
+            if (first === TokenType.openParen) {
+                if (second === TokenType.closeParen) {
                     // Simple cases: "() =>", "(): ", and  "() {".
                     // This is an arrow function with no parameters.
                     // The last one is not actually an arrow function,
                     // but this is probably what the user intended.
                     const third = nextToken();
                     switch (third) {
-                        case TokenType.EqualsGreaterThanToken:
-                        case TokenType.ColonToken:
-                        case TokenType.OpenBraceToken:
+                        case TokenType.equalsGreaterThan:
+                        case TokenType.colon:
+                        case TokenType.openBrace:
                             return Tristate.True;
                         default:
                             return Tristate.False;
@@ -2945,13 +2945,13 @@ namespace ts {
                 //      ({ x }) => { }
                 //      ([ x ])
                 //      ({ x })
-                if (second === TokenType.OpenBracketToken || second === TokenType.OpenBraceToken) {
+                if (second === TokenType.openBracket || second === TokenType.openBrace) {
                     return Tristate.Unknown;
                 }
 
                 // Simple case: "(..."
                 // This is an arrow function with a rest parameter.
-                if (second === TokenType.DotDotDotToken) {
+                if (second === TokenType.dotDotDot) {
                     return Tristate.True;
                 }
 
@@ -2966,7 +2966,7 @@ namespace ts {
 
                 // If we have something like "(a:", then we must have a
                 // type-annotated parameter in an arrow function expression.
-                if (nextToken() === TokenType.ColonToken) {
+                if (nextToken() === TokenType.colon) {
                     return Tristate.True;
                 }
 
@@ -2975,7 +2975,7 @@ namespace ts {
                 return Tristate.Unknown;
             }
             else {
-                Debug.assert(first === TokenType.LessThanToken);
+                Debug.assert(first === TokenType.lessThan);
 
                 // If we have "<" not followed by an identifier,
                 // then this definitely is not an arrow function.
@@ -2987,17 +2987,17 @@ namespace ts {
                 if (sourceFile.languageVariant === LanguageVariant.JSX) {
                     const isArrowFunctionInJsx = lookAhead(() => {
                         const third = nextToken();
-                        if (third === TokenType.ExtendsKeyword) {
+                        if (third === TokenType.extends) {
                             const fourth = nextToken();
                             switch (fourth) {
-                                case TokenType.EqualsToken:
-                                case TokenType.GreaterThanToken:
+                                case TokenType.equals:
+                                case TokenType.greaterThan:
                                     return false;
                                 default:
                                     return true;
                             }
                         }
-                        else if (third === TokenType.CommaToken) {
+                        else if (third === TokenType.comma) {
                             return true;
                         }
                         return false;
@@ -3021,7 +3021,7 @@ namespace ts {
 
         function tryParseAsyncSimpleArrowFunctionExpression(): ArrowFunction {
             // We do a check here so that we won't be doing unnecessarily call to "lookAhead"
-            if (token === TokenType.AsyncKeyword) {
+            if (token === TokenType.async) {
                 const isUnParenthesizedAsyncArrowFunction = lookAhead(isUnParenthesizedAsyncArrowFunctionWorker);
                 if (isUnParenthesizedAsyncArrowFunction === Tristate.True) {
                     const asyncModifier = parseModifiersForArrowFunction();
@@ -3036,16 +3036,16 @@ namespace ts {
             // AsyncArrowFunctionExpression:
             //      1) async[no LineTerminator here]AsyncArrowBindingIdentifier[?Yield][no LineTerminator here]=>AsyncConciseBody[?In]
             //      2) CoverCallExpressionAndAsyncArrowHead[?Yield, ?Await][no LineTerminator here]=>AsyncConciseBody[?In]
-            if (token === TokenType.AsyncKeyword) {
+            if (token === TokenType.async) {
                 nextToken();
                 // If the "async" is followed by "=>" token then it is not a begining of an async arrow-function
                 // but instead a simple arrow-function which will be parsed inside "parseAssignmentExpressionOrHigher"
-                if (scanner.hasPrecedingLineBreak() || token === TokenType.EqualsGreaterThanToken) {
+                if (scanner.hasPrecedingLineBreak() || token === TokenType.equalsGreaterThan) {
                     return Tristate.False;
                 }
                 // Check for un-parenthesized AsyncArrowFunction
                 const expr = parseBinaryExpressionOrHigher(/*precedence*/ 0);
-                if (!scanner.hasPrecedingLineBreak() && expr.kind === TokenType.Identifier && token === TokenType.EqualsGreaterThanToken) {
+                if (!scanner.hasPrecedingLineBreak() && expr.kind === TokenType.Identifier && token === TokenType.equalsGreaterThan) {
                     return Tristate.True;
                 }
             }
@@ -3065,7 +3065,7 @@ namespace ts {
             // a => (b => c)
             // And think that "(b =>" was actually a parenthesized arrow function with a missing
             // close paren.
-            fillSignature(TokenType.ColonToken, /*yieldContext*/ false, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ !allowAmbiguity, node);
+            fillSignature(TokenType.colon, /*yieldContext*/ false, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ !allowAmbiguity, node);
 
             // If we couldn't get parameters, we definitely could not parse out an arrow function.
             if (!node.parameters) {
@@ -3080,7 +3080,7 @@ namespace ts {
             //  - "a ? (b): c" will have "(b):" parsed as a signature with a return type annotation.
             //
             // So we need just a bit of lookahead to ensure that it can only be a signature.
-            if (!allowAmbiguity && token !== TokenType.EqualsGreaterThanToken && token !== TokenType.OpenBraceToken) {
+            if (!allowAmbiguity && token !== TokenType.equalsGreaterThan && token !== TokenType.openBrace) {
                 // Returning undefined here will cause our caller to rewind to where we started from.
                 return undefined;
             }
@@ -3089,13 +3089,13 @@ namespace ts {
         }
 
         function parseArrowFunctionExpressionBody(isAsync: boolean): Block | Expression {
-            if (token === TokenType.OpenBraceToken) {
+            if (token === TokenType.openBrace) {
                 return parseFunctionBlock(/*allowYield*/ false, /*allowAwait*/ isAsync, /*ignoreMissingOpenBrace*/ false);
             }
 
-            if (token !== TokenType.SemicolonToken &&
-                token !== TokenType.FunctionKeyword &&
-                token !== TokenType.ClassKeyword &&
+            if (token !== TokenType.semicolon &&
+                token !== TokenType.function &&
+                token !== TokenType.class &&
                 isStartOfStatement() &&
                 !isStartOfExpressionStatement()) {
                 // Check if we got a plain statement (i.e. no expression-statements, no function/class expressions/declarations)
@@ -3122,7 +3122,7 @@ namespace ts {
 
         function parseConditionalExpressionRest(leftOperand: Expression): Expression {
             // Note: we are passed in an expression which was produced from parseBinaryExpressionOrHigher.
-            const questionToken = parseOptionalToken(TokenType.QuestionToken);
+            const questionToken = parseOptionalToken(TokenType.question);
             if (!questionToken) {
                 return leftOperand;
             }
@@ -3133,8 +3133,8 @@ namespace ts {
             node.condition = leftOperand;
             node.questionToken = questionToken;
             node.whenTrue = doOutsideOfContext(disallowInAndDecoratorContext, parseAssignmentExpressionOrHigher);
-            node.colonToken = parseExpectedToken(TokenType.ColonToken, /*reportAtCurrentPosition*/ false,
-                Diagnostics._0_expected, tokenToString(TokenType.ColonToken));
+            node.colonToken = parseExpectedToken(TokenType.colon, /*reportAtCurrentPosition*/ false,
+                Diagnostics._0_expected, tokenToString(TokenType.colon));
             node.whenFalse = parseAssignmentExpressionOrHigher();
             return finishNode(node);
         }
@@ -3145,7 +3145,7 @@ namespace ts {
         }
 
         function isInOrOfKeyword(t: TokenType) {
-            return t === TokenType.InKeyword || t === TokenType.OfKeyword;
+            return t === TokenType.in || t === TokenType.of;
         }
 
         function parseBinaryExpressionRest(precedence: number, leftOperand: Expression): Expression {
@@ -3177,7 +3177,7 @@ namespace ts {
                 //            ^^token; leftOperand = b. Return b ** c to the caller as a rightOperand
                 //      a ** b - c
                 //             ^token; leftOperand = b. Return b to the caller as a rightOperand
-                const consumeCurrentOperator = token === TokenType.AsteriskAsteriskToken ?
+                const consumeCurrentOperator = token === TokenType.asteriskAsterisk ?
                     newPrecedence >= precedence :
                     newPrecedence > precedence;
 
@@ -3185,11 +3185,11 @@ namespace ts {
                     break;
                 }
 
-                if (token === TokenType.InKeyword && inDisallowInContext()) {
+                if (token === TokenType.in && inDisallowInContext()) {
                     break;
                 }
 
-                if (token === TokenType.AsKeyword) {
+                if (token === TokenType.as) {
                     // Make sure we *do* perform ASI for constructs like this:
                     //    var x = foo
                     //    as (Bar)
@@ -3212,7 +3212,7 @@ namespace ts {
         }
 
         function isBinaryOperator() {
-            if (inDisallowInContext() && token === TokenType.InKeyword) {
+            if (inDisallowInContext() && token === TokenType.in) {
                 return false;
             }
 
@@ -3221,41 +3221,41 @@ namespace ts {
 
         function getBinaryOperatorPrecedence(): number {
             switch (token) {
-                case TokenType.BarBarToken:
+                case TokenType.barBar:
                     return 1;
-                case TokenType.AmpersandAmpersandToken:
+                case TokenType.ampersandAmpersand:
                     return 2;
-                case TokenType.BarToken:
+                case TokenType.bar:
                     return 3;
-                case TokenType.CaretToken:
+                case TokenType.caret:
                     return 4;
-                case TokenType.AmpersandToken:
+                case TokenType.ampersand:
                     return 5;
-                case TokenType.EqualsEqualsToken:
-                case TokenType.ExclamationEqualsToken:
-                case TokenType.EqualsEqualsEqualsToken:
-                case TokenType.ExclamationEqualsEqualsToken:
+                case TokenType.equalsEquals:
+                case TokenType.exclamationEquals:
+                case TokenType.equalsEqualsEquals:
+                case TokenType.exclamationEqualsEquals:
                     return 6;
-                case TokenType.LessThanToken:
-                case TokenType.GreaterThanToken:
-                case TokenType.LessThanEqualsToken:
-                case TokenType.GreaterThanEqualsToken:
-                case TokenType.InstanceOfKeyword:
-                case TokenType.InKeyword:
-                case TokenType.AsKeyword:
+                case TokenType.lessThan:
+                case TokenType.greaterThan:
+                case TokenType.lessThanEquals:
+                case TokenType.greaterThanEquals:
+                case TokenType.instanceOf:
+                case TokenType.in:
+                case TokenType.as:
                     return 7;
-                case TokenType.LessThanLessThanToken:
-                case TokenType.GreaterThanGreaterThanToken:
-                case TokenType.GreaterThanGreaterThanGreaterThanToken:
+                case TokenType.lessThanLessThan:
+                case TokenType.greaterThanGreaterThan:
+                case TokenType.greaterThanGreaterThanGreaterThan:
                     return 8;
-                case TokenType.PlusToken:
-                case TokenType.MinusToken:
+                case TokenType.plus:
+                case TokenType.minus:
                     return 9;
-                case TokenType.AsteriskToken:
-                case TokenType.SlashToken:
-                case TokenType.PercentToken:
+                case TokenType.asterisk:
+                case TokenType.slash:
+                case TokenType.percent:
                     return 10;
-                case TokenType.AsteriskAsteriskToken:
+                case TokenType.asteriskAsterisk:
                     return 11;
             }
 
@@ -3310,7 +3310,7 @@ namespace ts {
         }
 
         function isAwaitExpression(): boolean {
-            if (token === TokenType.AwaitKeyword) {
+            if (token === TokenType.await) {
                 if (inAwaitContext()) {
                     return true;
                 }
@@ -3343,14 +3343,14 @@ namespace ts {
 
             if (isIncrementExpression()) {
                 const incrementExpression = parseIncrementExpression();
-                return token === TokenType.AsteriskAsteriskToken ?
+                return token === TokenType.asteriskAsterisk ?
                     <BinaryExpression>parseBinaryExpressionRest(getBinaryOperatorPrecedence(), incrementExpression) :
                     incrementExpression;
             }
 
             const unaryOperator = token;
             const simpleUnaryExpression = parseSimpleUnaryExpression();
-            if (token === TokenType.AsteriskAsteriskToken) {
+            if (token === TokenType.asteriskAsterisk) {
                 const start = skipTrivia(sourceText, simpleUnaryExpression.pos);
                 if (simpleUnaryExpression.kind === TokenType.TypeAssertionExpression) {
                     parseErrorAtPosition(start, simpleUnaryExpression.end - start, Diagnostics.A_type_assertion_expression_is_not_allowed_in_the_left_hand_side_of_an_exponentiation_expression_Consider_enclosing_the_expression_in_parentheses);
@@ -3377,18 +3377,18 @@ namespace ts {
          */
         function parseSimpleUnaryExpression(): UnaryExpression {
             switch (token) {
-                case TokenType.PlusToken:
-                case TokenType.MinusToken:
-                case TokenType.TildeToken:
-                case TokenType.ExclamationToken:
+                case TokenType.plus:
+                case TokenType.minus:
+                case TokenType.tilde:
+                case TokenType.exclamation:
                     return parsePrefixUnaryExpression();
-                case TokenType.DeleteKeyword:
+                case TokenType.delete:
                     return parseDeleteExpression();
-                case TokenType.TypeOfKeyword:
+                case TokenType.typeOf:
                     return parseTypeOfExpression();
-                case TokenType.VoidKeyword:
+                case TokenType.void:
                     return parseVoidExpression();
-                case TokenType.LessThanToken:
+                case TokenType.lessThan:
                     // This is modified UnaryExpression grammar in TypeScript
                     //  UnaryExpression (modified):
                     //      < type > UnaryExpression
@@ -3412,15 +3412,15 @@ namespace ts {
             // This function is called inside parseUnaryExpression to decide
             // whether to call parseSimpleUnaryExpression or call parseIncrementExpression directly
             switch (token) {
-                case TokenType.PlusToken:
-                case TokenType.MinusToken:
-                case TokenType.TildeToken:
-                case TokenType.ExclamationToken:
-                case TokenType.DeleteKeyword:
-                case TokenType.TypeOfKeyword:
-                case TokenType.VoidKeyword:
+                case TokenType.plus:
+                case TokenType.minus:
+                case TokenType.tilde:
+                case TokenType.exclamation:
+                case TokenType.delete:
+                case TokenType.typeOf:
+                case TokenType.void:
                     return false;
-                case TokenType.LessThanToken:
+                case TokenType.lessThan:
                     // If we are not in JSX context, we are parsing TypeAssertion which is an UnaryExpression
                     if (sourceFile.languageVariant !== LanguageVariant.JSX) {
                         return false;
@@ -3444,14 +3444,14 @@ namespace ts {
          * In TypeScript (2), (3) are parsed as PostfixUnaryExpression. (4), (5) are parsed as PrefixUnaryExpression
          */
         function parseIncrementExpression(): IncrementExpression {
-            if (token === TokenType.PlusPlusToken || token === TokenType.MinusMinusToken) {
+            if (token === TokenType.plusPlus || token === TokenType.minusMinus) {
                 const node = <PrefixUnaryExpression>createNode(TokenType.PrefixUnaryExpression);
                 node.operator = token;
                 nextToken();
                 node.operand = parseLeftHandSideExpressionOrHigher();
                 return finishNode(node);
             }
-            else if (sourceFile.languageVariant === LanguageVariant.JSX && token === TokenType.LessThanToken && lookAhead(nextTokenIsIdentifierOrKeyword)) {
+            else if (sourceFile.languageVariant === LanguageVariant.JSX && token === TokenType.lessThan && lookAhead(nextTokenIsIdentifierOrKeyword)) {
                 // JSXElement is part of primaryExpression
                 return parseJsxElementOrSelfClosingElement(/*inExpressionContext*/ true);
             }
@@ -3459,7 +3459,7 @@ namespace ts {
             const expression = parseLeftHandSideExpressionOrHigher();
 
             Debug.assert(isLeftHandSideExpression(expression));
-            if ((token === TokenType.PlusPlusToken || token === TokenType.MinusMinusToken) && !scanner.hasPrecedingLineBreak()) {
+            if ((token === TokenType.plusPlus || token === TokenType.minusMinus) && !scanner.hasPrecedingLineBreak()) {
                 const node = <PostfixUnaryExpression>createNode(TokenType.PostfixUnaryExpression, expression.pos);
                 node.operand = expression;
                 node.operator = token;
@@ -3501,7 +3501,7 @@ namespace ts {
             // the last two CallExpression productions.  Or we have a MemberExpression which either
             // completes the LeftHandSideExpression, or starts the beginning of the first four
             // CallExpression productions.
-            const expression = token === TokenType.SuperKeyword
+            const expression = token === TokenType.super
                 ? parseSuperExpression()
                 : parseMemberExpressionOrHigher();
 
@@ -3564,7 +3564,7 @@ namespace ts {
 
         function parseSuperExpression(): MemberExpression {
             const expression = parseTokenNode<PrimaryExpression>();
-            if (token === TokenType.OpenParenToken || token === TokenType.DotToken || token === TokenType.OpenBracketToken) {
+            if (token === TokenType.openParen || token === TokenType.dot || token === TokenType.openBracket) {
                 return expression;
             }
 
@@ -3572,7 +3572,7 @@ namespace ts {
             // If it wasn't then just try to parse out a '.' and report an error.
             const node = <PropertyAccessExpression>createNode(TokenType.PropertyAccessExpression, expression.pos);
             node.expression = expression;
-            parseExpectedToken(TokenType.DotToken, /*reportAtCurrentPosition*/ false, Diagnostics.super_must_be_followed_by_an_argument_list_or_member_access);
+            parseExpectedToken(TokenType.dot, /*reportAtCurrentPosition*/ false, Diagnostics.super_must_be_followed_by_an_argument_list_or_member_access);
             node.name = parseRightSideOfDot(/*allowIdentifierNames*/ true);
             return finishNode(node);
         }
@@ -3586,7 +3586,7 @@ namespace ts {
                 return (<Identifier>lhs).text === (<Identifier>rhs).text;
             }
 
-            if (lhs.kind === TokenType.ThisKeyword) {
+            if (lhs.kind === TokenType.this) {
                 return true;
             }
 
@@ -3627,7 +3627,7 @@ namespace ts {
             // does less damage and we can report a better error.
             // Since JSX elements are invalid < operands anyway, this lookahead parse will only occur in error scenarios
             // of one sort or another.
-            if (inExpressionContext && token === TokenType.LessThanToken) {
+            if (inExpressionContext && token === TokenType.lessThan) {
                 const invalidElement = tryParse(() => parseJsxElementOrSelfClosingElement(/*inExpressionContext*/true));
                 if (invalidElement) {
                     parseErrorAtCurrentToken(Diagnostics.JSX_expressions_must_have_one_parent_element);
@@ -3635,7 +3635,7 @@ namespace ts {
                     badNode.end = invalidElement.end;
                     badNode.left = result;
                     badNode.right = invalidElement;
-                    badNode.operatorToken = createMissingNode(TokenType.CommaToken, /*reportAtCurrentPosition*/ false, /*diagnosticMessage*/ undefined);
+                    badNode.operatorToken = createMissingNode(TokenType.comma, /*reportAtCurrentPosition*/ false, /*diagnosticMessage*/ undefined);
                     badNode.operatorToken.pos = badNode.operatorToken.end = badNode.right.pos;
                     return <JsxElement><Node>badNode;
                 }
@@ -3654,9 +3654,9 @@ namespace ts {
             switch (token) {
                 case TokenType.JsxText:
                     return parseJsxText();
-                case TokenType.OpenBraceToken:
+                case TokenType.openBrace:
                     return parseJsxExpression(/*inExpressionContext*/ false);
-                case TokenType.LessThanToken:
+                case TokenType.lessThan:
                     return parseJsxElementOrSelfClosingElement(/*inExpressionContext*/ false);
             }
             Debug.fail("Unknown JSX child kind " + token);
@@ -3670,7 +3670,7 @@ namespace ts {
 
             while (true) {
                 token = scanner.reScanJsxToken();
-                if (token === TokenType.LessThanSlashToken) {
+                if (token === TokenType.lessThanSlash) {
                     // Closing tag
                     break;
                 }
@@ -3693,14 +3693,14 @@ namespace ts {
         function parseJsxOpeningOrSelfClosingElement(inExpressionContext: boolean): JsxOpeningElement | JsxSelfClosingElement {
             const fullStart = scanner.getStartPos();
 
-            parseExpected(TokenType.LessThanToken);
+            parseExpected(TokenType.lessThan);
 
             const tagName = parseJsxElementName();
 
             const attributes = parseList(ParsingContext.JsxAttributes, parseJsxAttribute);
             let node: JsxOpeningLikeElement;
 
-            if (token === TokenType.GreaterThanToken) {
+            if (token === TokenType.greaterThan) {
                 // Closing tag, so scan the immediately-following text with the JSX scanning instead
                 // of regular scanning to avoid treating illegal characters (e.g. '#') as immediate
                 // scanning errors
@@ -3708,12 +3708,12 @@ namespace ts {
                 scanJsxText();
             }
             else {
-                parseExpected(TokenType.SlashToken);
+                parseExpected(TokenType.slash);
                 if (inExpressionContext) {
-                    parseExpected(TokenType.GreaterThanToken);
+                    parseExpected(TokenType.greaterThan);
                 }
                 else {
-                    parseExpected(TokenType.GreaterThanToken, /*diagnostic*/ undefined, /*shouldAdvance*/ false);
+                    parseExpected(TokenType.greaterThan, /*diagnostic*/ undefined, /*shouldAdvance*/ false);
                     scanJsxText();
                 }
                 node = <JsxSelfClosingElement>createNode(TokenType.JsxSelfClosingElement, fullStart);
@@ -3732,9 +3732,9 @@ namespace ts {
             //      primaryExpression in the form of an identifier and "this" keyword
             // We can't just simply use parseLeftHandSideExpressionOrHigher because then we will start consider class,function etc as a keyword
             // We only want to consider "this" as a primaryExpression
-            let expression: JsxTagNameExpression = token === TokenType.ThisKeyword ?
+            let expression: JsxTagNameExpression = token === TokenType.this ?
                 parseTokenNode<PrimaryExpression>() : parseIdentifierName();
-            while (parseOptional(TokenType.DotToken)) {
+            while (parseOptional(TokenType.dot)) {
                 const propertyAccess: PropertyAccessExpression = <PropertyAccessExpression>createNode(TokenType.PropertyAccessExpression, expression.pos);
                 propertyAccess.expression = expression;
                 propertyAccess.name = parseRightSideOfDot(/*allowIdentifierNames*/ true);
@@ -3746,15 +3746,15 @@ namespace ts {
         function parseJsxExpression(inExpressionContext: boolean): JsxExpression {
             const node = <JsxExpression>createNode(TokenType.JsxExpression);
 
-            parseExpected(TokenType.OpenBraceToken);
-            if (token !== TokenType.CloseBraceToken) {
+            parseExpected(TokenType.openBrace);
+            if (token !== TokenType.closeBrace) {
                 node.expression = parseAssignmentExpressionOrHigher();
             }
             if (inExpressionContext) {
-                parseExpected(TokenType.CloseBraceToken);
+                parseExpected(TokenType.closeBrace);
             }
             else {
-                parseExpected(TokenType.CloseBraceToken, /*message*/ undefined, /*shouldAdvance*/ false);
+                parseExpected(TokenType.closeBrace, /*message*/ undefined, /*shouldAdvance*/ false);
                 scanJsxText();
             }
 
@@ -3762,14 +3762,14 @@ namespace ts {
         }
 
         function parseJsxAttribute(): JsxAttribute | JsxSpreadAttribute {
-            if (token === TokenType.OpenBraceToken) {
+            if (token === TokenType.openBrace) {
                 return parseJsxSpreadAttribute();
             }
 
             scanJsxIdentifier();
             const node = <JsxAttribute>createNode(TokenType.JsxAttribute);
             node.name = parseIdentifierName();
-            if (parseOptional(TokenType.EqualsToken)) {
+            if (parseOptional(TokenType.equals)) {
                 switch (token) {
                     case TokenType.StringLiteral:
                         node.initializer = parseLiteralNode();
@@ -3784,22 +3784,22 @@ namespace ts {
 
         function parseJsxSpreadAttribute(): JsxSpreadAttribute {
             const node = <JsxSpreadAttribute>createNode(TokenType.JsxSpreadAttribute);
-            parseExpected(TokenType.OpenBraceToken);
-            parseExpected(TokenType.DotDotDotToken);
+            parseExpected(TokenType.openBrace);
+            parseExpected(TokenType.dotDotDot);
             node.expression = parseExpression();
-            parseExpected(TokenType.CloseBraceToken);
+            parseExpected(TokenType.closeBrace);
             return finishNode(node);
         }
 
         function parseJsxClosingElement(inExpressionContext: boolean): JsxClosingElement {
             const node = <JsxClosingElement>createNode(TokenType.JsxClosingElement);
-            parseExpected(TokenType.LessThanSlashToken);
+            parseExpected(TokenType.lessThanSlash);
             node.tagName = parseJsxElementName();
             if (inExpressionContext) {
-                parseExpected(TokenType.GreaterThanToken);
+                parseExpected(TokenType.greaterThan);
             }
             else {
-                parseExpected(TokenType.GreaterThanToken, /*diagnostic*/ undefined, /*shouldAdvance*/ false);
+                parseExpected(TokenType.greaterThan, /*diagnostic*/ undefined, /*shouldAdvance*/ false);
                 scanJsxText();
             }
             return finishNode(node);
@@ -3807,16 +3807,16 @@ namespace ts {
 
         function parseTypeAssertion(): TypeAssertion {
             const node = <TypeAssertion>createNode(TokenType.TypeAssertionExpression);
-            parseExpected(TokenType.LessThanToken);
+            parseExpected(TokenType.lessThan);
             node.type = parseType();
-            parseExpected(TokenType.GreaterThanToken);
+            parseExpected(TokenType.greaterThan);
             node.expression = parseSimpleUnaryExpression();
             return finishNode(node);
         }
 
         function parseMemberExpressionRest(expression: LeftHandSideExpression): MemberExpression {
             while (true) {
-                const dotToken = parseOptionalToken(TokenType.DotToken);
+                const dotToken = parseOptionalToken(TokenType.dot);
                 if (dotToken) {
                     const propertyAccess = <PropertyAccessExpression>createNode(TokenType.PropertyAccessExpression, expression.pos);
                     propertyAccess.expression = expression;
@@ -3825,7 +3825,7 @@ namespace ts {
                     continue;
                 }
 
-                if (token === TokenType.ExclamationToken && !scanner.hasPrecedingLineBreak()) {
+                if (token === TokenType.exclamation && !scanner.hasPrecedingLineBreak()) {
                     nextToken();
                     const nonNullExpression = <NonNullExpression>createNode(TokenType.NonNullExpression, expression.pos);
                     nonNullExpression.expression = expression;
@@ -3834,13 +3834,13 @@ namespace ts {
                 }
 
                 // when in the [Decorator] context, we do not parse ElementAccess as it could be part of a ComputedPropertyName
-                if (!inDecoratorContext() && parseOptional(TokenType.OpenBracketToken)) {
+                if (!inDecoratorContext() && parseOptional(TokenType.openBracket)) {
                     const indexedAccess = <ElementAccessExpression>createNode(TokenType.ElementAccessExpression, expression.pos);
                     indexedAccess.expression = expression;
 
                     // It's not uncommon for a user to write: "new Type[]".
                     // Check for that common pattern and report a better error message.
-                    if (token !== TokenType.CloseBracketToken) {
+                    if (token !== TokenType.closeBracket) {
                         indexedAccess.argumentExpression = allowInAnd(parseExpression);
                         if (indexedAccess.argumentExpression.kind === TokenType.StringLiteral || indexedAccess.argumentExpression.kind === TokenType.NumericLiteral) {
                             const literal = <LiteralExpression>indexedAccess.argumentExpression;
@@ -3848,7 +3848,7 @@ namespace ts {
                         }
                     }
 
-                    parseExpected(TokenType.CloseBracketToken);
+                    parseExpected(TokenType.closeBracket);
                     expression = finishNode(indexedAccess);
                     continue;
                 }
@@ -3870,7 +3870,7 @@ namespace ts {
         function parseCallExpressionRest(expression: LeftHandSideExpression): LeftHandSideExpression {
             while (true) {
                 expression = parseMemberExpressionRest(expression);
-                if (token === TokenType.LessThanToken) {
+                if (token === TokenType.lessThan) {
                     // See if this is the start of a generic invocation.  If so, consume it and
                     // keep checking for postfix expressions.  Otherwise, it's just a '<' that's
                     // part of an arithmetic expression.  Break out so we consume it higher in the
@@ -3887,7 +3887,7 @@ namespace ts {
                     expression = finishNode(callExpr);
                     continue;
                 }
-                else if (token === TokenType.OpenParenToken) {
+                else if (token === TokenType.openParen) {
                     const callExpr = <CallExpression>createNode(TokenType.CallExpression, expression.pos);
                     callExpr.expression = expression;
                     callExpr.arguments = parseArgumentList();
@@ -3900,19 +3900,19 @@ namespace ts {
         }
 
         function parseArgumentList() {
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.openParen);
             const result = parseDelimitedList(ParsingContext.ArgumentExpressions, parseArgumentExpression);
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             return result;
         }
 
         function parseTypeArgumentsInExpression() {
-            if (!parseOptional(TokenType.LessThanToken)) {
+            if (!parseOptional(TokenType.lessThan)) {
                 return undefined;
             }
 
             const typeArguments = parseDelimitedList(ParsingContext.TypeArguments, parseType);
-            if (!parseExpected(TokenType.GreaterThanToken)) {
+            if (!parseExpected(TokenType.greaterThan)) {
                 // If it doesn't have the closing >  then it's definitely not an type argument list.
                 return undefined;
             }
@@ -3926,34 +3926,34 @@ namespace ts {
 
         function canFollowTypeArgumentsInExpression(): boolean {
             switch (token) {
-                case TokenType.OpenParenToken:                 // foo<x>(
+                case TokenType.openParen:                 // foo<x>(
                 // this case are the only case where this token can legally follow a type argument
                 // list.  So we definitely want to treat this as a type arg list.
 
-                case TokenType.DotToken:                       // foo<x>.
-                case TokenType.CloseParenToken:                // foo<x>)
-                case TokenType.CloseBracketToken:              // foo<x>]
-                case TokenType.ColonToken:                     // foo<x>:
-                case TokenType.SemicolonToken:                 // foo<x>;
-                case TokenType.QuestionToken:                  // foo<x>?
-                case TokenType.EqualsEqualsToken:              // foo<x> ==
-                case TokenType.EqualsEqualsEqualsToken:        // foo<x> ===
-                case TokenType.ExclamationEqualsToken:         // foo<x> !=
-                case TokenType.ExclamationEqualsEqualsToken:   // foo<x> !==
-                case TokenType.AmpersandAmpersandToken:        // foo<x> &&
-                case TokenType.BarBarToken:                    // foo<x> ||
-                case TokenType.CaretToken:                     // foo<x> ^
-                case TokenType.AmpersandToken:                 // foo<x> &
-                case TokenType.BarToken:                       // foo<x> |
-                case TokenType.CloseBraceToken:                // foo<x> }
+                case TokenType.dot:                       // foo<x>.
+                case TokenType.closeParen:                // foo<x>)
+                case TokenType.closeBracket:              // foo<x>]
+                case TokenType.colon:                     // foo<x>:
+                case TokenType.semicolon:                 // foo<x>;
+                case TokenType.question:                  // foo<x>?
+                case TokenType.equalsEquals:              // foo<x> ==
+                case TokenType.equalsEqualsEquals:        // foo<x> ===
+                case TokenType.exclamationEquals:         // foo<x> !=
+                case TokenType.exclamationEqualsEquals:   // foo<x> !==
+                case TokenType.ampersandAmpersand:        // foo<x> &&
+                case TokenType.barBar:                    // foo<x> ||
+                case TokenType.caret:                     // foo<x> ^
+                case TokenType.ampersand:                 // foo<x> &
+                case TokenType.bar:                       // foo<x> |
+                case TokenType.closeBrace:                // foo<x> }
                 case TokenType.endOfFile:                 // foo<x>
                     // these cases can't legally follow a type arg list.  However, they're not legal
                     // expressions either.  The user is probably in the middle of a generic type. So
                     // treat it as such.
                     return true;
 
-                case TokenType.CommaToken:                     // foo<x>,
-                case TokenType.OpenBraceToken:                 // foo<x> {
+                case TokenType.comma:                     // foo<x>,
+                case TokenType.openBrace:                 // foo<x> {
                 // We don't want to treat these as type arguments.  Otherwise we'll parse this
                 // as an invocation expression.  Instead, we want to parse out the expression
                 // in isolation from the type arguments.
@@ -3970,19 +3970,19 @@ namespace ts {
                 case TokenType.StringLiteral:
                 case TokenType.NoSubstitutionTemplateLiteral:
                     return parseLiteralNode();
-                case TokenType.ThisKeyword:
-                case TokenType.SuperKeyword:
-                case TokenType.NullKeyword:
-                case TokenType.TrueKeyword:
-                case TokenType.FalseKeyword:
+                case TokenType.this:
+                case TokenType.super:
+                case TokenType.null:
+                case TokenType.true:
+                case TokenType.false:
                     return parseTokenNode<PrimaryExpression>();
-                case TokenType.OpenParenToken:
+                case TokenType.openParen:
                     return parseParenthesizedExpression();
-                case TokenType.OpenBracketToken:
+                case TokenType.openBracket:
                     return parseArrayLiteralExpression();
-                case TokenType.OpenBraceToken:
+                case TokenType.openBrace:
                     return parseObjectLiteralExpression();
-                case TokenType.AsyncKeyword:
+                case TokenType.async:
                     // Async arrow functions are parsed earlier in parseAssignmentExpressionOrHigher.
                     // If we encounter `async [no LineTerminator here] function` then this is an async
                     // function; otherwise, its an identifier.
@@ -3991,14 +3991,14 @@ namespace ts {
                     }
 
                     return parseFunctionExpression();
-                case TokenType.ClassKeyword:
+                case TokenType.class:
                     return parseClassExpression();
-                case TokenType.FunctionKeyword:
+                case TokenType.function:
                     return parseFunctionExpression();
-                case TokenType.NewKeyword:
+                case TokenType.new:
                     return parseNewExpression();
-                case TokenType.SlashToken:
-                case TokenType.SlashEqualsToken:
+                case TokenType.slash:
+                case TokenType.slashEquals:
                     if (reScanSlashToken() === TokenType.RegularExpressionLiteral) {
                         return parseLiteralNode();
                     }
@@ -4012,22 +4012,22 @@ namespace ts {
 
         function parseParenthesizedExpression(): ParenthesizedExpression {
             const node = <ParenthesizedExpression>createNode(TokenType.ParenthesizedExpression);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.openParen);
             node.expression = allowInAnd(parseExpression);
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             return finishNode(node);
         }
 
         function parseSpreadElement(): Expression {
             const node = <SpreadElementExpression>createNode(TokenType.SpreadElementExpression);
-            parseExpected(TokenType.DotDotDotToken);
+            parseExpected(TokenType.dotDotDot);
             node.expression = parseAssignmentExpressionOrHigher();
             return finishNode(node);
         }
 
         function parseArgumentOrArrayLiteralElement(): Expression {
-            return token === TokenType.DotDotDotToken ? parseSpreadElement() :
-                token === TokenType.CommaToken ? <Expression>createNode(TokenType.OmittedExpression) :
+            return token === TokenType.dotDotDot ? parseSpreadElement() :
+                token === TokenType.comma ? <Expression>createNode(TokenType.OmittedExpression) :
                     parseAssignmentExpressionOrHigher();
         }
 
@@ -4037,20 +4037,20 @@ namespace ts {
 
         function parseArrayLiteralExpression(): ArrayLiteralExpression {
             const node = <ArrayLiteralExpression>createNode(TokenType.ArrayLiteralExpression);
-            parseExpected(TokenType.OpenBracketToken);
+            parseExpected(TokenType.openBracket);
             if (scanner.hasPrecedingLineBreak()) {
                 node.multiLine = true;
             }
             node.elements = parseDelimitedList(ParsingContext.ArrayLiteralMembers, parseArgumentOrArrayLiteralElement);
-            parseExpected(TokenType.CloseBracketToken);
+            parseExpected(TokenType.closeBracket);
             return finishNode(node);
         }
 
         function tryParseAccessorDeclaration(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): AccessorDeclaration {
-            if (parseContextualModifier(TokenType.GetKeyword)) {
+            if (parseContextualModifier(TokenType.get)) {
                 return addJSDocComment(parseAccessorDeclaration(TokenType.GetAccessor, fullStart, decorators, modifiers));
             }
-            else if (parseContextualModifier(TokenType.SetKeyword)) {
+            else if (parseContextualModifier(TokenType.set)) {
                 return parseAccessorDeclaration(TokenType.SetAccessor, fullStart, decorators, modifiers);
             }
 
@@ -4067,13 +4067,13 @@ namespace ts {
                 return accessor;
             }
 
-            const asteriskToken = parseOptionalToken(TokenType.AsteriskToken);
+            const asteriskToken = parseOptionalToken(TokenType.asterisk);
             const tokenIsIdentifier = isIdentifier();
             const propertyName = parsePropertyName();
 
             // Disallowing of optional property assignments happens in the grammar checker.
-            const questionToken = parseOptionalToken(TokenType.QuestionToken);
-            if (asteriskToken || token === TokenType.OpenParenToken || token === TokenType.LessThanToken) {
+            const questionToken = parseOptionalToken(TokenType.question);
+            if (asteriskToken || token === TokenType.openParen || token === TokenType.lessThan) {
                 return parseMethodDeclaration(fullStart, decorators, modifiers, asteriskToken, propertyName, questionToken);
             }
 
@@ -4083,13 +4083,13 @@ namespace ts {
             //     IdentifierReference[?Yield] Initializer[In, ?Yield]
             // this is necessary because ObjectLiteral productions are also used to cover grammar for ObjectAssignmentPattern
             const isShorthandPropertyAssignment =
-                tokenIsIdentifier && (token === TokenType.CommaToken || token === TokenType.CloseBraceToken || token === TokenType.EqualsToken);
+                tokenIsIdentifier && (token === TokenType.comma || token === TokenType.closeBrace || token === TokenType.equals);
 
             if (isShorthandPropertyAssignment) {
                 const shorthandDeclaration = <ShorthandPropertyAssignment>createNode(TokenType.ShorthandPropertyAssignment, fullStart);
                 shorthandDeclaration.name = <Identifier>propertyName;
                 shorthandDeclaration.questionToken = questionToken;
-                const equalsToken = parseOptionalToken(TokenType.EqualsToken);
+                const equalsToken = parseOptionalToken(TokenType.equals);
                 if (equalsToken) {
                     shorthandDeclaration.equalsToken = equalsToken;
                     shorthandDeclaration.objectAssignmentInitializer = allowInAnd(parseAssignmentExpressionOrHigher);
@@ -4101,7 +4101,7 @@ namespace ts {
                 propertyAssignment.modifiers = modifiers;
                 propertyAssignment.name = propertyName;
                 propertyAssignment.questionToken = questionToken;
-                parseExpected(TokenType.ColonToken);
+                parseExpected(TokenType.colon);
                 propertyAssignment.initializer = allowInAnd(parseAssignmentExpressionOrHigher);
                 return addJSDocComment(finishNode(propertyAssignment));
             }
@@ -4109,13 +4109,13 @@ namespace ts {
 
         function parseObjectLiteralExpression(): ObjectLiteralExpression {
             const node = <ObjectLiteralExpression>createNode(TokenType.ObjectLiteralExpression);
-            parseExpected(TokenType.OpenBraceToken);
+            parseExpected(TokenType.openBrace);
             if (scanner.hasPrecedingLineBreak()) {
                 node.multiLine = true;
             }
 
             node.properties = parseDelimitedList(ParsingContext.ObjectLiteralMembers, parseObjectLiteralElement, /*considerSemicolonAsDelimiter*/ true);
-            parseExpected(TokenType.CloseBraceToken);
+            parseExpected(TokenType.closeBrace);
             return finishNode(node);
         }
 
@@ -4132,8 +4132,8 @@ namespace ts {
 
             const node = <FunctionExpression>createNode(TokenType.FunctionExpression);
             setModifiers(node, parseModifiers());
-            parseExpected(TokenType.FunctionKeyword);
-            node.asteriskToken = parseOptionalToken(TokenType.AsteriskToken);
+            parseExpected(TokenType.function);
+            node.asteriskToken = parseOptionalToken(TokenType.asterisk);
 
             const isGenerator = !!node.asteriskToken;
             const isAsync = !!(node.flags & NodeFlags.Async);
@@ -4143,7 +4143,7 @@ namespace ts {
                         isAsync ? doInAwaitContext(parseOptionalIdentifier) :
                             parseOptionalIdentifier();
 
-            fillSignature(TokenType.ColonToken, /*yieldContext*/ isGenerator, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ false, node);
+            fillSignature(TokenType.colon, /*yieldContext*/ isGenerator, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ false, node);
             node.body = parseFunctionBlock(/*allowYield*/ isGenerator, /*allowAwait*/ isAsync, /*ignoreMissingOpenBrace*/ false);
 
             if (saveDecoratorContext) {
@@ -4159,10 +4159,10 @@ namespace ts {
 
         function parseNewExpression(): NewExpression {
             const node = <NewExpression>createNode(TokenType.NewExpression);
-            parseExpected(TokenType.NewKeyword);
+            parseExpected(TokenType.new);
             node.expression = parseMemberExpressionOrHigher();
             node.typeArguments = tryParse(parseTypeArgumentsInExpression);
-            if (node.typeArguments || token === TokenType.OpenParenToken) {
+            if (node.typeArguments || token === TokenType.openParen) {
                 node.arguments = parseArgumentList();
             }
 
@@ -4172,9 +4172,9 @@ namespace ts {
         // STATEMENTS
         function parseBlock(ignoreMissingOpenBrace: boolean, diagnosticMessage?: DiagnosticMessage): Block {
             const node = <Block>createNode(TokenType.Block);
-            if (parseExpected(TokenType.OpenBraceToken, diagnosticMessage) || ignoreMissingOpenBrace) {
+            if (parseExpected(TokenType.openBrace, diagnosticMessage) || ignoreMissingOpenBrace) {
                 node.statements = parseList(ParsingContext.BlockStatements, parseStatement);
-                parseExpected(TokenType.CloseBraceToken);
+                parseExpected(TokenType.closeBrace);
             }
             else {
                 node.statements = createMissingList<Statement>();
@@ -4210,56 +4210,56 @@ namespace ts {
 
         function parseEmptyStatement(): Statement {
             const node = <Statement>createNode(TokenType.EmptyStatement);
-            parseExpected(TokenType.SemicolonToken);
+            parseExpected(TokenType.semicolon);
             return finishNode(node);
         }
 
         function parseIfStatement(): IfStatement {
             const node = <IfStatement>createNode(TokenType.IfStatement);
-            parseExpected(TokenType.IfKeyword);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.if);
+            parseExpected(TokenType.openParen);
             node.expression = allowInAnd(parseExpression);
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             node.thenStatement = parseStatement();
-            node.elseStatement = parseOptional(TokenType.ElseKeyword) ? parseStatement() : undefined;
+            node.elseStatement = parseOptional(TokenType.else) ? parseStatement() : undefined;
             return finishNode(node);
         }
 
         function parseDoStatement(): DoStatement {
             const node = <DoStatement>createNode(TokenType.DoStatement);
-            parseExpected(TokenType.DoKeyword);
+            parseExpected(TokenType.do);
             node.statement = parseStatement();
-            parseExpected(TokenType.WhileKeyword);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.while);
+            parseExpected(TokenType.openParen);
             node.expression = allowInAnd(parseExpression);
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
 
             // From: https://mail.mozilla.org/pipermail/es-discuss/2011-August/016188.html
             // 157 min --- All allen at wirfs-brock.com CONF --- "do{;}while(false)false" prohibited in
             // spec but allowed in consensus reality. Approved -- this is the de-facto standard whereby
             //  do;while(0)x will have a semicolon inserted before x.
-            parseOptional(TokenType.SemicolonToken);
+            parseOptional(TokenType.semicolon);
             return finishNode(node);
         }
 
         function parseWhileStatement(): WhileStatement {
             const node = <WhileStatement>createNode(TokenType.WhileStatement);
-            parseExpected(TokenType.WhileKeyword);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.while);
+            parseExpected(TokenType.openParen);
             node.expression = allowInAnd(parseExpression);
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             node.statement = parseStatement();
             return finishNode(node);
         }
 
         function parseForOrForInOrForOfStatement(): Statement {
             const pos = getNodePos();
-            parseExpected(TokenType.ForKeyword);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.for);
+            parseExpected(TokenType.openParen);
 
             let initializer: VariableDeclarationList | Expression = undefined;
-            if (token !== TokenType.SemicolonToken) {
-                if (token === TokenType.VarKeyword || token === TokenType.LetKeyword || token === TokenType.ConstKeyword) {
+            if (token !== TokenType.semicolon) {
+                if (token === TokenType.var || token === TokenType.let || token === TokenType.const) {
                     initializer = parseVariableDeclarationList(/*inForStatementInitializer*/ true);
                 }
                 else {
@@ -4267,32 +4267,32 @@ namespace ts {
                 }
             }
             let forOrForInOrForOfStatement: IterationStatement;
-            if (parseOptional(TokenType.InKeyword)) {
+            if (parseOptional(TokenType.in)) {
                 const forInStatement = <ForInStatement>createNode(TokenType.ForInStatement, pos);
                 forInStatement.initializer = initializer;
                 forInStatement.expression = allowInAnd(parseExpression);
-                parseExpected(TokenType.CloseParenToken);
+                parseExpected(TokenType.closeParen);
                 forOrForInOrForOfStatement = forInStatement;
             }
-            else if (parseOptional(TokenType.OfKeyword)) {
+            else if (parseOptional(TokenType.of)) {
                 const forOfStatement = <ForOfStatement>createNode(TokenType.ForOfStatement, pos);
                 forOfStatement.initializer = initializer;
                 forOfStatement.expression = allowInAnd(parseAssignmentExpressionOrHigher);
-                parseExpected(TokenType.CloseParenToken);
+                parseExpected(TokenType.closeParen);
                 forOrForInOrForOfStatement = forOfStatement;
             }
             else {
                 const forStatement = <ForStatement>createNode(TokenType.ForStatement, pos);
                 forStatement.initializer = initializer;
-                parseExpected(TokenType.SemicolonToken);
-                if (token !== TokenType.SemicolonToken && token !== TokenType.CloseParenToken) {
+                parseExpected(TokenType.semicolon);
+                if (token !== TokenType.semicolon && token !== TokenType.closeParen) {
                     forStatement.condition = allowInAnd(parseExpression);
                 }
-                parseExpected(TokenType.SemicolonToken);
-                if (token !== TokenType.CloseParenToken) {
+                parseExpected(TokenType.semicolon);
+                if (token !== TokenType.closeParen) {
                     forStatement.incrementor = allowInAnd(parseExpression);
                 }
-                parseExpected(TokenType.CloseParenToken);
+                parseExpected(TokenType.closeParen);
                 forOrForInOrForOfStatement = forStatement;
             }
 
@@ -4304,7 +4304,7 @@ namespace ts {
         function parseBreakOrContinueStatement(kind: TokenType): BreakOrContinueStatement {
             const node = <BreakOrContinueStatement>createNode(kind);
 
-            parseExpected(kind === TokenType.BreakStatement ? TokenType.BreakKeyword : TokenType.ContinueKeyword);
+            parseExpected(kind === TokenType.BreakStatement ? TokenType.break : TokenType.continue);
             if (!canParseSemicolon()) {
                 node.label = parseIdentifier();
             }
@@ -4316,7 +4316,7 @@ namespace ts {
         function parseReturnStatement(): ReturnStatement {
             const node = <ReturnStatement>createNode(TokenType.ReturnStatement);
 
-            parseExpected(TokenType.ReturnKeyword);
+            parseExpected(TokenType.return);
             if (!canParseSemicolon()) {
                 node.expression = allowInAnd(parseExpression);
             }
@@ -4327,45 +4327,45 @@ namespace ts {
 
         function parseWithStatement(): WithStatement {
             const node = <WithStatement>createNode(TokenType.WithStatement);
-            parseExpected(TokenType.WithKeyword);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.with);
+            parseExpected(TokenType.openParen);
             node.expression = allowInAnd(parseExpression);
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             node.statement = parseStatement();
             return finishNode(node);
         }
 
         function parseCaseClause(): CaseClause {
             const node = <CaseClause>createNode(TokenType.CaseClause);
-            parseExpected(TokenType.CaseKeyword);
+            parseExpected(TokenType.case);
             node.expression = allowInAnd(parseExpression);
-            parseExpected(TokenType.ColonToken);
+            parseExpected(TokenType.colon);
             node.statements = parseList(ParsingContext.SwitchClauseStatements, parseStatement);
             return finishNode(node);
         }
 
         function parseDefaultClause(): DefaultClause {
             const node = <DefaultClause>createNode(TokenType.DefaultClause);
-            parseExpected(TokenType.DefaultKeyword);
-            parseExpected(TokenType.ColonToken);
+            parseExpected(TokenType.default);
+            parseExpected(TokenType.colon);
             node.statements = parseList(ParsingContext.SwitchClauseStatements, parseStatement);
             return finishNode(node);
         }
 
         function parseCaseOrDefaultClause(): CaseOrDefaultClause {
-            return token === TokenType.CaseKeyword ? parseCaseClause() : parseDefaultClause();
+            return token === TokenType.case ? parseCaseClause() : parseDefaultClause();
         }
 
         function parseSwitchStatement(): SwitchStatement {
             const node = <SwitchStatement>createNode(TokenType.SwitchStatement);
-            parseExpected(TokenType.SwitchKeyword);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.switch);
+            parseExpected(TokenType.openParen);
             node.expression = allowInAnd(parseExpression);
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             const caseBlock = <CaseBlock>createNode(TokenType.CaseBlock, scanner.getStartPos());
-            parseExpected(TokenType.OpenBraceToken);
+            parseExpected(TokenType.openBrace);
             caseBlock.clauses = parseList(ParsingContext.SwitchClauses, parseCaseOrDefaultClause);
-            parseExpected(TokenType.CloseBraceToken);
+            parseExpected(TokenType.closeBrace);
             node.caseBlock = finishNode(caseBlock);
             return finishNode(node);
         }
@@ -4380,7 +4380,7 @@ namespace ts {
             // We just return 'undefined' in that case.  The actual error will be reported in the
             // grammar walker.
             const node = <ThrowStatement>createNode(TokenType.ThrowStatement);
-            parseExpected(TokenType.ThrowKeyword);
+            parseExpected(TokenType.throw);
             node.expression = scanner.hasPrecedingLineBreak() ? undefined : allowInAnd(parseExpression);
             parseSemicolon();
             return finishNode(node);
@@ -4390,14 +4390,14 @@ namespace ts {
         function parseTryStatement(): TryStatement {
             const node = <TryStatement>createNode(TokenType.TryStatement);
 
-            parseExpected(TokenType.TryKeyword);
+            parseExpected(TokenType.try);
             node.tryBlock = parseBlock(/*ignoreMissingOpenBrace*/ false);
-            node.catchClause = token === TokenType.CatchKeyword ? parseCatchClause() : undefined;
+            node.catchClause = token === TokenType.catch ? parseCatchClause() : undefined;
 
             // If we don't have a catch clause, then we must have a finally clause.  Try to parse
             // one out no matter what.
-            if (!node.catchClause || token === TokenType.FinallyKeyword) {
-                parseExpected(TokenType.FinallyKeyword);
+            if (!node.catchClause || token === TokenType.finally) {
+                parseExpected(TokenType.finally);
                 node.finallyBlock = parseBlock(/*ignoreMissingOpenBrace*/ false);
             }
 
@@ -4406,19 +4406,19 @@ namespace ts {
 
         function parseCatchClause(): CatchClause {
             const result = <CatchClause>createNode(TokenType.CatchClause);
-            parseExpected(TokenType.CatchKeyword);
-            if (parseExpected(TokenType.OpenParenToken)) {
+            parseExpected(TokenType.catch);
+            if (parseExpected(TokenType.openParen)) {
                 result.variableDeclaration = parseVariableDeclaration();
             }
 
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             result.block = parseBlock(/*ignoreMissingOpenBrace*/ false);
             return finishNode(result);
         }
 
         function parseDebuggerStatement(): Statement {
             const node = <Statement>createNode(TokenType.DebuggerStatement);
-            parseExpected(TokenType.DebuggerKeyword);
+            parseExpected(TokenType.debugger);
             parseSemicolon();
             return finishNode(node);
         }
@@ -4430,7 +4430,7 @@ namespace ts {
             const fullStart = scanner.getStartPos();
             const expression = allowInAnd(parseExpression);
 
-            if (expression.kind === TokenType.Identifier && parseOptional(TokenType.ColonToken)) {
+            if (expression.kind === TokenType.Identifier && parseOptional(TokenType.colon)) {
                 const labeledStatement = <LabeledStatement>createNode(TokenType.LabeledStatement, fullStart);
                 labeledStatement.label = <Identifier>expression;
                 labeledStatement.statement = parseStatement();
@@ -4451,7 +4451,7 @@ namespace ts {
 
         function nextTokenIsFunctionKeywordOnSameLine() {
             nextToken();
-            return token === TokenType.FunctionKeyword && !scanner.hasPrecedingLineBreak();
+            return token === TokenType.function && !scanner.hasPrecedingLineBreak();
         }
 
         function nextTokenIsIdentifierOrKeywordOrNumberOnSameLine() {
@@ -4462,12 +4462,12 @@ namespace ts {
         function isDeclaration(): boolean {
             while (true) {
                 switch (token) {
-                    case TokenType.VarKeyword:
-                    case TokenType.LetKeyword:
-                    case TokenType.ConstKeyword:
-                    case TokenType.FunctionKeyword:
-                    case TokenType.ClassKeyword:
-                    case TokenType.EnumKeyword:
+                    case TokenType.var:
+                    case TokenType.let:
+                    case TokenType.const:
+                    case TokenType.function:
+                    case TokenType.class:
+                    case TokenType.enum:
                         return true;
 
                     // 'declare', 'module', 'namespace', 'interface'* and 'type' are all legal JavaScript identifiers;
@@ -4491,19 +4491,19 @@ namespace ts {
                     //   I {}
                     //
                     // could be legal, it would add complexity for very little gain.
-                    case TokenType.InterfaceKeyword:
-                    case TokenType.TypeKeyword:
+                    case TokenType.interface:
+                    case TokenType.type:
                         return nextTokenIsIdentifierOnSameLine();
-                    case TokenType.ModuleKeyword:
-                    case TokenType.NamespaceKeyword:
+                    case TokenType.module:
+                    case TokenType.namespace:
                         return nextTokenIsIdentifierOrStringLiteralOnSameLine();
-                    case TokenType.AbstractKeyword:
-                    case TokenType.AsyncKeyword:
-                    case TokenType.DeclareKeyword:
-                    case TokenType.PrivateKeyword:
-                    case TokenType.ProtectedKeyword:
-                    case TokenType.PublicKeyword:
-                    case TokenType.ReadonlyKeyword:
+                    case TokenType.abstract:
+                    case TokenType.async:
+                    case TokenType.declare:
+                    case TokenType.private:
+                    case TokenType.protected:
+                    case TokenType.public:
+                    case TokenType.readonly:
                         nextToken();
                         // ASI takes effect for this modifier.
                         if (scanner.hasPrecedingLineBreak()) {
@@ -4511,24 +4511,24 @@ namespace ts {
                         }
                         continue;
 
-                    case TokenType.GlobalKeyword:
+                    case TokenType.global:
                         nextToken();
-                        return token === TokenType.OpenBraceToken || token === TokenType.Identifier || token === TokenType.ExportKeyword;
+                        return token === TokenType.openBrace || token === TokenType.Identifier || token === TokenType.export;
 
-                    case TokenType.ImportKeyword:
+                    case TokenType.import:
                         nextToken();
-                        return token === TokenType.StringLiteral || token === TokenType.AsteriskToken ||
-                            token === TokenType.OpenBraceToken || tokenIsIdentifierOrKeyword(token);
-                    case TokenType.ExportKeyword:
+                        return token === TokenType.StringLiteral || token === TokenType.asterisk ||
+                            token === TokenType.openBrace || tokenIsIdentifierOrKeyword(token);
+                    case TokenType.export:
                         nextToken();
-                        if (token === TokenType.EqualsToken || token === TokenType.AsteriskToken ||
-                            token === TokenType.OpenBraceToken || token === TokenType.DefaultKeyword ||
-                            token === TokenType.AsKeyword) {
+                        if (token === TokenType.equals || token === TokenType.asterisk ||
+                            token === TokenType.openBrace || token === TokenType.default ||
+                            token === TokenType.as) {
                             return true;
                         }
                         continue;
 
-                    case TokenType.StaticKeyword:
+                    case TokenType.static:
                         nextToken();
                         continue;
                     default:
@@ -4543,52 +4543,52 @@ namespace ts {
 
         function isStartOfStatement(): boolean {
             switch (token) {
-                case TokenType.AtToken:
-                case TokenType.SemicolonToken:
-                case TokenType.OpenBraceToken:
-                case TokenType.VarKeyword:
-                case TokenType.LetKeyword:
-                case TokenType.FunctionKeyword:
-                case TokenType.ClassKeyword:
-                case TokenType.EnumKeyword:
-                case TokenType.IfKeyword:
-                case TokenType.DoKeyword:
-                case TokenType.WhileKeyword:
-                case TokenType.ForKeyword:
-                case TokenType.ContinueKeyword:
-                case TokenType.BreakKeyword:
-                case TokenType.ReturnKeyword:
-                case TokenType.WithKeyword:
-                case TokenType.SwitchKeyword:
-                case TokenType.ThrowKeyword:
-                case TokenType.TryKeyword:
-                case TokenType.DebuggerKeyword:
+                case TokenType.at:
+                case TokenType.semicolon:
+                case TokenType.openBrace:
+                case TokenType.var:
+                case TokenType.let:
+                case TokenType.function:
+                case TokenType.class:
+                case TokenType.enum:
+                case TokenType.if:
+                case TokenType.do:
+                case TokenType.while:
+                case TokenType.for:
+                case TokenType.continue:
+                case TokenType.break:
+                case TokenType.return:
+                case TokenType.with:
+                case TokenType.switch:
+                case TokenType.throw:
+                case TokenType.try:
+                case TokenType.debugger:
                 // 'catch' and 'finally' do not actually indicate that the code is part of a statement,
                 // however, we say they are here so that we may gracefully parse them and error later.
-                case TokenType.CatchKeyword:
-                case TokenType.FinallyKeyword:
+                case TokenType.catch:
+                case TokenType.finally:
                     return true;
 
-                case TokenType.ConstKeyword:
-                case TokenType.ExportKeyword:
-                case TokenType.ImportKeyword:
+                case TokenType.const:
+                case TokenType.export:
+                case TokenType.import:
                     return isStartOfDeclaration();
 
-                case TokenType.AsyncKeyword:
-                case TokenType.DeclareKeyword:
-                case TokenType.InterfaceKeyword:
-                case TokenType.ModuleKeyword:
-                case TokenType.NamespaceKeyword:
-                case TokenType.TypeKeyword:
-                case TokenType.GlobalKeyword:
+                case TokenType.async:
+                case TokenType.declare:
+                case TokenType.interface:
+                case TokenType.module:
+                case TokenType.namespace:
+                case TokenType.type:
+                case TokenType.global:
                     // When these don't start a declaration, they're an identifier in an expression statement
                     return true;
 
-                case TokenType.PublicKeyword:
-                case TokenType.PrivateKeyword:
-                case TokenType.ProtectedKeyword:
-                case TokenType.StaticKeyword:
-                case TokenType.ReadonlyKeyword:
+                case TokenType.public:
+                case TokenType.private:
+                case TokenType.protected:
+                case TokenType.static:
+                case TokenType.readonly:
                     // When these don't start a declaration, they may be the start of a class member if an identifier
                     // immediately follows. Otherwise they're an identifier in an expression statement.
                     return isStartOfDeclaration() || !lookAhead(nextTokenIsIdentifierOrKeywordOnSameLine);
@@ -4600,7 +4600,7 @@ namespace ts {
 
         function nextTokenIsIdentifierOrStartOfDestructuring() {
             nextToken();
-            return isIdentifier() || token === TokenType.OpenBraceToken || token === TokenType.OpenBracketToken;
+            return isIdentifier() || token === TokenType.openBrace || token === TokenType.openBracket;
         }
 
         function isLetDeclaration() {
@@ -4611,67 +4611,67 @@ namespace ts {
 
         function parseStatement(): Statement {
             switch (token) {
-                case TokenType.SemicolonToken:
+                case TokenType.semicolon:
                     return parseEmptyStatement();
-                case TokenType.OpenBraceToken:
+                case TokenType.openBrace:
                     return parseBlock(/*ignoreMissingOpenBrace*/ false);
-                case TokenType.VarKeyword:
+                case TokenType.var:
                     return parseVariableStatement(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
-                case TokenType.LetKeyword:
+                case TokenType.let:
                     if (isLetDeclaration()) {
                         return parseVariableStatement(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
                     }
                     break;
-                case TokenType.FunctionKeyword:
+                case TokenType.function:
                     return parseFunctionDeclaration(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
-                case TokenType.ClassKeyword:
+                case TokenType.class:
                     return parseClassDeclaration(scanner.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
-                case TokenType.IfKeyword:
+                case TokenType.if:
                     return parseIfStatement();
-                case TokenType.DoKeyword:
+                case TokenType.do:
                     return parseDoStatement();
-                case TokenType.WhileKeyword:
+                case TokenType.while:
                     return parseWhileStatement();
-                case TokenType.ForKeyword:
+                case TokenType.for:
                     return parseForOrForInOrForOfStatement();
-                case TokenType.ContinueKeyword:
+                case TokenType.continue:
                     return parseBreakOrContinueStatement(TokenType.ContinueStatement);
-                case TokenType.BreakKeyword:
+                case TokenType.break:
                     return parseBreakOrContinueStatement(TokenType.BreakStatement);
-                case TokenType.ReturnKeyword:
+                case TokenType.return:
                     return parseReturnStatement();
-                case TokenType.WithKeyword:
+                case TokenType.with:
                     return parseWithStatement();
-                case TokenType.SwitchKeyword:
+                case TokenType.switch:
                     return parseSwitchStatement();
-                case TokenType.ThrowKeyword:
+                case TokenType.throw:
                     return parseThrowStatement();
-                case TokenType.TryKeyword:
+                case TokenType.try:
                 // Include 'catch' and 'finally' for error recovery.
-                case TokenType.CatchKeyword:
-                case TokenType.FinallyKeyword:
+                case TokenType.catch:
+                case TokenType.finally:
                     return parseTryStatement();
-                case TokenType.DebuggerKeyword:
+                case TokenType.debugger:
                     return parseDebuggerStatement();
-                case TokenType.AtToken:
+                case TokenType.at:
                     return parseDeclaration();
-                case TokenType.AsyncKeyword:
-                case TokenType.InterfaceKeyword:
-                case TokenType.TypeKeyword:
-                case TokenType.ModuleKeyword:
-                case TokenType.NamespaceKeyword:
-                case TokenType.DeclareKeyword:
-                case TokenType.ConstKeyword:
-                case TokenType.EnumKeyword:
-                case TokenType.ExportKeyword:
-                case TokenType.ImportKeyword:
-                case TokenType.PrivateKeyword:
-                case TokenType.ProtectedKeyword:
-                case TokenType.PublicKeyword:
-                case TokenType.AbstractKeyword:
-                case TokenType.StaticKeyword:
-                case TokenType.ReadonlyKeyword:
-                case TokenType.GlobalKeyword:
+                case TokenType.async:
+                case TokenType.interface:
+                case TokenType.type:
+                case TokenType.module:
+                case TokenType.namespace:
+                case TokenType.declare:
+                case TokenType.const:
+                case TokenType.enum:
+                case TokenType.export:
+                case TokenType.import:
+                case TokenType.private:
+                case TokenType.protected:
+                case TokenType.public:
+                case TokenType.abstract:
+                case TokenType.static:
+                case TokenType.readonly:
+                case TokenType.global:
                     if (isStartOfDeclaration()) {
                         return parseDeclaration();
                     }
@@ -4685,33 +4685,33 @@ namespace ts {
             const decorators = parseDecorators();
             const modifiers = parseModifiers();
             switch (token) {
-                case TokenType.VarKeyword:
-                case TokenType.LetKeyword:
-                case TokenType.ConstKeyword:
+                case TokenType.var:
+                case TokenType.let:
+                case TokenType.const:
                     return parseVariableStatement(fullStart, decorators, modifiers);
-                case TokenType.FunctionKeyword:
+                case TokenType.function:
                     return parseFunctionDeclaration(fullStart, decorators, modifiers);
-                case TokenType.ClassKeyword:
+                case TokenType.class:
                     return parseClassDeclaration(fullStart, decorators, modifiers);
-                case TokenType.InterfaceKeyword:
+                case TokenType.interface:
                     return parseInterfaceDeclaration(fullStart, decorators, modifiers);
-                case TokenType.TypeKeyword:
+                case TokenType.type:
                     return parseTypeAliasDeclaration(fullStart, decorators, modifiers);
-                case TokenType.EnumKeyword:
+                case TokenType.enum:
                     return parseEnumDeclaration(fullStart, decorators, modifiers);
-                case TokenType.GlobalKeyword:
-                case TokenType.ModuleKeyword:
-                case TokenType.NamespaceKeyword:
+                case TokenType.global:
+                case TokenType.module:
+                case TokenType.namespace:
                     return parseModuleDeclaration(fullStart, decorators, modifiers);
-                case TokenType.ImportKeyword:
+                case TokenType.import:
                     return parseImportDeclarationOrImportEqualsDeclaration(fullStart, decorators, modifiers);
-                case TokenType.ExportKeyword:
+                case TokenType.export:
                     nextToken();
                     switch (token) {
-                        case TokenType.DefaultKeyword:
-                        case TokenType.EqualsToken:
+                        case TokenType.default:
+                        case TokenType.equals:
                             return parseExportAssignment(fullStart, decorators, modifiers);
-                        case TokenType.AsKeyword:
+                        case TokenType.as:
                             return parseNamespaceExportDeclaration(fullStart, decorators, modifiers);
                         default:
                             return parseExportDeclaration(fullStart, decorators, modifiers);
@@ -4735,7 +4735,7 @@ namespace ts {
         }
 
         function parseFunctionBlockOrSemicolon(isGenerator: boolean, isAsync: boolean, diagnosticMessage?: DiagnosticMessage): Block {
-            if (token !== TokenType.OpenBraceToken && canParseSemicolon()) {
+            if (token !== TokenType.openBrace && canParseSemicolon()) {
                 parseSemicolon();
                 return;
             }
@@ -4746,11 +4746,11 @@ namespace ts {
         // DECLARATIONS
 
         function parseArrayBindingElement(): BindingElement {
-            if (token === TokenType.CommaToken) {
+            if (token === TokenType.comma) {
                 return <BindingElement>createNode(TokenType.OmittedExpression);
             }
             const node = <BindingElement>createNode(TokenType.BindingElement);
-            node.dotDotDotToken = parseOptionalToken(TokenType.DotDotDotToken);
+            node.dotDotDotToken = parseOptionalToken(TokenType.dotDotDot);
             node.name = parseIdentifierOrPattern();
             node.initializer = parseBindingElementInitializer(/*inParameter*/ false);
             return finishNode(node);
@@ -4760,11 +4760,11 @@ namespace ts {
             const node = <BindingElement>createNode(TokenType.BindingElement);
             const tokenIsIdentifier = isIdentifier();
             const propertyName = parsePropertyName();
-            if (tokenIsIdentifier && token !== TokenType.ColonToken) {
+            if (tokenIsIdentifier && token !== TokenType.colon) {
                 node.name = <Identifier>propertyName;
             }
             else {
-                parseExpected(TokenType.ColonToken);
+                parseExpected(TokenType.colon);
                 node.propertyName = propertyName;
                 node.name = parseIdentifierOrPattern();
             }
@@ -4774,29 +4774,29 @@ namespace ts {
 
         function parseObjectBindingPattern(): BindingPattern {
             const node = <BindingPattern>createNode(TokenType.ObjectBindingPattern);
-            parseExpected(TokenType.OpenBraceToken);
+            parseExpected(TokenType.openBrace);
             node.elements = parseDelimitedList(ParsingContext.ObjectBindingElements, parseObjectBindingElement);
-            parseExpected(TokenType.CloseBraceToken);
+            parseExpected(TokenType.closeBrace);
             return finishNode(node);
         }
 
         function parseArrayBindingPattern(): BindingPattern {
             const node = <BindingPattern>createNode(TokenType.ArrayBindingPattern);
-            parseExpected(TokenType.OpenBracketToken);
+            parseExpected(TokenType.openBracket);
             node.elements = parseDelimitedList(ParsingContext.ArrayBindingElements, parseArrayBindingElement);
-            parseExpected(TokenType.CloseBracketToken);
+            parseExpected(TokenType.closeBracket);
             return finishNode(node);
         }
 
         function isIdentifierOrPattern() {
-            return token === TokenType.OpenBraceToken || token === TokenType.OpenBracketToken || isIdentifier();
+            return token === TokenType.openBrace || token === TokenType.openBracket || isIdentifier();
         }
 
         function parseIdentifierOrPattern(): Identifier | BindingPattern {
-            if (token === TokenType.OpenBracketToken) {
+            if (token === TokenType.openBracket) {
                 return parseArrayBindingPattern();
             }
-            if (token === TokenType.OpenBraceToken) {
+            if (token === TokenType.openBrace) {
                 return parseObjectBindingPattern();
             }
             return parseIdentifier();
@@ -4816,12 +4816,12 @@ namespace ts {
             const node = <VariableDeclarationList>createNode(TokenType.VariableDeclarationList);
 
             switch (token) {
-                case TokenType.VarKeyword:
+                case TokenType.var:
                     break;
-                case TokenType.LetKeyword:
+                case TokenType.let:
                     node.flags |= NodeFlags.Let;
                     break;
-                case TokenType.ConstKeyword:
+                case TokenType.const:
                     node.flags |= NodeFlags.Const;
                     break;
                 default:
@@ -4839,7 +4839,7 @@ namespace ts {
             // So we need to look ahead to determine if 'of' should be treated as a keyword in
             // this context.
             // The checker will then give an error that there is an empty declaration list.
-            if (token === TokenType.OfKeyword && lookAhead(canFollowContextualOfKeyword)) {
+            if (token === TokenType.of && lookAhead(canFollowContextualOfKeyword)) {
                 node.declarations = createMissingList<VariableDeclaration>();
             }
             else {
@@ -4855,7 +4855,7 @@ namespace ts {
         }
 
         function canFollowContextualOfKeyword(): boolean {
-            return nextTokenIsIdentifier() && nextToken() === TokenType.CloseParenToken;
+            return nextTokenIsIdentifier() && nextToken() === TokenType.closeParen;
         }
 
         function parseVariableStatement(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): VariableStatement {
@@ -4871,12 +4871,12 @@ namespace ts {
             const node = <FunctionDeclaration>createNode(TokenType.FunctionDeclaration, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            parseExpected(TokenType.FunctionKeyword);
-            node.asteriskToken = parseOptionalToken(TokenType.AsteriskToken);
+            parseExpected(TokenType.function);
+            node.asteriskToken = parseOptionalToken(TokenType.asterisk);
             node.name = node.flags & NodeFlags.Default ? parseOptionalIdentifier() : parseIdentifier();
             const isGenerator = !!node.asteriskToken;
             const isAsync = !!(node.flags & NodeFlags.Async);
-            fillSignature(TokenType.ColonToken, /*yieldContext*/ isGenerator, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ false, node);
+            fillSignature(TokenType.colon, /*yieldContext*/ isGenerator, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ false, node);
             node.body = parseFunctionBlockOrSemicolon(isGenerator, isAsync, Diagnostics.or_expected);
             return addJSDocComment(finishNode(node));
         }
@@ -4885,8 +4885,8 @@ namespace ts {
             const node = <ConstructorDeclaration>createNode(TokenType.Constructor, pos);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            parseExpected(TokenType.ConstructorKeyword);
-            fillSignature(TokenType.ColonToken, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, node);
+            parseExpected(TokenType.constructor);
+            fillSignature(TokenType.colon, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, node);
             node.body = parseFunctionBlockOrSemicolon(/*isGenerator*/ false, /*isAsync*/ false, Diagnostics.or_expected);
             return addJSDocComment(finishNode(node));
         }
@@ -4900,7 +4900,7 @@ namespace ts {
             method.questionToken = questionToken;
             const isGenerator = !!asteriskToken;
             const isAsync = !!(method.flags & NodeFlags.Async);
-            fillSignature(TokenType.ColonToken, /*yieldContext*/ isGenerator, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ false, method);
+            fillSignature(TokenType.colon, /*yieldContext*/ isGenerator, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ false, method);
             method.body = parseFunctionBlockOrSemicolon(isGenerator, isAsync, diagnosticMessage);
             return addJSDocComment(finishNode(method));
         }
@@ -4931,13 +4931,13 @@ namespace ts {
         }
 
         function parsePropertyOrMethodDeclaration(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): ClassElement {
-            const asteriskToken = parseOptionalToken(TokenType.AsteriskToken);
+            const asteriskToken = parseOptionalToken(TokenType.asterisk);
             const name = parsePropertyName();
 
             // Note: this is not legal as per the grammar.  But we allow it in the parser and
             // report an error in the grammar checker.
-            const questionToken = parseOptionalToken(TokenType.QuestionToken);
-            if (asteriskToken || token === TokenType.OpenParenToken || token === TokenType.LessThanToken) {
+            const questionToken = parseOptionalToken(TokenType.question);
+            if (asteriskToken || token === TokenType.openParen || token === TokenType.lessThan) {
                 return parseMethodDeclaration(fullStart, decorators, modifiers, asteriskToken, name, questionToken, Diagnostics.or_expected);
             }
             else {
@@ -4954,18 +4954,18 @@ namespace ts {
             node.decorators = decorators;
             setModifiers(node, modifiers);
             node.name = parsePropertyName();
-            fillSignature(TokenType.ColonToken, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, node);
+            fillSignature(TokenType.colon, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, node);
             node.body = parseFunctionBlockOrSemicolon(/*isGenerator*/ false, /*isAsync*/ false);
             return finishNode(node);
         }
 
         function isClassMemberModifier(idToken: TokenType) {
             switch (idToken) {
-                case TokenType.PublicKeyword:
-                case TokenType.PrivateKeyword:
-                case TokenType.ProtectedKeyword:
-                case TokenType.StaticKeyword:
-                case TokenType.ReadonlyKeyword:
+                case TokenType.public:
+                case TokenType.private:
+                case TokenType.protected:
+                case TokenType.static:
+                case TokenType.readonly:
                     return true;
                 default:
                     return false;
@@ -4975,7 +4975,7 @@ namespace ts {
         function isClassMemberStart(): boolean {
             let idToken: TokenType;
 
-            if (token === TokenType.AtToken) {
+            if (token === TokenType.at) {
                 return true;
             }
 
@@ -4995,7 +4995,7 @@ namespace ts {
                 nextToken();
             }
 
-            if (token === TokenType.AsteriskToken) {
+            if (token === TokenType.asterisk) {
                 return true;
             }
 
@@ -5007,25 +5007,25 @@ namespace ts {
             }
 
             // Index signatures and computed properties are class members; we can parse.
-            if (token === TokenType.OpenBracketToken) {
+            if (token === TokenType.openBracket) {
                 return true;
             }
 
             // If we were able to get any potential identifier...
             if (idToken !== undefined) {
                 // If we have a non-keyword identifier, or if we have an accessor, then it's safe to parse.
-                if (!isKeyword(idToken) || idToken === TokenType.SetKeyword || idToken === TokenType.GetKeyword) {
+                if (!isKeyword(idToken) || idToken === TokenType.set || idToken === TokenType.get) {
                     return true;
                 }
 
                 // If it *is* a keyword, but not an accessor, check a little farther along
                 // to see if it should actually be parsed as a class member.
                 switch (token) {
-                    case TokenType.OpenParenToken:     // Method declaration
-                    case TokenType.LessThanToken:      // Generic Method declaration
-                    case TokenType.ColonToken:         // Type Annotation for declaration
-                    case TokenType.EqualsToken:        // Initializer for declaration
-                    case TokenType.QuestionToken:      // Not valid, but permitted so that it gets caught later on.
+                    case TokenType.openParen:     // Method declaration
+                    case TokenType.lessThan:      // Generic Method declaration
+                    case TokenType.colon:         // Type Annotation for declaration
+                    case TokenType.equals:        // Initializer for declaration
+                    case TokenType.question:      // Not valid, but permitted so that it gets caught later on.
                         return true;
                     default:
                         // Covers
@@ -5044,7 +5044,7 @@ namespace ts {
             let decorators: NodeArray<Decorator>;
             while (true) {
                 const decoratorStart = getNodePos();
-                if (!parseOptional(TokenType.AtToken)) {
+                if (!parseOptional(TokenType.at)) {
                     break;
                 }
 
@@ -5077,7 +5077,7 @@ namespace ts {
                 const modifierStart = scanner.getStartPos();
                 const modifierKind = token;
 
-                if (token === TokenType.ConstKeyword && permitInvalidConstAsModifier) {
+                if (token === TokenType.const && permitInvalidConstAsModifier) {
                     // We need to ensure that any subsequent modifiers appear on the same line
                     // so that when 'const' is a standalone declaration, we don't issue an error.
                     if (!tryParse(nextTokenIsOnSameLineAndCanFollowModifier)) {
@@ -5108,7 +5108,7 @@ namespace ts {
         function parseModifiersForArrowFunction(): ModifiersArray {
             let flags = 0;
             let modifiers: ModifiersArray;
-            if (token === TokenType.AsyncKeyword) {
+            if (token === TokenType.async) {
                 const modifierStart = scanner.getStartPos();
                 const modifierKind = token;
                 nextToken();
@@ -5124,7 +5124,7 @@ namespace ts {
         }
 
         function parseClassElement(): ClassElement {
-            if (token === TokenType.SemicolonToken) {
+            if (token === TokenType.semicolon) {
                 const result = <SemicolonClassElement>createNode(TokenType.SemicolonClassElement);
                 nextToken();
                 return finishNode(result);
@@ -5139,7 +5139,7 @@ namespace ts {
                 return accessor;
             }
 
-            if (token === TokenType.ConstructorKeyword) {
+            if (token === TokenType.constructor) {
                 return parseConstructorDeclaration(fullStart, decorators, modifiers);
             }
 
@@ -5152,8 +5152,8 @@ namespace ts {
             if (tokenIsIdentifierOrKeyword(token) ||
                 token === TokenType.StringLiteral ||
                 token === TokenType.NumericLiteral ||
-                token === TokenType.AsteriskToken ||
-                token === TokenType.OpenBracketToken) {
+                token === TokenType.asterisk ||
+                token === TokenType.openBracket) {
 
                 return parsePropertyOrMethodDeclaration(fullStart, decorators, modifiers);
             }
@@ -5184,16 +5184,16 @@ namespace ts {
             const node = <ClassLikeDeclaration>createNode(kind, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            parseExpected(TokenType.ClassKeyword);
+            parseExpected(TokenType.class);
             node.name = parseNameOfClassDeclarationOrExpression();
             node.typeParameters = parseTypeParameters();
             node.heritageClauses = parseHeritageClauses(/*isClassHeritageClause*/ true);
 
-            if (parseExpected(TokenType.OpenBraceToken)) {
+            if (parseExpected(TokenType.openBrace)) {
                 // ClassTail[Yield,Await] : (Modified) See 14.5
                 //      ClassHeritage[?Yield,?Await]opt { ClassBody[?Yield,?Await]opt }
                 node.members = parseClassMembers();
-                parseExpected(TokenType.CloseBraceToken);
+                parseExpected(TokenType.closeBrace);
             }
             else {
                 node.members = createMissingList<ClassElement>();
@@ -5214,7 +5214,7 @@ namespace ts {
         }
 
         function isImplementsClause() {
-            return token === TokenType.ImplementsKeyword && lookAhead(nextTokenIsIdentifierOrKeyword);
+            return token === TokenType.implements && lookAhead(nextTokenIsIdentifierOrKeyword);
         }
 
         function parseHeritageClauses(isClassHeritageClause: boolean): NodeArray<HeritageClause> {
@@ -5229,7 +5229,7 @@ namespace ts {
         }
 
         function parseHeritageClause() {
-            if (token === TokenType.ExtendsKeyword || token === TokenType.ImplementsKeyword) {
+            if (token === TokenType.extends || token === TokenType.implements) {
                 const node = <HeritageClause>createNode(TokenType.HeritageClause);
                 node.token = token;
                 nextToken();
@@ -5243,15 +5243,15 @@ namespace ts {
         function parseExpressionWithTypeArguments(): ExpressionWithTypeArguments {
             const node = <ExpressionWithTypeArguments>createNode(TokenType.ExpressionWithTypeArguments);
             node.expression = parseLeftHandSideExpressionOrHigher();
-            if (token === TokenType.LessThanToken) {
-                node.typeArguments = parseBracketedList(ParsingContext.TypeArguments, parseType, TokenType.LessThanToken, TokenType.GreaterThanToken);
+            if (token === TokenType.lessThan) {
+                node.typeArguments = parseBracketedList(ParsingContext.TypeArguments, parseType, TokenType.lessThan, TokenType.greaterThan);
             }
 
             return finishNode(node);
         }
 
         function isHeritageClause(): boolean {
-            return token === TokenType.ExtendsKeyword || token === TokenType.ImplementsKeyword;
+            return token === TokenType.extends || token === TokenType.implements;
         }
 
         function parseClassMembers() {
@@ -5262,7 +5262,7 @@ namespace ts {
             const node = <InterfaceDeclaration>createNode(TokenType.InterfaceDeclaration, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            parseExpected(TokenType.InterfaceKeyword);
+            parseExpected(TokenType.interface);
             node.name = parseIdentifier();
             node.typeParameters = parseTypeParameters();
             node.heritageClauses = parseHeritageClauses(/*isClassHeritageClause*/ false);
@@ -5274,10 +5274,10 @@ namespace ts {
             const node = <TypeAliasDeclaration>createNode(TokenType.TypeAliasDeclaration, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            parseExpected(TokenType.TypeKeyword);
+            parseExpected(TokenType.type);
             node.name = parseIdentifier();
             node.typeParameters = parseTypeParameters();
-            parseExpected(TokenType.EqualsToken);
+            parseExpected(TokenType.equals);
             node.type = parseType();
             parseSemicolon();
             return finishNode(node);
@@ -5298,11 +5298,11 @@ namespace ts {
             const node = <EnumDeclaration>createNode(TokenType.EnumDeclaration, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            parseExpected(TokenType.EnumKeyword);
+            parseExpected(TokenType.enum);
             node.name = parseIdentifier();
-            if (parseExpected(TokenType.OpenBraceToken)) {
+            if (parseExpected(TokenType.openBrace)) {
                 node.members = parseDelimitedList(ParsingContext.EnumMembers, parseEnumMember);
-                parseExpected(TokenType.CloseBraceToken);
+                parseExpected(TokenType.closeBrace);
             }
             else {
                 node.members = createMissingList<EnumMember>();
@@ -5312,9 +5312,9 @@ namespace ts {
 
         function parseModuleBlock(): ModuleBlock {
             const node = <ModuleBlock>createNode(TokenType.ModuleBlock, scanner.getStartPos());
-            if (parseExpected(TokenType.OpenBraceToken)) {
+            if (parseExpected(TokenType.openBrace)) {
                 node.statements = parseList(ParsingContext.BlockStatements, parseStatement);
-                parseExpected(TokenType.CloseBraceToken);
+                parseExpected(TokenType.closeBrace);
             }
             else {
                 node.statements = createMissingList<Statement>();
@@ -5331,7 +5331,7 @@ namespace ts {
             setModifiers(node, modifiers);
             node.flags |= flags;
             node.name = parseIdentifier();
-            node.body = parseOptional(TokenType.DotToken)
+            node.body = parseOptional(TokenType.dot)
                 ? parseModuleOrNamespaceDeclaration(getNodePos(), /*decorators*/ undefined, /*modifiers*/ undefined, NodeFlags.Export | namespaceFlag)
                 : parseModuleBlock();
             return finishNode(node);
@@ -5341,7 +5341,7 @@ namespace ts {
             const node = <ModuleDeclaration>createNode(TokenType.ModuleDeclaration, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            if (token === TokenType.GlobalKeyword) {
+            if (token === TokenType.global) {
                 // parse 'global' as name of global scope augmentation
                 node.name = parseIdentifier();
                 node.flags |= NodeFlags.GlobalAugmentation;
@@ -5350,7 +5350,7 @@ namespace ts {
                 node.name = parseLiteralNode(/*internName*/ true);
             }
 
-            if (token === TokenType.OpenBraceToken) {
+            if (token === TokenType.openBrace) {
                 node.body = parseModuleBlock();
             }
             else {
@@ -5362,15 +5362,15 @@ namespace ts {
 
         function parseModuleDeclaration(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): ModuleDeclaration {
             let flags = modifiers ? modifiers.flags : 0;
-            if (token === TokenType.GlobalKeyword) {
+            if (token === TokenType.global) {
                 // global augmentation
                 return parseAmbientExternalModuleDeclaration(fullStart, decorators, modifiers);
             }
-            else if (parseOptional(TokenType.NamespaceKeyword)) {
+            else if (parseOptional(TokenType.namespace)) {
                 flags |= NodeFlags.Namespace;
             }
             else {
-                parseExpected(TokenType.ModuleKeyword);
+                parseExpected(TokenType.module);
                 if (token === TokenType.StringLiteral) {
                     return parseAmbientExternalModuleDeclaration(fullStart, decorators, modifiers);
                 }
@@ -5379,40 +5379,40 @@ namespace ts {
         }
 
         function isExternalModuleReference() {
-            return token === TokenType.RequireKeyword &&
+            return token === TokenType.require &&
                 lookAhead(nextTokenIsOpenParen);
         }
 
         function nextTokenIsOpenParen() {
-            return nextToken() === TokenType.OpenParenToken;
+            return nextToken() === TokenType.openParen;
         }
 
         function nextTokenIsSlash() {
-            return nextToken() === TokenType.SlashToken;
+            return nextToken() === TokenType.slash;
         }
 
         function parseNamespaceExportDeclaration(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): NamespaceExportDeclaration {
             const exportDeclaration = <NamespaceExportDeclaration>createNode(TokenType.NamespaceExportDeclaration, fullStart);
             exportDeclaration.decorators = decorators;
             exportDeclaration.modifiers = modifiers;
-            parseExpected(TokenType.AsKeyword);
-            parseExpected(TokenType.NamespaceKeyword);
+            parseExpected(TokenType.as);
+            parseExpected(TokenType.namespace);
 
             exportDeclaration.name = parseIdentifier();
 
-            parseExpected(TokenType.SemicolonToken);
+            parseExpected(TokenType.semicolon);
 
             return finishNode(exportDeclaration);
         }
 
         function parseImportDeclarationOrImportEqualsDeclaration(fullStart: number, decorators: NodeArray<Decorator>, modifiers: ModifiersArray): ImportEqualsDeclaration | ImportDeclaration {
-            parseExpected(TokenType.ImportKeyword);
+            parseExpected(TokenType.import);
             const afterImportPos = scanner.getStartPos();
 
             let identifier: Identifier;
             if (isIdentifier()) {
                 identifier = parseIdentifier();
-                if (token !== TokenType.CommaToken && token !== TokenType.FromKeyword) {
+                if (token !== TokenType.comma && token !== TokenType.from) {
                     // ImportEquals declaration of type:
                     // import x = require("mod"); or
                     // import x = M.x;
@@ -5420,7 +5420,7 @@ namespace ts {
                     importEqualsDeclaration.decorators = decorators;
                     setModifiers(importEqualsDeclaration, modifiers);
                     importEqualsDeclaration.name = identifier;
-                    parseExpected(TokenType.EqualsToken);
+                    parseExpected(TokenType.equals);
                     importEqualsDeclaration.moduleReference = parseModuleReference();
                     parseSemicolon();
                     return finishNode(importEqualsDeclaration);
@@ -5436,10 +5436,10 @@ namespace ts {
             //  import ImportClause from ModuleSpecifier ;
             //  import ModuleSpecifier;
             if (identifier || // import id
-                token === TokenType.AsteriskToken || // import *
-                token === TokenType.OpenBraceToken) { // import {
+                token === TokenType.asterisk || // import *
+                token === TokenType.openBrace) { // import {
                 importDeclaration.importClause = parseImportClause(identifier, afterImportPos);
-                parseExpected(TokenType.FromKeyword);
+                parseExpected(TokenType.from);
             }
 
             importDeclaration.moduleSpecifier = parseModuleSpecifier();
@@ -5465,8 +5465,8 @@ namespace ts {
             // If there was no default import or if there is comma token after default import
             // parse namespace or named imports
             if (!importClause.name ||
-                parseOptional(TokenType.CommaToken)) {
-                importClause.namedBindings = token === TokenType.AsteriskToken ? parseNamespaceImport() : parseNamedImportsOrExports(TokenType.NamedImports);
+                parseOptional(TokenType.comma)) {
+                importClause.namedBindings = token === TokenType.asterisk ? parseNamespaceImport() : parseNamedImportsOrExports(TokenType.NamedImports);
             }
 
             return finishNode(importClause);
@@ -5480,10 +5480,10 @@ namespace ts {
 
         function parseExternalModuleReference() {
             const node = <ExternalModuleReference>createNode(TokenType.ExternalModuleReference);
-            parseExpected(TokenType.RequireKeyword);
-            parseExpected(TokenType.OpenParenToken);
+            parseExpected(TokenType.require);
+            parseExpected(TokenType.openParen);
             node.expression = parseModuleSpecifier();
-            parseExpected(TokenType.CloseParenToken);
+            parseExpected(TokenType.closeParen);
             return finishNode(node);
         }
 
@@ -5505,8 +5505,8 @@ namespace ts {
             // NameSpaceImport:
             //  * as ImportedBinding
             const namespaceImport = <NamespaceImport>createNode(TokenType.NamespaceImport);
-            parseExpected(TokenType.AsteriskToken);
-            parseExpected(TokenType.AsKeyword);
+            parseExpected(TokenType.asterisk);
+            parseExpected(TokenType.as);
             namespaceImport.name = parseIdentifier();
             return finishNode(namespaceImport);
         }
@@ -5524,7 +5524,7 @@ namespace ts {
             //  ImportsList, ImportSpecifier
             node.elements = parseBracketedList(ParsingContext.ImportOrExportSpecifiers,
                 kind === TokenType.NamedImports ? parseImportSpecifier : parseExportSpecifier,
-                TokenType.OpenBraceToken, TokenType.CloseBraceToken);
+                TokenType.openBrace, TokenType.closeBrace);
             return finishNode(node);
         }
 
@@ -5548,9 +5548,9 @@ namespace ts {
             let checkIdentifierStart = scanner.getTokenPos();
             let checkIdentifierEnd = scanner.getTextPos();
             const identifierName = parseIdentifierName();
-            if (token === TokenType.AsKeyword) {
+            if (token === TokenType.as) {
                 node.propertyName = identifierName;
-                parseExpected(TokenType.AsKeyword);
+                parseExpected(TokenType.as);
                 checkIdentifierIsKeyword = isKeyword(token) && !isIdentifier();
                 checkIdentifierStart = scanner.getTokenPos();
                 checkIdentifierEnd = scanner.getTextPos();
@@ -5570,8 +5570,8 @@ namespace ts {
             const node = <ExportDeclaration>createNode(TokenType.ExportDeclaration, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            if (parseOptional(TokenType.AsteriskToken)) {
-                parseExpected(TokenType.FromKeyword);
+            if (parseOptional(TokenType.asterisk)) {
+                parseExpected(TokenType.from);
                 node.moduleSpecifier = parseModuleSpecifier();
             }
             else {
@@ -5580,8 +5580,8 @@ namespace ts {
                 // It is not uncommon to accidentally omit the 'from' keyword. Additionally, in editing scenarios,
                 // the 'from' keyword can be parsed as a named export when the export clause is unterminated (i.e. `export { from "moduleName";`)
                 // If we don't have a 'from' keyword, see if we have a string literal such that ASI won't take effect.
-                if (token === TokenType.FromKeyword || (token === TokenType.StringLiteral && !scanner.hasPrecedingLineBreak())) {
-                    parseExpected(TokenType.FromKeyword);
+                if (token === TokenType.from || (token === TokenType.StringLiteral && !scanner.hasPrecedingLineBreak())) {
+                    parseExpected(TokenType.from);
                     node.moduleSpecifier = parseModuleSpecifier();
                 }
             }
@@ -5593,11 +5593,11 @@ namespace ts {
             const node = <ExportAssignment>createNode(TokenType.ExportAssignment, fullStart);
             node.decorators = decorators;
             setModifiers(node, modifiers);
-            if (parseOptional(TokenType.EqualsToken)) {
+            if (parseOptional(TokenType.equals)) {
                 node.isExportEquals = true;
             }
             else {
-                parseExpected(TokenType.DefaultKeyword);
+                parseExpected(TokenType.default);
             }
             node.expression = parseAssignmentExpressionOrHigher();
             parseSemicolon();
@@ -5616,7 +5616,7 @@ namespace ts {
             // reference comment.
             while (true) {
                 const kind = triviaScanner.scan();
-                if (kind !== TokenType.SingleLineCommentTrivia) {
+                if (kind !== TokenType.singleLineComment) {
                     if (isTrivia(kind)) {
                         continue;
                     }
@@ -5726,16 +5726,16 @@ namespace ts {
         export namespace JSDocParser {
             export function isJSDocType() {
                 switch (token) {
-                    case TokenType.AsteriskToken:
-                    case TokenType.QuestionToken:
-                    case TokenType.OpenParenToken:
-                    case TokenType.OpenBracketToken:
-                    case TokenType.ExclamationToken:
-                    case TokenType.OpenBraceToken:
-                    case TokenType.FunctionKeyword:
-                    case TokenType.DotDotDotToken:
-                    case TokenType.NewKeyword:
-                    case TokenType.ThisKeyword:
+                    case TokenType.asterisk:
+                    case TokenType.question:
+                    case TokenType.openParen:
+                    case TokenType.openBracket:
+                    case TokenType.exclamation:
+                    case TokenType.openBrace:
+                    case TokenType.function:
+                    case TokenType.dotDotDot:
+                    case TokenType.new:
+                    case TokenType.this:
                         return true;
                 }
 
@@ -5758,9 +5758,9 @@ namespace ts {
             export function parseJSDocTypeExpression(): JSDocTypeExpression {
                 const result = <JSDocTypeExpression>createNode(TokenType.JSDocTypeExpression, scanner.getTokenPos());
 
-                parseExpected(TokenType.OpenBraceToken);
+                parseExpected(TokenType.openBrace);
                 result.type = parseJSDocTopLevelType();
-                parseExpected(TokenType.CloseBraceToken);
+                parseExpected(TokenType.closeBrace);
 
                 fixupParentReferences(result);
                 return finishNode(result);
@@ -5768,13 +5768,13 @@ namespace ts {
 
             function parseJSDocTopLevelType(): JSDocType {
                 let type = parseJSDocType();
-                if (token === TokenType.BarToken) {
+                if (token === TokenType.bar) {
                     const unionType = <JSDocUnionType>createNode(TokenType.JSDocUnionType, type.pos);
                     unionType.types = parseJSDocTypeList(type);
                     type = finishNode(unionType);
                 }
 
-                if (token === TokenType.EqualsToken) {
+                if (token === TokenType.equals) {
                     const optionalType = <JSDocOptionalType>createNode(TokenType.JSDocOptionalType, type.pos);
                     nextToken();
                     optionalType.type = type;
@@ -5788,23 +5788,23 @@ namespace ts {
                 let type = parseBasicTypeExpression();
 
                 while (true) {
-                    if (token === TokenType.OpenBracketToken) {
+                    if (token === TokenType.openBracket) {
                         const arrayType = <JSDocArrayType>createNode(TokenType.JSDocArrayType, type.pos);
                         arrayType.elementType = type;
 
                         nextToken();
-                        parseExpected(TokenType.CloseBracketToken);
+                        parseExpected(TokenType.closeBracket);
 
                         type = finishNode(arrayType);
                     }
-                    else if (token === TokenType.QuestionToken) {
+                    else if (token === TokenType.question) {
                         const nullableType = <JSDocNullableType>createNode(TokenType.JSDocNullableType, type.pos);
                         nullableType.type = type;
 
                         nextToken();
                         type = finishNode(nullableType);
                     }
-                    else if (token === TokenType.ExclamationToken) {
+                    else if (token === TokenType.exclamation) {
                         const nonNullableType = <JSDocNonNullableType>createNode(TokenType.JSDocNonNullableType, type.pos);
                         nonNullableType.type = type;
 
@@ -5821,32 +5821,32 @@ namespace ts {
 
             function parseBasicTypeExpression(): JSDocType {
                 switch (token) {
-                    case TokenType.AsteriskToken:
+                    case TokenType.asterisk:
                         return parseJSDocAllType();
-                    case TokenType.QuestionToken:
+                    case TokenType.question:
                         return parseJSDocUnknownOrNullableType();
-                    case TokenType.OpenParenToken:
+                    case TokenType.openParen:
                         return parseJSDocUnionType();
-                    case TokenType.OpenBracketToken:
+                    case TokenType.openBracket:
                         return parseJSDocTupleType();
-                    case TokenType.ExclamationToken:
+                    case TokenType.exclamation:
                         return parseJSDocNonNullableType();
-                    case TokenType.OpenBraceToken:
+                    case TokenType.openBrace:
                         return parseJSDocRecordType();
-                    case TokenType.FunctionKeyword:
+                    case TokenType.function:
                         return parseJSDocFunctionType();
-                    case TokenType.DotDotDotToken:
+                    case TokenType.dotDotDot:
                         return parseJSDocVariadicType();
-                    case TokenType.NewKeyword:
+                    case TokenType.new:
                         return parseJSDocConstructorType();
-                    case TokenType.ThisKeyword:
+                    case TokenType.this:
                         return parseJSDocThisType();
-                    case TokenType.AnyKeyword:
-                    case TokenType.StringKeyword:
-                    case TokenType.NumberKeyword:
-                    case TokenType.BooleanKeyword:
-                    case TokenType.SymbolKeyword:
-                    case TokenType.VoidKeyword:
+                    case TokenType.any:
+                    case TokenType.string:
+                    case TokenType.number:
+                    case TokenType.boolean:
+                    case TokenType.symbol:
+                    case TokenType.void:
                         return parseTokenNode<JSDocType>();
                 }
 
@@ -5857,7 +5857,7 @@ namespace ts {
             function parseJSDocThisType(): JSDocThisType {
                 const result = <JSDocThisType>createNode(TokenType.JSDocThisType);
                 nextToken();
-                parseExpected(TokenType.ColonToken);
+                parseExpected(TokenType.colon);
                 result.type = parseJSDocType();
                 return finishNode(result);
             }
@@ -5865,7 +5865,7 @@ namespace ts {
             function parseJSDocConstructorType(): JSDocConstructorType {
                 const result = <JSDocConstructorType>createNode(TokenType.JSDocConstructorType);
                 nextToken();
-                parseExpected(TokenType.ColonToken);
+                parseExpected(TokenType.colon);
                 result.type = parseJSDocType();
                 return finishNode(result);
             }
@@ -5881,12 +5881,12 @@ namespace ts {
                 const result = <JSDocFunctionType>createNode(TokenType.JSDocFunctionType);
                 nextToken();
 
-                parseExpected(TokenType.OpenParenToken);
+                parseExpected(TokenType.openParen);
                 result.parameters = parseDelimitedList(ParsingContext.JSDocFunctionParameters, parseJSDocParameter);
                 checkForTrailingComma(result.parameters);
-                parseExpected(TokenType.CloseParenToken);
+                parseExpected(TokenType.closeParen);
 
-                if (token === TokenType.ColonToken) {
+                if (token === TokenType.colon) {
                     nextToken();
                     result.type = parseJSDocType();
                 }
@@ -5897,8 +5897,8 @@ namespace ts {
             function parseJSDocParameter(): ParameterDeclaration {
                 const parameter = <ParameterDeclaration>createNode(TokenType.Parameter);
                 parameter.type = parseJSDocType();
-                if (parseOptional(TokenType.EqualsToken)) {
-                    parameter.questionToken = createNode(TokenType.EqualsToken);
+                if (parseOptional(TokenType.equals)) {
+                    parameter.questionToken = createNode(TokenType.equals);
                 }
                 return finishNode(parameter);
             }
@@ -5907,12 +5907,12 @@ namespace ts {
                 const result = <JSDocTypeReference>createNode(TokenType.JSDocTypeReference);
                 result.name = parseSimplePropertyName();
 
-                if (token === TokenType.LessThanToken) {
+                if (token === TokenType.lessThan) {
                     result.typeArguments = parseTypeArguments();
                 }
                 else {
-                    while (parseOptional(TokenType.DotToken)) {
-                        if (token === TokenType.LessThanToken) {
+                    while (parseOptional(TokenType.dot)) {
+                        if (token === TokenType.lessThan) {
                             result.typeArguments = parseTypeArguments();
                             break;
                         }
@@ -5932,7 +5932,7 @@ namespace ts {
                 const typeArguments = parseDelimitedList(ParsingContext.JSDocTypeArguments, parseJSDocType);
                 checkForTrailingComma(typeArguments);
                 checkForEmptyTypeArgumentList(typeArguments);
-                parseExpected(TokenType.GreaterThanToken);
+                parseExpected(TokenType.greaterThan);
 
                 return typeArguments;
             }
@@ -5958,7 +5958,7 @@ namespace ts {
                 nextToken();
                 result.members = parseDelimitedList(ParsingContext.JSDocRecordMembers, parseJSDocRecordMember);
                 checkForTrailingComma(result.members);
-                parseExpected(TokenType.CloseBraceToken);
+                parseExpected(TokenType.closeBrace);
                 return finishNode(result);
             }
 
@@ -5966,7 +5966,7 @@ namespace ts {
                 const result = <JSDocRecordMember>createNode(TokenType.JSDocRecordMember);
                 result.name = parseSimplePropertyName();
 
-                if (token === TokenType.ColonToken) {
+                if (token === TokenType.colon) {
                     nextToken();
                     result.type = parseJSDocType();
                 }
@@ -5986,7 +5986,7 @@ namespace ts {
                 nextToken();
                 result.types = parseDelimitedList(ParsingContext.JSDocTupleTypes, parseJSDocType);
                 checkForTrailingComma(result.types);
-                parseExpected(TokenType.CloseBracketToken);
+                parseExpected(TokenType.closeBracket);
 
                 return finishNode(result);
             }
@@ -6003,7 +6003,7 @@ namespace ts {
                 nextToken();
                 result.types = parseJSDocTypeList(parseJSDocType());
 
-                parseExpected(TokenType.CloseParenToken);
+                parseExpected(TokenType.closeParen);
 
                 return finishNode(result);
             }
@@ -6015,7 +6015,7 @@ namespace ts {
                 types.pos = firstType.pos;
 
                 types.push(firstType);
-                while (parseOptional(TokenType.BarToken)) {
+                while (parseOptional(TokenType.bar)) {
                     types.push(parseJSDocType());
                 }
 
@@ -6044,12 +6044,12 @@ namespace ts {
                 //      Foo<?>
                 //      Foo(?=
                 //      (?|
-                if (token === TokenType.CommaToken ||
-                    token === TokenType.CloseBraceToken ||
-                    token === TokenType.CloseParenToken ||
-                    token === TokenType.GreaterThanToken ||
-                    token === TokenType.EqualsToken ||
-                    token === TokenType.BarToken) {
+                if (token === TokenType.comma ||
+                    token === TokenType.closeBrace ||
+                    token === TokenType.closeParen ||
+                    token === TokenType.greaterThan ||
+                    token === TokenType.equals ||
+                    token === TokenType.bar) {
 
                     const result = <JSDocUnknownType>createNode(TokenType.JSDocUnknownType, pos);
                     return finishNode(result);
@@ -6118,7 +6118,7 @@ namespace ts {
                         nextJSDocToken();
                         while (token !== TokenType.endOfFile) {
                             switch (token) {
-                                case TokenType.AtToken:
+                                case TokenType.at:
                                     if (canParseTag) {
                                         parseTag();
                                     }
@@ -6126,13 +6126,13 @@ namespace ts {
                                     seenAsterisk = false;
                                     break;
 
-                                case TokenType.NewLineTrivia:
+                                case TokenType.newLine:
                                     // After a line break, we can parse a tag, and we haven't seen an asterisk on the next line yet
                                     canParseTag = true;
                                     seenAsterisk = false;
                                     break;
 
-                                case TokenType.AsteriskToken:
+                                case TokenType.asterisk:
                                     if (seenAsterisk) {
                                         // If we've already seen an asterisk, then we can no longer parse a tag on this line
                                         canParseTag = false;
@@ -6173,14 +6173,14 @@ namespace ts {
                 }
 
                 function skipWhitespace(): void {
-                    while (token === TokenType.WhitespaceTrivia || token === TokenType.NewLineTrivia) {
+                    while (token === TokenType.whitespace || token === TokenType.newLine) {
                         nextJSDocToken();
                     }
                 }
 
                 function parseTag(): void {
-                    Debug.assert(token === TokenType.AtToken);
-                    const atToken = createNode(TokenType.AtToken, scanner.getTokenPos());
+                    Debug.assert(token === TokenType.at);
+                    const atToken = createNode(TokenType.at, scanner.getTokenPos());
                     atToken.end = scanner.getTextPos();
                     nextJSDocToken();
 
@@ -6233,7 +6233,7 @@ namespace ts {
                 }
 
                 function tryParseTypeExpression(): JSDocTypeExpression {
-                    if (token !== TokenType.OpenBraceToken) {
+                    if (token !== TokenType.openBrace) {
                         return undefined;
                     }
 
@@ -6248,16 +6248,16 @@ namespace ts {
                     let name: Identifier;
                     let isBracketed: boolean;
                     // Looking for something like '[foo]' or 'foo'
-                    if (parseOptionalToken(TokenType.OpenBracketToken)) {
+                    if (parseOptionalToken(TokenType.openBracket)) {
                         name = parseJSDocIdentifierName();
                         isBracketed = true;
 
                         // May have an optional default, e.g. '[foo = 42]'
-                        if (parseOptionalToken(TokenType.EqualsToken)) {
+                        if (parseOptionalToken(TokenType.equals)) {
                             parseExpression();
                         }
 
-                        parseExpected(TokenType.CloseBracketToken);
+                        parseExpected(TokenType.closeBracket);
                     }
                     else if (tokenIsIdentifierOrKeyword(token)) {
                         name = parseJSDocIdentifierName();
@@ -6371,7 +6371,7 @@ namespace ts {
                         while (token !== TokenType.endOfFile && !parentTagTerminated) {
                             nextJSDocToken();
                             switch (token) {
-                                case TokenType.AtToken:
+                                case TokenType.at:
                                     if (canParseTag) {
                                         parentTagTerminated = !tryParseChildTag(jsDocTypeLiteral);
                                         if (!parentTagTerminated) {
@@ -6380,12 +6380,12 @@ namespace ts {
                                     }
                                     seenAsterisk = false;
                                     break;
-                                case TokenType.NewLineTrivia:
+                                case TokenType.newLine:
                                     resumePos = scanner.getStartPos() - 1;
                                     canParseTag = true;
                                     seenAsterisk = false;
                                     break;
-                                case TokenType.AsteriskToken:
+                                case TokenType.asterisk:
                                     if (seenAsterisk) {
                                         canParseTag = false;
                                     }
@@ -6403,8 +6403,8 @@ namespace ts {
                 }
 
                 function tryParseChildTag(parentTag: JSDocTypeLiteral): boolean {
-                    Debug.assert(token === TokenType.AtToken);
-                    const atToken = createNode(TokenType.AtToken, scanner.getStartPos());
+                    Debug.assert(token === TokenType.at);
+                    const atToken = createNode(TokenType.at, scanner.getStartPos());
                     atToken.end = scanner.getTextPos();
                     nextJSDocToken();
 
@@ -6455,7 +6455,7 @@ namespace ts {
 
                         typeParameters.push(typeParameter);
 
-                        if (token === TokenType.CommaToken) {
+                        if (token === TokenType.comma) {
                             nextJSDocToken();
                         }
                         else {

@@ -387,15 +387,15 @@ namespace ts {
 
         function emitType(type: TypeNode | Identifier | QualifiedName) {
             switch (type.kind) {
-                case TokenType.AnyKeyword:
-                case TokenType.StringKeyword:
-                case TokenType.NumberKeyword:
-                case TokenType.BooleanKeyword:
-                case TokenType.SymbolKeyword:
-                case TokenType.VoidKeyword:
-                case TokenType.UndefinedKeyword:
-                case TokenType.NullKeyword:
-                case TokenType.NeverKeyword:
+                case TokenType.any:
+                case TokenType.string:
+                case TokenType.number:
+                case TokenType.boolean:
+                case TokenType.symbol:
+                case TokenType.void:
+                case TokenType.undefined:
+                case TokenType.null:
+                case TokenType.never:
                 case TokenType.ThisType:
                 case TokenType.StringLiteralType:
                     return writeTextOfNode(currentText, type);
@@ -1022,7 +1022,7 @@ namespace ts {
                 if (isSupportedExpressionWithTypeArguments(node)) {
                     emitTypeWithNewGetSymbolAccessibilityDiagnostic(node, getHeritageClauseVisibilityError);
                 }
-                else if (!isImplementsList && node.expression.kind === TokenType.NullKeyword) {
+                else if (!isImplementsList && node.expression.kind === TokenType.null) {
                     write("null");
                 }
                 else {

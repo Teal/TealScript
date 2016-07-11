@@ -2,6 +2,7 @@
 /// <reference path="diagnosticInformationMap.generated.ts"/>
 
 namespace ts {
+
     export interface ErrorCallback {
         (message: DiagnosticMessage, length: number): void;
     }
@@ -56,137 +57,132 @@ namespace ts {
     }
 
     const textToToken: Map<TokenType> = {
-        "abstract": TokenType.AbstractKeyword,
-        "any": TokenType.AnyKeyword,
-        "as": TokenType.AsKeyword,
-        "boolean": TokenType.BooleanKeyword,
-        "break": TokenType.BreakKeyword,
-        "case": TokenType.CaseKeyword,
-        "catch": TokenType.CatchKeyword,
-        "class": TokenType.ClassKeyword,
-        "continue": TokenType.ContinueKeyword,
-        "const": TokenType.ConstKeyword,
-        "constructor": TokenType.ConstructorKeyword,
-        "debugger": TokenType.DebuggerKeyword,
-        "declare": TokenType.DeclareKeyword,
-        "default": TokenType.DefaultKeyword,
-        "delete": TokenType.DeleteKeyword,
-        "do": TokenType.DoKeyword,
-        "else": TokenType.ElseKeyword,
-        "enum": TokenType.EnumKeyword,
-        "export": TokenType.ExportKeyword,
-        "extends": TokenType.ExtendsKeyword,
-        "false": TokenType.FalseKeyword,
-        "finally": TokenType.FinallyKeyword,
-        "for": TokenType.ForKeyword,
-        "from": TokenType.FromKeyword,
-        "function": TokenType.FunctionKeyword,
-        "get": TokenType.GetKeyword,
-        "if": TokenType.IfKeyword,
-        "implements": TokenType.ImplementsKeyword,
-        "import": TokenType.ImportKeyword,
-        "in": TokenType.InKeyword,
-        "instanceof": TokenType.InstanceOfKeyword,
-        "interface": TokenType.InterfaceKeyword,
-        "is": TokenType.IsKeyword,
-        "let": TokenType.LetKeyword,
-        "module": TokenType.ModuleKeyword,
-        "namespace": TokenType.NamespaceKeyword,
-        "never": TokenType.NeverKeyword,
-        "new": TokenType.NewKeyword,
-        "null": TokenType.NullKeyword,
-        "number": TokenType.NumberKeyword,
-        "package": TokenType.PackageKeyword,
-        "private": TokenType.PrivateKeyword,
-        "protected": TokenType.ProtectedKeyword,
-        "public": TokenType.PublicKeyword,
-        "readonly": TokenType.ReadonlyKeyword,
-        "require": TokenType.RequireKeyword,
-        "global": TokenType.GlobalKeyword,
-        "return": TokenType.ReturnKeyword,
-        "set": TokenType.SetKeyword,
-        "static": TokenType.StaticKeyword,
-        "string": TokenType.StringKeyword,
-        "super": TokenType.SuperKeyword,
-        "switch": TokenType.SwitchKeyword,
-        "symbol": TokenType.SymbolKeyword,
-        "this": TokenType.ThisKeyword,
-        "throw": TokenType.ThrowKeyword,
-        "true": TokenType.TrueKeyword,
-        "try": TokenType.TryKeyword,
-        "type": TokenType.TypeKeyword,
-        "typeof": TokenType.TypeOfKeyword,
-        "undefined": TokenType.UndefinedKeyword,
-        "var": TokenType.VarKeyword,
-        "void": TokenType.VoidKeyword,
-        "while": TokenType.WhileKeyword,
-        "with": TokenType.WithKeyword,
-        "yield": TokenType.YieldKeyword,
-        "async": TokenType.AsyncKeyword,
-        "await": TokenType.AwaitKeyword,
-        "of": TokenType.OfKeyword,
-        "{": TokenType.OpenBraceToken,
-        "}": TokenType.CloseBraceToken,
-        "(": TokenType.OpenParenToken,
-        ")": TokenType.CloseParenToken,
-        "[": TokenType.OpenBracketToken,
-        "]": TokenType.CloseBracketToken,
-        ".": TokenType.DotToken,
-        "...": TokenType.DotDotDotToken,
-        ";": TokenType.SemicolonToken,
-        ",": TokenType.CommaToken,
-        "<": TokenType.LessThanToken,
-        ">": TokenType.GreaterThanToken,
-        "<=": TokenType.LessThanEqualsToken,
-        ">=": TokenType.GreaterThanEqualsToken,
-        "==": TokenType.EqualsEqualsToken,
-        "!=": TokenType.ExclamationEqualsToken,
-        "===": TokenType.EqualsEqualsEqualsToken,
-        "!==": TokenType.ExclamationEqualsEqualsToken,
-        "=>": TokenType.EqualsGreaterThanToken,
-        "+": TokenType.PlusToken,
-        "-": TokenType.MinusToken,
-        "**": TokenType.AsteriskAsteriskToken,
-        "*": TokenType.AsteriskToken,
-        "/": TokenType.SlashToken,
-        "%": TokenType.PercentToken,
-        "++": TokenType.PlusPlusToken,
-        "--": TokenType.MinusMinusToken,
-        "<<": TokenType.LessThanLessThanToken,
-        "</": TokenType.LessThanSlashToken,
-        ">>": TokenType.GreaterThanGreaterThanToken,
-        ">>>": TokenType.GreaterThanGreaterThanGreaterThanToken,
-        "&": TokenType.AmpersandToken,
-        "|": TokenType.BarToken,
-        "^": TokenType.CaretToken,
-        "!": TokenType.ExclamationToken,
-        "~": TokenType.TildeToken,
-        "&&": TokenType.AmpersandAmpersandToken,
-        "||": TokenType.BarBarToken,
-        "?": TokenType.QuestionToken,
-        ":": TokenType.ColonToken,
-        "=": TokenType.EqualsToken,
-        "+=": TokenType.PlusEqualsToken,
-        "-=": TokenType.MinusEqualsToken,
-        "*=": TokenType.AsteriskEqualsToken,
-        "**=": TokenType.AsteriskAsteriskEqualsToken,
-        "/=": TokenType.SlashEqualsToken,
-        "%=": TokenType.PercentEqualsToken,
-        "<<=": TokenType.LessThanLessThanEqualsToken,
-        ">>=": TokenType.GreaterThanGreaterThanEqualsToken,
-        ">>>=": TokenType.GreaterThanGreaterThanGreaterThanEqualsToken,
-        "&=": TokenType.AmpersandEqualsToken,
-        "|=": TokenType.BarEqualsToken,
-        "^=": TokenType.CaretEqualsToken,
-        "@": TokenType.AtToken,
+        "abstract": TokenType.abstract,
+        "any": TokenType.any,
+        "as": TokenType.as,
+        "boolean": TokenType.boolean,
+        "break": TokenType.break,
+        "case": TokenType.case,
+        "catch": TokenType.catch,
+        "class": TokenType.class,
+        "continue": TokenType.continue,
+        "const": TokenType.const,
+        "constructor": TokenType.constructor,
+        "debugger": TokenType.debugger,
+        "declare": TokenType.declare,
+        "default": TokenType.default,
+        "delete": TokenType.delete,
+        "do": TokenType.do,
+        "else": TokenType.else,
+        "enum": TokenType.enum,
+        "export": TokenType.export,
+        "extends": TokenType.extends,
+        "false": TokenType.false,
+        "finally": TokenType.finally,
+        "for": TokenType.for,
+        "from": TokenType.from,
+        "function": TokenType.function,
+        "get": TokenType.get,
+        "if": TokenType.if,
+        "implements": TokenType.implements,
+        "import": TokenType.import,
+        "in": TokenType.in,
+        "instanceof": TokenType.instanceOf,
+        "interface": TokenType.interface,
+        "is": TokenType.is,
+        "let": TokenType.let,
+        "module": TokenType.module,
+        "namespace": TokenType.namespace,
+        "never": TokenType.never,
+        "new": TokenType.new,
+        "null": TokenType.null,
+        "number": TokenType.number,
+        "package": TokenType.package,
+        "private": TokenType.private,
+        "protected": TokenType.protected,
+        "public": TokenType.public,
+        "readonly": TokenType.readonly,
+        "require": TokenType.require,
+        "global": TokenType.global,
+        "return": TokenType.return,
+        "set": TokenType.set,
+        "static": TokenType.static,
+        "string": TokenType.string,
+        "super": TokenType.super,
+        "switch": TokenType.switch,
+        "symbol": TokenType.symbol,
+        "this": TokenType.this,
+        "throw": TokenType.throw,
+        "true": TokenType.true,
+        "try": TokenType.try,
+        "type": TokenType.type,
+        "typeof": TokenType.typeOf,
+        "undefined": TokenType.undefined,
+        "var": TokenType.var,
+        "void": TokenType.void,
+        "while": TokenType.while,
+        "with": TokenType.with,
+        "yield": TokenType.yield,
+        "async": TokenType.async,
+        "await": TokenType.await,
+        "of": TokenType.of,
+        "{": TokenType.openBrace,
+        "}": TokenType.closeBrace,
+        "(": TokenType.openParen,
+        ")": TokenType.closeParen,
+        "[": TokenType.openBracket,
+        "]": TokenType.closeBracket,
+        ".": TokenType.dot,
+        "...": TokenType.dotDotDot,
+        ";": TokenType.semicolon,
+        ",": TokenType.comma,
+        "<": TokenType.lessThan,
+        ">": TokenType.greaterThan,
+        "<=": TokenType.lessThanEquals,
+        ">=": TokenType.greaterThanEquals,
+        "==": TokenType.equalsEquals,
+        "!=": TokenType.exclamationEquals,
+        "===": TokenType.equalsEqualsEquals,
+        "!==": TokenType.exclamationEqualsEquals,
+        "=>": TokenType.equalsGreaterThan,
+        "+": TokenType.plus,
+        "-": TokenType.minus,
+        "**": TokenType.asteriskAsterisk,
+        "*": TokenType.asterisk,
+        "/": TokenType.slash,
+        "%": TokenType.percent,
+        "++": TokenType.plusPlus,
+        "--": TokenType.minusMinus,
+        "<<": TokenType.lessThanLessThan,
+        "</": TokenType.lessThanSlash,
+        ">>": TokenType.greaterThanGreaterThan,
+        ">>>": TokenType.greaterThanGreaterThanGreaterThan,
+        "&": TokenType.ampersand,
+        "|": TokenType.bar,
+        "^": TokenType.caret,
+        "!": TokenType.exclamation,
+        "~": TokenType.tilde,
+        "&&": TokenType.ampersandAmpersand,
+        "||": TokenType.barBar,
+        "?": TokenType.question,
+        ":": TokenType.colon,
+        "=": TokenType.equals,
+        "+=": TokenType.plusEquals,
+        "-=": TokenType.minusEquals,
+        "*=": TokenType.asteriskEquals,
+        "**=": TokenType.asteriskAsteriskEquals,
+        "/=": TokenType.slashEquals,
+        "%=": TokenType.percentEquals,
+        "<<=": TokenType.lessThanLessThanEquals,
+        ">>=": TokenType.greaterThanGreaterThanEquals,
+        ">>>=": TokenType.greaterThanGreaterThanGreaterThanEquals,
+        "&=": TokenType.ampersandEquals,
+        "|=": TokenType.barEquals,
+        "^=": TokenType.caretEquals,
+        "@": TokenType.at,
     };
 
     
-
-    /* @internal */ export function isUnicodeIdentifierStart(code: number, languageVersion: ScriptTarget) {
-        return ;
-    }
-
     function makeReverseMap(source: Map<number>): string[] {
         const result: string[] = [];
         for (const name in source) {
@@ -280,35 +276,6 @@ namespace ts {
     }
 
     const hasOwnProperty = Object.prototype.hasOwnProperty;
-
-    // #region DEL
-
-    export function isWhiteSpace(ch: number): boolean { return }
-
-    /** Does not include line breaks. For that, see isWhiteSpaceLike. */
-    export function isNoBreakWhiteSpace(ch: number): boolean { return }
-
-    export function isLineBreak(ch: number): boolean { return }
-
-    function isDecimalDigit(ch: number): boolean { return }
-
-    /* @internal */
-    export function isOctalDigit(ch: number): boolean { return }
-
-    export function isIdentifierStart(ch: number, languageVersion: ScriptTarget): boolean {
-        return;
-    }
-
-    export function isIdentifierPart(ch: number, languageVersion: ScriptTarget): boolean {
-        return;
-    }
-
-    /* @internal */
-    export function isIdentifier(name: string, languageVersion: ScriptTarget): boolean {
-        return;
-    }
-
-    // #endregion
 
     export function couldStartTrivia(text: string, pos: number): boolean {
         // Keep in sync with skipTrivia
@@ -528,7 +495,7 @@ namespace ts {
                     let nextChar = text.charCodeAt(pos + 1);
                     let hasTrailingNewLine = false;
                     if (nextChar === CharCode.slash || nextChar === CharCode.asterisk) {
-                        const kind = nextChar === CharCode.slash ? TokenType.SingleLineCommentTrivia : TokenType.MultiLineCommentTrivia;
+                        const kind = nextChar === CharCode.slash ? TokenType.singleLineComment : TokenType.multiLineComment;
                         const startPos = pos;
                         pos += 2;
                         if (nextChar === CharCode.slash) {
@@ -1047,7 +1014,7 @@ namespace ts {
                         continue;
                     }
                     else {
-                        return token = TokenType.ShebangTrivia;
+                        return token = TokenType.shebang;
                     }
                 }
 
@@ -1067,7 +1034,7 @@ namespace ts {
                             else {
                                 pos++;
                             }
-                            return token = TokenType.NewLineTrivia;
+                            return token = TokenType.newLine;
                         }
                     case CharCode.horizontalTab:
                     case CharCode.verticalTab:
@@ -1081,17 +1048,17 @@ namespace ts {
                             while (pos < end && isNoBreakWhiteSpace(text.charCodeAt(pos))) {
                                 pos++;
                             }
-                            return token = TokenType.WhitespaceTrivia;
+                            return token = TokenType.whitespace;
                         }
                     case CharCode.exclamation:
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
                             if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                                return pos += 3, token = TokenType.ExclamationEqualsEqualsToken;
+                                return pos += 3, token = TokenType.exclamationEqualsEquals;
                             }
-                            return pos += 2, token = TokenType.ExclamationEqualsToken;
+                            return pos += 2, token = TokenType.exclamationEquals;
                         }
                         pos++;
-                        return token = TokenType.ExclamationToken;
+                        return token = TokenType.exclamation;
                     case CharCode.doubleQuote:
                     case CharCode.singleQuote:
                         tokenValue = scanString();
@@ -1100,68 +1067,68 @@ namespace ts {
                         return token = scanTemplateAndSetTokenValue();
                     case CharCode.percent:
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.PercentEqualsToken;
+                            return pos += 2, token = TokenType.percentEquals;
                         }
                         pos++;
-                        return token = TokenType.PercentToken;
+                        return token = TokenType.percent;
                     case CharCode.ampersand:
                         if (text.charCodeAt(pos + 1) === CharCode.ampersand) {
-                            return pos += 2, token = TokenType.AmpersandAmpersandToken;
+                            return pos += 2, token = TokenType.ampersandAmpersand;
                         }
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.AmpersandEqualsToken;
+                            return pos += 2, token = TokenType.ampersandEquals;
                         }
                         pos++;
-                        return token = TokenType.AmpersandToken;
+                        return token = TokenType.ampersand;
                     case CharCode.openParen:
                         pos++;
-                        return token = TokenType.OpenParenToken;
+                        return token = TokenType.openParen;
                     case CharCode.closeParen:
                         pos++;
-                        return token = TokenType.CloseParenToken;
+                        return token = TokenType.closeParen;
                     case CharCode.asterisk:
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.AsteriskEqualsToken;
+                            return pos += 2, token = TokenType.asteriskEquals;
                         }
                         if (text.charCodeAt(pos + 1) === CharCode.asterisk) {
                             if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                                return pos += 3, token = TokenType.AsteriskAsteriskEqualsToken;
+                                return pos += 3, token = TokenType.asteriskAsteriskEquals;
                             }
-                            return pos += 2, token = TokenType.AsteriskAsteriskToken;
+                            return pos += 2, token = TokenType.asteriskAsterisk;
                         }
                         pos++;
-                        return token = TokenType.AsteriskToken;
+                        return token = TokenType.asterisk;
                     case CharCode.plus:
                         if (text.charCodeAt(pos + 1) === CharCode.plus) {
-                            return pos += 2, token = TokenType.PlusPlusToken;
+                            return pos += 2, token = TokenType.plusPlus;
                         }
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.PlusEqualsToken;
+                            return pos += 2, token = TokenType.plusEquals;
                         }
                         pos++;
-                        return token = TokenType.PlusToken;
+                        return token = TokenType.plus;
                     case CharCode.comma:
                         pos++;
-                        return token = TokenType.CommaToken;
+                        return token = TokenType.comma;
                     case CharCode.minus:
                         if (text.charCodeAt(pos + 1) === CharCode.minus) {
-                            return pos += 2, token = TokenType.MinusMinusToken;
+                            return pos += 2, token = TokenType.minusMinus;
                         }
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.MinusEqualsToken;
+                            return pos += 2, token = TokenType.minusEquals;
                         }
                         pos++;
-                        return token = TokenType.MinusToken;
+                        return token = TokenType.minus;
                     case CharCode.dot:
                         if (isDecimalDigit(text.charCodeAt(pos + 1))) {
                             tokenValue = scanNumber();
                             return token = TokenType.NumericLiteral;
                         }
                         if (text.charCodeAt(pos + 1) === CharCode.dot && text.charCodeAt(pos + 2) === CharCode.dot) {
-                            return pos += 3, token = TokenType.DotDotDotToken;
+                            return pos += 3, token = TokenType.dotDotDot;
                         }
                         pos++;
-                        return token = TokenType.DotToken;
+                        return token = TokenType.dot;
                     case CharCode.slash:
                         // Single-line comment
                         if (text.charCodeAt(pos + 1) === CharCode.slash) {
@@ -1179,7 +1146,7 @@ namespace ts {
                                 continue;
                             }
                             else {
-                                return token = TokenType.SingleLineCommentTrivia;
+                                return token = TokenType.singleLineComment;
                             }
                         }
                         // Multi-line comment
@@ -1211,16 +1178,16 @@ namespace ts {
                             }
                             else {
                                 tokenIsUnterminated = !commentClosed;
-                                return token = TokenType.MultiLineCommentTrivia;
+                                return token = TokenType.multiLineComment;
                             }
                         }
 
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.SlashEqualsToken;
+                            return pos += 2, token = TokenType.slashEquals;
                         }
 
                         pos++;
-                        return token = TokenType.SlashToken;
+                        return token = TokenType.slash;
 
                     case CharCode.num0:
                         if (pos + 2 < end && (text.charCodeAt(pos + 1) === CharCode.X || text.charCodeAt(pos + 1) === CharCode.x)) {
@@ -1274,10 +1241,10 @@ namespace ts {
                         return token = TokenType.NumericLiteral;
                     case CharCode.colon:
                         pos++;
-                        return token = TokenType.ColonToken;
+                        return token = TokenType.colon;
                     case CharCode.semicolon:
                         pos++;
-                        return token = TokenType.SemicolonToken;
+                        return token = TokenType.semicolon;
                     case CharCode.lessThan:
                         if (isConflictMarkerTrivia(text, pos)) {
                             pos = scanConflictMarkerTrivia(text, pos, error);
@@ -1285,26 +1252,26 @@ namespace ts {
                                 continue;
                             }
                             else {
-                                return token = TokenType.ConflictMarkerTrivia;
+                                return token = TokenType.conflictMarker;
                             }
                         }
 
                         if (text.charCodeAt(pos + 1) === CharCode.lessThan) {
                             if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                                return pos += 3, token = TokenType.LessThanLessThanEqualsToken;
+                                return pos += 3, token = TokenType.lessThanLessThanEquals;
                             }
-                            return pos += 2, token = TokenType.LessThanLessThanToken;
+                            return pos += 2, token = TokenType.lessThanLessThan;
                         }
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.LessThanEqualsToken;
+                            return pos += 2, token = TokenType.lessThanEquals;
                         }
                         if (languageVariant === LanguageVariant.JSX &&
                             text.charCodeAt(pos + 1) === CharCode.slash &&
                             text.charCodeAt(pos + 2) !== CharCode.asterisk) {
-                            return pos += 2, token = TokenType.LessThanSlashToken;
+                            return pos += 2, token = TokenType.lessThanSlash;
                         }
                         pos++;
-                        return token = TokenType.LessThanToken;
+                        return token = TokenType.lessThan;
                     case CharCode.equals:
                         if (isConflictMarkerTrivia(text, pos)) {
                             pos = scanConflictMarkerTrivia(text, pos, error);
@@ -1312,21 +1279,21 @@ namespace ts {
                                 continue;
                             }
                             else {
-                                return token = TokenType.ConflictMarkerTrivia;
+                                return token = TokenType.conflictMarker;
                             }
                         }
 
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
                             if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                                return pos += 3, token = TokenType.EqualsEqualsEqualsToken;
+                                return pos += 3, token = TokenType.equalsEqualsEquals;
                             }
-                            return pos += 2, token = TokenType.EqualsEqualsToken;
+                            return pos += 2, token = TokenType.equalsEquals;
                         }
                         if (text.charCodeAt(pos + 1) === CharCode.greaterThan) {
-                            return pos += 2, token = TokenType.EqualsGreaterThanToken;
+                            return pos += 2, token = TokenType.equalsGreaterThan;
                         }
                         pos++;
-                        return token = TokenType.EqualsToken;
+                        return token = TokenType.equals;
                     case CharCode.greaterThan:
                         if (isConflictMarkerTrivia(text, pos)) {
                             pos = scanConflictMarkerTrivia(text, pos, error);
@@ -1334,48 +1301,48 @@ namespace ts {
                                 continue;
                             }
                             else {
-                                return token = TokenType.ConflictMarkerTrivia;
+                                return token = TokenType.conflictMarker;
                             }
                         }
 
                         pos++;
-                        return token = TokenType.GreaterThanToken;
+                        return token = TokenType.greaterThan;
                     case CharCode.question:
                         pos++;
-                        return token = TokenType.QuestionToken;
+                        return token = TokenType.question;
                     case CharCode.openBracket:
                         pos++;
-                        return token = TokenType.OpenBracketToken;
+                        return token = TokenType.openBracket;
                     case CharCode.closeBracket:
                         pos++;
-                        return token = TokenType.CloseBracketToken;
+                        return token = TokenType.closeBracket;
                     case CharCode.caret:
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.CaretEqualsToken;
+                            return pos += 2, token = TokenType.caretEquals;
                         }
                         pos++;
-                        return token = TokenType.CaretToken;
+                        return token = TokenType.caret;
                     case CharCode.openBrace:
                         pos++;
-                        return token = TokenType.OpenBraceToken;
+                        return token = TokenType.openBrace;
                     case CharCode.bar:
                         if (text.charCodeAt(pos + 1) === CharCode.bar) {
-                            return pos += 2, token = TokenType.BarBarToken;
+                            return pos += 2, token = TokenType.barBar;
                         }
                         if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                            return pos += 2, token = TokenType.BarEqualsToken;
+                            return pos += 2, token = TokenType.barEquals;
                         }
                         pos++;
-                        return token = TokenType.BarToken;
+                        return token = TokenType.bar;
                     case CharCode.closeBrace:
                         pos++;
-                        return token = TokenType.CloseBraceToken;
+                        return token = TokenType.closeBrace;
                     case CharCode.tilde:
                         pos++;
-                        return token = TokenType.TildeToken;
+                        return token = TokenType.tilde;
                     case CharCode.at:
                         pos++;
-                        return token = TokenType.AtToken;
+                        return token = TokenType.at;
                     case CharCode.backslash:
                         let cookedChar = peekUnicodeEscape();
                         if (cookedChar >= 0 && isIdentifierStart(cookedChar, languageVersion)) {
@@ -1413,30 +1380,30 @@ namespace ts {
         }
 
         function reScanGreaterToken(): TokenType {
-            if (token === TokenType.GreaterThanToken) {
+            if (token === TokenType.greaterThan) {
                 if (text.charCodeAt(pos) === CharCode.greaterThan) {
                     if (text.charCodeAt(pos + 1) === CharCode.greaterThan) {
                         if (text.charCodeAt(pos + 2) === CharCode.equals) {
-                            return pos += 3, token = TokenType.GreaterThanGreaterThanGreaterThanEqualsToken;
+                            return pos += 3, token = TokenType.greaterThanGreaterThanGreaterThanEquals;
                         }
-                        return pos += 2, token = TokenType.GreaterThanGreaterThanGreaterThanToken;
+                        return pos += 2, token = TokenType.greaterThanGreaterThanGreaterThan;
                     }
                     if (text.charCodeAt(pos + 1) === CharCode.equals) {
-                        return pos += 2, token = TokenType.GreaterThanGreaterThanEqualsToken;
+                        return pos += 2, token = TokenType.greaterThanGreaterThanEquals;
                     }
                     pos++;
-                    return token = TokenType.GreaterThanGreaterThanToken;
+                    return token = TokenType.greaterThanGreaterThan;
                 }
                 if (text.charCodeAt(pos) === CharCode.equals) {
                     pos++;
-                    return token = TokenType.GreaterThanEqualsToken;
+                    return token = TokenType.greaterThanEquals;
                 }
             }
             return token;
         }
 
         function reScanSlashToken(): TokenType {
-            if (token === TokenType.SlashToken || token === TokenType.SlashEqualsToken) {
+            if (token === TokenType.slash || token === TokenType.slashEquals) {
                 let p = tokenPos + 1;
                 let inEscape = false;
                 let inCharacterClass = false;
@@ -1493,7 +1460,7 @@ namespace ts {
          * Unconditionally back up and scan a template expression portion.
          */
         function reScanTemplateToken(): TokenType {
-            Debug.assert(token === TokenType.CloseBraceToken, "'reScanTemplateToken' should only be called on a '}'");
+            Debug.assert(token === TokenType.closeBrace, "'reScanTemplateToken' should only be called on a '}'");
             pos = tokenPos;
             return token = scanTemplateAndSetTokenValue();
         }
@@ -1514,15 +1481,15 @@ namespace ts {
             if (char === CharCode.lessThan) {
                 if (text.charCodeAt(pos + 1) === CharCode.slash) {
                     pos += 2;
-                    return token = TokenType.LessThanSlashToken;
+                    return token = TokenType.lessThanSlash;
                 }
                 pos++;
-                return token = TokenType.LessThanToken;
+                return token = TokenType.lessThan;
             }
 
             if (char === CharCode.openBrace) {
                 pos++;
-                return token = TokenType.OpenBraceToken;
+                return token = TokenType.openBrace;
             }
 
             while (pos < end) {
@@ -1576,24 +1543,24 @@ namespace ts {
 
             switch (ch) {
                 case CharCode.at:
-                    return pos += 1, token = TokenType.AtToken;
+                    return pos += 1, token = TokenType.at;
                 case CharCode.lineFeed:
                 case CharCode.carriageReturn:
-                    return pos += 1, token = TokenType.NewLineTrivia;
+                    return pos += 1, token = TokenType.newLine;
                 case CharCode.asterisk:
-                    return pos += 1, token = TokenType.AsteriskToken;
+                    return pos += 1, token = TokenType.asterisk;
                 case CharCode.openBrace:
-                    return pos += 1, token = TokenType.OpenBraceToken;
+                    return pos += 1, token = TokenType.openBrace;
                 case CharCode.closeBrace:
-                    return pos += 1, token = TokenType.CloseBraceToken;
+                    return pos += 1, token = TokenType.closeBrace;
                 case CharCode.openBracket:
-                    return pos += 1, token = TokenType.OpenBracketToken;
+                    return pos += 1, token = TokenType.openBracket;
                 case CharCode.closeBracket:
-                    return pos += 1, token = TokenType.CloseBracketToken;
+                    return pos += 1, token = TokenType.closeBracket;
                 case CharCode.equals:
-                    return pos += 1, token = TokenType.EqualsToken;
+                    return pos += 1, token = TokenType.equals;
                 case CharCode.comma:
-                    return pos += 1, token = TokenType.CommaToken;
+                    return pos += 1, token = TokenType.comma;
             }
 
             if (isIdentifierStart(ch, ScriptTarget.Latest)) {

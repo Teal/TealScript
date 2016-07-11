@@ -1580,7 +1580,7 @@ namespace ts {
                             break;
                         case TokenType.HeritageClause:
                             let heritageClause = <HeritageClause>node;
-                            if (heritageClause.token === TokenType.ImplementsKeyword) {
+                            if (heritageClause.token === TokenType.implements) {
                                 diagnostics.push(createDiagnosticForNode(node, Diagnostics.implements_clauses_can_only_be_used_in_a_ts_file));
                                 return true;
                             }
@@ -1653,7 +1653,7 @@ namespace ts {
                             const propertyDeclaration = <PropertyDeclaration>node;
                             if (propertyDeclaration.modifiers) {
                                 for (const modifier of propertyDeclaration.modifiers) {
-                                    if (modifier.kind !== TokenType.StaticKeyword) {
+                                    if (modifier.kind !== TokenType.static) {
                                         diagnostics.push(createDiagnosticForNode(modifier, Diagnostics._0_can_only_be_used_in_a_ts_file, tokenToString(modifier.kind)));
                                         return true;
                                     }
@@ -1702,20 +1702,20 @@ namespace ts {
                     if (modifiers) {
                         for (const modifier of modifiers) {
                             switch (modifier.kind) {
-                                case TokenType.PublicKeyword:
-                                case TokenType.PrivateKeyword:
-                                case TokenType.ProtectedKeyword:
-                                case TokenType.ReadonlyKeyword:
-                                case TokenType.DeclareKeyword:
+                                case TokenType.public:
+                                case TokenType.private:
+                                case TokenType.protected:
+                                case TokenType.readonly:
+                                case TokenType.declare:
                                     diagnostics.push(createDiagnosticForNode(modifier, Diagnostics._0_can_only_be_used_in_a_ts_file, tokenToString(modifier.kind)));
                                     return true;
 
                                 // These are all legal modifiers.
-                                case TokenType.StaticKeyword:
-                                case TokenType.ExportKeyword:
-                                case TokenType.ConstKeyword:
-                                case TokenType.DefaultKeyword:
-                                case TokenType.AbstractKeyword:
+                                case TokenType.static:
+                                case TokenType.export:
+                                case TokenType.const:
+                                case TokenType.default:
+                                case TokenType.abstract:
                             }
                         }
                     }

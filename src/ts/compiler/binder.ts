@@ -584,7 +584,7 @@ namespace ts {
         function isNarrowingExpression(expr: Expression): boolean {
             switch (expr.kind) {
                 case TokenType.Identifier:
-                case TokenType.ThisKeyword:
+                case TokenType.this:
                 case TokenType.PropertyAccessExpression:
                     return isNarrowableReference(expr);
                 case TokenType.CallExpression:
@@ -594,14 +594,14 @@ namespace ts {
                 case TokenType.BinaryExpression:
                     return isNarrowingBinaryExpression(<BinaryExpression>expr);
                 case TokenType.PrefixUnaryExpression:
-                    return (<PrefixUnaryExpression>expr).operator === TokenType.ExclamationToken && isNarrowingExpression((<PrefixUnaryExpression>expr).operand);
+                    return (<PrefixUnaryExpression>expr).operator === TokenType.exclamation && isNarrowingExpression((<PrefixUnaryExpression>expr).operand);
             }
             return false;
         }
 
         function isNarrowableReference(expr: Expression): boolean {
             return expr.kind === TokenType.Identifier ||
-                expr.kind === TokenType.ThisKeyword ||
+                expr.kind === TokenType.this ||
                 expr.kind === TokenType.PropertyAccessExpression && isNarrowableReference((<PropertyAccessExpression>expr).expression);
         }
 
@@ -621,7 +621,7 @@ namespace ts {
         }
 
         function isNarrowingNullCheckOperands(expr1: Expression, expr2: Expression) {
-            return (expr1.kind === TokenType.NullKeyword || expr1.kind === TokenType.Identifier && (<Identifier>expr1).text === "undefined") && isNarrowableOperand(expr2);
+            return (expr1.kind === TokenType.null || expr1.kind === TokenType.Identifier && (<Identifier>expr1).text === "undefined") && isNarrowableOperand(expr2);
         }
 
         function isNarrowingTypeofOperands(expr1: Expression, expr2: Expression) {
@@ -634,18 +634,18 @@ namespace ts {
 
         function isNarrowingBinaryExpression(expr: BinaryExpression) {
             switch (expr.operatorToken.kind) {
-                case TokenType.EqualsToken:
+                case TokenType.equals:
                     return isNarrowableReference(expr.left);
-                case TokenType.EqualsEqualsToken:
-                case TokenType.ExclamationEqualsToken:
-                case TokenType.EqualsEqualsEqualsToken:
-                case TokenType.ExclamationEqualsEqualsToken:
+                case TokenType.equalsEquals:
+                case TokenType.exclamationEquals:
+                case TokenType.equalsEqualsEquals:
+                case TokenType.exclamationEqualsEquals:
                     return isNarrowingNullCheckOperands(expr.right, expr.left) || isNarrowingNullCheckOperands(expr.left, expr.right) ||
                         isNarrowingTypeofOperands(expr.right, expr.left) || isNarrowingTypeofOperands(expr.left, expr.right) ||
                         isNarrowingDiscriminant(expr.left) || isNarrowingDiscriminant(expr.right);
-                case TokenType.InstanceOfKeyword:
+                case TokenType.instanceOf:
                     return isNarrowableOperand(expr.left);
-                case TokenType.CommaToken:
+                case TokenType.comma:
                     return isNarrowingExpression(expr.right);
             }
             return false;
@@ -657,9 +657,9 @@ namespace ts {
                     return isNarrowableOperand((<ParenthesizedExpression>expr).expression);
                 case TokenType.BinaryExpression:
                     switch ((<BinaryExpression>expr).operatorToken.kind) {
-                        case TokenType.EqualsToken:
+                        case TokenType.equals:
                             return isNarrowableOperand((<BinaryExpression>expr).left);
-                        case TokenType.CommaToken:
+                        case TokenType.comma:
                             return isNarrowableOperand((<BinaryExpression>expr).right);
                     }
             }
@@ -704,8 +704,8 @@ namespace ts {
             if (!expression) {
                 return flags & FlowFlags.TrueCondition ? antecedent : unreachableFlow;
             }
-            if (expression.kind === TokenType.TrueKeyword && flags & FlowFlags.FalseCondition ||
-                expression.kind === TokenType.FalseKeyword && flags & FlowFlags.TrueCondition) {
+            if (expression.kind === TokenType.true && flags & FlowFlags.FalseCondition ||
+                expression.kind === TokenType.false && flags & FlowFlags.TrueCondition) {
                 return unreachableFlow;
             }
             if (!isNarrowingExpression(expression)) {
@@ -772,13 +772,13 @@ namespace ts {
                 if (node.kind === TokenType.ParenthesizedExpression) {
                     node = (<ParenthesizedExpression>node).expression;
                 }
-                else if (node.kind === TokenType.PrefixUnaryExpression && (<PrefixUnaryExpression>node).operator === TokenType.ExclamationToken) {
+                else if (node.kind === TokenType.PrefixUnaryExpression && (<PrefixUnaryExpression>node).operator === TokenType.exclamation) {
                     node = (<PrefixUnaryExpression>node).operand;
                 }
                 else {
                     return node.kind === TokenType.BinaryExpression && (
-                        (<BinaryExpression>node).operatorToken.kind === TokenType.AmpersandAmpersandToken ||
-                        (<BinaryExpression>node).operatorToken.kind === TokenType.BarBarToken);
+                        (<BinaryExpression>node).operatorToken.kind === TokenType.ampersandAmpersand ||
+                        (<BinaryExpression>node).operatorToken.kind === TokenType.barBar);
                 }
             }
         }
@@ -786,7 +786,7 @@ namespace ts {
         function isTopLevelLogicalExpression(node: Node): boolean {
             while (node.parent.kind === TokenType.ParenthesizedExpression ||
                 node.parent.kind === TokenType.PrefixUnaryExpression &&
-                (<PrefixUnaryExpression>node.parent).operator === TokenType.ExclamationToken) {
+                (<PrefixUnaryExpression>node.parent).operator === TokenType.exclamation) {
                 node = node.parent;
             }
             return !isStatementCondition(node) && !isLogicalExpression(node.parent);
@@ -1031,7 +1031,7 @@ namespace ts {
         }
 
         function bindDestructuringTargetFlow(node: Expression) {
-            if (node.kind === TokenType.BinaryExpression && (<BinaryExpression>node).operatorToken.kind === TokenType.EqualsToken) {
+            if (node.kind === TokenType.BinaryExpression && (<BinaryExpression>node).operatorToken.kind === TokenType.equals) {
                 bindAssignmentTargetFlow((<BinaryExpression>node).left);
             }
             else {
@@ -1067,7 +1067,7 @@ namespace ts {
 
         function bindLogicalExpression(node: BinaryExpression, trueTarget: FlowLabel, falseTarget: FlowLabel) {
             const preRightLabel = createBranchLabel();
-            if (node.operatorToken.kind === TokenType.AmpersandAmpersandToken) {
+            if (node.operatorToken.kind === TokenType.ampersandAmpersand) {
                 bindCondition(node.left, preRightLabel, falseTarget);
             }
             else {
@@ -1079,7 +1079,7 @@ namespace ts {
         }
 
         function bindPrefixUnaryExpressionFlow(node: PrefixUnaryExpression) {
-            if (node.operator === TokenType.ExclamationToken) {
+            if (node.operator === TokenType.exclamation) {
                 const saveTrueTarget = currentTrueTarget;
                 currentTrueTarget = currentFalseTarget;
                 currentFalseTarget = saveTrueTarget;
@@ -1094,7 +1094,7 @@ namespace ts {
 
         function bindBinaryExpressionFlow(node: BinaryExpression) {
             const operator = node.operatorToken.kind;
-            if (operator === TokenType.AmpersandAmpersandToken || operator === TokenType.BarBarToken) {
+            if (operator === TokenType.ampersandAmpersand || operator === TokenType.barBar) {
                 if (isTopLevelLogicalExpression(node)) {
                     const postExpressionLabel = createBranchLabel();
                     bindLogicalExpression(node, postExpressionLabel, postExpressionLabel);
@@ -1106,7 +1106,7 @@ namespace ts {
             }
             else {
                 forEachChild(node, bind);
-                if (operator === TokenType.EqualsToken && !isAssignmentTarget(node)) {
+                if (operator === TokenType.equals && !isAssignmentTarget(node)) {
                     bindAssignmentTargetFlow(node.left);
                 }
             }
@@ -1636,7 +1636,7 @@ namespace ts {
         function checkStrictModePrefixUnaryExpression(node: PrefixUnaryExpression) {
             // Grammar checking
             if (inStrictMode) {
-                if (node.operator === TokenType.PlusPlusToken || node.operator === TokenType.MinusMinusToken) {
+                if (node.operator === TokenType.plusPlus || node.operator === TokenType.minusMinus) {
                     checkStrictModeEvalOrArguments(node, <Identifier>node.operand);
                 }
             }
@@ -1680,7 +1680,7 @@ namespace ts {
             // the current 'container' node when it changes. This helps us know which symbol table
             // a local should go into for example. Since terminal nodes are known not to have
             // children, as an optimization we don't process those.
-            if (node.kind > TokenType.LastToken) {
+            if (node.kind > TokenType.last) {
                 const saveParent = parent;
                 parent = node;
                 const containerFlags = getContainerFlags(node);
@@ -1723,7 +1723,7 @@ namespace ts {
             switch (node.kind) {
                 /* Strict mode checks */
                 case TokenType.Identifier:
-                case TokenType.ThisKeyword:
+                case TokenType.this:
                     if (currentFlow && (isExpression(node) || parent.kind === TokenType.ShorthandPropertyAssignment)) {
                         node.flowNode = currentFlow;
                     }

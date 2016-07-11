@@ -591,7 +591,7 @@ namespace ts {
     }
 
     export function isSuperCallExpression(n: Node): boolean {
-        return n.kind === TokenType.CallExpression && (<CallExpression>n).expression.kind === TokenType.SuperKeyword;
+        return n.kind === TokenType.CallExpression && (<CallExpression>n).expression.kind === TokenType.super;
     }
 
     export function isPrologueDirective(node: Node): boolean {
@@ -637,15 +637,15 @@ namespace ts {
         }
 
         switch (node.kind) {
-            case TokenType.AnyKeyword:
-            case TokenType.NumberKeyword:
-            case TokenType.StringKeyword:
-            case TokenType.BooleanKeyword:
-            case TokenType.SymbolKeyword:
-            case TokenType.UndefinedKeyword:
-            case TokenType.NeverKeyword:
+            case TokenType.any:
+            case TokenType.number:
+            case TokenType.string:
+            case TokenType.boolean:
+            case TokenType.symbol:
+            case TokenType.undefined:
+            case TokenType.never:
                 return true;
-            case TokenType.VoidKeyword:
+            case TokenType.void:
                 return node.parent.kind !== TokenType.VoidExpression;
             case TokenType.ExpressionWithTypeArguments:
                 return !isExpressionWithTypeArgumentsInClassExtendsClause(node);
@@ -665,7 +665,7 @@ namespace ts {
                     "'node' was expected to be a qualified name, identifier or property access in 'isTypeNode'.");
             case TokenType.QualifiedName:
             case TokenType.PropertyAccessExpression:
-            case TokenType.ThisKeyword:
+            case TokenType.this:
                 let parent = node.parent;
                 if (parent.kind === TokenType.TypeQuery) {
                     return false;
@@ -1030,7 +1030,7 @@ namespace ts {
     export function isSuperPropertyOrElementAccess(node: Node) {
         return (node.kind === TokenType.PropertyAccessExpression
             || node.kind === TokenType.ElementAccessExpression)
-            && (<PropertyAccessExpression | ElementAccessExpression>node).expression.kind === TokenType.SuperKeyword;
+            && (<PropertyAccessExpression | ElementAccessExpression>node).expression.kind === TokenType.super;
     }
 
 
@@ -1113,11 +1113,11 @@ namespace ts {
 
     export function isExpression(node: Node): boolean {
         switch (node.kind) {
-            case TokenType.ThisKeyword:
-            case TokenType.SuperKeyword:
-            case TokenType.NullKeyword:
-            case TokenType.TrueKeyword:
-            case TokenType.FalseKeyword:
+            case TokenType.this:
+            case TokenType.super:
+            case TokenType.null:
+            case TokenType.true:
+            case TokenType.false:
             case TokenType.RegularExpressionLiteral:
             case TokenType.ArrayLiteralExpression:
             case TokenType.ObjectLiteralExpression:
@@ -1161,7 +1161,7 @@ namespace ts {
             // fall through
             case TokenType.NumericLiteral:
             case TokenType.StringLiteral:
-            case TokenType.ThisKeyword:
+            case TokenType.this:
                 let parent = node.parent;
                 switch (parent.kind) {
                     case TokenType.VariableDeclaration:
@@ -1289,7 +1289,7 @@ namespace ts {
             return SpecialPropertyAssignmentKind.None;
         }
         const expr = <BinaryExpression>expression;
-        if (expr.operatorToken.kind !== TokenType.EqualsToken || expr.left.kind !== TokenType.PropertyAccessExpression) {
+        if (expr.operatorToken.kind !== TokenType.equals || expr.left.kind !== TokenType.PropertyAccessExpression) {
             return SpecialPropertyAssignmentKind.None;
         }
         const lhs = <PropertyAccessExpression>expr.left;
@@ -1304,7 +1304,7 @@ namespace ts {
                 return SpecialPropertyAssignmentKind.ModuleExports;
             }
         }
-        else if (lhs.expression.kind === TokenType.ThisKeyword) {
+        else if (lhs.expression.kind === TokenType.this) {
             return SpecialPropertyAssignmentKind.ThisProperty;
         }
         else if (lhs.expression.kind === TokenType.PropertyAccessExpression) {
@@ -1411,7 +1411,7 @@ namespace ts {
             const isSourceOfAssignmentExpressionStatement =
                 parent && parent.parent &&
                 parent.kind === TokenType.BinaryExpression &&
-                (parent as BinaryExpression).operatorToken.kind === TokenType.EqualsToken &&
+                (parent as BinaryExpression).operatorToken.kind === TokenType.equals &&
                 parent.parent.kind === TokenType.ExpressionStatement;
             if (isSourceOfAssignmentExpressionStatement) {
                 return parent.parent.jsDocComments;
@@ -1490,7 +1490,7 @@ namespace ts {
     }
 
     export function isLiteralKind(kind: TokenType): boolean {
-        return TokenType.FirstLiteralToken <= kind && kind <= TokenType.LastLiteralToken;
+        return TokenType.firstLiteral <= kind && kind <= TokenType.lastLiteral;
     }
 
     export function isTextualLiteralKind(kind: TokenType): boolean {
@@ -1498,7 +1498,7 @@ namespace ts {
     }
 
     export function isTemplateLiteralKind(kind: TokenType): boolean {
-        return TokenType.FirstTemplateToken <= kind && kind <= TokenType.LastTemplateToken;
+        return TokenType.firstTemplate <= kind && kind <= TokenType.lastTemplate;
     }
 
     export function isBindingPattern(node: Node): node is BindingPattern {
@@ -1523,7 +1523,7 @@ namespace ts {
                 continue;
             }
             return parent.kind === TokenType.BinaryExpression &&
-                (<BinaryExpression>parent).operatorToken.kind === TokenType.EqualsToken &&
+                (<BinaryExpression>parent).operatorToken.kind === TokenType.equals &&
                 (<BinaryExpression>parent).left === node ||
                 (parent.kind === TokenType.ForInStatement || parent.kind === TokenType.ForOfStatement) &&
                 (<ForInStatement | ForOfStatement>parent).initializer === node;
@@ -1706,17 +1706,17 @@ namespace ts {
     }
 
     export function getClassExtendsHeritageClauseElement(node: ClassLikeDeclaration | InterfaceDeclaration) {
-        const heritageClause = getHeritageClause(node.heritageClauses, TokenType.ExtendsKeyword);
+        const heritageClause = getHeritageClause(node.heritageClauses, TokenType.extends);
         return heritageClause && heritageClause.types.length > 0 ? heritageClause.types[0] : undefined;
     }
 
     export function getClassImplementsHeritageClauseElements(node: ClassLikeDeclaration) {
-        const heritageClause = getHeritageClause(node.heritageClauses, TokenType.ImplementsKeyword);
+        const heritageClause = getHeritageClause(node.heritageClauses, TokenType.implements);
         return heritageClause ? heritageClause.types : undefined;
     }
 
     export function getInterfaceBaseTypeNodes(node: InterfaceDeclaration) {
-        const heritageClause = getHeritageClause(node.heritageClauses, TokenType.ExtendsKeyword);
+        const heritageClause = getHeritageClause(node.heritageClauses, TokenType.extends);
         return heritageClause ? heritageClause.types : undefined;
     }
 
@@ -1786,11 +1786,11 @@ namespace ts {
     }
 
     export function isKeyword(token: TokenType): boolean {
-        return TokenType.FirstKeyword <= token && token <= TokenType.LastKeyword;
+        return TokenType.first <= token && token <= TokenType.last;
     }
 
     export function isTrivia(token: TokenType) {
-        return TokenType.FirstTriviaToken <= token && token <= TokenType.LastTriviaToken;
+        return TokenType.firstTrivia <= token && token <= TokenType.lastTrivia;
     }
 
     export function isAsyncFunctionLike(node: Node): boolean {
@@ -1858,17 +1858,17 @@ namespace ts {
 
     export function isModifierKind(token: TokenType): boolean {
         switch (token) {
-            case TokenType.AbstractKeyword:
-            case TokenType.AsyncKeyword:
-            case TokenType.ConstKeyword:
-            case TokenType.DeclareKeyword:
-            case TokenType.DefaultKeyword:
-            case TokenType.ExportKeyword:
-            case TokenType.PublicKeyword:
-            case TokenType.PrivateKeyword:
-            case TokenType.ProtectedKeyword:
-            case TokenType.ReadonlyKeyword:
-            case TokenType.StaticKeyword:
+            case TokenType.abstract:
+            case TokenType.async:
+            case TokenType.const:
+            case TokenType.declare:
+            case TokenType.default:
+            case TokenType.export:
+            case TokenType.public:
+            case TokenType.private:
+            case TokenType.protected:
+            case TokenType.readonly:
+            case TokenType.static:
                 return true;
         }
         return false;
@@ -2368,7 +2368,7 @@ namespace ts {
         if (accessor && accessor.parameters.length > 0) {
             const hasThis = accessor.parameters.length === 2 &&
                 accessor.parameters[0].name.kind === TokenType.Identifier &&
-                (accessor.parameters[0].name as Identifier).originalKeywordKind === TokenType.ThisKeyword;
+                (accessor.parameters[0].name as Identifier).originalKeywordKind === TokenType.this;
             return accessor.parameters[hasThis ? 1 : 0].type;
         }
     }
@@ -2621,17 +2621,17 @@ namespace ts {
 
     export function modifierToFlag(token: TokenType): NodeFlags {
         switch (token) {
-            case TokenType.StaticKeyword: return NodeFlags.Static;
-            case TokenType.PublicKeyword: return NodeFlags.Public;
-            case TokenType.ProtectedKeyword: return NodeFlags.Protected;
-            case TokenType.PrivateKeyword: return NodeFlags.Private;
-            case TokenType.AbstractKeyword: return NodeFlags.Abstract;
-            case TokenType.ExportKeyword: return NodeFlags.Export;
-            case TokenType.DeclareKeyword: return NodeFlags.Ambient;
-            case TokenType.ConstKeyword: return NodeFlags.Const;
-            case TokenType.DefaultKeyword: return NodeFlags.Default;
-            case TokenType.AsyncKeyword: return NodeFlags.Async;
-            case TokenType.ReadonlyKeyword: return NodeFlags.Readonly;
+            case TokenType.static: return NodeFlags.Static;
+            case TokenType.public: return NodeFlags.Public;
+            case TokenType.protected: return NodeFlags.Protected;
+            case TokenType.private: return NodeFlags.Private;
+            case TokenType.abstract: return NodeFlags.Abstract;
+            case TokenType.export: return NodeFlags.Export;
+            case TokenType.declare: return NodeFlags.Ambient;
+            case TokenType.const: return NodeFlags.Const;
+            case TokenType.default: return NodeFlags.Default;
+            case TokenType.async: return NodeFlags.Async;
+            case TokenType.readonly: return NodeFlags.Readonly;
         }
         return 0;
     }
@@ -2658,11 +2658,11 @@ namespace ts {
                 case TokenType.StringLiteral:
                 case TokenType.NoSubstitutionTemplateLiteral:
                 case TokenType.TemplateExpression:
-                case TokenType.FalseKeyword:
-                case TokenType.NullKeyword:
-                case TokenType.ThisKeyword:
-                case TokenType.TrueKeyword:
-                case TokenType.SuperKeyword:
+                case TokenType.false:
+                case TokenType.null:
+                case TokenType.this:
+                case TokenType.true:
+                case TokenType.super:
                     return true;
             }
         }
@@ -2676,7 +2676,7 @@ namespace ts {
 
     export function isExpressionWithTypeArgumentsInClassExtendsClause(node: Node): boolean {
         return node.kind === TokenType.ExpressionWithTypeArguments &&
-            (<HeritageClause>node.parent).token === TokenType.ExtendsKeyword &&
+            (<HeritageClause>node.parent).token === TokenType.extends &&
             isClassLike(node.parent.parent);
     }
 
