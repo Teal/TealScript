@@ -1,22 +1,21 @@
 ﻿/**
  * @fileOverview 语法解析器
+ * @author xuld@vip.qq.com
  */
 
-import {options, error, ErrorType} from '../compiler/compiler';
-import {TokenType} from './tokenType';
-import * as Tokens from './tokenType';
-import * as Nodes from './nodes';
-import {CharCode} from './charCode';
-import {TextRange} from './textRange';
-import {Lexer, Token} from './lexer';
+import {CharCode} from './unicode';
+import {TextRange} from './location';
+import {TokenType, tokenToString, isKeyword, isReservedWord, isExpressionStart, isDeclarationStart, isModifier} from './tokenType';
+import {Lexer, LexerOptions} from './lexer';
+import * as nodes from './nodes';
 
 /**
- * 表示一个语法解析器。c
+ * 表示一个语法解析器。
  * @description 语法解析器可以将源码解析一个语法树。
  */
 export class Parser {
 
-    // #region 接口
+    // #region 对外接口
 
     /**
      * 获取或设置当前语法解析器使用的词法解析器。
@@ -24,12 +23,26 @@ export class Parser {
     lexer = new Lexer();
 
     /**
+     * 获取当前语法解析器的配置。
+     */
+    get options(): ParserOptions {
+        return this.lexer.options;
+    }
+
+    /**
+     * 设置当前语法解析器的配置。
+     */
+    set options(value) {
+        this.lexer.options = value;
+    }
+
+    /**
      * 解析指定的源文件。
      * @param text 要解析的源码。
      * @param start 解析的源码开始位置。
      * @param fileName 解析的源码位置。
      */
-    private parse(text: string, start?: number, fileName?: string) {
+    parse(text: string, start?: number, fileName?: string) {
         return this.parseSourceFile(text || "", start || 0, fileName || "");
     }
 
@@ -39,7 +52,7 @@ export class Parser {
      * @param start 解析的源码开始位置。
      * @param fileName 解析的源码位置。
      */
-    private parseAsStatement(text: string, start?: number, fileName?: string) {
+    parseAsStatement(text: string, start?: number, fileName?: string) {
         this.lexer.setSource(text, start, fileName);
         return this.parseStatement();
     }
@@ -50,7 +63,7 @@ export class Parser {
      * @param start 解析的源码开始位置。
      * @param fileName 解析的源码位置。
      */
-    private parseAsExpression(text: string, start?: number, fileName?: string) {
+    parseAsExpression(text: string, start?: number, fileName?: string) {
         this.lexer.setSource(text, start, fileName);
         return this.parseExpression();
     }
@@ -61,15 +74,11 @@ export class Parser {
      * @param start 解析的源码开始位置。
      * @param fileName 解析的源码位置。
      */
-    private parseAsTypeExpression(text: string, start?: number, fileName?: string) {
+    parseAsTypeExpression(text: string, start?: number, fileName?: string) {
         delete this.lexer.comment;
         this.lexer.setSource(text, start, fileName);
         return this.parseTypeExpression();
     }
-
-    // #endregion
-
-    // #region 底层
 
     /**
      * 报告一个语法错误。
@@ -78,110 +87,95 @@ export class Parser {
      * @param args 格式化错误的参数。
      */
     error(range: TextRange, message: string, ...args: any[]) {
-        error(ErrorType.syntaxError, this.lexer.fileName, range.start, range.end, message, ...args);
+        // error(ErrorType.syntaxError, this.lexer.fileName, range.start, range.end, message, ...args);
+    }
+
+    // #endregion
+
+    // #region 解析节点
+
+    /**
+     * 读取一个指定类型的标记。如果下一个标记不是指定的类型则报告错误。
+     * @param token 期待的标记。
+     * @returns 返回读取的标记位置。
+     */
+    private readToken(token: TokenType) {
+        if (this.lexer.peek().type === token) {
+            return this.lexer.read().start;
+        }
+        return this.expectToken(token);
     }
 
     /**
-     * 读取下一个标记。如果下一个标记不是指定的类型则输出一条错误。
+     * 报告一个非法标记的错误。
      * @param token 期待的标记。
-     * @returns 返回读取的标记。
+     * @returns 返回当前标记的位置。
      */
     private expectToken(token: TokenType) {
-        if (this.lexer.peek().type === token) {
-            return this.lexer.read();
-        }
-
-        this.error(this.lexer.peek(), token === TokenType.identifier ? Tokens.isKeyword(this.lexer.peek().type) ? "应输入标识符；“{0}”是关键字。" : "应输入标识符。" : "应输入“{0}”。", Tokens.tokenToString(token));
-        return this.lexer.current;
-    }
-
-    /**
-     * 读取一个分号，如果不存在则自动插入。
-     * @return 返回分号或自动插入点的结束位置。
-     */
-    private expectSemicolon() {
-        switch (this.lexer.peek().type) {
-            case TokenType.semicolon:
-                return this.lexer.read().end;
-            case TokenType.closeBrace:
-            case TokenType.endOfFile:
-                return !options.disallowMissingSemicolon ?
-                    this.expectToken(TokenType.semicolon).end :
-                    this.lexer.current.end;
-            default:
-                // 根据标准：只有出现换行时才允许自动插入分号。
-                // 当启用 smartSemicolonInsertion 时，将允许在未换行时自动插入分号。
-                return options.disallowMissingSemicolon || (options.smartSemicolonInsertion === false && !this.lexer.peek().hasLineBreakBeforeStart) ?
-                    this.expectToken(TokenType.semicolon).end :
-                    this.lexer.current.end;
-        }
-    }
-
-    /**
-     * 读取一个标识符，如果是关键字则自动转换。
-     * @return 返回标识符节点。
-     */
-    private expectIdentifier(): Nodes.Identifier {
-
+        this.error(this.lexer.peek(), token !== TokenType.identifier ? "应输入“{0}”。" : isKeyword(token) ? "应输入标识符；“{0}”是关键字。" : "应输入标识符。", tokenToString(token));
+        return this.lexer.current.end;
     }
 
     // #endregion
 
-    // #region 节点
-
-    // #endregion
-
-    // #region 语句
+    // #region 解析语句
 
     /**
      * 解析一个语句。
      */
     private parseStatement() {
         switch (this.lexer.peek().type) {
-            case TokenType.semicolon:
-                return this.parseEmptyStatement();
+            case TokenType.identifier:
+                return this.parseLabeledOrExpressionStatement(this.parseIdentifier());
             case TokenType.openBrace:
-                return this.parseBlockStatement(/*ignoreMissingOpenBrace*/ false);
+                return this.parseBlockStatement();
             case TokenType.var:
-                return this.parseVariableStatement(this.lexer.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
+                return this.parseVariableStatement();
             case TokenType.let:
-                if (this.isLetDeclaration()) {
-                    return this.parseVariableStatement(this.lexer.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
+            case TokenType.const:
+                if (this.isVariableStatement()) {
+                    return this.parseVariableStatement();
                 }
                 break;
             case TokenType.function:
-                return this.parseFunctionDeclaration(this.lexer.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
+                return this.parseFunctionDeclaration();
             case TokenType.class:
-                return this.parseClassDeclaration(this.lexer.getStartPos(), /*decorators*/ undefined, /*modifiers*/ undefined);
+                return this.parseClassDeclaration();
+
             case TokenType.if:
                 return this.parseIfStatement();
-            case TokenType.do:
-                return this.parseDoStatement();
-            case TokenType.while:
-                return this.parseWhileStatement();
-            case TokenType.for:
-                return this.parseForStatement();
-            case TokenType.break:
-                return this.parseBreakOrContinueStatement(TokenType.BreakStatement);
-            case TokenType.continue:
-                return this.parseBreakOrContinueStatement(TokenType.ContinueStatement);
-            case TokenType.return:
-                return this.parseReturnStatement();
-            case TokenType.with:
-                return this.parseWithStatement();
             case TokenType.switch:
                 return this.parseSwitchStatement();
+            case TokenType.for:
+                return this.parseForStatement();
+            case TokenType.while:
+                return this.parseWhileStatement();
+            case TokenType.do:
+                return this.parseDoWhileStatement();
+
+            case TokenType.break:
+                return this.parseBreakStatement();
+            case TokenType.continue:
+                return this.parseContinueStatement();
+            case TokenType.return:
+                return this.parseReturnStatement();
             case TokenType.throw:
                 return this.parseThrowStatement();
+
             case TokenType.try:
-            // Nodes.Include 'catch' and 'finally' for error recovery.
-            case TokenType.catch:
-            case TokenType.finally:
                 return this.parseTryStatement();
+
             case TokenType.debugger:
                 return this.parseDebuggerStatement();
+
+            case TokenType.semicolon:
+                return this.parseEmptyStatement();
+            case TokenType.endOfFile:
+                return this.parseErrorStatement();
+            case TokenType.with:
+                return this.parseWithStatement();
+
             case TokenType.at:
-                return this.parseDeclaration();
             case TokenType.async:
             case TokenType.interface:
             case TokenType.type:
@@ -199,12 +193,15 @@ export class Parser {
             case TokenType.static:
             case TokenType.readonly:
             case TokenType.global:
-                if (this.isStartOfDeclaration()) {
+                if (this.isDeclaration()) {
                     return this.parseDeclaration();
                 }
                 break;
         }
-        return this.parseExpressionOrLabeledStatement();
+        if (this.isDeclaration()) {
+            return this.parseDeclaration();
+        }
+        return this.parseLabeledOrExpressionStatement(this.parseExpression());
     }
 
     /**
@@ -212,8 +209,8 @@ export class Parser {
      */
     private parseBlockStatement() {
         console.assert(this.lexer.peek().type === TokenType.openBrace);
-        const result = new Nodes.BlockStatement();
-        result.statements = new Nodes.NodeList<Nodes.Statement>();
+        const result = new nodes.BlockStatement();
+        result.statements = new nodes.NodeList<nodes.Statement>();
         result.statements.start = this.lexer.read().start;
         while (true) {
             switch (this.lexer.peek().type) {
@@ -221,7 +218,7 @@ export class Parser {
                     result.statements.end = this.lexer.read().end;
                     return result;
                 case TokenType.endOfFile:
-                    result.statements.end = this.expectToken(TokenType.closeBrace).end;
+                    result.statements.end = this.expectToken(TokenType.closeBrace);
                     return result;
             }
             result.statements.push(this.parseStatement());
@@ -233,11 +230,11 @@ export class Parser {
      */
     private parseVariableStatement() {
         console.assert(this.lexer.peek().type === TokenType.var || this.lexer.peek().type === TokenType.let || this.lexer.peek().type === TokenType.const);
-        const result = new Nodes.VariableStatement();
+        const result = new nodes.VariableStatement();
         this.parseJsDocComment(result);
         result.start = this.lexer.read().start;
         result.type = this.lexer.current.type;
-        result.variables = new Nodes.NodeList<Nodes.VariableDeclaration>();
+        result.variables = new nodes.NodeList<nodes.VariableDeclaration>();
         result.variables.commaTokens = [];
         while (true) {
             result.variables.push(this.parseVariableDeclaration());
@@ -247,7 +244,7 @@ export class Parser {
             }
             break;
         };
-        result.end = this.expectSemicolon();
+        result.end = this.tryReadSemicolon();
         return result;
     }
 
@@ -255,7 +252,7 @@ export class Parser {
      * 解析一个变量声明(`x = 1`、`[x] = [1]`、`{a: x} = {a: 1}`)。
      */
     private parseVariableDeclaration() {
-        const result = new Nodes.VariableDeclaration();
+        const result = new nodes.VariableDeclaration();
         result.name = this.parseBindingName();
         if (this.lexer.peek().type === TokenType.colon) {
             result.colonToken = this.lexer.read().start;
@@ -264,9 +261,8 @@ export class Parser {
         if (this.lexer.peek().type === TokenType.equals) {
             result.equalToken = this.lexer.read().start;
             result.initializer = this.parseExpressionWithoutComma();
-        } else if (!this.lexer.peek().hasLineBreakBeforeStart && Tokens.isExpressionStart(this.lexer.peek().type)) {
-            // var x 2：需要提示“缺少等号”。
-            result.equalToken = this.expectToken(TokenType.equals).start;
+        } else if (!this.hasSemicolon() && isExpressionStart(this.lexer.peek().type)) {
+            result.equalToken = this.expectToken(TokenType.equals);
             result.initializer = this.parseExpressionWithoutComma();
         }
         return result;
@@ -277,18 +273,29 @@ export class Parser {
      */
     private parseEmptyStatement() {
         console.assert(this.lexer.peek().type === TokenType.semicolon);
-        const result = new Nodes.EmptyStatement();
+        const result = new nodes.EmptyStatement();
         result.start = this.lexer.read().start;
         return result;
+    }
+
+    /**
+     * 解析一个表达式或标签语句。
+     * @param parsed 已解析的表达式。
+     */
+    private parseLabeledOrExpressionStatement(parsed: nodes.Expression) {
+        if (parsed.constructor === nodes.Identifier && this.lexer.peek().type === TokenType.colon) {
+            return this.parseLabeledStatement(<nodes.Identifier>parsed);
+        }
+        return this.parseExpressionStatement(parsed);
     }
 
     /**
      * 解析一个标签语句(`xx: ...`)。
      * @param label 已解析的标签部分。
      */
-    private parseLabeledStatement(label: Nodes.Identifier) {
+    private parseLabeledStatement(label: nodes.Identifier) {
         console.assert(this.lexer.peek().type === TokenType.colon);
-        const result = new Nodes.LabeledStatement();
+        const result = new nodes.LabeledStatement();
         this.parseJsDocComment(result);
         result.label = label;
         result.colonToken = this.lexer.read().type;
@@ -298,23 +305,12 @@ export class Parser {
 
     /**
      * 解析一个表达式语句(`x();`)。
-     */
-    private parseExpressionStatement() {
-        console.assert(Tokens.isExpressionStart(this.lexer.peek().type));
-        const result = new Nodes.ExpressionStatement();
-        result.body = this.parseExpression();
-        result.end = this.expectSemicolon();
-        return result;
-    }
-
-    /**
-     * 解析一个表达式语句(x(`);`)。
      * @param parsed 已解析的表达式。
      */
-    private parseExpressionStatementRest(parsed: Nodes.Expression) {
-        const result = new Nodes.ExpressionStatement();
+    private parseExpressionStatement(parsed: nodes.Expression) {
+        const result = new nodes.ExpressionStatement();
         result.body = this.parseExpressionRest(parsed);
-        result.end = this.expectSemicolon();
+        result.end = this.tryReadSemicolon();
         return result;
     }
 
@@ -323,7 +319,7 @@ export class Parser {
      */
     private parseIfStatement() {
         console.assert(this.lexer.peek().type === TokenType.if);
-        const result = new Nodes.IfStatement();
+        const result = new nodes.IfStatement();
         result.start = this.lexer.read().start;
         this.parseCondition(result);
         result.then = this.parseEmbeddedStatement();
@@ -335,57 +331,24 @@ export class Parser {
     }
 
     /**
-     * 解析内嵌语句。
-     */
-    private parseEmbeddedStatement() {
-        const result = this.parseStatement();
-        switch (result.constructor) {
-            case Nodes.VariableStatement:
-                this.error(result, "嵌套语句不能是变量声明语句。");
-                break;
-            case Nodes.LabeledStatement:
-                this.error(result, "嵌套语句不能是标签语句。");
-                break;
-        }
-        return result;
-    }
-
-    /**
-     * 解析条件表达式。
-     * @param result 存放结果的语句。
-     */
-    private parseCondition(result: Nodes.IfStatement | Nodes.SwitchStatement | Nodes.WhileStatement | Nodes.DoWhileStatement) {
-        if (this.lexer.peek().type === TokenType.openParen) {
-            result.openParanToken = this.lexer.read().type;
-            result.condition = this.parseExpression();
-            result.closeParanToken = this.expectToken(TokenType.closeParen).start;
-        } else {
-            if (!options.disallowMissingParenthese) {
-                this.expectToken(TokenType.openParen);
-            }
-            result.condition = this.parseExpression();
-        }
-    }
-
-    /**
      * 解析一个 switch 语句(`switch(x) {...}`)。
      */
     private parseSwitchStatement() {
         console.assert(this.lexer.peek().type == TokenType.switch);
-        const result = new Nodes.SwitchStatement();
+        const result = new nodes.SwitchStatement();
         result.start = this.lexer.read().start;
-        if (!options.disallowMissingSwitchCondition || this.lexer.peek().type !== TokenType.openBrace) {
+        if (!this.options.disallowMissingSwitchCondition || this.lexer.peek().type !== TokenType.openBrace) {
             this.parseCondition(result);
         }
-        result.cases = new Nodes.NodeList<Nodes.CaseClause>();
-        result.cases.start = this.expectToken(TokenType.openBrace).start;
+        result.cases = new nodes.NodeList<nodes.CaseClause>();
+        result.cases.start = this.readToken(TokenType.openBrace);
         while (true) {
             switch (this.lexer.peek().type) {
                 case TokenType.case:
                 case TokenType.default:
                     break;
                 case TokenType.closeBrace:
-                    result.cases.end = this.lexer.read().start;
+                    result.cases.end = this.lexer.read().end;
                     return result;
                 default:
                     this.error(this.lexer.peek(), "应输入“case”或“default”。");
@@ -393,22 +356,29 @@ export class Parser {
                     return result;
             }
 
-            const caseCaluse = new Nodes.CaseClause();
+            const caseCaluse = new nodes.CaseClause();
             caseCaluse.start = this.lexer.read().start;
             if (this.lexer.current.type === TokenType.case) {
-                if (!options.disallowCaseElse && this.lexer.peek().type === TokenType.else) {
+                if (!this.options.disallowCaseElse && this.lexer.peek().type === TokenType.else) {
                     caseCaluse.elseToken = this.lexer.read().start;
                 } else {
                     caseCaluse.label = this.parseExpression();
                 }
             }
-            caseCaluse.colonToken = this.expectToken(TokenType.colon).start;
-            caseCaluse.statements = new Nodes.NodeList<Nodes.Statement>();
-            while (this.lexer.peek().type !== TokenType.closeBrace &&
-                this.lexer.peek().type !== TokenType.case &&
-                this.lexer.peek().type !== TokenType.default &&
-                this.lexer.peek().type !== TokenType.endOfFile) {
-                caseCaluse.statements.push(this.parseStatement());
+            caseCaluse.colonToken = this.readToken(TokenType.colon);
+            caseCaluse.statements = new nodes.NodeList<nodes.Statement>();
+            while (true) {
+                switch (this.lexer.peek().type) {
+                    case TokenType.case:
+                    case TokenType.default:
+                    case TokenType.closeBrace:
+                    case TokenType.endOfFile:
+                        break;
+                    default:
+                        caseCaluse.statements.push(this.parseStatement());
+                        continue;
+                }
+                break;
             }
             result.cases.push(caseCaluse);
         }
@@ -422,7 +392,7 @@ export class Parser {
         const start = this.lexer.read().start;
         const openParan = this.lexer.peek().type === TokenType.openParen ?
             this.lexer.read().start : undefined;
-        if (openParan == undefined && !options.disallowMissingParenthese) {
+        if (openParan == undefined && !this.options.disallowMissingParenthese) {
             this.expectToken(TokenType.openParen);
         }
 
@@ -437,12 +407,12 @@ export class Parser {
             case TokenType.in:
                 break;
             case TokenType.of:
-                if (!options.disallowForOf) {
+                if (!this.options.disallowForOf) {
                     type = TokenType.semicolon;
                 }
                 break;
             case TokenType.to:
-                if (!options.disallowForTo) {
+                if (!this.options.disallowForTo) {
                     type = TokenType.semicolon;
                 }
                 break;
@@ -453,9 +423,9 @@ export class Parser {
 
         if (type !== TokenType.semicolon) {
             switch (initializer.constructor) {
-                case Nodes.VariableStatement:
-                    if (options.disallowCompatibleForInAndForOf) {
-                        const variables = (<Nodes.VariableStatement>initializer).variables;
+                case nodes.VariableStatement:
+                    if (!this.options.useCompatibleForInAndForOf) {
+                        const variables = (<nodes.VariableStatement>initializer).variables;
                         if (type !== TokenType.to && variables[0].initializer) this.error(variables[0].initializer, type === TokenType.in ? "在 for..in 语句变量不能有初始值。" : "在 for..of 语句变量不能有初始值。");
                         if (variables.length > 1) {
                             this.error(variables[1].name, type === TokenType.in ? "在 for..in 语句中只能定义一个变量。" :
@@ -464,7 +434,7 @@ export class Parser {
                         }
                     }
                     break;
-                case Nodes.Identifier:
+                case nodes.Identifier:
                     break;
                 default:
                     this.error(initializer, type === TokenType.in ? "在 for..in 语句的左边只能是标识符。" :
@@ -474,32 +444,32 @@ export class Parser {
             }
         }
 
-        let result: Nodes.ForStatement | Nodes.ForInStatement | Nodes.ForOfStatement | Nodes.ForToStatement;
+        let result: nodes.ForStatement | nodes.ForInStatement | nodes.ForOfStatement | nodes.ForToStatement;
         switch (type) {
             case TokenType.semicolon:
-                result = new Nodes.ForStatement();
-                (<Nodes.ForStatement>result).firstSemicolonToken = this.expectToken(TokenType.semicolon).start;
+                result = new nodes.ForStatement();
+                (<nodes.ForStatement>result).firstSemicolonToken = this.readToken(TokenType.semicolon);
                 if (this.lexer.peek().type !== TokenType.semicolon) {
                     result.condition = this.parseExpression();
                 }
-                (<Nodes.ForStatement>result).secondSemicolonToken = this.expectToken(TokenType.semicolon).start;
-                if (openParan != undefined ? this.lexer.peek().type !== TokenType.closeParen : Tokens.isExpressionStart(this.lexer.peek().type)) {
-                    (<Nodes.ForStatement>result).iterator = this.parseExpression();
+                (<nodes.ForStatement>result).secondSemicolonToken = this.readToken(TokenType.semicolon);
+                if (openParan != undefined ? this.lexer.peek().type !== TokenType.closeParen : isExpressionStart(this.lexer.peek().type)) {
+                    (<nodes.ForStatement>result).iterator = this.parseExpression();
                 }
                 break;
             case TokenType.in:
-                result = new Nodes.ForInStatement();
-                (<Nodes.ForInStatement>result).inToken = this.lexer.read().start;
+                result = new nodes.ForInStatement();
+                (<nodes.ForInStatement>result).inToken = this.lexer.read().start;
                 result.condition = this.parseExpression();
                 break;
             case TokenType.of:
-                result = new Nodes.ForOfStatement();
-                (<Nodes.ForOfStatement>result).ofToken = this.lexer.read().start;
-                result.condition = options.disallowForOfCommaExpression ? this.parseAssignmentExpressionOrHigher() : this.parseExpression();
+                result = new nodes.ForOfStatement();
+                (<nodes.ForOfStatement>result).ofToken = this.lexer.read().start;
+                result.condition = this.options.disallowForOfCommaExpression ? this.parseAssignmentExpressionOrHigher() : this.parseExpression();
                 break;
             case TokenType.to:
-                result = new Nodes.ForToStatement();
-                (<Nodes.ForToStatement>result).toToken = this.lexer.read().start;
+                result = new nodes.ForToStatement();
+                (<nodes.ForToStatement>result).toToken = this.lexer.read().start;
                 result.condition = this.parseExpression();
                 break;
         }
@@ -510,10 +480,255 @@ export class Parser {
         }
         if (openParan != undefined) {
             result.openParanToken = openParan;
-            result.closeParanToken = this.expectToken(TokenType.closeParen).start;
+            result.closeParanToken = this.readToken(TokenType.closeParen);
         }
         result.body = this.parseEmbeddedStatement();
         return result;
+    }
+
+    /**
+     * 解析一个 while 语句(`while(x) ...`)。
+     */
+    private parseWhileStatement() {
+        console.assert(this.lexer.peek().type === TokenType.while);
+        const result = new nodes.WhileStatement();
+        result.start = this.lexer.read().start;
+        this.parseCondition(result);
+        result.body = this.parseEmbeddedStatement();
+        return result;
+    }
+
+    /**
+     * 解析一个 do..while 语句(`do ... while(x);`)。
+     */
+    private parseDoWhileStatement() {
+        console.assert(this.lexer.peek().type === TokenType.do);
+        const result = new nodes.DoWhileStatement();
+        result.start = this.lexer.read().type;
+        result.body = this.parseEmbeddedStatement();
+        result.whileToken = this.readToken(TokenType.while);
+        this.parseCondition(result);
+        result.end = this.tryReadSemicolon();
+        return result;
+    }
+
+    /**
+     * 解析一个 break 语句(`break xx;`)。
+     */
+    private parseBreakStatement() {
+        console.assert(this.lexer.peek().type === TokenType.break);
+        const result = new nodes.BreakStatement();
+        result.start = this.lexer.read().start;
+        if (this.lexer.peek().type === TokenType.identifier || isReservedWord(this.lexer.peek().type)) {
+            result.label = this.parseIdentifier();
+        } else if (!this.hasSemicolon()) {
+            this.expectToken(TokenType.identifier);
+        }
+        result.end = this.tryReadSemicolon();
+        return result;
+    }
+
+    /**
+     * 解析一个 continue 语句(`continue xx;`)。
+     */
+    private parseContinueStatement() {
+        console.assert(this.lexer.peek().type === TokenType.continue);
+        const result = new nodes.ContinueStatement();
+        result.start = this.lexer.read().start;
+        if (this.lexer.peek().type === TokenType.identifier || isReservedWord(this.lexer.peek().type)) {
+            result.label = this.parseIdentifier();
+        } else if (!this.hasSemicolon()) {
+            this.expectToken(TokenType.identifier);
+        }
+        result.end = this.tryReadSemicolon();
+        return result;
+    }
+
+    /**
+     * 解析一个 return 语句(`return x;`)。
+     */
+    private parseReturnStatement() {
+        console.assert(this.lexer.peek().type === TokenType.return);
+        const result = new nodes.ReturnStatement();
+        result.start = this.lexer.read().start;
+        if (this.options.useStandardSemicolonInsertion ? !this.hasSemicolon() : isExpressionStart(this.lexer.peek().type)) {
+            result.value = this.parseExpression();
+        }
+        result.end = this.tryReadSemicolon();
+        return result;
+    }
+
+    /**
+     * 解析一个 throw 语句(`throw x;`)。
+     */
+    private parseThrowStatement() {
+        console.assert(this.lexer.peek().type === TokenType.throw);
+        const result = new nodes.ThrowStatement();
+        result.start = this.lexer.read().start;
+        if (this.options.useStandardSemicolonInsertion ? !this.hasSemicolon() : isExpressionStart(this.lexer.peek().type)) {
+            result.value = this.parseExpression();
+        } else if (this.options.disallowRethrow) {
+            this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "应输入表达式。");
+        }
+        result.end = this.tryReadSemicolon();
+        return result;
+    }
+
+    /**
+     * 解析一个 try 语句(`try {...} catch(e) {...}`)。
+     */
+    private parseTryStatement() {
+        console.assert(this.lexer.peek().type == TokenType.try);
+        const result = new nodes.TryStatement();
+        result.start = this.lexer.read().start;
+        result.try = this.parseTryClauseBody();
+        if (this.lexer.peek().type === TokenType.catch) {
+            result.catch = new nodes.CatchClause();
+            result.catch.start = this.lexer.read().start;
+            if (this.lexer.peek().type === TokenType.openParen) {
+                result.catch.openParanToken = this.lexer.read().start;
+                result.catch.variable = this.parseBindingName();
+                result.catch.openParanToken = this.readToken(TokenType.closeParen);
+            } else if (!this.options.disallowMissingParenthese && this.isBindingName()) {
+                result.catch.variable = this.parseBindingName();
+            } else if (this.options.disallowMissingCatchVaribale) {
+                this.expectToken(TokenType.openParen);
+            }
+            result.catch.body = this.parseTryClauseBody();
+        }
+        if (this.lexer.peek().type === TokenType.finally) {
+            result.finally = new nodes.FinallyClause();
+            result.finally.start = this.lexer.read().start;
+            result.finally.body = this.parseTryClauseBody();
+        }
+        if (this.options.disallowSimpleTryBlock && !result.catch && !result.finally) {
+            this.error(this.lexer.peek(), "应输入“catch”或“finally”");
+        }
+        return result;
+    }
+
+    /**
+     * 解析一个 try 语句的语句块。
+     */
+    private parseTryClauseBody() {
+        if (!this.options.disallowMissingTryBlock) {
+            return this.parseEmbeddedStatement();
+        }
+        if (this.lexer.peek().type === TokenType.openBrace) {
+            return this.parseBlockStatement();
+        }
+        const result = new nodes.BlockStatement();
+        result.statements = new nodes.NodeList<nodes.Statement>();
+        result.statements.start = this.expectToken(TokenType.openBrace);
+        const statement = this.parseStatement();
+        result.statements.push(statement);
+        result.statements.end = statement.end;
+        return result;
+    }
+
+    /**
+     * 解析一个 debugger 语句(`debugger;`)。
+     */
+    private parseDebuggerStatement() {
+        console.assert(this.lexer.peek().type === TokenType.debugger);
+        const result = new nodes.DebuggerStatement();
+        result.start = this.lexer.read().start;
+        result.end = this.tryReadSemicolon();
+        return result;
+    }
+
+    /**
+     * 解析一个 with 语句(`with(x) ...`)。
+     */
+    private parseWithStatement() {
+        console.assert(this.lexer.peek().type === TokenType.with);
+        const result = new nodes.WithStatement();
+        result.start = this.lexer.read().start;
+        if (this.lexer.peek().type === TokenType.openParen) {
+            result.openParanToken = this.lexer.read().start;
+            result.value = !this.options.disallowWithVaribale && this.isVariableStatement() ?
+                this.parseVariableStatement() :
+                this.parseExpression();
+            result.closeParanToken = this.readToken(TokenType.closeParen);
+        } else {
+            if (this.options.disallowMissingParenthese) {
+                this.expectToken(TokenType.openParen);
+            }
+            result.value = !this.options.disallowWithVaribale && this.isVariableStatement() ?
+                this.parseVariableStatement() :
+                this.parseExpression();
+        }
+        result.body = this.parseEmbeddedStatement();
+        return result;
+    }
+
+    /**
+     * 解析一个错误的语句。
+     */
+    private parseErrorStatement() {
+        this.error(this.lexer.peek(), "应输入语句");
+        const result = new nodes.EmptyStatement();
+        result.start = result.end = this.lexer.peek().start;
+        return result;
+    }
+
+    /**
+     * 判断是否可以自动插入一个分号。
+     */
+    private hasSemicolon() {
+        switch (this.lexer.peek().type) {
+            case TokenType.semicolon:
+                return true;
+            case TokenType.closeBrace:
+            case TokenType.endOfFile:
+                return !this.options.disallowMissingSemicolon;
+            default:
+                if (this.options.disallowMissingSemicolon) return false;
+                if (this.options.useStandardSemicolonInsertion) return this.lexer.peek().hasLineBreakBeforeStart;
+                return true;
+        }
+    }
+
+    /**
+     * 尝试读取或自动插入一个分号。
+     * @return 返回分号或自动插入点的结束位置。
+     */
+    private tryReadSemicolon() {
+        if (this.lexer.peek().type === TokenType.semicolon) {
+            return this.lexer.read().end;
+        }
+        if (!this.hasSemicolon()) {
+            this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "语句后缺少“;”。");
+        }
+        return this.lexer.current.end;
+    }
+
+    /**
+     * 解析内嵌语句。
+     */
+    private parseEmbeddedStatement() {
+        const result = this.parseStatement();
+        if (result.constructor === nodes.VariableStatement && (<nodes.VariableStatement>result).type !== TokenType.var) {
+            this.error(result, "变量声明语句应放在语句块中。");
+        }
+        return result;
+    }
+
+    /**
+     * 解析条件表达式。
+     * @param result 存放结果的语句。
+     */
+    private parseCondition(result: nodes.IfStatement | nodes.SwitchStatement | nodes.WhileStatement | nodes.DoWhileStatement) {
+        if (this.lexer.peek().type === TokenType.openParen) {
+            result.openParanToken = this.lexer.read().type;
+            result.condition = this.parseExpression();
+            result.closeParanToken = this.readToken(TokenType.closeParen);
+        } else {
+            if (!this.options.disallowMissingParenthese) {
+                this.expectToken(TokenType.openParen);
+            }
+            result.condition = this.parseExpression();
+        }
     }
 
     /**
@@ -549,176 +764,133 @@ export class Parser {
         }
     }
 
-    /**
-     * 解析一个 while 语句(`while(x) ...`)。
-     */
-    private parseWhileStatement() {
-        console.assert(this.lexer.peek().type === TokenType.while);
-        const result = new Nodes.WhileStatement();
-        result.start = this.lexer.read().start;
-        this.parseCondition(result);
-        result.body = this.parseEmbeddedStatement();
-        return result;
-    }
+    // #endregion
+
+    // #region 解析表达式
 
     /**
-     * 解析一个 do..while 语句(`do ... while(x);`)。
+     * 读取一个标识符或可降级为标识符的关键字。
+     * @param allowES3Keyword 是否允许将普通关键字作为标识符解析。
+     * @return 返回标识符节点。
      */
-    private parseDoWhileStatement() {
-        console.assert(this.lexer.peek().type === TokenType.do);
-        const result = new Nodes.DoWhileStatement();
-        result.start = this.lexer.read().type;
-        result.body = this.parseEmbeddedStatement();
-        result.whileToken = this.expectToken(TokenType.while).start;
-        this.parseCondition(result);
-        result.end = this.expectSemicolon();
-        return result;
-    }
-
-    /**
-     * 解析一个 break 语句(`break xx;`)。
-     */
-    private parseBreakStatement() {
-        console.assert(this.lexer.peek().type === TokenType.break);
-        const result = new Nodes.BreakStatement();
-        result.start = this.lexer.read().start;
-        if (this.lexer.peek().type === TokenType.identifier) {
-            result.label = this.parseIdentifier();
+    private readIdentifier(allowES3Keyword?: boolean) {
+        if (this.lexer.peek().type === TokenType.identifier || (allowES3Keyword ? isKeyword(this.lexer.peek().type) : isReservedWord(this.lexer.peek().type))) {
+            return this.parseIdentifier();
         }
-        result.end = this.expectSemicolon();
-        return result;
-    }
-
-    /**
-     * 解析一个 continue 语句(`continue xx;`)。
-     */
-    private parseContinueStatement() {
-        console.assert(this.lexer.peek().type === TokenType.continue);
-        const result = new Nodes.ContinueStatement();
-        result.start = this.lexer.read().start;
-        if (this.lexer.peek().type === TokenType.identifier) {
-            result.label = this.parseIdentifier();
-        }
-        result.end = this.expectSemicolon();
-        return result;
-    }
-
-    private parseBreakOrContinueStatement(kind: TokenType): Nodes.BreakOrContinueStatement {
-        const result = new Nodes.BreakOrContinueStatement();
-
-        this.parseExpected(kind === TokenType.BreakStatement ? TokenType.break : TokenType.continue);
-        if (!this.canParseSemicolon()) {
-            result.label = this.parseIdentifier();
-        }
-
-        this.expectSemicolon();
+        this.expectToken(TokenType.identifier);
+        const result = new nodes.Identifier();
+        result.start = result.end = this.lexer.current.end;
         return result;
     }
 
     // #endregion
 
+    // #region 解析文档注释
+
     private parseJsDocComment(result) {
 
     }
+
+    // #endregion
 
     // #region 未整理
 
     private disallowInAndDecoratorContext = NodeFlags.DisallowInContext | NodeFlags.DecoratorContext;
 
     // capture constructors in 'this.initializeState' to avoid null checks
-    private NodeConstructor: new (kind: TokenType, pos: number, end: number) => Nodes.Node;
-    private SourceFileConstructor: new (kind: TokenType, pos: number, end: number) => Nodes.Node;
+    private NodeConstructor: new (kind: TokenType, pos: number, end: number) => nodes.Node;
+    private SourceFileConstructor: new (kind: TokenType, pos: number, end: number) => nodes.Node;
 
-    private sourceFile: Nodes.SourceFile;
-    private parseDiagnostics: Nodes.Diagnostic[];
-    private syntaxCursor: Nodes.IncrementalParser.SyntaxCursor;
+    private sourceFile: nodes.SourceFile;
+    private parseDiagnostics: nodes.Diagnostic[];
+    private syntaxCursor: nodes.IncrementalParser.SyntaxCursor;
 
     private token: TokenType;
     private sourceText: string;
     private nodeCount: number;
-    private identifiers: Nodes.Map<string>;
+    private identifiers: nodes.Map<string>;
     private identifierCount: number;
 
-    private parsingContext: Nodes.ParsingContext;
+    private parsingContext: nodes.ParsingContext;
 
-    // Nodes.Flags that dictate what parsing context we're in.  Nodes.For example:
-    // Nodes.Whether or not we are in strict parsing mode.  Nodes.All that changes in strict parsing mode is
+    // nodes.Flags that dictate what parsing context we're in.  nodes.For example:
+    // nodes.Whether or not we are in strict parsing mode.  nodes.All that changes in strict parsing mode is
     // that some tokens that would be considered this.identifiers may be considered keywords.
     //
-    // Nodes.When adding more parser context flags, consider which is the more common case that the
-    // flag will be in.  Nodes.This should be the 'false' state for that flag.  Nodes.The reason for this is
-    // that we don't store data in our nodes unless the value is in the *non-default* state.  Nodes.So,
-    // for example, more often than code 'allows-in' (or doesn't 'disallow-in').  Nodes.We opt for
-    // 'disallow-in' set to 'false'.  Nodes.Otherwise, if we had 'allowsIn' set to 'true', then almost
+    // nodes.When adding more parser context flags, consider which is the more common case that the
+    // flag will be in.  nodes.This should be the 'false' state for that flag.  nodes.The reason for this is
+    // that we don't store data in our nodes unless the value is in the *non-default* state.  nodes.So,
+    // for example, more often than code 'allows-in' (or doesn't 'disallow-in').  nodes.We opt for
+    // 'disallow-in' set to 'false'.  nodes.Otherwise, if we had 'allowsIn' set to 'true', then almost
     // all nodes would need extra state on them to store this info.
     //
-    // Nodes.Note:  'allowIn' and 'allowYield' track 1:1 with the [in] and [yield] concepts in the Nodes.ES6
+    // nodes.Note:  'allowIn' and 'allowYield' track 1:1 with the [in] and [yield] concepts in the nodes.ES6
     // grammar specification.
     //
-    // Nodes.An important thing about these context concepts.  Nodes.By default they are effectively inherited
+    // nodes.An important thing about these context concepts.  nodes.By default they are effectively inherited
     // while parsing through every grammar production.  i.e. if you don't change them, then when
     // you parse a sub-production, it will have the same context values as the parent production.
-    // Nodes.This is great most of the time.  Nodes.After all, consider all the 'expression' grammar productions
+    // nodes.This is great most of the time.  nodes.After all, consider all the 'expression' grammar productions
     // and how nearly all of them pass along the 'in' and 'yield' context values:
     //
-    // Nodes.EqualityExpression[Nodes.In, Nodes.Yield] :
-    //      Nodes.RelationalExpression[?Nodes.In, ?Nodes.Yield]
-    //      Nodes.EqualityExpression[?Nodes.In, ?Nodes.Yield] == Nodes.RelationalExpression[?Nodes.In, ?Nodes.Yield]
-    //      Nodes.EqualityExpression[?Nodes.In, ?Nodes.Yield] != Nodes.RelationalExpression[?Nodes.In, ?Nodes.Yield]
-    //      Nodes.EqualityExpression[?Nodes.In, ?Nodes.Yield] === Nodes.RelationalExpression[?Nodes.In, ?Nodes.Yield]
-    //      Nodes.EqualityExpression[?Nodes.In, ?Nodes.Yield] !== Nodes.RelationalExpression[?Nodes.In, ?Nodes.Yield]
+    // nodes.EqualityExpression[nodes.In, nodes.Yield] :
+    //      nodes.RelationalExpression[?nodes.In, ?nodes.Yield]
+    //      nodes.EqualityExpression[?nodes.In, ?nodes.Yield] == nodes.RelationalExpression[?nodes.In, ?nodes.Yield]
+    //      nodes.EqualityExpression[?nodes.In, ?nodes.Yield] != nodes.RelationalExpression[?nodes.In, ?nodes.Yield]
+    //      nodes.EqualityExpression[?nodes.In, ?nodes.Yield] === nodes.RelationalExpression[?nodes.In, ?nodes.Yield]
+    //      nodes.EqualityExpression[?nodes.In, ?nodes.Yield] !== nodes.RelationalExpression[?nodes.In, ?nodes.Yield]
     //
-    // Nodes.Where you have to be careful is then understanding what the points are in the grammar
-    // where the values are *not* passed along.  Nodes.For example:
+    // nodes.Where you have to be careful is then understanding what the points are in the grammar
+    // where the values are *not* passed along.  nodes.For example:
     //
-    // Nodes.SingleNameBinding[Nodes.Yield,Nodes.GeneratorParameter]
-    //      [+Nodes.GeneratorParameter]Nodes.BindingIdentifier[Nodes.Yield] Nodes.Initializer[Nodes.In]opt
-    //      [~Nodes.GeneratorParameter]Nodes.BindingIdentifier[?Nodes.Yield]Nodes.Initializer[Nodes.In, ?Nodes.Yield]opt
+    // nodes.SingleNameBinding[nodes.Yield,nodes.GeneratorParameter]
+    //      [+nodes.GeneratorParameter]nodes.BindingIdentifier[nodes.Yield] nodes.Initializer[nodes.In]opt
+    //      [~nodes.GeneratorParameter]nodes.BindingIdentifier[?nodes.Yield]nodes.Initializer[nodes.In, ?nodes.Yield]opt
     //
-    // Nodes.Here this is saying that if the Nodes.GeneratorParameter context flag is set, that we should
-    // explicitly set the 'yield' context flag to false before calling into the Nodes.BindingIdentifier
-    // and we should explicitly unset the 'yield' context flag before calling into the Nodes.Initializer.
-    // production.  Nodes.Conversely, if the Nodes.GeneratorParameter context flag is not set, then we
+    // nodes.Here this is saying that if the nodes.GeneratorParameter context flag is set, that we should
+    // explicitly set the 'yield' context flag to false before calling into the nodes.BindingIdentifier
+    // and we should explicitly unset the 'yield' context flag before calling into the nodes.Initializer.
+    // production.  nodes.Conversely, if the nodes.GeneratorParameter context flag is not set, then we
     // should leave the 'yield' context flag alone.
     //
-    // Nodes.Getting this all correct is tricky and requires careful reading of the grammar to
+    // nodes.Getting this all correct is tricky and requires careful reading of the grammar to
     // understand when these values should be changed versus when they should be inherited.
     //
-    // Nodes.Note: it should not be necessary to save/restore these flags during speculative/lookahead
-    // parsing.  Nodes.These context flags are naturally stored and restored through normal recursive
+    // nodes.Note: it should not be necessary to save/restore these flags during speculative/lookahead
+    // parsing.  nodes.These context flags are naturally stored and restored through normal recursive
     // descent parsing and unwinding.
-    private contextFlags: Nodes.NodeFlags;
+    private contextFlags: nodes.NodeFlags;
 
-    // Nodes.Whether or not we've had a parse error since creating the last Nodes.AST result.  Nodes.If we have
-    // encountered an error, it will be stored on the next Nodes.AST result we create.  Nodes.Parse errors
+    // nodes.Whether or not we've had a parse error since creating the last nodes.AST result.  nodes.If we have
+    // encountered an error, it will be stored on the next nodes.AST result we create.  nodes.Parse errors
     // can be broken down into three categories:
     //
-    // 1) Nodes.An error that occurred during scanning.  Nodes.For example, an unterminated literal, or a
+    // 1) nodes.An error that occurred during scanning.  nodes.For example, an unterminated literal, or a
     //    character that was completely not understood.
     //
-    // 2) A this.lexer.peek().type was expected, but was not present.  Nodes.This type of error is commonly produced
+    // 2) A this.lexer.peek().type was expected, but was not present.  nodes.This type of error is commonly produced
     //    by the 'this.parseExpected' function.
     //
-    // 3) A this.lexer.peek().type was present that no parsing function was able to consume.  Nodes.This type of error
+    // 3) A this.lexer.peek().type was present that no parsing function was able to consume.  nodes.This type of error
     //    only occurs in the 'this.abortParsingListOrMoveToNextToken' function when the parser
     //    decides to skip the this.lexer.peek().type.
     //
-    // Nodes.In all of these cases, we want to mark the next result as having had an error before it.
-    // Nodes.With this mark, we can know in incremental settings if this result can be reused, or if
-    // we have to reparse it.  Nodes.If we don't keep this information around, we may just reuse the
+    // nodes.In all of these cases, we want to mark the next result as having had an error before it.
+    // nodes.With this mark, we can know in incremental settings if this result can be reused, or if
+    // we have to reparse it.  nodes.If we don't keep this information around, we may just reuse the
     // result.  in that event we would then not produce the same errors as we did before, causing
     // significant confusion problems.
     //
-    // Nodes.Note: it is necessary that this value be saved/restored during speculative/lookahead
-    // parsing.  Nodes.During lookahead parsing, we will often create a result.  Nodes.That result will have
-    // this value attached, and then this value will be set back to 'false'.  Nodes.If we decide to
+    // nodes.Note: it is necessary that this value be saved/restored during speculative/lookahead
+    // parsing.  nodes.During lookahead parsing, we will often create a result.  nodes.That result will have
+    // this value attached, and then this value will be set back to 'false'.  nodes.If we decide to
     // rewind, we must get back to the same value we had prior to the lookahead.
     //
-    // Nodes.Note: any errors at the end of the file that do not precede a regular result, should get
-    // attached to the Nodes.EOF this.lexer.peek().type.
+    // nodes.Note: any errors at the end of the file that do not precede a regular result, should get
+    // attached to the nodes.EOF this.lexer.peek().type.
     private parseErrorBeforeNextFinishedNode = false;
 
-    private parseSourceFile(fileName: string, _sourceText: string, languageVersion: Nodes.ScriptTarget, _syntaxCursor: Nodes.IncrementalParser.SyntaxCursor, setParentNodes?: boolean, scriptKind?: Nodes.ScriptKind): Nodes.SourceFile {
+    private parseSourceFile(fileName: string, _sourceText: string, languageVersion: nodes.ScriptTarget, _syntaxCursor: nodes.IncrementalParser.SyntaxCursor, setParentNodes?: boolean, scriptKind?: nodes.ScriptKind): nodes.SourceFile {
         scriptKind = ensureScriptKind(fileName, scriptKind);
 
         this.initializeState(fileName, _sourceText, languageVersion, _syntaxCursor, scriptKind);
@@ -730,7 +902,7 @@ export class Parser {
         return this.result;
     }
 
-    private initializeState(fileName: string, _sourceText: string, languageVersion: Nodes.ScriptTarget, _syntaxCursor: Nodes.IncrementalParser.SyntaxCursor, scriptKind: Nodes.ScriptKind) {
+    private initializeState(fileName: string, _sourceText: string, languageVersion: nodes.ScriptTarget, _syntaxCursor: nodes.IncrementalParser.SyntaxCursor, scriptKind: nodes.ScriptKind) {
         this.NodeConstructor = objectAllocator.getNodeConstructor();
         this.SourceFileConstructor = objectAllocator.getSourceFileConstructor();
 
@@ -743,20 +915,20 @@ export class Parser {
         this.identifierCount = 0;
         this.nodeCount = 0;
 
-        this.contextFlags = scriptKind === Nodes.ScriptKind.JS || scriptKind === Nodes.ScriptKind.JSX ? Nodes.NodeFlags.JavaScriptFile : Nodes.NodeFlags.None;
+        this.contextFlags = scriptKind === nodes.ScriptKind.JS || scriptKind === nodes.ScriptKind.JSX ? nodes.NodeFlags.JavaScriptFile : nodes.NodeFlags.None;
         this.parseErrorBeforeNextFinishedNode = false;
 
-        // Nodes.Initialize and prime the this.scanner before parsing the source elements.
+        // nodes.Initialize and prime the this.scanner before parsing the source elements.
         this.lexer.setText(this.sourceText);
         this.lexer.setScriptTarget(languageVersion);
         this.lexer.setLanguageVariant(getLanguageVariant(scriptKind));
     }
 
     private clearState() {
-        // Nodes.Clear out the text the this.scanner is pointing at, so it doesn't keep anything alive unnecessarily.
+        // nodes.Clear out the text the this.scanner is pointing at, so it doesn't keep anything alive unnecessarily.
         this.lexer.setText("");
 
-        // Nodes.Clear any data.  Nodes.We don't want to accidentally hold onto it for too long.
+        // nodes.Clear any data.  nodes.We don't want to accidentally hold onto it for too long.
         this.parseDiagnostics = undefined;
         this.sourceFile = undefined;
         this.identifiers = undefined;
@@ -764,15 +936,15 @@ export class Parser {
         this.sourceText = undefined;
     }
 
-    private parseSourceFileWorker(fileName: string, languageVersion: Nodes.ScriptTarget, setParentNodes: boolean, scriptKind: Nodes.ScriptKind): Nodes.SourceFile {
+    private parseSourceFileWorker(fileName: string, languageVersion: nodes.ScriptTarget, setParentNodes: boolean, scriptKind: nodes.ScriptKind): nodes.SourceFile {
         this.sourceFile = this.createSourceFile(fileName, languageVersion, scriptKind);
         this.sourceFile.flags = this.contextFlags;
 
-        // Nodes.Prime the this.scanner.
+        // nodes.Prime the this.scanner.
         this.lexer.peek().type = this.nextToken();
         this.processReferenceComments(this.sourceFile);
 
-        this.sourceFile.statements = this.parseList(Nodes.ParsingContext.SourceElements, this.parseStatement);
+        this.sourceFile.statements = this.parseList(nodes.ParsingContext.SourceElements, this.parseStatement);
         console.assert(this.lexer.peek().type === TokenType.endOfFile);
         this.sourceFile.endOfFileToken = this.parseTokenNode();
 
@@ -790,12 +962,12 @@ export class Parser {
         return this.sourceFile;
     }
 
-    private parseJsDocComment<T extends Nodes.Node>(result: T): T {
-        if (this.contextFlags & Nodes.NodeFlags.JavaScriptFile) {
+    private parseJsDocComment<T extends nodes.Node>(result: T): T {
+        if (this.contextFlags & nodes.NodeFlags.JavaScriptFile) {
             const comments = getLeadingCommentRangesOfNode(result, this.sourceFile);
             if (comments) {
                 for (const comment of comments) {
-                    const jsDocComment = Nodes.JSDocParser.parseJSDocComment(result, comment.pos, comment.end - comment.pos);
+                    const jsDocComment = nodes.JSDocParser.parseJSDocComment(result, comment.pos, comment.end - comment.pos);
                     if (!jsDocComment) {
                         continue;
                     }
@@ -811,18 +983,18 @@ export class Parser {
         return result;
     }
 
-    private fixupParentReferences(rootNode: Nodes.Node) {
-        // normally parent references are set during binding. Nodes.However, for clients that only need
+    private fixupParentReferences(rootNode: nodes.Node) {
+        // normally parent references are set during binding. nodes.However, for clients that only need
         // a syntax tree, and no semantic features, then the binding process is an unnecessary
-        // overhead.  Nodes.This functions allows us to set all the parents, without all the expense of
+        // overhead.  nodes.This functions allows us to set all the parents, without all the expense of
         // binding.
 
-        let parent: Nodes.Node = rootNode;
+        let parent: nodes.Node = rootNode;
         forEachChild(rootNode, visitNode);
         return;
 
-        function visitNode(n: Nodes.Node): void {
-            // walk down setting parents that differ from the parent we think it should be.  Nodes.This
+        function visitNode(n: nodes.Node): void {
+            // walk down setting parents that differ from the parent we think it should be.  nodes.This
             // allows us to quickly bail out of setting parents for subtrees during incremental
             // parsing
             if (n.parent !== parent) {
@@ -843,10 +1015,10 @@ export class Parser {
         }
     }
 
-    private createSourceFile(fileName: string, languageVersion: Nodes.ScriptTarget, scriptKind: Nodes.ScriptKind): Nodes.SourceFile {
+    private createSourceFile(fileName: string, languageVersion: nodes.ScriptTarget, scriptKind: nodes.ScriptKind): nodes.SourceFile {
         // code from this.createNode is inlined here so this.createNode won't have to deal with special case of creating source files
         // this is quite rare comparing to other nodes and this.createNode should be as fast as possible
-        const this.sourceFile = <Nodes.SourceFile>new this.SourceFileConstructor(TokenType.SourceFile, /*pos*/ 0, /* end */ this.sourceText.length);
+        const this.sourceFile = <nodes.SourceFile>new this.SourceFileConstructor(TokenType.SourceFile, /*pos*/ 0, /* end */ this.sourceText.length);
         this.nodeCount++;
 
         this.sourceFile.text = this.sourceText;
@@ -860,7 +1032,7 @@ export class Parser {
         return this.sourceFile;
     }
 
-    private setContextFlag(val: boolean, flag: Nodes.NodeFlags) {
+    private setContextFlag(val: boolean, flag: nodes.NodeFlags) {
         if (val) {
             this.contextFlags |= flag;
         }
@@ -870,28 +1042,28 @@ export class Parser {
     }
 
     private setDisallowInContext(val: boolean) {
-        this.setContextFlag(val, Nodes.NodeFlags.DisallowInContext);
+        this.setContextFlag(val, nodes.NodeFlags.DisallowInContext);
     }
 
     private setYieldContext(val: boolean) {
-        this.setContextFlag(val, Nodes.NodeFlags.YieldContext);
+        this.setContextFlag(val, nodes.NodeFlags.YieldContext);
     }
 
     private setDecoratorContext(val: boolean) {
-        this.setContextFlag(val, Nodes.NodeFlags.DecoratorContext);
+        this.setContextFlag(val, nodes.NodeFlags.DecoratorContext);
     }
 
     private setAwaitContext(val: boolean) {
-        this.setContextFlag(val, Nodes.NodeFlags.AwaitContext);
+        this.setContextFlag(val, nodes.NodeFlags.AwaitContext);
     }
 
-    private doOutsideOfContext<T>(context: Nodes.NodeFlags, func: () => T): T {
+    private doOutsideOfContext<T>(context: nodes.NodeFlags, func: () => T): T {
         // contextFlagsToClear will contain only the context flags that are
         // currently set that we need to temporarily clear
-        // Nodes.We don't just blindly reset to the previous flags to ensure
+        // nodes.We don't just blindly reset to the previous flags to ensure
         // that we do not mutate cached flags for the incremental
-        // parser (Nodes.ThisNodeHasError, Nodes.ThisNodeOrAnySubNodesHasError, and
-        // Nodes.HasAggregatedChildData).
+        // parser (nodes.ThisNodeHasError, nodes.ThisNodeOrAnySubNodesHasError, and
+        // nodes.HasAggregatedChildData).
         const contextFlagsToClear = context & this.contextFlags;
         if (contextFlagsToClear) {
             // clear the requested context flags
@@ -906,13 +1078,13 @@ export class Parser {
         return func();
     }
 
-    private doInsideOfContext<T>(context: Nodes.NodeFlags, func: () => T): T {
+    private doInsideOfContext<T>(context: nodes.NodeFlags, func: () => T): T {
         // contextFlagsToSet will contain only the context flags that
         // are not currently set that we need to temporarily enable.
-        // Nodes.We don't just blindly reset to the previous flags to ensure
+        // nodes.We don't just blindly reset to the previous flags to ensure
         // that we do not mutate cached flags for the incremental
-        // parser (Nodes.ThisNodeHasError, Nodes.ThisNodeOrAnySubNodesHasError, and
-        // Nodes.HasAggregatedChildData).
+        // parser (nodes.ThisNodeHasError, nodes.ThisNodeOrAnySubNodesHasError, and
+        // nodes.HasAggregatedChildData).
         const contextFlagsToSet = context & ~this.contextFlags;
         if (contextFlagsToSet) {
             // set the requested context flags
@@ -928,73 +1100,73 @@ export class Parser {
     }
 
     private allowInAnd<T>(func: () => T): T {
-        return this.doOutsideOfContext(Nodes.NodeFlags.DisallowInContext, func);
+        return this.doOutsideOfContext(nodes.NodeFlags.DisallowInContext, func);
     }
 
     private disallowInAnd<T>(func: () => T): T {
-        return this.doInsideOfContext(Nodes.NodeFlags.DisallowInContext, func);
+        return this.doInsideOfContext(nodes.NodeFlags.DisallowInContext, func);
     }
 
     private doInYieldContext<T>(func: () => T): T {
-        return this.doInsideOfContext(Nodes.NodeFlags.YieldContext, func);
+        return this.doInsideOfContext(nodes.NodeFlags.YieldContext, func);
     }
 
     private doInDecoratorContext<T>(func: () => T): T {
-        return this.doInsideOfContext(Nodes.NodeFlags.DecoratorContext, func);
+        return this.doInsideOfContext(nodes.NodeFlags.DecoratorContext, func);
     }
 
     private doInAwaitContext<T>(func: () => T): T {
-        return this.doInsideOfContext(Nodes.NodeFlags.AwaitContext, func);
+        return this.doInsideOfContext(nodes.NodeFlags.AwaitContext, func);
     }
 
     private doOutsideOfAwaitContext<T>(func: () => T): T {
-        return this.doOutsideOfContext(Nodes.NodeFlags.AwaitContext, func);
+        return this.doOutsideOfContext(nodes.NodeFlags.AwaitContext, func);
     }
 
     private doInYieldAndAwaitContext<T>(func: () => T): T {
-        return this.doInsideOfContext(Nodes.NodeFlags.YieldContext | Nodes.NodeFlags.AwaitContext, func);
+        return this.doInsideOfContext(nodes.NodeFlags.YieldContext | nodes.NodeFlags.AwaitContext, func);
     }
 
-    private inContext(flags: Nodes.NodeFlags) {
+    private inContext(flags: nodes.NodeFlags) {
         return (this.contextFlags & flags) !== 0;
     }
 
     private inYieldContext() {
-        return this.inContext(Nodes.NodeFlags.YieldContext);
+        return this.inContext(nodes.NodeFlags.YieldContext);
     }
 
     private inDisallowInContext() {
-        return this.inContext(Nodes.NodeFlags.DisallowInContext);
+        return this.inContext(nodes.NodeFlags.DisallowInContext);
     }
 
     private inDecoratorContext() {
-        return this.inContext(Nodes.NodeFlags.DecoratorContext);
+        return this.inContext(nodes.NodeFlags.DecoratorContext);
     }
 
     private inAwaitContext() {
-        return this.inContext(Nodes.NodeFlags.AwaitContext);
+        return this.inContext(nodes.NodeFlags.AwaitContext);
     }
 
-    private parseErrorAtCurrentToken(message: Nodes.DiagnosticMessage, arg0?: any): void {
+    private parseErrorAtCurrentToken(message: nodes.DiagnosticMessage, arg0?: any): void {
         const start = this.lexer.getTokenPos();
         const length = this.lexer.getTextPos() - start;
 
         this.parseErrorAtPosition(start, length, message, arg0);
     }
 
-    private parseErrorAtPosition(start: number, length: number, message: Nodes.DiagnosticMessage, arg0?: any): void {
-        // Nodes.Don't report another error if it would just be at the same position as the last error.
+    private parseErrorAtPosition(start: number, length: number, message: nodes.DiagnosticMessage, arg0?: any): void {
+        // nodes.Don't report another error if it would just be at the same position as the last error.
         const lastError = lastOrUndefined(this.parseDiagnostics);
         if (!lastError || start !== lastError.start) {
             this.parseDiagnostics.push(createFileDiagnostic(this.sourceFile, start, length, message, arg0));
         }
 
-        // Nodes.Mark that we've encountered an error.  Nodes.We'll set an appropriate bit on the next
+        // nodes.Mark that we've encountered an error.  nodes.We'll set an appropriate bit on the next
         // result we finish so that it can't be reused incrementally.
         this.parseErrorBeforeNextFinishedNode = true;
     }
 
-    private scanError(message: Nodes.DiagnosticMessage, length?: number) {
+    private scanError(message: nodes.DiagnosticMessage, length?: number) {
         const pos = this.lexer.getTextPos();
         this.parseErrorAtPosition(pos, length || 0, message);
     }
@@ -1032,20 +1204,20 @@ export class Parser {
     }
 
     private speculationHelper<T>(callback: () => T, isLookAhead: boolean): T {
-        // Nodes.Keep track of the state we'll need to rollback to if lookahead fails (or if the
+        // nodes.Keep track of the state we'll need to rollback to if lookahead fails (or if the
         // caller asked us to always reset our state).
         const saveToken = this.lexer.peek().type;
         const saveParseDiagnosticsLength = this.parseDiagnostics.length;
         const saveParseErrorBeforeNextFinishedNode = this.parseErrorBeforeNextFinishedNode;
 
-        // Nodes.Note: it is not actually necessary to save/restore the context flags here.  Nodes.That's
+        // nodes.Note: it is not actually necessary to save/restore the context flags here.  nodes.That's
         // because the saving/restoring of these flags happens naturally through the recursive
-        // descent nature of our parser.  Nodes.However, we still store this here just so we can
+        // descent nature of our parser.  nodes.However, we still store this here just so we can
         // assert that that invariant holds.
         const saveContextFlags = this.contextFlags;
 
-        // Nodes.If we're only looking ahead, then tell the this.scanner to only lookahead as well.
-        // Nodes.Otherwise, if we're actually speculatively parsing, then tell the this.scanner to do the
+        // nodes.If we're only looking ahead, then tell the this.scanner to only lookahead as well.
+        // nodes.Otherwise, if we're actually speculatively parsing, then tell the this.scanner to do the
         // same.
         const this.result = isLookAhead
             ? this.lexer.lookAhead(callback)
@@ -1053,7 +1225,7 @@ export class Parser {
 
         console.assert(saveContextFlags === this.contextFlags);
 
-        // Nodes.If our callback returned something 'falsy' or we're just looking ahead,
+        // nodes.If our callback returned something 'falsy' or we're just looking ahead,
         // then unconditionally restore us to where we were.
         if (!this.result || isLookAhead) {
             this.lexer.peek().type = saveToken;
@@ -1064,36 +1236,36 @@ export class Parser {
         return this.result;
     }
 
-    /** Nodes.Invokes the provided callback then unconditionally restores the parser to the state it
-     * was in immediately prior to invoking the callback.  Nodes.The this.result of invoking the callback
+    /** nodes.Invokes the provided callback then unconditionally restores the parser to the state it
+     * was in immediately prior to invoking the callback.  nodes.The this.result of invoking the callback
      * is returned from this function.
      */
     private lookAhead<T>(callback: () => T): T {
         return this.speculationHelper(callback, /*isLookAhead*/ true);
     }
 
-    /** Nodes.Invokes the provided callback.  Nodes.If the callback returns something falsy, then it restores
-     * the parser to the state it was in immediately prior to invoking the callback.  Nodes.If the
-     * callback returns something truthy, then the parser state is not rolled back.  Nodes.The this.result
+    /** nodes.Invokes the provided callback.  nodes.If the callback returns something falsy, then it restores
+     * the parser to the state it was in immediately prior to invoking the callback.  nodes.If the
+     * callback returns something truthy, then the parser state is not rolled back.  nodes.The this.result
      * of invoking the callback is returned from this function.
      */
     private tryParse<T>(callback: () => T): T {
         return this.speculationHelper(callback, /*isLookAhead*/ false);
     }
 
-    // Nodes.Ignore strict mode flag because we will report an error in type checker instead.
+    // nodes.Ignore strict mode flag because we will report an error in type checker instead.
     private isIdentifier(): boolean {
         if (this.lexer.peek().type === TokenType.Identifier) {
             return true;
         }
 
-        // Nodes.If we have a 'yield' keyword, and we're in the [yield] context, then 'yield' is
+        // nodes.If we have a 'yield' keyword, and we're in the [yield] context, then 'yield' is
         // considered a keyword and is not an identifier.
         if (this.lexer.peek().type === TokenType.yield && this.inYieldContext()) {
             return false;
         }
 
-        // Nodes.If we have a 'await' keyword, and we're in the [Nodes.Await] context, then 'await' is
+        // nodes.If we have a 'await' keyword, and we're in the [nodes.Await] context, then 'await' is
         // considered a keyword and is not an identifier.
         if (this.lexer.peek().type === TokenType.await && this.inAwaitContext()) {
             return false;
@@ -1102,7 +1274,7 @@ export class Parser {
         return this.lexer.peek().type > TokenType.LastReservedWord;
     }
 
-    private parseExpected(kind: TokenType, diagnosticMessage?: Nodes.DiagnosticMessage, shouldAdvance = true): boolean {
+    private parseExpected(kind: TokenType, diagnosticMessage?: nodes.DiagnosticMessage, shouldAdvance = true): boolean {
         if (this.lexer.peek().type === kind) {
             if (shouldAdvance) {
                 this.nextToken();
@@ -1110,12 +1282,12 @@ export class Parser {
             return true;
         }
 
-        // Nodes.Report specific message if provided with one.  Nodes.Otherwise, report generic fallback message.
+        // nodes.Report specific message if provided with one.  nodes.Otherwise, report generic fallback message.
         if (diagnosticMessage) {
             this.parseErrorAtCurrentToken(diagnosticMessage);
         }
         else {
-            this.parseErrorAtCurrentToken(Nodes.Diagnostics._0_expected, tokenToString(kind));
+            this.parseErrorAtCurrentToken(nodes.Diagnostics._0_expected, tokenToString(kind));
         }
         return false;
     }
@@ -1128,31 +1300,31 @@ export class Parser {
         return false;
     }
 
-    private parseOptionalToken(t: TokenType): Nodes.Node {
+    private parseOptionalToken(t: TokenType): nodes.Node {
         if (this.lexer.peek().type === t) {
             return this.parseTokenNode();
         }
         return undefined;
     }
 
-    private parseExpectedToken(t: TokenType, reportAtCurrentPosition: boolean, diagnosticMessage: Nodes.DiagnosticMessage, arg0?: any): Nodes.Node {
+    private parseExpectedToken(t: TokenType, reportAtCurrentPosition: boolean, diagnosticMessage: nodes.DiagnosticMessage, arg0?: any): nodes.Node {
         return this.parseOptionalToken(t) ||
             this.createMissingNode(t, reportAtCurrentPosition, diagnosticMessage, arg0);
     }
 
-    private parseTokenNode<T extends Nodes.Node>(): T {
+    private parseTokenNode<T extends nodes.Node>(): T {
         const result = new T();
         this.nextToken();
         return result;
     }
 
     private canParseSemicolon() {
-        // Nodes.If there's a real semicolon, then we can always parse it out.
+        // nodes.If there's a real semicolon, then we can always parse it out.
         if (this.lexer.peek().type === TokenType.semicolon) {
             return true;
         }
 
-        // Nodes.We can parse out an optional semicolon in Nodes.ASI cases in the following cases.
+        // nodes.We can parse out an optional semicolon in nodes.ASI cases in the following cases.
         return this.lexer.peek().type === TokenType.closeBrace || this.lexer.peek().type === TokenType.endOfFile || this.lexer.peek().hasLineBreakBeforeStar;
     }
 
@@ -1170,25 +1342,25 @@ export class Parser {
         }
     }
 
-    private finishNode<T extends Nodes.Node>(result: T, end?: number): T {
+    private finishNode<T extends nodes.Node>(result: T, end?: number): T {
         result.end = end === undefined ? this.lexer.getStartPos() : end;
 
         if (this.contextFlags) {
             result.flags |= this.contextFlags;
         }
 
-        // Nodes.Keep track on the result if we encountered an error while parsing it.  Nodes.If we did, then
-        // we cannot reuse the result incrementally.  Nodes.Once we've marked this result, clear out the
+        // nodes.Keep track on the result if we encountered an error while parsing it.  nodes.If we did, then
+        // we cannot reuse the result incrementally.  nodes.Once we've marked this result, clear out the
         // flag so that we don't mark any subsequent nodes.
         if (this.parseErrorBeforeNextFinishedNode) {
             this.parseErrorBeforeNextFinishedNode = false;
-            result.flags |= Nodes.NodeFlags.ThisNodeHasError;
+            result.flags |= nodes.NodeFlags.ThisNodeHasError;
         }
 
         return result;
     }
 
-    private createMissingNode(kind: TokenType, reportAtCurrentPosition: boolean, diagnosticMessage: Nodes.DiagnosticMessage, arg0?: any): Nodes.Node {
+    private createMissingNode(kind: TokenType, reportAtCurrentPosition: boolean, diagnosticMessage: nodes.DiagnosticMessage, arg0?: any): nodes.Node {
         if (reportAtCurrentPosition) {
             this.parseErrorAtPosition(this.lexer.getStartPos(), 0, diagnosticMessage, arg0);
         }
@@ -1197,7 +1369,7 @@ export class Parser {
         }
 
         const this.result = this.createNode(kind, this.lexer.getStartPos());
-        (<Nodes.Identifier>this.result).text = "";
+        (<nodes.Identifier>this.result).text = "";
         return this.finishNode(this.result);
     }
 
@@ -1206,15 +1378,15 @@ export class Parser {
         return hasProperty(this.identifiers, text) ? this.identifiers[text] : (this.identifiers[text] = text);
     }
 
-    // Nodes.An identifier that starts with two underscores has an extra underscore character prepended to it to avoid issues
-    // with magic property names like '__proto__'. Nodes.The 'this.identifiers' object is used to share a single string instance for
+    // nodes.An identifier that starts with two underscores has an extra underscore character prepended to it to avoid issues
+    // with magic property names like '__proto__'. nodes.The 'this.identifiers' object is used to share a single string instance for
     // each identifier in order to reduce memory consumption.
-    private createIdentifier(isIdentifier: boolean, diagnosticMessage?: Nodes.DiagnosticMessage): Nodes.Identifier {
+    private createIdentifier(isIdentifier: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.Identifier {
         this.identifierCount++;
         if (this.isIdentifier) {
-            const result = new Nodes.Identifier();
+            const result = new nodes.Identifier();
 
-            // Nodes.Store original this.lexer.peek().type kind if it is not just an Nodes.Identifier so we can report appropriate error later in type checker
+            // nodes.Store original this.lexer.peek().type kind if it is not just an nodes.Identifier so we can report appropriate error later in type checker
             if (this.lexer.peek().type !== TokenType.Identifier) {
                 result.originalKeywordKind = this.lexer.peek().type;
             }
@@ -1223,14 +1395,14 @@ export class Parser {
             return result;
         }
 
-        return <Nodes.Identifier>this.createMissingNode(TokenType.Identifier, /*reportAtCurrentPosition*/ false, diagnosticMessage || Nodes.Diagnostics.Identifier_expected);
+        return <nodes.Identifier>this.createMissingNode(TokenType.Identifier, /*reportAtCurrentPosition*/ false, diagnosticMessage || nodes.Diagnostics.Identifier_expected);
     }
 
-    private parseIdentifier(diagnosticMessage?: Nodes.DiagnosticMessage): Nodes.Identifier {
+    private parseIdentifier(diagnosticMessage?: nodes.DiagnosticMessage): nodes.Identifier {
         return this.createIdentifier(this.isIdentifier(), diagnosticMessage);
     }
 
-    private parseIdentifierName(): Nodes.Identifier {
+    private parseIdentifierName(): nodes.Identifier {
         return this.createIdentifier(tokenIsIdentifierOrKeyword(this.lexer.peek().type));
     }
 
@@ -1240,7 +1412,7 @@ export class Parser {
             this.lexer.peek().type === TokenType.NumericLiteral;
     }
 
-    private parsePropertyNameWorker(allowComputedPropertyNames: boolean): Nodes.PropertyName {
+    private parsePropertyNameWorker(allowComputedPropertyNames: boolean): nodes.PropertyName {
         if (this.lexer.peek().type === TokenType.StringLiteral || this.lexer.peek().type === TokenType.NumericLiteral) {
             return this.parseLiteralNode(/*internName*/ true);
         }
@@ -1250,26 +1422,26 @@ export class Parser {
         return this.parseIdentifierName();
     }
 
-    private parsePropertyName(): Nodes.PropertyName {
+    private parsePropertyName(): nodes.PropertyName {
         return this.parsePropertyNameWorker(/*allowComputedPropertyNames*/ true);
     }
 
-    private parseSimplePropertyName(): Nodes.Identifier | Nodes.LiteralExpression {
-        return <Nodes.Identifier | Nodes.LiteralExpression>this.parsePropertyNameWorker(/*allowComputedPropertyNames*/ false);
+    private parseSimplePropertyName(): nodes.Identifier | nodes.LiteralExpression {
+        return <nodes.Identifier | nodes.LiteralExpression>this.parsePropertyNameWorker(/*allowComputedPropertyNames*/ false);
     }
 
     private isSimplePropertyName() {
         return this.lexer.peek().type === TokenType.StringLiteral || this.lexer.peek().type === TokenType.NumericLiteral || tokenIsIdentifierOrKeyword(this.lexer.peek().type);
     }
 
-    private parseComputedPropertyName(): Nodes.ComputedPropertyName {
-        // Nodes.PropertyName [Nodes.Yield]:
-        //      Nodes.LiteralPropertyName
-        //      Nodes.ComputedPropertyName[?Nodes.Yield]
-        const result = new Nodes.ComputedPropertyName();
+    private parseComputedPropertyName(): nodes.ComputedPropertyName {
+        // nodes.PropertyName [nodes.Yield]:
+        //      nodes.LiteralPropertyName
+        //      nodes.ComputedPropertyName[?nodes.Yield]
+        const result = new nodes.ComputedPropertyName();
         this.parseExpected(TokenType.openBracket);
 
-        // Nodes.We parse any expression (including a comma expression). Nodes.But the grammar
+        // nodes.We parse any expression (including a comma expression). nodes.But the grammar
         // says that only an assignment expression is allowed, so the grammar checker
         // will error if it sees a comma expression.
         result.expression = this.allowInAnd(this.parseExpression);
@@ -1331,45 +1503,45 @@ export class Parser {
             (this.lexer.peek().type === TokenType.async && this.lookAhead(this.nextTokenIsFunctionKeywordOnSameLine));
     }
 
-    // Nodes.True if positioned at the start of a list element
-    private isListElement(parsingContext: Nodes.ParsingContext, inErrorRecovery: boolean): boolean {
+    // nodes.True if positioned at the start of a list element
+    private isListElement(parsingContext: nodes.ParsingContext, inErrorRecovery: boolean): boolean {
         const result = this.currentNode(this.parsingContext);
         if (result) {
             return true;
         }
 
         switch (this.parsingContext) {
-            case Nodes.ParsingContext.SourceElements:
-            case Nodes.ParsingContext.BlockStatements:
-            case Nodes.ParsingContext.SwitchClauseStatements:
-                // Nodes.If we're in error recovery, then we don't want to treat ';' as an empty statement.
-                // Nodes.The problem is that ';' can show up in far too many contexts, and if we see one
+            case nodes.ParsingContext.SourceElements:
+            case nodes.ParsingContext.BlockStatements:
+            case nodes.ParsingContext.SwitchClauseStatements:
+                // nodes.If we're in error recovery, then we don't want to treat ';' as an empty statement.
+                // nodes.The problem is that ';' can show up in far too many contexts, and if we see one
                 // and assume it's a statement, then we may bail out inappropriately from whatever
-                // we're parsing.  Nodes.For example, if we have a semicolon in the middle of a class, then
+                // we're parsing.  nodes.For example, if we have a semicolon in the middle of a class, then
                 // we really don't want to assume the class is over and we're on a statement in the
-                // outer module.  Nodes.We just want to consume and move on.
+                // outer module.  nodes.We just want to consume and move on.
                 return !(this.lexer.peek().type === TokenType.semicolon && inErrorRecovery) && this.isStartOfStatement();
-            case Nodes.ParsingContext.SwitchClauses:
+            case nodes.ParsingContext.SwitchClauses:
                 return this.lexer.peek().type === TokenType.case || this.lexer.peek().type === TokenType.default;
-            case Nodes.ParsingContext.TypeMembers:
+            case nodes.ParsingContext.TypeMembers:
                 return this.lookAhead(this.isTypeMemberStart);
-            case Nodes.ParsingContext.ClassMembers:
-                // Nodes.We allow semicolons as class elements (as specified by Nodes.ES6) as long as we're
-                // not in error recovery.  Nodes.If we're in error recovery, we don't want an errant
+            case nodes.ParsingContext.ClassMembers:
+                // nodes.We allow semicolons as class elements (as specified by nodes.ES6) as long as we're
+                // not in error recovery.  nodes.If we're in error recovery, we don't want an errant
                 // semicolon to be treated as a class member (since they're almost always used
                 // for statements.
                 return this.lookAhead(this.isClassMemberStart) || (this.lexer.peek().type === TokenType.semicolon && !inErrorRecovery);
-            case Nodes.ParsingContext.EnumMembers:
-                // Nodes.Include open bracket computed properties. Nodes.This technically also lets in indexers,
+            case nodes.ParsingContext.EnumMembers:
+                // nodes.Include open bracket computed properties. nodes.This technically also lets in indexers,
                 // which would be a candidate for improved error reporting.
                 return this.lexer.peek().type === TokenType.openBracket || this.isLiteralPropertyName();
-            case Nodes.ParsingContext.ObjectLiteralMembers:
+            case nodes.ParsingContext.ObjectLiteralMembers:
                 return this.lexer.peek().type === TokenType.openBracket || this.lexer.peek().type === TokenType.asterisk || this.isLiteralPropertyName();
-            case Nodes.ParsingContext.ObjectBindingElements:
+            case nodes.ParsingContext.ObjectBindingElements:
                 return this.lexer.peek().type === TokenType.openBracket || this.isLiteralPropertyName();
-            case Nodes.ParsingContext.HeritageClauseElement:
-                // Nodes.If we see { } then only consume it as an expression if it is followed by , or {
-                // Nodes.That way we won't consume the body of a class in its heritage clause.
+            case nodes.ParsingContext.HeritageClauseElement:
+                // nodes.If we see { } then only consume it as an expression if it is followed by , or {
+                // nodes.That way we won't consume the body of a class in its heritage clause.
                 if (this.lexer.peek().type === TokenType.openBrace) {
                     return this.lookAhead(this.isValidHeritageClauseObjectLiteral);
                 }
@@ -1378,42 +1550,42 @@ export class Parser {
                     return this.isStartOfLeftHandSideExpression() && !this.isHeritageClauseExtendsOrImplementsKeyword();
                 }
                 else {
-                    // Nodes.If we're in error recovery we tighten up what we're willing to match.
-                    // Nodes.That way we don't treat something like "this" as a valid heritage clause
+                    // nodes.If we're in error recovery we tighten up what we're willing to match.
+                    // nodes.That way we don't treat something like "this" as a valid heritage clause
                     // element during recovery.
                     return this.isIdentifier() && !this.isHeritageClauseExtendsOrImplementsKeyword();
                 }
-            case Nodes.ParsingContext.VariableDeclarations:
+            case nodes.ParsingContext.VariableDeclarations:
                 return this.isIdentifierOrPattern();
-            case Nodes.ParsingContext.ArrayBindingElements:
+            case nodes.ParsingContext.ArrayBindingElements:
                 return this.lexer.peek().type === TokenType.comma || this.lexer.peek().type === TokenType.dotDotDot || this.isIdentifierOrPattern();
-            case Nodes.ParsingContext.TypeParameters:
+            case nodes.ParsingContext.TypeParameters:
                 return this.isIdentifier();
-            case Nodes.ParsingContext.ArgumentExpressions:
-            case Nodes.ParsingContext.ArrayLiteralMembers:
+            case nodes.ParsingContext.ArgumentExpressions:
+            case nodes.ParsingContext.ArrayLiteralMembers:
                 return this.lexer.peek().type === TokenType.comma || this.lexer.peek().type === TokenType.dotDotDot || this.isStartOfExpression();
-            case Nodes.ParsingContext.Parameters:
+            case nodes.ParsingContext.Parameters:
                 return this.isStartOfParameter();
-            case Nodes.ParsingContext.TypeArguments:
-            case Nodes.ParsingContext.TupleElementTypes:
+            case nodes.ParsingContext.TypeArguments:
+            case nodes.ParsingContext.TupleElementTypes:
                 return this.lexer.peek().type === TokenType.comma || this.isStartOfType();
-            case Nodes.ParsingContext.HeritageClauses:
+            case nodes.ParsingContext.HeritageClauses:
                 return this.isHeritageClause();
-            case Nodes.ParsingContext.ImportOrExportSpecifiers:
+            case nodes.ParsingContext.ImportOrExportSpecifiers:
                 return tokenIsIdentifierOrKeyword(this.lexer.peek().type);
-            case Nodes.ParsingContext.JsxAttributes:
+            case nodes.ParsingContext.JsxAttributes:
                 return tokenIsIdentifierOrKeyword(this.lexer.peek().type) || this.lexer.peek().type === TokenType.openBrace;
-            case Nodes.ParsingContext.JsxChildren:
+            case nodes.ParsingContext.JsxChildren:
                 return true;
-            case Nodes.ParsingContext.JSDocFunctionParameters:
-            case Nodes.ParsingContext.JSDocTypeArguments:
-            case Nodes.ParsingContext.JSDocTupleTypes:
-                return Nodes.JSDocParser.isJSDocType();
-            case Nodes.ParsingContext.JSDocRecordMembers:
+            case nodes.ParsingContext.JSDocFunctionParameters:
+            case nodes.ParsingContext.JSDocTypeArguments:
+            case nodes.ParsingContext.JSDocTupleTypes:
+                return nodes.JSDocParser.isJSDocType();
+            case nodes.ParsingContext.JSDocRecordMembers:
                 return this.isSimplePropertyName();
         }
 
-        Nodes.Debug.fail("Nodes.Non-exhaustive case in 'this.isListElement'.");
+        nodes.Debug.fail("nodes.Non-exhaustive case in 'this.isListElement'.");
     }
 
     private isValidHeritageClauseObjectLiteral() {
@@ -1459,90 +1631,90 @@ export class Parser {
         return this.isStartOfExpression();
     }
 
-    // Nodes.True if positioned at a list terminator
-    private isListTerminator(kind: Nodes.ParsingContext): boolean {
+    // nodes.True if positioned at a list terminator
+    private isListTerminator(kind: nodes.ParsingContext): boolean {
         if (this.lexer.peek().type === TokenType.endOfFile) {
-            // Nodes.Being at the end of the file ends all lists.
+            // nodes.Being at the end of the file ends all lists.
             return true;
         }
 
         switch (kind) {
-            case Nodes.ParsingContext.BlockStatements:
-            case Nodes.ParsingContext.SwitchClauses:
-            case Nodes.ParsingContext.TypeMembers:
-            case Nodes.ParsingContext.ClassMembers:
-            case Nodes.ParsingContext.EnumMembers:
-            case Nodes.ParsingContext.ObjectLiteralMembers:
-            case Nodes.ParsingContext.ObjectBindingElements:
-            case Nodes.ParsingContext.ImportOrExportSpecifiers:
+            case nodes.ParsingContext.BlockStatements:
+            case nodes.ParsingContext.SwitchClauses:
+            case nodes.ParsingContext.TypeMembers:
+            case nodes.ParsingContext.ClassMembers:
+            case nodes.ParsingContext.EnumMembers:
+            case nodes.ParsingContext.ObjectLiteralMembers:
+            case nodes.ParsingContext.ObjectBindingElements:
+            case nodes.ParsingContext.ImportOrExportSpecifiers:
                 return this.lexer.peek().type === TokenType.closeBrace;
-            case Nodes.ParsingContext.SwitchClauseStatements:
+            case nodes.ParsingContext.SwitchClauseStatements:
                 return this.lexer.peek().type === TokenType.closeBrace || this.lexer.peek().type === TokenType.case || this.lexer.peek().type === TokenType.default;
-            case Nodes.ParsingContext.HeritageClauseElement:
+            case nodes.ParsingContext.HeritageClauseElement:
                 return this.lexer.peek().type === TokenType.openBrace || this.lexer.peek().type === TokenType.extends || this.lexer.peek().type === TokenType.implements;
-            case Nodes.ParsingContext.VariableDeclarations:
+            case nodes.ParsingContext.VariableDeclarations:
                 return this.isVariableDeclaratorListTerminator();
-            case Nodes.ParsingContext.TypeParameters:
-                // Nodes.Tokens other than '>' are here for better error recovery
+            case nodes.ParsingContext.TypeParameters:
+                // nodes.Tokens other than '>' are here for better error recovery
                 return this.lexer.peek().type === TokenType.greaterThan || this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.openBrace || this.lexer.peek().type === TokenType.extends || this.lexer.peek().type === TokenType.implements;
-            case Nodes.ParsingContext.ArgumentExpressions:
-                // Nodes.Tokens other than ')' are here for better error recovery
+            case nodes.ParsingContext.ArgumentExpressions:
+                // nodes.Tokens other than ')' are here for better error recovery
                 return this.lexer.peek().type === TokenType.closeParen || this.lexer.peek().type === TokenType.semicolon;
-            case Nodes.ParsingContext.ArrayLiteralMembers:
-            case Nodes.ParsingContext.TupleElementTypes:
-            case Nodes.ParsingContext.ArrayBindingElements:
+            case nodes.ParsingContext.ArrayLiteralMembers:
+            case nodes.ParsingContext.TupleElementTypes:
+            case nodes.ParsingContext.ArrayBindingElements:
                 return this.lexer.peek().type === TokenType.closeBracket;
-            case Nodes.ParsingContext.Parameters:
-                // Nodes.Tokens other than ')' and ']' (the latter for index signatures) are here for better error recovery
-                return this.lexer.peek().type === TokenType.closeParen || this.lexer.peek().type === TokenType.closeBracket /*|| this.lexer.peek().type === Nodes.SyntaxKind.OpenBraceToken*/;
-            case Nodes.ParsingContext.TypeArguments:
-                // Nodes.Tokens other than '>' are here for better error recovery
+            case nodes.ParsingContext.Parameters:
+                // nodes.Tokens other than ')' and ']' (the latter for index signatures) are here for better error recovery
+                return this.lexer.peek().type === TokenType.closeParen || this.lexer.peek().type === TokenType.closeBracket /*|| this.lexer.peek().type === nodes.SyntaxKind.OpenBraceToken*/;
+            case nodes.ParsingContext.TypeArguments:
+                // nodes.Tokens other than '>' are here for better error recovery
                 return this.lexer.peek().type === TokenType.greaterThan || this.lexer.peek().type === TokenType.openParen;
-            case Nodes.ParsingContext.HeritageClauses:
+            case nodes.ParsingContext.HeritageClauses:
                 return this.lexer.peek().type === TokenType.openBrace || this.lexer.peek().type === TokenType.closeBrace;
-            case Nodes.ParsingContext.JsxAttributes:
+            case nodes.ParsingContext.JsxAttributes:
                 return this.lexer.peek().type === TokenType.greaterThan || this.lexer.peek().type === TokenType.slash;
-            case Nodes.ParsingContext.JsxChildren:
+            case nodes.ParsingContext.JsxChildren:
                 return this.lexer.peek().type === TokenType.lessThan && this.lookAhead(this.nextTokenIsSlash);
-            case Nodes.ParsingContext.JSDocFunctionParameters:
+            case nodes.ParsingContext.JSDocFunctionParameters:
                 return this.lexer.peek().type === TokenType.closeParen || this.lexer.peek().type === TokenType.colon || this.lexer.peek().type === TokenType.closeBrace;
-            case Nodes.ParsingContext.JSDocTypeArguments:
+            case nodes.ParsingContext.JSDocTypeArguments:
                 return this.lexer.peek().type === TokenType.greaterThan || this.lexer.peek().type === TokenType.closeBrace;
-            case Nodes.ParsingContext.JSDocTupleTypes:
+            case nodes.ParsingContext.JSDocTupleTypes:
                 return this.lexer.peek().type === TokenType.closeBracket || this.lexer.peek().type === TokenType.closeBrace;
-            case Nodes.ParsingContext.JSDocRecordMembers:
+            case nodes.ParsingContext.JSDocRecordMembers:
                 return this.lexer.peek().type === TokenType.closeBrace;
         }
     }
 
     private isVariableDeclaratorListTerminator(): boolean {
-        // Nodes.If we can consume a semicolon (either explicitly, or with Nodes.ASI), then consider us done
+        // nodes.If we can consume a semicolon (either explicitly, or with nodes.ASI), then consider us done
         // with parsing the list of  variable declarators.
         if (this.canParseSemicolon()) {
             return true;
         }
 
         // in the case where we're parsing the variable declarator of a 'for-in' statement, we
-        // are done if we see an 'in' keyword in front of us. Nodes.Same with for-of
+        // are done if we see an 'in' keyword in front of us. nodes.Same with for-of
         if (this.isInOrOfKeyword(this.lexer.peek().type)) {
             return true;
         }
 
-        // Nodes.ERROR Nodes.RECOVERY Nodes.TWEAK:
-        // Nodes.For better error recovery, if we see an '=>' then we just stop immediately.  Nodes.We've got an
+        // nodes.ERROR nodes.RECOVERY nodes.TWEAK:
+        // nodes.For better error recovery, if we see an '=>' then we just stop immediately.  nodes.We've got an
         // arrow function here and it's going to be very unlikely that we'll resynchronize and get
         // another variable declaration.
         if (this.lexer.peek().type === TokenType.equalsGreaterThan) {
             return true;
         }
 
-        // Nodes.Keep trying to parse out variable declarators.
+        // nodes.Keep trying to parse out variable declarators.
         return false;
     }
 
-    // Nodes.True if positioned at element or terminator of the current list or any enclosing list
+    // nodes.True if positioned at element or terminator of the current list or any enclosing list
     private isInSomeParsingContext(): boolean {
-        for (let kind = 0; kind < Nodes.ParsingContext.Count; kind++) {
+        for (let kind = 0; kind < nodes.ParsingContext.Count; kind++) {
             if (this.parsingContext & (1 << kind)) {
                 if (this.isListElement(kind, /*inErrorRecovery*/ true) || this.isListTerminator(kind)) {
                     return true;
@@ -1553,11 +1725,11 @@ export class Parser {
         return false;
     }
 
-    // Nodes.Parses a list of elements
-    private parseList<T extends Nodes.Node>(kind: Nodes.ParsingContext, parseElement: () => T): Nodes.NodeList<T> {
+    // nodes.Parses a list of elements
+    private parseList<T extends nodes.Node>(kind: nodes.ParsingContext, parseElement: () => T): nodes.NodeList<T> {
         const saveParsingContext = this.parsingContext;
         this.parsingContext |= 1 << kind;
-        const this.result = <Nodes.NodeList<T>>[];
+        const this.result = <nodes.NodeList<T>>[];
         this.result.pos = this.getNodePos();
 
         while (!this.isListTerminator(kind)) {
@@ -1578,7 +1750,7 @@ export class Parser {
         return this.result;
     }
 
-    private parseListElement<T extends Nodes.Node>(parsingContext: Nodes.ParsingContext, parseElement: () => T): T {
+    private parseListElement<T extends nodes.Node>(parsingContext: nodes.ParsingContext, parseElement: () => T): T {
         const result = this.currentNode(this.parsingContext);
         if (result) {
             return <T>this.consumeNode(result);
@@ -1587,13 +1759,13 @@ export class Parser {
         return parseElement();
     }
 
-    private currentNode(parsingContext: Nodes.ParsingContext): Nodes.Node {
-        // Nodes.If there is an outstanding parse error that we've encountered, but not attached to
-        // some result, then we cannot get a result from the old source tree.  Nodes.This is because we
+    private currentNode(parsingContext: nodes.ParsingContext): nodes.Node {
+        // nodes.If there is an outstanding parse error that we've encountered, but not attached to
+        // some result, then we cannot get a result from the old source tree.  nodes.This is because we
         // want to mark the next result we encounter as being unusable.
         //
-        // Nodes.Note: Nodes.This may be too conservative.  Nodes.Perhaps we could reuse the result and set the bit
-        // on it (or its leftmost child) as having the error.  Nodes.For now though, being conservative
+        // nodes.Note: nodes.This may be too conservative.  nodes.Perhaps we could reuse the result and set the bit
+        // on it (or its leftmost child) as having the error.  nodes.For now though, being conservative
         // is nice and likely won't ever affect perf.
         if (this.parseErrorBeforeNextFinishedNode) {
             return undefined;
@@ -1606,39 +1778,39 @@ export class Parser {
 
         const result = this.syntaxCursor.currentNode(this.lexer.getStartPos());
 
-        // Nodes.Can't reuse a missing result.
+        // nodes.Can't reuse a missing result.
         if (nodeIsMissing(result)) {
             return undefined;
         }
 
-        // Nodes.Can't reuse a result that intersected the change range.
+        // nodes.Can't reuse a result that intersected the change range.
         if (result.intersectsChange) {
             return undefined;
         }
 
-        // Nodes.Can't reuse a result that contains a parse error.  Nodes.This is necessary so that we
+        // nodes.Can't reuse a result that contains a parse error.  nodes.This is necessary so that we
         // produce the same set of errors again.
         if (containsParseError(result)) {
             return undefined;
         }
 
-        // Nodes.We can only reuse a result if it was parsed under the same strict mode that we're
+        // nodes.We can only reuse a result if it was parsed under the same strict mode that we're
         // currently in.  i.e. if we originally parsed a result in non-strict mode, but then
         // the user added 'using strict' at the top of the file, then we can't use that result
         // again as the presence of strict mode may cause us to parse the tokens in the file
         // differently.
         //
-        // Nodes.Note: we *can* reuse tokens when the strict mode changes.  Nodes.That's because tokens
-        // are unaffected by strict mode.  Nodes.It's just the parser will decide what to do with it
+        // nodes.Note: we *can* reuse tokens when the strict mode changes.  nodes.That's because tokens
+        // are unaffected by strict mode.  nodes.It's just the parser will decide what to do with it
         // differently depending on what mode it is in.
         //
-        // Nodes.This also applies to all our other context flags as well.
-        const nodeContextFlags = result.flags & Nodes.NodeFlags.ContextFlags;
+        // nodes.This also applies to all our other context flags as well.
+        const nodeContextFlags = result.flags & nodes.NodeFlags.ContextFlags;
         if (nodeContextFlags !== this.contextFlags) {
             return undefined;
         }
 
-        // Nodes.Ok, we have a result that looks like it could be reused.  Nodes.Now verify that it is valid
+        // nodes.Ok, we have a result that looks like it could be reused.  nodes.Now verify that it is valid
         // in the current list parsing context that we're currently at.
         if (!this.canReuseNode(result, this.parsingContext)) {
             return undefined;
@@ -1647,91 +1819,91 @@ export class Parser {
         return result;
     }
 
-    private consumeNode(result: Nodes.Node) {
-        // Nodes.Move the this.scanner so it is after the result we just consumed.
+    private consumeNode(result: nodes.Node) {
+        // nodes.Move the this.scanner so it is after the result we just consumed.
         this.lexer.setTextPos(result.end);
         this.nextToken();
         return result;
     }
 
-    private canReuseNode(result: Nodes.Node, parsingContext: Nodes.ParsingContext): boolean {
+    private canReuseNode(result: nodes.Node, parsingContext: nodes.ParsingContext): boolean {
         switch (this.parsingContext) {
-            case Nodes.ParsingContext.ClassMembers:
+            case nodes.ParsingContext.ClassMembers:
                 return this.isReusableClassMember(result);
 
-            case Nodes.ParsingContext.SwitchClauses:
+            case nodes.ParsingContext.SwitchClauses:
                 return this.isReusableSwitchClause(result);
 
-            case Nodes.ParsingContext.SourceElements:
-            case Nodes.ParsingContext.BlockStatements:
-            case Nodes.ParsingContext.SwitchClauseStatements:
+            case nodes.ParsingContext.SourceElements:
+            case nodes.ParsingContext.BlockStatements:
+            case nodes.ParsingContext.SwitchClauseStatements:
                 return this.isReusableStatement(result);
 
-            case Nodes.ParsingContext.EnumMembers:
+            case nodes.ParsingContext.EnumMembers:
                 return this.isReusableEnumMember(result);
 
-            case Nodes.ParsingContext.TypeMembers:
+            case nodes.ParsingContext.TypeMembers:
                 return this.isReusableTypeMember(result);
 
-            case Nodes.ParsingContext.VariableDeclarations:
+            case nodes.ParsingContext.VariableDeclarations:
                 return this.isReusableVariableDeclaration(result);
 
-            case Nodes.ParsingContext.Parameters:
+            case nodes.ParsingContext.Parameters:
                 return this.isReusableParameter(result);
 
-            // Nodes.Any other lists we do not care about reusing nodes in.  Nodes.But feel free to add if
-            // you can do so safely.  Nodes.Danger areas involve nodes that may involve speculative
-            // parsing.  Nodes.If speculative parsing is involved with the result, then the range the
+            // nodes.Any other lists we do not care about reusing nodes in.  nodes.But feel free to add if
+            // you can do so safely.  nodes.Danger areas involve nodes that may involve speculative
+            // parsing.  nodes.If speculative parsing is involved with the result, then the range the
             // parser reached while looking ahead might be in the edited range (see the example
             // in canReuseVariableDeclaratorNode for a good case of this).
-            case Nodes.ParsingContext.HeritageClauses:
-            // Nodes.This would probably be safe to reuse.  Nodes.There is no speculative parsing with
+            case nodes.ParsingContext.HeritageClauses:
+            // nodes.This would probably be safe to reuse.  nodes.There is no speculative parsing with
             // heritage clauses.
 
-            case Nodes.ParsingContext.TypeParameters:
-            // Nodes.This would probably be safe to reuse.  Nodes.There is no speculative parsing with
-            // type parameters.  Nodes.Note that that's because type *parameters* only occur in
-            // unambiguous *type* contexts.  Nodes.While type *arguments* occur in very ambiguous
+            case nodes.ParsingContext.TypeParameters:
+            // nodes.This would probably be safe to reuse.  nodes.There is no speculative parsing with
+            // type parameters.  nodes.Note that that's because type *parameters* only occur in
+            // unambiguous *type* contexts.  nodes.While type *arguments* occur in very ambiguous
             // *expression* contexts.
 
-            case Nodes.ParsingContext.TupleElementTypes:
-            // Nodes.This would probably be safe to reuse.  Nodes.There is no speculative parsing with
+            case nodes.ParsingContext.TupleElementTypes:
+            // nodes.This would probably be safe to reuse.  nodes.There is no speculative parsing with
             // tuple types.
 
-            // Nodes.Technically, type argument list types are probably safe to reuse.  Nodes.While
+            // nodes.Technically, type argument list types are probably safe to reuse.  nodes.While
             // speculative parsing is involved with them (since type argument lists are only
             // produced from speculative parsing a < as a type argument list), we only have
-            // the types because speculative parsing succeeded.  Nodes.Thus, the lookahead never
+            // the types because speculative parsing succeeded.  nodes.Thus, the lookahead never
             // went past the end of the list and rewound.
-            case Nodes.ParsingContext.TypeArguments:
+            case nodes.ParsingContext.TypeArguments:
 
-            // Nodes.Note: these are almost certainly not safe to ever reuse.  Nodes.Expressions commonly
+            // nodes.Note: these are almost certainly not safe to ever reuse.  nodes.Expressions commonly
             // need a large amount of lookahead, and we should not reuse them as they may
             // have actually intersected the edit.
-            case Nodes.ParsingContext.ArgumentExpressions:
+            case nodes.ParsingContext.ArgumentExpressions:
 
-            // Nodes.This is not safe to reuse for the same reason as the 'Nodes.AssignmentExpression'
+            // nodes.This is not safe to reuse for the same reason as the 'nodes.AssignmentExpression'
             // cases.  i.e. a property assignment may end with an expression, and thus might
             // have lookahead far beyond it's old result.
-            case Nodes.ParsingContext.ObjectLiteralMembers:
+            case nodes.ParsingContext.ObjectLiteralMembers:
 
-            // Nodes.This is probably not safe to reuse.  Nodes.There can be speculative parsing with
-            // type names in a heritage clause.  Nodes.There can be generic names in the type
+            // nodes.This is probably not safe to reuse.  nodes.There can be speculative parsing with
+            // type names in a heritage clause.  nodes.There can be generic names in the type
             // name list, and there can be left hand side expressions (which can have type
             // arguments.)
-            case Nodes.ParsingContext.HeritageClauseElement:
+            case nodes.ParsingContext.HeritageClauseElement:
 
-            // Nodes.Perhaps safe to reuse, but it's unlikely we'd see more than a dozen attributes
-            // on any given element. Nodes.Same for children.
-            case Nodes.ParsingContext.JsxAttributes:
-            case Nodes.ParsingContext.JsxChildren:
+            // nodes.Perhaps safe to reuse, but it's unlikely we'd see more than a dozen attributes
+            // on any given element. nodes.Same for children.
+            case nodes.ParsingContext.JsxAttributes:
+            case nodes.ParsingContext.JsxChildren:
 
         }
 
         return false;
     }
 
-    private isReusableClassMember(result: Nodes.Node) {
+    private isReusableClassMember(result: nodes.Node) {
         if (result) {
             switch (result.kind) {
                 case TokenType.Constructor:
@@ -1742,12 +1914,12 @@ export class Parser {
                 case TokenType.SemicolonClassElement:
                     return true;
                 case TokenType.MethodDeclaration:
-                    // Nodes.Method declarations are not necessarily reusable.  Nodes.An object-literal
+                    // nodes.Method declarations are not necessarily reusable.  nodes.An object-literal
                     // may have a method calls "constructor(...)" and we must reparse that
                     // into an actual .ConstructorDeclaration.
-                    let methodDeclaration = <Nodes.MethodDeclaration>result;
+                    let methodDeclaration = <nodes.MethodDeclaration>result;
                     let nameIsConstructor = methodDeclaration.name.kind === TokenType.Identifier &&
-                        (<Nodes.Identifier>methodDeclaration.name).originalKeywordKind === TokenType.constructor;
+                        (<nodes.Identifier>methodDeclaration.name).originalKeywordKind === TokenType.constructor;
 
                     return !nameIsConstructor;
             }
@@ -1756,7 +1928,7 @@ export class Parser {
         return false;
     }
 
-    private isReusableSwitchClause(result: Nodes.Node) {
+    private isReusableSwitchClause(result: nodes.Node) {
         if (result) {
             switch (result.kind) {
                 case TokenType.CaseClause:
@@ -1768,7 +1940,7 @@ export class Parser {
         return false;
     }
 
-    private isReusableStatement(result: Nodes.Node) {
+    private isReusableStatement(result: nodes.Node) {
         if (result) {
             switch (result.kind) {
                 case TokenType.FunctionDeclaration:
@@ -1807,11 +1979,11 @@ export class Parser {
         return false;
     }
 
-    private isReusableEnumMember(result: Nodes.Node) {
+    private isReusableEnumMember(result: nodes.Node) {
         return result.kind === TokenType.EnumMember;
     }
 
-    private isReusableTypeMember(result: Nodes.Node) {
+    private isReusableTypeMember(result: nodes.Node) {
         if (result) {
             switch (result.kind) {
                 case TokenType.ConstructSignature:
@@ -1826,41 +1998,41 @@ export class Parser {
         return false;
     }
 
-    private isReusableVariableDeclaration(result: Nodes.Node) {
+    private isReusableVariableDeclaration(result: nodes.Node) {
         if (result.kind !== TokenType.VariableDeclaration) {
             return false;
         }
 
-        // Nodes.Very subtle incremental parsing bug.  Nodes.Consider the following code:
+        // nodes.Very subtle incremental parsing bug.  nodes.Consider the following code:
         //
-        //      let v = new Nodes.List < A, B
+        //      let v = new nodes.List < A, B
         //
-        // Nodes.This is actually legal code.  Nodes.It's a list of variable declarators "v = new Nodes.List<A"
-        // on one side and "B" on the other. Nodes.If you then change that to:
+        // nodes.This is actually legal code.  nodes.It's a list of variable declarators "v = new nodes.List<A"
+        // on one side and "B" on the other. nodes.If you then change that to:
         //
-        //      let v = new Nodes.List < A, B >()
+        //      let v = new nodes.List < A, B >()
         //
-        // then we have a problem.  "v = new Nodes.List<A" doesn't intersect the change range, so we
+        // then we have a problem.  "v = new nodes.List<A" doesn't intersect the change range, so we
         // start reparsing at "B" and we completely fail to handle this properly.
         //
-        // Nodes.In order to prevent this, we do not allow a variable declarator to be reused if it
+        // nodes.In order to prevent this, we do not allow a variable declarator to be reused if it
         // has an initializer.
-        const variableDeclarator = <Nodes.VariableDeclaration>result;
+        const variableDeclarator = <nodes.VariableDeclaration>result;
         return variableDeclarator.initializer === undefined;
     }
 
-    private isReusableParameter(result: Nodes.Node) {
+    private isReusableParameter(result: nodes.Node) {
         if (result.kind !== TokenType.Parameter) {
             return false;
         }
 
-        // Nodes.See the comment in this.isReusableVariableDeclaration for why we do this.
-        const parameter = <Nodes.ParameterDeclaration>result;
+        // nodes.See the comment in this.isReusableVariableDeclaration for why we do this.
+        const parameter = <nodes.ParameterDeclaration>result;
         return parameter.initializer === undefined;
     }
 
-    // Nodes.Returns true if we should abort parsing.
-    private abortParsingListOrMoveToNextToken(kind: Nodes.ParsingContext) {
+    // nodes.Returns true if we should abort parsing.
+    private abortParsingListOrMoveToNextToken(kind: nodes.ParsingContext) {
         this.parseErrorAtCurrentToken(this.parsingContextErrors(kind));
         if (this.isInSomeParsingContext()) {
             return true;
@@ -1870,45 +2042,45 @@ export class Parser {
         return false;
     }
 
-    private parsingContextErrors(context: Nodes.ParsingContext): Nodes.DiagnosticMessage {
+    private parsingContextErrors(context: nodes.ParsingContext): nodes.DiagnosticMessage {
         switch (context) {
-            case Nodes.ParsingContext.SourceElements: return Nodes.Diagnostics.Declaration_or_statement_expected;
-            case Nodes.ParsingContext.BlockStatements: return Nodes.Diagnostics.Declaration_or_statement_expected;
-            case Nodes.ParsingContext.SwitchClauses: return Nodes.Diagnostics.case_or_default_expected;
-            case Nodes.ParsingContext.SwitchClauseStatements: return Nodes.Diagnostics.Statement_expected;
-            case Nodes.ParsingContext.TypeMembers: return Nodes.Diagnostics.Property_or_signature_expected;
-            case Nodes.ParsingContext.ClassMembers: return Nodes.Diagnostics.Unexpected_token_A_constructor_method_accessor_or_property_was_expected;
-            case Nodes.ParsingContext.EnumMembers: return Nodes.Diagnostics.Enum_member_expected;
-            case Nodes.ParsingContext.HeritageClauseElement: return Nodes.Diagnostics.Expression_expected;
-            case Nodes.ParsingContext.VariableDeclarations: return Nodes.Diagnostics.Variable_declaration_expected;
-            case Nodes.ParsingContext.ObjectBindingElements: return Nodes.Diagnostics.Property_destructuring_pattern_expected;
-            case Nodes.ParsingContext.ArrayBindingElements: return Nodes.Diagnostics.Array_element_destructuring_pattern_expected;
-            case Nodes.ParsingContext.ArgumentExpressions: return Nodes.Diagnostics.Argument_expression_expected;
-            case Nodes.ParsingContext.ObjectLiteralMembers: return Nodes.Diagnostics.Property_assignment_expected;
-            case Nodes.ParsingContext.ArrayLiteralMembers: return Nodes.Diagnostics.Expression_or_comma_expected;
-            case Nodes.ParsingContext.Parameters: return Nodes.Diagnostics.Parameter_declaration_expected;
-            case Nodes.ParsingContext.TypeParameters: return Nodes.Diagnostics.Type_parameter_declaration_expected;
-            case Nodes.ParsingContext.TypeArguments: return Nodes.Diagnostics.Type_argument_expected;
-            case Nodes.ParsingContext.TupleElementTypes: return Nodes.Diagnostics.Type_expected;
-            case Nodes.ParsingContext.HeritageClauses: return Nodes.Diagnostics.Unexpected_token_expected;
-            case Nodes.ParsingContext.ImportOrExportSpecifiers: return Nodes.Diagnostics.Identifier_expected;
-            case Nodes.ParsingContext.JsxAttributes: return Nodes.Diagnostics.Identifier_expected;
-            case Nodes.ParsingContext.JsxChildren: return Nodes.Diagnostics.Identifier_expected;
-            case Nodes.ParsingContext.JSDocFunctionParameters: return Nodes.Diagnostics.Parameter_declaration_expected;
-            case Nodes.ParsingContext.JSDocTypeArguments: return Nodes.Diagnostics.Type_argument_expected;
-            case Nodes.ParsingContext.JSDocTupleTypes: return Nodes.Diagnostics.Type_expected;
-            case Nodes.ParsingContext.JSDocRecordMembers: return Nodes.Diagnostics.Property_assignment_expected;
+            case nodes.ParsingContext.SourceElements: return nodes.Diagnostics.Declaration_or_statement_expected;
+            case nodes.ParsingContext.BlockStatements: return nodes.Diagnostics.Declaration_or_statement_expected;
+            case nodes.ParsingContext.SwitchClauses: return nodes.Diagnostics.case_or_default_expected;
+            case nodes.ParsingContext.SwitchClauseStatements: return nodes.Diagnostics.Statement_expected;
+            case nodes.ParsingContext.TypeMembers: return nodes.Diagnostics.Property_or_signature_expected;
+            case nodes.ParsingContext.ClassMembers: return nodes.Diagnostics.Unexpected_token_A_constructor_method_accessor_or_property_was_expected;
+            case nodes.ParsingContext.EnumMembers: return nodes.Diagnostics.Enum_member_expected;
+            case nodes.ParsingContext.HeritageClauseElement: return nodes.Diagnostics.Expression_expected;
+            case nodes.ParsingContext.VariableDeclarations: return nodes.Diagnostics.Variable_declaration_expected;
+            case nodes.ParsingContext.ObjectBindingElements: return nodes.Diagnostics.Property_destructuring_pattern_expected;
+            case nodes.ParsingContext.ArrayBindingElements: return nodes.Diagnostics.Array_element_destructuring_pattern_expected;
+            case nodes.ParsingContext.ArgumentExpressions: return nodes.Diagnostics.Argument_expression_expected;
+            case nodes.ParsingContext.ObjectLiteralMembers: return nodes.Diagnostics.Property_assignment_expected;
+            case nodes.ParsingContext.ArrayLiteralMembers: return nodes.Diagnostics.Expression_or_comma_expected;
+            case nodes.ParsingContext.Parameters: return nodes.Diagnostics.Parameter_declaration_expected;
+            case nodes.ParsingContext.TypeParameters: return nodes.Diagnostics.Type_parameter_declaration_expected;
+            case nodes.ParsingContext.TypeArguments: return nodes.Diagnostics.Type_argument_expected;
+            case nodes.ParsingContext.TupleElementTypes: return nodes.Diagnostics.Type_expected;
+            case nodes.ParsingContext.HeritageClauses: return nodes.Diagnostics.Unexpected_token_expected;
+            case nodes.ParsingContext.ImportOrExportSpecifiers: return nodes.Diagnostics.Identifier_expected;
+            case nodes.ParsingContext.JsxAttributes: return nodes.Diagnostics.Identifier_expected;
+            case nodes.ParsingContext.JsxChildren: return nodes.Diagnostics.Identifier_expected;
+            case nodes.ParsingContext.JSDocFunctionParameters: return nodes.Diagnostics.Parameter_declaration_expected;
+            case nodes.ParsingContext.JSDocTypeArguments: return nodes.Diagnostics.Type_argument_expected;
+            case nodes.ParsingContext.JSDocTupleTypes: return nodes.Diagnostics.Type_expected;
+            case nodes.ParsingContext.JSDocRecordMembers: return nodes.Diagnostics.Property_assignment_expected;
         }
     };
 
-    // Nodes.Parses a comma-delimited list of elements
-    private parseDelimitedList<T extends Nodes.Node>(kind: Nodes.ParsingContext, parseElement: () => T, considerSemicolonAsDelimiter?: boolean): Nodes.NodeList<T> {
+    // nodes.Parses a comma-delimited list of elements
+    private parseDelimitedList<T extends nodes.Node>(kind: nodes.ParsingContext, parseElement: () => T, considerSemicolonAsDelimiter?: boolean): nodes.NodeList<T> {
         const saveParsingContext = this.parsingContext;
         this.parsingContext |= 1 << kind;
-        const this.result = <Nodes.NodeList<T>>[];
+        const this.result = <nodes.NodeList<T>>[];
         this.result.pos = this.getNodePos();
 
-        let commaStart = -1; // Nodes.Meaning the previous this.lexer.peek().type was not a comma
+        let commaStart = -1; // nodes.Meaning the previous this.lexer.peek().type was not a comma
         while (true) {
             if (this.isListElement(kind, /*inErrorRecovery*/ false)) {
                 this.result.push(this.parseListElement(kind, parseElement));
@@ -1917,19 +2089,19 @@ export class Parser {
                     continue;
                 }
 
-                commaStart = -1; // Nodes.Back to the state where the last this.lexer.peek().type was not a comma
+                commaStart = -1; // nodes.Back to the state where the last this.lexer.peek().type was not a comma
                 if (this.isListTerminator(kind)) {
                     break;
                 }
 
-                // Nodes.We didn't get a comma, and the list wasn't terminated, explicitly parse
+                // nodes.We didn't get a comma, and the list wasn't terminated, explicitly parse
                 // out a comma so we give a good error message.
                 this.parseExpected(TokenType.comma);
 
-                // Nodes.If the this.lexer.peek().type was a semicolon, and the caller allows that, then skip it and
-                // continue.  Nodes.This ensures we get back on track and don't this.result in tons of
-                // parse errors.  Nodes.For example, this can happen when people do things like use
-                // a semicolon to delimit object literal members.   Nodes.Note: we'll have already
+                // nodes.If the this.lexer.peek().type was a semicolon, and the caller allows that, then skip it and
+                // continue.  nodes.This ensures we get back on track and don't this.result in tons of
+                // parse errors.  nodes.For example, this can happen when people do things like use
+                // a semicolon to delimit object literal members.   nodes.Note: we'll have already
                 // reported an error when we called this.parseExpected above.
                 if (considerSemicolonAsDelimiter && this.lexer.peek().type === TokenType.semicolon && !this.lexer.peek().hasLineBreakBeforeStar) {
                     this.nextToken();
@@ -1946,13 +2118,13 @@ export class Parser {
             }
         }
 
-        // Nodes.Recording the trailing comma is deliberately done after the previous
-        // loop, and not just if we see a list terminator. Nodes.This is because the list
+        // nodes.Recording the trailing comma is deliberately done after the previous
+        // loop, and not just if we see a list terminator. nodes.This is because the list
         // may have ended incorrectly, but it is still important to know if there
         // was a trailing comma.
-        // Nodes.Check if the last this.lexer.peek().type was a comma.
+        // nodes.Check if the last this.lexer.peek().type was a comma.
         if (commaStart >= 0) {
-            // Nodes.Always preserve a trailing comma by marking it on the Nodes.NodeList
+            // nodes.Always preserve a trailing comma by marking it on the nodes.NodeList
             this.result.hasTrailingComma = true;
         }
 
@@ -1961,15 +2133,15 @@ export class Parser {
         return this.result;
     }
 
-    private createMissingList<T>(): Nodes.NodeList<T> {
+    private createMissingList<T>(): nodes.NodeList<T> {
         const pos = this.getNodePos();
-        const this.result = <Nodes.NodeList<T>>[];
+        const this.result = <nodes.NodeList<T>>[];
         this.result.pos = pos;
         this.result.end = pos;
         return this.result;
     }
 
-    private parseBracketedList<T extends Nodes.Node>(kind: Nodes.ParsingContext, parseElement: () => T, open: TokenType, close: TokenType): Nodes.NodeList<T> {
+    private parseBracketedList<T extends nodes.Node>(kind: nodes.ParsingContext, parseElement: () => T, open: TokenType, close: TokenType): nodes.NodeList<T> {
         if (this.parseExpected(open)) {
             const this.result = this.parseDelimitedList(kind, parseElement);
             this.parseExpected(close);
@@ -1979,11 +2151,11 @@ export class Parser {
         return this.createMissingList<T>();
     }
 
-    // Nodes.The allowReservedWords parameter controls whether reserved words are permitted after the first dot
-    private parseEntityName(allowReservedWords: boolean, diagnosticMessage?: Nodes.DiagnosticMessage): Nodes.EntityName {
-        let entity: Nodes.EntityName = this.parseIdentifier(diagnosticMessage);
+    // nodes.The allowReservedWords parameter controls whether reserved words are permitted after the first dot
+    private parseEntityName(allowReservedWords: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.EntityName {
+        let entity: nodes.EntityName = this.parseIdentifier(diagnosticMessage);
         while (this.parseOptional(TokenType.dot)) {
-            const result: Nodes.QualifiedName = new Nodes.QualifiedName();  // !!!
+            const result: nodes.QualifiedName = new nodes.QualifiedName();  // !!!
             result.left = entity;
             result.right = this.parseRightSideOfDot(allowReservedWords);
             entity = result;
@@ -1991,47 +2163,47 @@ export class Parser {
         return entity;
     }
 
-    private parseRightSideOfDot(allowIdentifierNames: boolean): Nodes.Identifier {
-        // Nodes.Technically a keyword is valid here as all this.identifiers and keywords are identifier names.
-        // Nodes.However, often we'll encounter this in error situations when the identifier or keyword
+    private parseRightSideOfDot(allowIdentifierNames: boolean): nodes.Identifier {
+        // nodes.Technically a keyword is valid here as all this.identifiers and keywords are identifier names.
+        // nodes.However, often we'll encounter this in error situations when the identifier or keyword
         // is actually starting another valid construct.
         //
-        // Nodes.So, we check for the following specific case:
+        // nodes.So, we check for the following specific case:
         //
         //      name.
         //      identifierOrKeyword identifierNameOrKeyword
         //
-        // Nodes.Note: the newlines are important here.  Nodes.For example, if that above code
+        // nodes.Note: the newlines are important here.  nodes.For example, if that above code
         // were rewritten into:
         //
         //      name.identifierOrKeyword
         //      identifierNameOrKeyword
         //
-        // Nodes.Then we would consider it valid.  Nodes.That's because Nodes.ASI would take effect and
+        // nodes.Then we would consider it valid.  nodes.That's because nodes.ASI would take effect and
         // the code would be implicitly: "name.identifierOrKeyword; identifierNameOrKeyword".
-        // Nodes.In the first case though, Nodes.ASI will not take effect because there is not a
+        // nodes.In the first case though, nodes.ASI will not take effect because there is not a
         // line terminator after the identifier or keyword.
         if (this.lexer.peek().hasLineBreakBeforeStar && tokenIsIdentifierOrKeyword(this.lexer.peek().type)) {
             const matchesPattern = this.lookAhead(this.nextTokenIsIdentifierOrKeywordOnSameLine);
 
             if (matchesPattern) {
-                // Nodes.Report that we need an identifier.  Nodes.However, report it right after the dot,
-                // and not on the next this.lexer.peek().type.  Nodes.This is because the next this.lexer.peek().type might actually
+                // nodes.Report that we need an identifier.  nodes.However, report it right after the dot,
+                // and not on the next this.lexer.peek().type.  nodes.This is because the next this.lexer.peek().type might actually
                 // be an identifier and the error would be quite confusing.
-                return <Nodes.Identifier>this.createMissingNode(TokenType.Identifier, /*reportAtCurrentPosition*/ true, Nodes.Diagnostics.Identifier_expected);
+                return <nodes.Identifier>this.createMissingNode(TokenType.Identifier, /*reportAtCurrentPosition*/ true, nodes.Diagnostics.Identifier_expected);
             }
         }
 
         return allowIdentifierNames ? this.parseIdentifierName() : this.parseIdentifier();
     }
 
-    private parseTemplateExpression(): Nodes.TemplateExpression {
-        const template = new Nodes.TemplateExpression();
+    private parseTemplateExpression(): nodes.TemplateExpression {
+        const template = new nodes.TemplateExpression();
 
         template.head = this.parseTemplateLiteralFragment();
-        console.assert(template.head.kind === TokenType.TemplateHead, "Nodes.Template head has wrong this.lexer.peek().type kind");
+        console.assert(template.head.kind === TokenType.TemplateHead, "nodes.Template head has wrong this.lexer.peek().type kind");
 
-        const templateSpans = <Nodes.NodeList<Nodes.TemplateSpan>>[];
+        const templateSpans = <nodes.NodeList<nodes.TemplateSpan>>[];
         templateSpans.pos = this.getNodePos();
 
         do {
@@ -2045,38 +2217,38 @@ export class Parser {
         return this.finishNode(template);
     }
 
-    private parseTemplateSpan(): Nodes.TemplateSpan {
-        const span = new Nodes.TemplateSpan();
+    private parseTemplateSpan(): nodes.TemplateSpan {
+        const span = new nodes.TemplateSpan();
         span.expression = this.allowInAnd(this.parseExpression);
 
-        let literal: Nodes.TemplateLiteralFragment;
+        let literal: nodes.TemplateLiteralFragment;
 
         if (this.lexer.peek().type === TokenType.closeBrace) {
             this.reScanTemplateToken();
             literal = this.parseTemplateLiteralFragment();
         }
         else {
-            literal = <Nodes.TemplateLiteralFragment>this.parseExpectedToken(TokenType.TemplateTail, /*reportAtCurrentPosition*/ false, Nodes.Diagnostics._0_expected, tokenToString(TokenType.closeBrace));
+            literal = <nodes.TemplateLiteralFragment>this.parseExpectedToken(TokenType.TemplateTail, /*reportAtCurrentPosition*/ false, nodes.Diagnostics._0_expected, tokenToString(TokenType.closeBrace));
         }
 
         span.literal = literal;
         return this.finishNode(span);
     }
 
-    private parseStringLiteralTypeNode(): Nodes.StringLiteralTypeNode {
-        return <Nodes.StringLiteralTypeNode>this.parseLiteralLikeNode(TokenType.StringLiteralType, /*internName*/ true);
+    private parseStringLiteralTypeNode(): nodes.StringLiteralTypeNode {
+        return <nodes.StringLiteralTypeNode>this.parseLiteralLikeNode(TokenType.StringLiteralType, /*internName*/ true);
     }
 
-    private parseLiteralNode(internName?: boolean): Nodes.LiteralExpression {
-        return <Nodes.LiteralExpression>this.parseLiteralLikeNode(this.lexer.peek().type, internName);
+    private parseLiteralNode(internName?: boolean): nodes.LiteralExpression {
+        return <nodes.LiteralExpression>this.parseLiteralLikeNode(this.lexer.peek().type, internName);
     }
 
-    private parseTemplateLiteralFragment(): Nodes.TemplateLiteralFragment {
-        return <Nodes.TemplateLiteralFragment>this.parseLiteralLikeNode(this.lexer.peek().type, /*internName*/ false);
+    private parseTemplateLiteralFragment(): nodes.TemplateLiteralFragment {
+        return <nodes.TemplateLiteralFragment>this.parseLiteralLikeNode(this.lexer.peek().type, /*internName*/ false);
     }
 
-    private parseLiteralLikeNode(kind: TokenType, internName: boolean): Nodes.LiteralLikeNode {
-        const result = new Nodes.LiteralExpression();
+    private parseLiteralLikeNode(kind: TokenType, internName: boolean): nodes.LiteralLikeNode {
+        const result = new nodes.LiteralExpression();
         const text = this.lexer.getTokenValue();
         result.text = internName ? this.internIdentifier(text) : text;
 
@@ -2092,14 +2264,14 @@ export class Parser {
         this.nextToken();
         result;
 
-        // Nodes.Octal literals are not allowed in strict mode or Nodes.ES5
-        // Nodes.Note that theoretically the following condition would hold true literals like 009,
+        // nodes.Octal literals are not allowed in strict mode or nodes.ES5
+        // nodes.Note that theoretically the following condition would hold true literals like 009,
         // which is not octal.But because of how the this.scanner separates the tokens, we would
-        // never get a this.lexer.peek().type like this. Nodes.Instead, we would get 00 and 9 as two separate tokens.
-        // Nodes.We also do not need to check for negatives because any prefix operator would be part of a
+        // never get a this.lexer.peek().type like this. nodes.Instead, we would get 00 and 9 as two separate tokens.
+        // nodes.We also do not need to check for negatives because any prefix operator would be part of a
         // parent unary expression.
         if (result.kind === TokenType.NumericLiteral
-            && this.sourceText.charCodeAt(tokenPos) === Nodes.CharCode.num0
+            && this.sourceText.charCodeAt(tokenPos) === nodes.CharCode.num0
             && isOctalDigit(this.sourceText.charCodeAt(tokenPos + 1))) {
 
             result.isOctalLiteral = true;
@@ -2108,44 +2280,44 @@ export class Parser {
         return result;
     }
 
-    // Nodes.TYPES
+    // nodes.TYPES
 
-    private parseTypeReference(): Nodes.TypeReferenceNode {
-        const typeName = this.parseEntityName(/*allowReservedWords*/ false, Nodes.Diagnostics.Type_expected);
-        const result = new Nodes.TypeReferenceNode();
+    private parseTypeReference(): nodes.TypeReferenceNode {
+        const typeName = this.parseEntityName(/*allowReservedWords*/ false, nodes.Diagnostics.Type_expected);
+        const result = new nodes.TypeReferenceNode();
         result.typeName = typeName;
         if (!this.lexer.peek().hasLineBreakBeforeStar && this.lexer.peek().type === TokenType.lessThan) {
-            result.typeArguments = this.parseBracketedList(Nodes.ParsingContext.TypeArguments, this.parseType, TokenType.lessThan, TokenType.greaterThan);
+            result.typeArguments = this.parseBracketedList(nodes.ParsingContext.TypeArguments, this.parseType, TokenType.lessThan, TokenType.greaterThan);
         }
         return result;
     }
 
-    private parseThisTypePredicate(lhs: Nodes.ThisTypeNode): Nodes.TypePredicateNode {
+    private parseThisTypePredicate(lhs: nodes.ThisTypeNode): nodes.TypePredicateNode {
         this.nextToken();
-        const result = this.createNode(TokenType.TypePredicate, lhs.pos) as Nodes.TypePredicateNode;
+        const result = this.createNode(TokenType.TypePredicate, lhs.pos) as nodes.TypePredicateNode;
         result.parameterName = lhs;
         result.type = this.parseType();
         return result;
     }
 
-    private parseThisTypeNode(): Nodes.ThisTypeNode {
-        const result = this.createNode(TokenType.ThisType) as Nodes.ThisTypeNode;
+    private parseThisTypeNode(): nodes.ThisTypeNode {
+        const result = this.createNode(TokenType.ThisType) as nodes.ThisTypeNode;
         this.nextToken();
         return result;
     }
 
-    private parseTypeQuery(): Nodes.TypeQueryNode {
-        const result = new Nodes.TypeQueryNode();
+    private parseTypeQuery(): nodes.TypeQueryNode {
+        const result = new nodes.TypeQueryNode();
         this.parseExpected(TokenType.typeof);
         result.exprName = this.parseEntityName(/*allowReservedWords*/ true);
         return result;
     }
 
-    private parseTypeParameter(): Nodes.TypeParameterDeclaration {
-        const result = new Nodes.TypeParameterDeclaration();
+    private parseTypeParameter(): nodes.TypeParameterDeclaration {
+        const result = new nodes.TypeParameterDeclaration();
         result.name = this.parseIdentifier();
         if (this.parseOptional(TokenType.extends)) {
-            // Nodes.It's not uncommon for people to write improper constraints to a generic.  Nodes.If the
+            // nodes.It's not uncommon for people to write improper constraints to a generic.  nodes.If the
             // user writes a constraint that is an expression and not an actual type, then parse
             // it out as an expression (so we can recover well), but report that a type is needed
             // instead.
@@ -2153,13 +2325,13 @@ export class Parser {
                 result.constraint = this.parseType();
             }
             else {
-                // Nodes.It was not a type, and it looked like an expression.  Nodes.Parse out an expression
-                // here so we recover well.  Nodes.Note: it is important that we call parseUnaryExpression
-                // and not this.parseExpression here.  Nodes.If the user has:
+                // nodes.It was not a type, and it looked like an expression.  nodes.Parse out an expression
+                // here so we recover well.  nodes.Note: it is important that we call parseUnaryExpression
+                // and not this.parseExpression here.  nodes.If the user has:
                 //
                 //      <T extends "">
                 //
-                // Nodes.We do *not* want to consume the  >  as we're consuming the expression for "".
+                // nodes.We do *not* want to consume the  >  as we're consuming the expression for "".
                 result.expression = this.parseUnaryExpressionOrHigher();
             }
         }
@@ -2167,13 +2339,13 @@ export class Parser {
         return result;
     }
 
-    private parseTypeParameters(): Nodes.NodeList<Nodes.TypeParameterDeclaration> {
+    private parseTypeParameters(): nodes.NodeList<nodes.TypeParameterDeclaration> {
         if (this.lexer.peek().type === TokenType.lessThan) {
-            return this.parseBracketedList(Nodes.ParsingContext.TypeParameters, this.parseTypeParameter, TokenType.lessThan, TokenType.greaterThan);
+            return this.parseBracketedList(nodes.ParsingContext.TypeParameters, this.parseTypeParameter, TokenType.lessThan, TokenType.greaterThan);
         }
     }
 
-    private parseParameterType(): Nodes.TypeNode {
+    private parseParameterType(): nodes.TypeNode {
         if (this.parseOptional(TokenType.colon)) {
             return this.parseType();
         }
@@ -2185,15 +2357,15 @@ export class Parser {
         return this.lexer.peek().type === TokenType.dotDotDot || this.isIdentifierOrPattern() || isModifierKind(this.lexer.peek().type) || this.lexer.peek().type === TokenType.at || this.lexer.peek().type === TokenType.this;
     }
 
-    private setModifiers(result: Nodes.Node, modifiers: Nodes.ModifiersArray) {
+    private setModifiers(result: nodes.Node, modifiers: nodes.ModifiersArray) {
         if (modifiers) {
             result.flags |= modifiers.flags;
             result.modifiers = modifiers;
         }
     }
 
-    private parseParameter(): Nodes.ParameterDeclaration {
-        const result = new Nodes.ParameterDeclaration();
+    private parseParameter(): nodes.ParameterDeclaration {
+        const result = new nodes.ParameterDeclaration();
         if (this.lexer.peek().type === TokenType.this) {
             result.name = this.createIdentifier(/*this.isIdentifier*/true, undefined);
             result.type = this.parseParameterType();
@@ -2204,8 +2376,8 @@ export class Parser {
         this.setModifiers(result, this.parseModifiers());
         result.dotDotDotToken = this.parseOptionalToken(TokenType.dotDotDot);
 
-        // Nodes.FormalParameter [Nodes.Yield,Nodes.Await]:
-        //      Nodes.BindingElement[?Nodes.Yield,?Nodes.Await]
+        // nodes.FormalParameter [nodes.Yield,nodes.Await]:
+        //      nodes.BindingElement[?nodes.Yield,?nodes.Await]
         result.name = this.parseBindingName();
         if (getFullWidth(result.name) === 0 && result.flags === 0 && isModifierKind(this.lexer.peek().type)) {
             // in cases like
@@ -2213,8 +2385,8 @@ export class Parser {
             // function foo(static)
             // isParameter('static') === true, because of isModifier('static')
             // however 'static' is not a legal identifier in a strict mode.
-            // so this.result of this function will be Nodes.ParameterDeclaration (flags = 0, name = missing, type = undefined, initializer = undefined)
-            // and current this.lexer.peek().type will not change => parsing of the enclosing parameter list will last till the end of time (or Nodes.OOM)
+            // so this.result of this function will be nodes.ParameterDeclaration (flags = 0, name = missing, type = undefined, initializer = undefined)
+            // and current this.lexer.peek().type will not change => parsing of the enclosing parameter list will last till the end of time (or nodes.OOM)
             // to avoid this we'll advance cursor to the next this.lexer.peek().type.
             this.nextToken();
         }
@@ -2223,13 +2395,13 @@ export class Parser {
         result.type = this.parseParameterType();
         result.initializer = this.parseBindingElementInitializer(/*inParameter*/ true);
 
-        // Nodes.Do not check for initializers in an ambient context for parameters. Nodes.This is not
+        // nodes.Do not check for initializers in an ambient context for parameters. nodes.This is not
         // a grammar error because the grammar allows arbitrary call signatures in
         // an ambient context.
-        // Nodes.It is actually not necessary for this to be an error at all. Nodes.The reason is that
+        // nodes.It is actually not necessary for this to be an error at all. nodes.The reason is that
         // function/constructor implementations are syntactically disallowed in ambient
-        // contexts. Nodes.In addition, parameter initializers are semantically disallowed in
-        // overload signatures. Nodes.So parameter initializers are transitively disallowed in
+        // contexts. nodes.In addition, parameter initializers are semantically disallowed in
+        // overload signatures. nodes.So parameter initializers are transitively disallowed in
         // ambient contexts.
 
         return this.parseJsDocComment(result);
@@ -2248,7 +2420,7 @@ export class Parser {
         yieldContext: boolean,
         awaitContext: boolean,
         requireCompleteParameterList: boolean,
-        signature: Nodes.SignatureDeclaration): void {
+        signature: nodes.SignatureDeclaration): void {
 
         const returnTokenRequired = returnToken === TokenType.equalsGreaterThan;
         signature.typeParameters = this.parseTypeParameters();
@@ -2264,19 +2436,19 @@ export class Parser {
     }
 
     private parseParameterList(yieldContext: boolean, awaitContext: boolean, requireCompleteParameterList: boolean) {
-        // Nodes.FormalParameters [Nodes.Yield,Nodes.Await]: (modified)
+        // nodes.FormalParameters [nodes.Yield,nodes.Await]: (modified)
         //      [empty]
-        //      Nodes.FormalParameterList[?Nodes.Yield,Nodes.Await]
+        //      nodes.FormalParameterList[?nodes.Yield,nodes.Await]
         //
-        // Nodes.FormalParameter[Nodes.Yield,Nodes.Await]: (modified)
-        //      Nodes.BindingElement[?Nodes.Yield,Nodes.Await]
+        // nodes.FormalParameter[nodes.Yield,nodes.Await]: (modified)
+        //      nodes.BindingElement[?nodes.Yield,nodes.Await]
         //
-        // Nodes.BindingElement [Nodes.Yield,Nodes.Await]: (modified)
-        //      Nodes.SingleNameBinding[?Nodes.Yield,?Nodes.Await]
-        //      Nodes.BindingPattern[?Nodes.Yield,?Nodes.Await]Nodes.Initializer [Nodes.In, ?Nodes.Yield,?Nodes.Await] opt
+        // nodes.BindingElement [nodes.Yield,nodes.Await]: (modified)
+        //      nodes.SingleNameBinding[?nodes.Yield,?nodes.Await]
+        //      nodes.BindingPattern[?nodes.Yield,?nodes.Await]nodes.Initializer [nodes.In, ?nodes.Yield,?nodes.Await] opt
         //
-        // Nodes.SingleNameBinding [Nodes.Yield,Nodes.Await]:
-        //      Nodes.BindingIdentifier[?Nodes.Yield,?Nodes.Await]Nodes.Initializer [Nodes.In, ?Nodes.Yield,?Nodes.Await] opt
+        // nodes.SingleNameBinding [nodes.Yield,nodes.Await]:
+        //      nodes.BindingIdentifier[?nodes.Yield,?nodes.Await]nodes.Initializer [nodes.In, ?nodes.Yield,?nodes.Await] opt
         if (this.parseExpected(TokenType.openParen)) {
             const savedYieldContext = this.inYieldContext();
             const savedAwaitContext = this.inAwaitContext();
@@ -2284,13 +2456,13 @@ export class Parser {
             this.setYieldContext(yieldContext);
             this.setAwaitContext(awaitContext);
 
-            const this.result = this.parseDelimitedList(Nodes.ParsingContext.Parameters, this.parseParameter);
+            const this.result = this.parseDelimitedList(nodes.ParsingContext.Parameters, this.parseParameter);
 
             this.setYieldContext(savedYieldContext);
             this.setAwaitContext(savedAwaitContext);
 
             if (!this.parseExpected(TokenType.closeParen) && requireCompleteParameterList) {
-                // Nodes.Caller insisted that we had to end with a )   Nodes.We didn't.  Nodes.So just return
+                // nodes.Caller insisted that we had to end with a )   nodes.We didn't.  nodes.So just return
                 // undefined here.
                 return undefined;
             }
@@ -2298,25 +2470,25 @@ export class Parser {
             return this.result;
         }
 
-        // Nodes.We didn't even have an open paren.  Nodes.If the caller requires a complete parameter list,
-        // we definitely can't provide that.  Nodes.However, if they're ok with an incomplete one,
+        // nodes.We didn't even have an open paren.  nodes.If the caller requires a complete parameter list,
+        // we definitely can't provide that.  nodes.However, if they're ok with an incomplete one,
         // then just return an empty set of parameters.
-        return requireCompleteParameterList ? undefined : this.createMissingList<Nodes.ParameterDeclaration>();
+        return requireCompleteParameterList ? undefined : this.createMissingList<nodes.ParameterDeclaration>();
     }
 
     private parseTypeMemberSemicolon() {
-        // Nodes.We allow type members to be separated by commas or (possibly Nodes.ASI) semicolons.
-        // Nodes.First check if it was a comma.  Nodes.If so, we're done with the member.
+        // nodes.We allow type members to be separated by commas or (possibly nodes.ASI) semicolons.
+        // nodes.First check if it was a comma.  nodes.If so, we're done with the member.
         if (this.parseOptional(TokenType.comma)) {
             return;
         }
 
-        // Nodes.Didn't have a comma.  Nodes.We must have a (possible Nodes.ASI) semicolon.
-        this.expectSemicolon();
+        // nodes.Didn't have a comma.  nodes.We must have a (possible nodes.ASI) semicolon.
+        this.tryReadSemicolon();
     }
 
-    private parseSignatureMember(kind: TokenType): Nodes.CallSignatureDeclaration | Nodes.ConstructSignatureDeclaration {
-        const result = new Nodes.CallSignatureDeclaration | Nodes.ConstructSignatureDeclaration();
+    private parseSignatureMember(kind: TokenType): nodes.CallSignatureDeclaration | nodes.ConstructSignatureDeclaration {
+        const result = new nodes.CallSignatureDeclaration | nodes.ConstructSignatureDeclaration();
         if (kind === TokenType.ConstructSignature) {
             this.parseExpected(TokenType.new);
         }
@@ -2334,11 +2506,11 @@ export class Parser {
     }
 
     private isUnambiguouslyIndexSignature() {
-        // Nodes.The only allowed sequence is:
+        // nodes.The only allowed sequence is:
         //
         //   [id:
         //
-        // Nodes.However, for error recovery, we also check the following cases:
+        // nodes.However, for error recovery, we also check the following cases:
         //
         //   [...
         //   [id,
@@ -2365,7 +2537,7 @@ export class Parser {
             return false;
         }
         else {
-            // Nodes.Skip the identifier
+            // nodes.Skip the identifier
             this.nextToken();
         }
 
@@ -2376,53 +2548,53 @@ export class Parser {
             return true;
         }
 
-        // Nodes.Question mark could be an indexer with an optional property,
+        // nodes.Question mark could be an indexer with an optional property,
         // or it could be a conditional expression in a computed property.
         if (this.lexer.peek().type !== TokenType.question) {
             return false;
         }
 
-        // Nodes.If any of the following tokens are after the question mark, it cannot
+        // nodes.If any of the following tokens are after the question mark, it cannot
         // be a conditional expression, so treat it as an indexer.
         this.nextToken();
         return this.lexer.peek().type === TokenType.colon || this.lexer.peek().type === TokenType.comma || this.lexer.peek().type === TokenType.closeBracket;
     }
 
-    private parseIndexSignatureDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.IndexSignatureDeclaration {
-        const result = new Nodes.IndexSignatureDeclaration();
+    private parseIndexSignatureDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.IndexSignatureDeclaration {
+        const result = new nodes.IndexSignatureDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
-        result.parameters = this.parseBracketedList(Nodes.ParsingContext.Parameters, this.parseParameter, TokenType.openBracket, TokenType.closeBracket);
+        result.parameters = this.parseBracketedList(nodes.ParsingContext.Parameters, this.parseParameter, TokenType.openBracket, TokenType.closeBracket);
         result.type = this.parseTypeAnnotation();
         this.parseTypeMemberSemicolon();
         return result;
     }
 
-    private parsePropertyOrMethodSignature(fullStart: number, modifiers: Nodes.ModifiersArray): Nodes.PropertySignature | Nodes.MethodSignature {
+    private parsePropertyOrMethodSignature(fullStart: number, modifiers: nodes.ModifiersArray): nodes.PropertySignature | nodes.MethodSignature {
         const name = this.parsePropertyName();
         const questionToken = this.parseOptionalToken(TokenType.question);
 
         if (this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.lessThan) {
-            const method = new Nodes.MethodSignature();
+            const method = new nodes.MethodSignature();
             this.setModifiers(method, modifiers);
             method.name = name;
             method.questionToken = questionToken;
 
-            // Nodes.Method signatures don't exist in expression contexts.  Nodes.So they have neither
-            // [Nodes.Yield] nor [Nodes.Await]
+            // nodes.Method signatures don't exist in expression contexts.  nodes.So they have neither
+            // [nodes.Yield] nor [nodes.Await]
             this.fillSignature(TokenType.colon, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, method);
             this.parseTypeMemberSemicolon();
             return this.finishNode(method);
         }
         else {
-            const property = new Nodes.PropertySignature();
+            const property = new nodes.PropertySignature();
             this.setModifiers(property, modifiers);
             property.name = name;
             property.questionToken = questionToken;
             property.type = this.parseTypeAnnotation();
 
             if (this.lexer.peek().type === TokenType.equals) {
-                // Nodes.Although type literal properties cannot not have initializers, we attempt
+                // nodes.Although type literal properties cannot not have initializers, we attempt
                 // to parse an initializer so we can report in the checker that an interface
                 // property or type literal property cannot have an initializer.
                 property.initializer = this.parseNonParameterInitializer();
@@ -2435,25 +2607,25 @@ export class Parser {
 
     private isTypeMemberStart(): boolean {
         let idToken: TokenType;
-        // Nodes.Return true if we have the start of a signature member
+        // nodes.Return true if we have the start of a signature member
         if (this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.lessThan) {
             return true;
         }
-        // Nodes.Eat up all modifiers, but hold on to the last one in case it is actually an identifier
+        // nodes.Eat up all modifiers, but hold on to the last one in case it is actually an identifier
         while (isModifierKind(this.lexer.peek().type)) {
             idToken = this.lexer.peek().type;
             this.nextToken();
         }
-        // Nodes.Index signatures and computed property names are type members
+        // nodes.Index signatures and computed property names are type members
         if (this.lexer.peek().type === TokenType.openBracket) {
             return true;
         }
-        // Nodes.Try to get the first property-like this.lexer.peek().type following all modifiers
+        // nodes.Try to get the first property-like this.lexer.peek().type following all modifiers
         if (this.isLiteralPropertyName()) {
             idToken = this.lexer.peek().type;
             this.nextToken();
         }
-        // Nodes.If we were able to get any potential identifier, check that it is
+        // nodes.If we were able to get any potential identifier, check that it is
         // the start of a member declaration
         if (idToken) {
             return this.lexer.peek().type === TokenType.openParen ||
@@ -2465,7 +2637,7 @@ export class Parser {
         return false;
     }
 
-    private parseTypeMember(): Nodes.TypeElement {
+    private parseTypeMember(): nodes.TypeElement {
         if (this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.lessThan) {
             return this.parseSignatureMember(TokenType.CallSignature);
         }
@@ -2485,41 +2657,41 @@ export class Parser {
         return this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.lessThan;
     }
 
-    private parseTypeLiteral(): Nodes.TypeLiteralNode {
-        const result = new Nodes.TypeLiteralNode();
+    private parseTypeLiteral(): nodes.TypeLiteralNode {
+        const result = new nodes.TypeLiteralNode();
         result.members = this.parseObjectTypeMembers();
         return result;
     }
 
-    private parseObjectTypeMembers(): Nodes.NodeList<Nodes.TypeElement> {
-        let members: Nodes.NodeList<Nodes.TypeElement>;
+    private parseObjectTypeMembers(): nodes.NodeList<nodes.TypeElement> {
+        let members: nodes.NodeList<nodes.TypeElement>;
         if (this.parseExpected(TokenType.openBrace)) {
-            members = this.parseList(Nodes.ParsingContext.TypeMembers, this.parseTypeMember);
+            members = this.parseList(nodes.ParsingContext.TypeMembers, this.parseTypeMember);
             this.parseExpected(TokenType.closeBrace);
         }
         else {
-            members = this.createMissingList<Nodes.TypeElement>();
+            members = this.createMissingList<nodes.TypeElement>();
         }
 
         return members;
     }
 
-    private parseTupleType(): Nodes.TupleTypeNode {
-        const result = new Nodes.TupleTypeNode();
-        result.elementTypes = this.parseBracketedList(Nodes.ParsingContext.TupleElementTypes, this.parseType, TokenType.openBracket, TokenType.closeBracket);
+    private parseTupleType(): nodes.TupleTypeNode {
+        const result = new nodes.TupleTypeNode();
+        result.elementTypes = this.parseBracketedList(nodes.ParsingContext.TupleElementTypes, this.parseType, TokenType.openBracket, TokenType.closeBracket);
         return result;
     }
 
-    private parseParenthesizedType(): Nodes.ParenthesizedTypeNode {
-        const result = new Nodes.ParenthesizedTypeNode();
+    private parseParenthesizedType(): nodes.ParenthesizedTypeNode {
+        const result = new nodes.ParenthesizedTypeNode();
         this.parseExpected(TokenType.openParen);
         result.type = this.parseType();
         this.parseExpected(TokenType.closeParen);
         return result;
     }
 
-    private parseFunctionOrConstructorType(kind: TokenType): Nodes.FunctionOrConstructorTypeNode {
-        const result = new Nodes.FunctionOrConstructorTypeNode();
+    private parseFunctionOrConstructorType(kind: TokenType): nodes.FunctionOrConstructorTypeNode {
+        const result = new nodes.FunctionOrConstructorTypeNode();
         if (kind === TokenType.ConstructorType) {
             this.parseExpected(TokenType.new);
         }
@@ -2527,12 +2699,12 @@ export class Parser {
         return result;
     }
 
-    private parseKeywordAndNoDot(): Nodes.TypeNode {
-        const result = this.parseTokenNode<Nodes.TypeNode>();
+    private parseKeywordAndNoDot(): nodes.TypeNode {
+        const result = this.parseTokenNode<nodes.TypeNode>();
         return this.lexer.peek().type === TokenType.dot ? undefined : result;
     }
 
-    private parseNonArrayType(): Nodes.TypeNode {
+    private parseNonArrayType(): nodes.TypeNode {
         switch (this.lexer.peek().type) {
             case TokenType.any:
             case TokenType.string:
@@ -2541,14 +2713,14 @@ export class Parser {
             case TokenType.symbol:
             case TokenType.undefined:
             case TokenType.never:
-                // Nodes.If these are followed by a dot, then parse these out as a dotted type reference instead.
+                // nodes.If these are followed by a dot, then parse these out as a dotted type reference instead.
                 const result = this.tryParse(this.parseKeywordAndNoDot);
                 return result || this.parseTypeReference();
             case TokenType.StringLiteral:
                 return this.parseStringLiteralTypeNode();
             case TokenType.void:
             case TokenType.null:
-                return this.parseTokenNode<Nodes.TypeNode>();
+                return this.parseTokenNode<nodes.TypeNode>();
             case TokenType.this: {
                 const thisKeyword = this.parseThisTypeNode();
                 if (this.lexer.peek().type === TokenType.is && !this.lexer.peek().hasLineBreakBeforeStar) {
@@ -2591,8 +2763,8 @@ export class Parser {
             case TokenType.StringLiteral:
                 return true;
             case TokenType.openParen:
-                // Nodes.Only consider '(' the start of a type if followed by ')', '...', an identifier, a modifier,
-                // or something that starts a type. Nodes.We don't want to consider things like '(1)' a type.
+                // nodes.Only consider '(' the start of a type if followed by ')', '...', an identifier, a modifier,
+                // or something that starts a type. nodes.We don't want to consider things like '(1)' a type.
                 return this.lookAhead(this.isStartOfParenthesizedOrFunctionType);
             default:
                 return this.isIdentifier();
@@ -2604,38 +2776,38 @@ export class Parser {
         return this.lexer.peek().type === TokenType.closeParen || this.isStartOfParameter() || this.isStartOfType();
     }
 
-    private parseArrayTypeOrHigher(): Nodes.TypeNode {
+    private parseArrayTypeOrHigher(): nodes.TypeNode {
         let type = this.parseNonArrayType();
         while (!this.lexer.peek().hasLineBreakBeforeStar && this.parseOptional(TokenType.openBracket)) {
             this.parseExpected(TokenType.closeBracket);
-            const result = new Nodes.ArrayTypeNode();
+            const result = new nodes.ArrayTypeNode();
             result.elementType = type;
             type = result;
         }
         return type;
     }
 
-    private parseUnionOrIntersectionType(kind: TokenType, parseConstituentType: () => Nodes.TypeNode, operator: TokenType): Nodes.TypeNode {
+    private parseUnionOrIntersectionType(kind: TokenType, parseConstituentType: () => nodes.TypeNode, operator: TokenType): nodes.TypeNode {
         let type = parseConstituentType();
         if (this.lexer.peek().type === operator) {
-            const types = <Nodes.NodeList<Nodes.TypeNode>>[type];
+            const types = <nodes.NodeList<nodes.TypeNode>>[type];
             types.pos = type.pos;
             while (this.parseOptional(operator)) {
                 types.push(parseConstituentType());
             }
             types.end = this.getNodeEnd();
-            const result = new Nodes.UnionOrIntersectionTypeNode();
+            const result = new nodes.UnionOrIntersectionTypeNode();
             result.types = types;
             type = result;
         }
         return type;
     }
 
-    private parseIntersectionTypeOrHigher(): Nodes.TypeNode {
+    private parseIntersectionTypeOrHigher(): nodes.TypeNode {
         return this.parseUnionOrIntersectionType(TokenType.IntersectionType, this.parseArrayTypeOrHigher, TokenType.ampersand);
     }
 
-    private parseUnionTypeOrHigher(): Nodes.TypeNode {
+    private parseUnionTypeOrHigher(): nodes.TypeNode {
         return this.parseUnionOrIntersectionType(TokenType.UnionType, this.parseIntersectionTypeOrHigher, TokenType.bar);
     }
 
@@ -2648,7 +2820,7 @@ export class Parser {
 
     private skipParameterStart(): boolean {
         if (isModifierKind(this.lexer.peek().type)) {
-            // Nodes.Skip modifiers
+            // nodes.Skip modifiers
             this.parseModifiers();
         }
         if (this.isIdentifier() || this.lexer.peek().type === TokenType.this) {
@@ -2656,7 +2828,7 @@ export class Parser {
             return true;
         }
         if (this.lexer.peek().type === TokenType.openBracket || this.lexer.peek().type === TokenType.openBrace) {
-            // Nodes.Return true if we can parse an array or object binding pattern with no errors
+            // nodes.Return true if we can parse an array or object binding pattern with no errors
             const previousErrorCount = this.parseDiagnostics.length;
             this.parseBindingName();
             return previousErrorCount === this.parseDiagnostics.length;
@@ -2672,7 +2844,7 @@ export class Parser {
             return true;
         }
         if (this.skipParameterStart()) {
-            // Nodes.We successfully skipped modifiers (if any) and an identifier or binding pattern,
+            // nodes.We successfully skipped modifiers (if any) and an identifier or binding pattern,
             // now see if we have something that indicates a parameter declaration
             if (this.lexer.peek().type === TokenType.colon || this.lexer.peek().type === TokenType.comma ||
                 this.lexer.peek().type === TokenType.question || this.lexer.peek().type === TokenType.equals) {
@@ -2693,11 +2865,11 @@ export class Parser {
         return false;
     }
 
-    private parseTypeOrTypePredicate(): Nodes.TypeNode {
+    private parseTypeOrTypePredicate(): nodes.TypeNode {
         const typePredicateVariable = this.isIdentifier() && this.tryParse(this.parseTypePredicatePrefix);
         const type = this.parseType();
         if (typePredicateVariable) {
-            const result = new Nodes.TypePredicateNode();
+            const result = new nodes.TypePredicateNode();
             result.parameterName = typePredicateVariable;
             result.type = type;
             return result;
@@ -2715,13 +2887,13 @@ export class Parser {
         }
     }
 
-    private parseType(): Nodes.TypeNode {
-        // Nodes.The rules about 'yield' only apply to actual code/expression contexts.  Nodes.They don't
-        // apply to 'type' contexts.  Nodes.So we disable these parameters here before moving on.
-        return this.doOutsideOfContext(Nodes.NodeFlags.TypeExcludesFlags, this.parseTypeWorker);
+    private parseType(): nodes.TypeNode {
+        // nodes.The rules about 'yield' only apply to actual code/expression contexts.  nodes.They don't
+        // apply to 'type' contexts.  nodes.So we disable these parameters here before moving on.
+        return this.doOutsideOfContext(nodes.NodeFlags.TypeExcludesFlags, this.parseTypeWorker);
     }
 
-    private parseTypeWorker(): Nodes.TypeNode {
+    private parseTypeWorker(): nodes.TypeNode {
         if (this.isStartOfFunctionType()) {
             return this.parseFunctionOrConstructorType(TokenType.FunctionType);
         }
@@ -2731,11 +2903,11 @@ export class Parser {
         return this.parseUnionTypeOrHigher();
     }
 
-    private parseTypeAnnotation(): Nodes.TypeNode {
+    private parseTypeAnnotation(): nodes.TypeNode {
         return this.parseOptional(TokenType.colon) ? this.parseType() : undefined;
     }
 
-    // Nodes.EXPRESSIONS
+    // nodes.EXPRESSIONS
     private isStartOfLeftHandSideExpression(): boolean {
         switch (this.lexer.peek().type) {
             case TokenType.this:
@@ -2780,13 +2952,13 @@ export class Parser {
             case TokenType.lessThan:
             case TokenType.await:
             case TokenType.yield:
-                // Nodes.Yield/await always starts an expression.  Nodes.Either it is an identifier (in which case
-                // it is definitely an expression).  Nodes.Or it's a keyword (either because we're in
+                // nodes.Yield/await always starts an expression.  nodes.Either it is an identifier (in which case
+                // it is definitely an expression).  nodes.Or it's a keyword (either because we're in
                 // a generator or async function, or in strict mode (or both)) and it started a yield or await expression.
                 return true;
             default:
-                // Nodes.Error tolerance.  Nodes.If we see the start of some binary operator, we consider
-                // that the start of an expression.  Nodes.That way we'll parse out a missing identifier,
+                // nodes.Error tolerance.  nodes.If we see the start of some binary operator, we consider
+                // that the start of an expression.  nodes.That way we'll parse out a missing identifier,
                 // give a good message about an identifier being missing, and then consume the
                 // rest of the binary expression.
                 if (this.isBinaryOperator()) {
@@ -2798,7 +2970,7 @@ export class Parser {
     }
 
     private isStartOfExpressionStatement(): boolean {
-        // Nodes.As per the grammar, none of '{' or 'function' or 'class' can start an expression statement.
+        // nodes.As per the grammar, none of '{' or 'function' or 'class' can start an expression statement.
         return this.lexer.peek().type !== TokenType.openBrace &&
             this.lexer.peek().type !== TokenType.function &&
             this.lexer.peek().type !== TokenType.class &&
@@ -2806,19 +2978,19 @@ export class Parser {
             this.isStartOfExpression();
     }
 
-    private parseExpression(): Nodes.Expression {
-        // Nodes.Expression[in]:
-        //      Nodes.AssignmentExpression[in]
-        //      Nodes.Expression[in] , Nodes.AssignmentExpression[in]
+    private parseExpression(): nodes.Expression {
+        // nodes.Expression[in]:
+        //      nodes.AssignmentExpression[in]
+        //      nodes.Expression[in] , nodes.AssignmentExpression[in]
 
-        // clear the decorator context when parsing Nodes.Expression, as it should be unambiguous when parsing a decorator
+        // clear the decorator context when parsing nodes.Expression, as it should be unambiguous when parsing a decorator
         const saveDecoratorContext = this.inDecoratorContext();
         if (saveDecoratorContext) {
             this.setDecoratorContext(/*val*/ false);
         }
 
         let expr = this.parseAssignmentExpressionOrHigher();
-        let operatorToken: Nodes.Node;
+        let operatorToken: nodes.Node;
         while ((operatorToken = this.parseOptionalToken(TokenType.comma))) {
             expr = this.makeBinaryExpression(expr, operatorToken, this.parseAssignmentExpressionOrHigher());
         }
@@ -2829,7 +3001,7 @@ export class Parser {
         return expr;
     }
 
-    private parseInitializer(inParameter: boolean): Nodes.Expression {
+    private parseInitializer(inParameter: boolean): nodes.Expression {
         if (this.lexer.peek().type !== TokenType.equals) {
             // It's not uncommon during typing for the user to miss writing the '=' this.lexer.peek().type.  Check if
             // there is no newline after the last this.lexer.peek().type and if we're on an expression.  If so, parse
@@ -2846,99 +3018,99 @@ export class Parser {
             }
         }
 
-        // Nodes.Initializer[Nodes.In, Nodes.Yield] :
-        //     = Nodes.AssignmentExpression[?Nodes.In, ?Nodes.Yield]
+        // nodes.Initializer[nodes.In, nodes.Yield] :
+        //     = nodes.AssignmentExpression[?nodes.In, ?nodes.Yield]
 
         this.parseExpected(TokenType.equals);
         return this.parseAssignmentExpressionOrHigher();
     }
 
-    private parseAssignmentExpressionOrHigher(): Nodes.Expression {
-        //  Nodes.AssignmentExpression[in,yield]:
-        //      1) Nodes.ConditionalExpression[?in,?yield]
-        //      2) Nodes.LeftHandSideExpression = Nodes.AssignmentExpression[?in,?yield]
-        //      3) Nodes.LeftHandSideExpression Nodes.AssignmentOperator Nodes.AssignmentExpression[?in,?yield]
-        //      4) Nodes.ArrowFunctionExpression[?in,?yield]
-        //      5) Nodes.AsyncArrowFunctionExpression[in,yield,await]
-        //      6) [+Nodes.Yield] Nodes.YieldExpression[?Nodes.In]
+    private parseAssignmentExpressionOrHigher(): nodes.Expression {
+        //  nodes.AssignmentExpression[in,yield]:
+        //      1) nodes.ConditionalExpression[?in,?yield]
+        //      2) nodes.LeftHandSideExpression = nodes.AssignmentExpression[?in,?yield]
+        //      3) nodes.LeftHandSideExpression nodes.AssignmentOperator nodes.AssignmentExpression[?in,?yield]
+        //      4) nodes.ArrowFunctionExpression[?in,?yield]
+        //      5) nodes.AsyncArrowFunctionExpression[in,yield,await]
+        //      6) [+nodes.Yield] nodes.YieldExpression[?nodes.In]
         //
-        // Nodes.Note: for ease of implementation we treat productions '2' and '3' as the same thing.
-        // (i.e. they're both Nodes.BinaryExpressions with an assignment operator in it).
+        // nodes.Note: for ease of implementation we treat productions '2' and '3' as the same thing.
+        // (i.e. they're both nodes.BinaryExpressions with an assignment operator in it).
 
-        // Nodes.First, do the simple check if we have a Nodes.YieldExpression (production '5').
+        // nodes.First, do the simple check if we have a nodes.YieldExpression (production '5').
         if (this.isYieldExpression()) {
             return this.parseYieldExpression();
         }
 
-        // Nodes.Then, check if we have an arrow function (production '4' and '5') that starts with a parenthesized
+        // nodes.Then, check if we have an arrow function (production '4' and '5') that starts with a parenthesized
         // parameter list or is an async arrow function.
-        // Nodes.AsyncArrowFunctionExpression:
-        //      1) async[no Nodes.LineTerminator here]Nodes.AsyncArrowBindingIdentifier[?Nodes.Yield][no Nodes.LineTerminator here]=>Nodes.AsyncConciseBody[?Nodes.In]
-        //      2) Nodes.CoverCallExpressionAndAsyncArrowHead[?Nodes.Yield, ?Nodes.Await][no Nodes.LineTerminator here]=>Nodes.AsyncConciseBody[?Nodes.In]
-        // Nodes.Production (1) of Nodes.AsyncArrowFunctionExpression is parsed in "this.tryParseAsyncSimpleArrowFunctionExpression".
-        // Nodes.And production (2) is parsed in "this.tryParseParenthesizedArrowFunctionExpression".
+        // nodes.AsyncArrowFunctionExpression:
+        //      1) async[no nodes.LineTerminator here]nodes.AsyncArrowBindingIdentifier[?nodes.Yield][no nodes.LineTerminator here]=>nodes.AsyncConciseBody[?nodes.In]
+        //      2) nodes.CoverCallExpressionAndAsyncArrowHead[?nodes.Yield, ?nodes.Await][no nodes.LineTerminator here]=>nodes.AsyncConciseBody[?nodes.In]
+        // nodes.Production (1) of nodes.AsyncArrowFunctionExpression is parsed in "this.tryParseAsyncSimpleArrowFunctionExpression".
+        // nodes.And production (2) is parsed in "this.tryParseParenthesizedArrowFunctionExpression".
         //
-        // Nodes.If we do successfully parse arrow-function, we must *not* recurse for productions 1, 2 or 3. Nodes.An Nodes.ArrowFunction is
-        // not a  Nodes.LeftHandSideExpression, nor does it start a Nodes.ConditionalExpression.  Nodes.So we are done
-        // with Nodes.AssignmentExpression if we see one.
+        // nodes.If we do successfully parse arrow-function, we must *not* recurse for productions 1, 2 or 3. nodes.An nodes.ArrowFunction is
+        // not a  nodes.LeftHandSideExpression, nor does it start a nodes.ConditionalExpression.  nodes.So we are done
+        // with nodes.AssignmentExpression if we see one.
         const arrowExpression = this.tryParseParenthesizedArrowFunctionExpression() || this.tryParseAsyncSimpleArrowFunctionExpression();
         if (arrowExpression) {
             return arrowExpression;
         }
 
-        // Nodes.Now try to see if we're in production '1', '2' or '3'.  A conditional expression can
-        // start with a Nodes.LogicalOrExpression, while the assignment productions can only start with
-        // Nodes.LeftHandSideExpressions.
+        // nodes.Now try to see if we're in production '1', '2' or '3'.  A conditional expression can
+        // start with a nodes.LogicalOrExpression, while the assignment productions can only start with
+        // nodes.LeftHandSideExpressions.
         //
-        // Nodes.So, first, we try to just parse out a Nodes.BinaryExpression.  Nodes.If we get something that is a
-        // Nodes.LeftHandSide or higher, then we can try to parse out the assignment expression part.
-        // Nodes.Otherwise, we try to parse out the conditional expression bit.  Nodes.We want to allow any
+        // nodes.So, first, we try to just parse out a nodes.BinaryExpression.  nodes.If we get something that is a
+        // nodes.LeftHandSide or higher, then we can try to parse out the assignment expression part.
+        // nodes.Otherwise, we try to parse out the conditional expression bit.  nodes.We want to allow any
         // binary expression here, so we pass in the 'lowest' precedence here so that it matches
         // and consumes anything.
         const expr = this.parseBinaryExpressionOrHigher(/*precedence*/ 0);
 
-        // Nodes.To avoid a look-ahead, we did not handle the case of an arrow function with a single un-parenthesized
-        // parameter ('x => ...') above. Nodes.We handle it here by checking if the parsed expression was a single
+        // nodes.To avoid a look-ahead, we did not handle the case of an arrow function with a single un-parenthesized
+        // parameter ('x => ...') above. nodes.We handle it here by checking if the parsed expression was a single
         // identifier and the current this.lexer.peek().type is an arrow.
         if (expr.kind === TokenType.Identifier && this.lexer.peek().type === TokenType.equalsGreaterThan) {
-            return this.parseSimpleArrowFunctionExpression(<Nodes.Identifier>expr);
+            return this.parseSimpleArrowFunctionExpression(<nodes.Identifier>expr);
         }
 
-        // Nodes.Now see if we might be in cases '2' or '3'.
-        // Nodes.If the expression was a Nodes.LHS expression, and we have an assignment operator, then
-        // we're in '2' or '3'. Nodes.Consume the assignment and return.
+        // nodes.Now see if we might be in cases '2' or '3'.
+        // nodes.If the expression was a nodes.LHS expression, and we have an assignment operator, then
+        // we're in '2' or '3'. nodes.Consume the assignment and return.
         //
-        // Nodes.Note: we call this.reScanGreaterToken so that we get an appropriately merged this.lexer.peek().type
+        // nodes.Note: we call this.reScanGreaterToken so that we get an appropriately merged this.lexer.peek().type
         // for cases like > > =  becoming >>=
         if (isLeftHandSideExpression(expr) && isAssignmentOperator(this.reScanGreaterToken())) {
             return this.makeBinaryExpression(expr, this.parseTokenNode(), this.parseAssignmentExpressionOrHigher());
         }
 
-        // Nodes.It wasn't an assignment or a lambda.  Nodes.This is a conditional expression:
+        // nodes.It wasn't an assignment or a lambda.  nodes.This is a conditional expression:
         return this.parseConditionalExpressionRest(expr);
     }
 
     private isYieldExpression(): boolean {
         if (this.lexer.peek().type === TokenType.yield) {
-            // Nodes.If we have a 'yield' keyword, and this is a context where yield expressions are
+            // nodes.If we have a 'yield' keyword, and this is a context where yield expressions are
             // allowed, then definitely parse out a yield expression.
             if (this.inYieldContext()) {
                 return true;
             }
 
-            // Nodes.We're in a context where 'yield expr' is not allowed.  Nodes.However, if we can
+            // nodes.We're in a context where 'yield expr' is not allowed.  nodes.However, if we can
             // definitely tell that the user was trying to parse a 'yield expr' and not
             // just a normal expr that start with a 'yield' identifier, then parse out
-            // a 'yield expr'.  Nodes.We can then report an error later that they are only
+            // a 'yield expr'.  nodes.We can then report an error later that they are only
             // allowed in generator expressions.
             //
             // for example, if we see 'yield(foo)', then we'll have to treat that as an
-            // invocation expression of something called 'yield'.  Nodes.However, if we have
+            // invocation expression of something called 'yield'.  nodes.However, if we have
             // 'yield foo' then that is not legal as a normal expression, so we can
             // definitely recognize this as a yield expression.
             //
-            // for now we just check if the next this.lexer.peek().type is an identifier.  Nodes.More heuristics
-            // can be added here later as necessary.  Nodes.We just need to make sure that we
+            // for now we just check if the next this.lexer.peek().type is an identifier.  nodes.More heuristics
+            // can be added here later as necessary.  nodes.We just need to make sure that we
             // don't accidentally consume something legal.
             return this.lookAhead(this.nextTokenIsIdentifierOrKeywordOrNumberOnSameLine);
         }
@@ -2951,13 +3123,13 @@ export class Parser {
         return !this.lexer.peek().hasLineBreakBeforeStart && this.isIdentifier();
     }
 
-    private parseYieldExpression(): Nodes.YieldExpression {
-        const result = new Nodes.YieldExpression();
+    private parseYieldExpression(): nodes.YieldExpression {
+        const result = new nodes.YieldExpression();
 
-        // Nodes.YieldExpression[Nodes.In] :
+        // nodes.YieldExpression[nodes.In] :
         //      yield
-        //      yield [no Nodes.LineTerminator here] [Nodes.Lexical goal Nodes.InputElementRegExp]Nodes.AssignmentExpression[?Nodes.In, Nodes.Yield]
-        //      yield [no Nodes.LineTerminator here] * [Nodes.Lexical goal Nodes.InputElementRegExp]Nodes.AssignmentExpression[?Nodes.In, Nodes.Yield]
+        //      yield [no nodes.LineTerminator here] [nodes.Lexical goal nodes.InputElementRegExp]nodes.AssignmentExpression[?nodes.In, nodes.Yield]
+        //      yield [no nodes.LineTerminator here] * [nodes.Lexical goal nodes.InputElementRegExp]nodes.AssignmentExpression[?nodes.In, nodes.Yield]
         this.nextToken();
 
         if (!this.lexer.peek().hasLineBreakBeforeStar &&
@@ -2973,58 +3145,58 @@ export class Parser {
         }
     }
 
-    private parseSimpleArrowFunctionExpression(identifier: Nodes.Identifier, asyncModifier?: Nodes.ModifiersArray): Nodes.ArrowFunction {
+    private parseSimpleArrowFunctionExpression(identifier: nodes.Identifier, asyncModifier?: nodes.ModifiersArray): nodes.ArrowFunction {
         console.assert(this.lexer.peek().type === TokenType.equalsGreaterThan, "this.parseSimpleArrowFunctionExpression should only have been called if we had a =>");
 
-        let result: Nodes.ArrowFunction;
+        let result: nodes.ArrowFunction;
         if (asyncModifier) {
-            result = new Nodes.ArrowFunction();
+            result = new nodes.ArrowFunction();
             this.setModifiers(result, asyncModifier);
         }
         else {
-            result = new Nodes.ArrowFunction();
+            result = new nodes.ArrowFunction();
         }
 
-        const parameter = new Nodes.ParameterDeclaration();
+        const parameter = new nodes.ParameterDeclaration();
         parameter.name = identifier;
         this.finishNode(parameter);
 
-        result.parameters = <Nodes.NodeList<Nodes.ParameterDeclaration>>[parameter];
+        result.parameters = <nodes.NodeList<nodes.ParameterDeclaration>>[parameter];
         result.parameters.pos = parameter.pos;
         result.parameters.end = parameter.end;
 
-        result.equalsGreaterThanToken = this.parseExpectedToken(TokenType.equalsGreaterThan, /*reportAtCurrentPosition*/ false, Nodes.Diagnostics._0_expected, "=>");
+        result.equalsGreaterThanToken = this.parseExpectedToken(TokenType.equalsGreaterThan, /*reportAtCurrentPosition*/ false, nodes.Diagnostics._0_expected, "=>");
         result.body = this.parseArrowFunctionExpressionBody(/*isAsync*/ !!asyncModifier);
 
         return result;
     }
 
-    private tryParseParenthesizedArrowFunctionExpression(): Nodes.Expression {
+    private tryParseParenthesizedArrowFunctionExpression(): nodes.Expression {
         const triState = this.isParenthesizedArrowFunctionExpression();
-        if (triState === Nodes.Tristate.False) {
-            // Nodes.It's definitely not a parenthesized arrow function expression.
+        if (triState === nodes.Tristate.False) {
+            // nodes.It's definitely not a parenthesized arrow function expression.
             return undefined;
         }
 
-        // Nodes.If we definitely have an arrow function, then we can just parse one, not requiring a
-        // following => or { this.lexer.peek().type. Nodes.Otherwise, we *might* have an arrow function.  Nodes.Try to parse
+        // nodes.If we definitely have an arrow function, then we can just parse one, not requiring a
+        // following => or { this.lexer.peek().type. nodes.Otherwise, we *might* have an arrow function.  nodes.Try to parse
         // it out, but don't allow any ambiguity, and return 'undefined' if this could be an
         // expression instead.
-        const arrowFunction = triState === Nodes.Tristate.True
+        const arrowFunction = triState === nodes.Tristate.True
             ? this.parseParenthesizedArrowFunctionExpressionHead(/*allowAmbiguity*/ true)
             : this.tryParse(this.parsePossibleParenthesizedArrowFunctionExpressionHead);
 
         if (!arrowFunction) {
-            // Nodes.Didn't appear to actually be a parenthesized arrow function.  Nodes.Just bail out.
+            // nodes.Didn't appear to actually be a parenthesized arrow function.  nodes.Just bail out.
             return undefined;
         }
 
-        const isAsync = !!(arrowFunction.flags & Nodes.NodeFlags.Async);
+        const isAsync = !!(arrowFunction.flags & nodes.NodeFlags.Async);
 
-        // Nodes.If we have an arrow, then try to parse the body. Nodes.Even if not, try to parse if we
+        // nodes.If we have an arrow, then try to parse the body. nodes.Even if not, try to parse if we
         // have an opening brace, just in case we're in an error state.
         const lastToken = this.lexer.peek().type;
-        arrowFunction.equalsGreaterThanToken = this.parseExpectedToken(TokenType.equalsGreaterThan, /*reportAtCurrentPosition*/false, Nodes.Diagnostics._0_expected, "=>");
+        arrowFunction.equalsGreaterThanToken = this.parseExpectedToken(TokenType.equalsGreaterThan, /*reportAtCurrentPosition*/false, nodes.Diagnostics._0_expected, "=>");
         arrowFunction.body = (lastToken === TokenType.equalsGreaterThan || lastToken === TokenType.openBrace)
             ? this.parseArrowFunctionExpressionBody(isAsync)
             : this.parseIdentifier();
@@ -3032,33 +3204,33 @@ export class Parser {
         return this.finishNode(arrowFunction);
     }
 
-    //  Nodes.True        -> Nodes.We definitely expect a parenthesized arrow function here.
-    //  Nodes.False       -> Nodes.There *cannot* be a parenthesized arrow function here.
-    //  Nodes.Unknown     -> Nodes.There *might* be a parenthesized arrow function here.
-    //                 Nodes.Speculatively look ahead to be sure, and rollback if not.
-    private isParenthesizedArrowFunctionExpression(): Nodes.Tristate {
+    //  nodes.True        -> nodes.We definitely expect a parenthesized arrow function here.
+    //  nodes.False       -> nodes.There *cannot* be a parenthesized arrow function here.
+    //  nodes.Unknown     -> nodes.There *might* be a parenthesized arrow function here.
+    //                 nodes.Speculatively look ahead to be sure, and rollback if not.
+    private isParenthesizedArrowFunctionExpression(): nodes.Tristate {
         if (this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.lessThan || this.lexer.peek().type === TokenType.async) {
             return this.lookAhead(this.isParenthesizedArrowFunctionExpressionWorker);
         }
 
         if (this.lexer.peek().type === TokenType.equalsGreaterThan) {
-            // Nodes.ERROR Nodes.RECOVERY Nodes.TWEAK:
-            // Nodes.If we see a standalone => try to parse it as an arrow function expression as that's
+            // nodes.ERROR nodes.RECOVERY nodes.TWEAK:
+            // nodes.If we see a standalone => try to parse it as an arrow function expression as that's
             // likely what the user intended to write.
-            return Nodes.Tristate.True;
+            return nodes.Tristate.True;
         }
-        // Nodes.Definitely not a parenthesized arrow function.
-        return Nodes.Tristate.False;
+        // nodes.Definitely not a parenthesized arrow function.
+        return nodes.Tristate.False;
     }
 
     private isParenthesizedArrowFunctionExpressionWorker() {
         if (this.lexer.peek().type === TokenType.async) {
             this.nextToken();
             if (this.lexer.peek().hasLineBreakBeforeStar) {
-                return Nodes.Tristate.False;
+                return nodes.Tristate.False;
             }
             if (this.lexer.peek().type !== TokenType.openParen && this.lexer.peek().type !== TokenType.lessThan) {
-                return Nodes.Tristate.False;
+                return nodes.Tristate.False;
             }
         }
 
@@ -3067,67 +3239,67 @@ export class Parser {
 
         if (first === TokenType.openParen) {
             if (second === TokenType.closeParen) {
-                // Nodes.Simple cases: "() =>", "(): ", and  "() {".
-                // Nodes.This is an arrow function with no parameters.
-                // Nodes.The last one is not actually an arrow function,
+                // nodes.Simple cases: "() =>", "(): ", and  "() {".
+                // nodes.This is an arrow function with no parameters.
+                // nodes.The last one is not actually an arrow function,
                 // but this is probably what the user intended.
                 const third = this.nextToken();
                 switch (third) {
                     case TokenType.equalsGreaterThan:
                     case TokenType.colon:
                     case TokenType.openBrace:
-                        return Nodes.Tristate.True;
+                        return nodes.Tristate.True;
                     default:
-                        return Nodes.Tristate.False;
+                        return nodes.Tristate.False;
                 }
             }
 
-            // Nodes.If encounter "([" or "({", this could be the start of a binding pattern.
-            // Nodes.Examples:
+            // nodes.If encounter "([" or "({", this could be the start of a binding pattern.
+            // nodes.Examples:
             //      ([ x ]) => { }
             //      ({ x }) => { }
             //      ([ x ])
             //      ({ x })
             if (second === TokenType.openBracket || second === TokenType.openBrace) {
-                return Nodes.Tristate.Unknown;
+                return nodes.Tristate.Unknown;
             }
 
-            // Nodes.Simple case: "(..."
-            // Nodes.This is an arrow function with a rest parameter.
+            // nodes.Simple case: "(..."
+            // nodes.This is an arrow function with a rest parameter.
             if (second === TokenType.dotDotDot) {
-                return Nodes.Tristate.True;
+                return nodes.Tristate.True;
             }
 
-            // Nodes.If we had "(" followed by something that's not an identifier,
+            // nodes.If we had "(" followed by something that's not an identifier,
             // then this definitely doesn't look like a lambda.
-            // Nodes.Note: we could be a little more lenient and allow
-            // "(public" or "(private". Nodes.These would not ever actually be allowed,
+            // nodes.Note: we could be a little more lenient and allow
+            // "(public" or "(private". nodes.These would not ever actually be allowed,
             // but we could provide a good error message instead of bailing out.
             if (!this.isIdentifier()) {
-                return Nodes.Tristate.False;
+                return nodes.Tristate.False;
             }
 
-            // Nodes.If we have something like "(a:", then we must have a
+            // nodes.If we have something like "(a:", then we must have a
             // type-annotated parameter in an arrow function expression.
             if (this.nextToken() === TokenType.colon) {
-                return Nodes.Tristate.True;
+                return nodes.Tristate.True;
             }
 
-            // Nodes.This *could* be a parenthesized arrow function.
-            // Nodes.Return Nodes.Unknown to let the caller know.
-            return Nodes.Tristate.Unknown;
+            // nodes.This *could* be a parenthesized arrow function.
+            // nodes.Return nodes.Unknown to let the caller know.
+            return nodes.Tristate.Unknown;
         }
         else {
             console.assert(first === TokenType.lessThan);
 
-            // Nodes.If we have "<" not followed by an identifier,
+            // nodes.If we have "<" not followed by an identifier,
             // then this definitely is not an arrow function.
             if (!this.isIdentifier()) {
-                return Nodes.Tristate.False;
+                return nodes.Tristate.False;
             }
 
-            // Nodes.JSX overrides
-            if (this.sourceFile.languageVariant === Nodes.LanguageVariant.JSX) {
+            // nodes.JSX overrides
+            if (this.sourceFile.languageVariant === nodes.LanguageVariant.JSX) {
                 const isArrowFunctionInJsx = this.lookAhead(() => {
                     const third = this.nextToken();
                     if (third === TokenType.extends) {
@@ -3147,91 +3319,91 @@ export class Parser {
                 });
 
                 if (isArrowFunctionInJsx) {
-                    return Nodes.Tristate.True;
+                    return nodes.Tristate.True;
                 }
 
-                return Nodes.Tristate.False;
+                return nodes.Tristate.False;
             }
 
-            // Nodes.This *could* be a parenthesized arrow function.
-            return Nodes.Tristate.Unknown;
+            // nodes.This *could* be a parenthesized arrow function.
+            return nodes.Tristate.Unknown;
         }
     }
 
-    private parsePossibleParenthesizedArrowFunctionExpressionHead(): Nodes.ArrowFunction {
+    private parsePossibleParenthesizedArrowFunctionExpressionHead(): nodes.ArrowFunction {
         return this.parseParenthesizedArrowFunctionExpressionHead(/*allowAmbiguity*/ false);
     }
 
-    private tryParseAsyncSimpleArrowFunctionExpression(): Nodes.ArrowFunction {
-        // Nodes.We do a check here so that we won't be doing unnecessarily call to "this.lookAhead"
+    private tryParseAsyncSimpleArrowFunctionExpression(): nodes.ArrowFunction {
+        // nodes.We do a check here so that we won't be doing unnecessarily call to "this.lookAhead"
         if (this.lexer.peek().type === TokenType.async) {
             const isUnParenthesizedAsyncArrowFunction = this.lookAhead(this.isUnParenthesizedAsyncArrowFunctionWorker);
-            if (isUnParenthesizedAsyncArrowFunction === Nodes.Tristate.True) {
+            if (isUnParenthesizedAsyncArrowFunction === nodes.Tristate.True) {
                 const asyncModifier = this.parseModifiersForArrowFunction();
                 const expr = this.parseBinaryExpressionOrHigher(/*precedence*/ 0);
-                return this.parseSimpleArrowFunctionExpression(<Nodes.Identifier>expr, asyncModifier);
+                return this.parseSimpleArrowFunctionExpression(<nodes.Identifier>expr, asyncModifier);
             }
         }
         return undefined;
     }
 
-    private isUnParenthesizedAsyncArrowFunctionWorker(): Nodes.Tristate {
-        // Nodes.AsyncArrowFunctionExpression:
-        //      1) async[no Nodes.LineTerminator here]Nodes.AsyncArrowBindingIdentifier[?Nodes.Yield][no Nodes.LineTerminator here]=>Nodes.AsyncConciseBody[?Nodes.In]
-        //      2) Nodes.CoverCallExpressionAndAsyncArrowHead[?Nodes.Yield, ?Nodes.Await][no Nodes.LineTerminator here]=>Nodes.AsyncConciseBody[?Nodes.In]
+    private isUnParenthesizedAsyncArrowFunctionWorker(): nodes.Tristate {
+        // nodes.AsyncArrowFunctionExpression:
+        //      1) async[no nodes.LineTerminator here]nodes.AsyncArrowBindingIdentifier[?nodes.Yield][no nodes.LineTerminator here]=>nodes.AsyncConciseBody[?nodes.In]
+        //      2) nodes.CoverCallExpressionAndAsyncArrowHead[?nodes.Yield, ?nodes.Await][no nodes.LineTerminator here]=>nodes.AsyncConciseBody[?nodes.In]
         if (this.lexer.peek().type === TokenType.async) {
             this.nextToken();
-            // Nodes.If the "async" is followed by "=>" this.lexer.peek().type then it is not a begining of an async arrow-function
+            // nodes.If the "async" is followed by "=>" this.lexer.peek().type then it is not a begining of an async arrow-function
             // but instead a simple arrow-function which will be parsed inside "this.parseAssignmentExpressionOrHigher"
             if (this.lexer.peek().hasLineBreakBeforeStar || this.lexer.peek().type === TokenType.equalsGreaterThan) {
-                return Nodes.Tristate.False;
+                return nodes.Tristate.False;
             }
-            // Nodes.Check for un-parenthesized Nodes.AsyncArrowFunction
+            // nodes.Check for un-parenthesized nodes.AsyncArrowFunction
             const expr = this.parseBinaryExpressionOrHigher(/*precedence*/ 0);
             if (!this.lexer.peek().hasLineBreakBeforeStar && expr.kind === TokenType.Identifier && this.lexer.peek().type === TokenType.equalsGreaterThan) {
-                return Nodes.Tristate.True;
+                return nodes.Tristate.True;
             }
         }
 
-        return Nodes.Tristate.False;
+        return nodes.Tristate.False;
     }
 
-    private parseParenthesizedArrowFunctionExpressionHead(allowAmbiguity: boolean): Nodes.ArrowFunction {
-        const result = new Nodes.ArrowFunction();
+    private parseParenthesizedArrowFunctionExpressionHead(allowAmbiguity: boolean): nodes.ArrowFunction {
+        const result = new nodes.ArrowFunction();
         this.setModifiers(result, this.parseModifiersForArrowFunction());
-        const isAsync = !!(result.flags & Nodes.NodeFlags.Async);
+        const isAsync = !!(result.flags & nodes.NodeFlags.Async);
 
-        // Nodes.Arrow functions are never generators.
+        // nodes.Arrow functions are never generators.
         //
-        // Nodes.If we're speculatively parsing a signature for a parenthesized arrow function, then
-        // we have to have a complete parameter list.  Nodes.Otherwise we might see something like
+        // nodes.If we're speculatively parsing a signature for a parenthesized arrow function, then
+        // we have to have a complete parameter list.  nodes.Otherwise we might see something like
         // a => (b => c)
-        // Nodes.And think that "(b =>" was actually a parenthesized arrow function with a missing
+        // nodes.And think that "(b =>" was actually a parenthesized arrow function with a missing
         // close paren.
         this.fillSignature(TokenType.colon, /*yieldContext*/ false, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ !allowAmbiguity, result);
 
-        // Nodes.If we couldn't get parameters, we definitely could not parse out an arrow function.
+        // nodes.If we couldn't get parameters, we definitely could not parse out an arrow function.
         if (!result.parameters) {
             return undefined;
         }
 
-        // Nodes.Parsing a signature isn't enough.
-        // Nodes.Parenthesized arrow signatures often look like other valid expressions.
-        // Nodes.For instance:
+        // nodes.Parsing a signature isn't enough.
+        // nodes.Parenthesized arrow signatures often look like other valid expressions.
+        // nodes.For instance:
         //  - "(x = 10)" is an assignment expression parsed as a signature with a default parameter value.
         //  - "(x,y)" is a comma expression parsed as a signature with two parameters.
         //  - "a ? (b): c" will have "(b):" parsed as a signature with a return type annotation.
         //
-        // Nodes.So we need just a bit of lookahead to ensure that it can only be a signature.
+        // nodes.So we need just a bit of lookahead to ensure that it can only be a signature.
         if (!allowAmbiguity && this.lexer.peek().type !== TokenType.equalsGreaterThan && this.lexer.peek().type !== TokenType.openBrace) {
-            // Nodes.Returning undefined here will cause our caller to rewind to where we started from.
+            // nodes.Returning undefined here will cause our caller to rewind to where we started from.
             return undefined;
         }
 
         return result;
     }
 
-    private parseArrowFunctionExpressionBody(isAsync: boolean): Nodes.Block | Nodes.Expression {
+    private parseArrowFunctionExpressionBody(isAsync: boolean): nodes.Block | nodes.Expression {
         if (this.lexer.peek().type === TokenType.openBrace) {
             return this.parseFunctionBlock(/*allowYield*/ false, /*allowAwait*/ isAsync, /*ignoreMissingOpenBrace*/ false);
         }
@@ -3241,20 +3413,20 @@ export class Parser {
             this.lexer.peek().type !== TokenType.class &&
             this.isStartOfStatement() &&
             !this.isStartOfExpressionStatement()) {
-            // Nodes.Check if we got a plain statement (i.e. no expression-statements, no function/class expressions/declarations)
+            // nodes.Check if we got a plain statement (i.e. no expression-statements, no function/class expressions/declarations)
             //
-            // Nodes.Here we try to recover from a potential error situation in the case where the
-            // user meant to supply a block. Nodes.For example, if the user wrote:
+            // nodes.Here we try to recover from a potential error situation in the case where the
+            // user meant to supply a block. nodes.For example, if the user wrote:
             //
             //  a =>
             //      let v = 0;
             //  }
             //
-            // they may be missing an open brace.  Nodes.Check to see if that's the case so we can
-            // try to recover better.  Nodes.If we don't do this, then the next close curly we see may end
+            // they may be missing an open brace.  nodes.Check to see if that's the case so we can
+            // try to recover better.  nodes.If we don't do this, then the next close curly we see may end
             // up preemptively closing the containing construct.
             //
-            // Nodes.Note: even when 'ignoreMissingOpenBrace' is passed as true, parseBody will still error.
+            // nodes.Note: even when 'ignoreMissingOpenBrace' is passed as true, parseBody will still error.
             return this.parseFunctionBlock(/*allowYield*/ false, /*allowAwait*/ isAsync, /*ignoreMissingOpenBrace*/ true);
         }
 
@@ -3263,26 +3435,26 @@ export class Parser {
             : this.doOutsideOfAwaitContext(this.parseAssignmentExpressionOrHigher);
     }
 
-    private parseConditionalExpressionRest(leftOperand: Nodes.Expression): Nodes.Expression {
-        // Nodes.Note: we are passed in an expression which was produced from this.parseBinaryExpressionOrHigher.
+    private parseConditionalExpressionRest(leftOperand: nodes.Expression): nodes.Expression {
+        // nodes.Note: we are passed in an expression which was produced from this.parseBinaryExpressionOrHigher.
         const questionToken = this.parseOptionalToken(TokenType.question);
         if (!questionToken) {
             return leftOperand;
         }
 
-        // Nodes.Note: we explicitly 'allowIn' in the whenTrue part of the condition expression, and
+        // nodes.Note: we explicitly 'allowIn' in the whenTrue part of the condition expression, and
         // we do not that for the 'whenFalse' part.
-        const result = new Nodes.ConditionalExpression();
+        const result = new nodes.ConditionalExpression();
         result.condition = leftOperand;
         result.questionToken = questionToken;
         result.whenTrue = this.doOutsideOfContext(this.disallowInAndDecoratorContext, this.parseAssignmentExpressionOrHigher);
         result.colonToken = this.parseExpectedToken(TokenType.colon, /*reportAtCurrentPosition*/ false,
-            Nodes.Diagnostics._0_expected, tokenToString(TokenType.colon));
+            nodes.Diagnostics._0_expected, tokenToString(TokenType.colon));
         result.whenFalse = this.parseAssignmentExpressionOrHigher();
         return result;
     }
 
-    private parseBinaryExpressionOrHigher(precedence: number): Nodes.Expression {
+    private parseBinaryExpressionOrHigher(precedence: number): nodes.Expression {
         const leftOperand = this.parseUnaryExpressionOrHigher();
         return this.parseBinaryExpressionRest(precedence, leftOperand);
     }
@@ -3291,35 +3463,35 @@ export class Parser {
         return t === TokenType.in || t === TokenType.of;
     }
 
-    private parseBinaryExpressionRest(precedence: number, leftOperand: Nodes.Expression): Nodes.Expression {
+    private parseBinaryExpressionRest(precedence: number, leftOperand: nodes.Expression): nodes.Expression {
         while (true) {
-            // Nodes.We either have a binary operator here, or we're finished.  Nodes.We call
+            // nodes.We either have a binary operator here, or we're finished.  nodes.We call
             // this.reScanGreaterToken so that we merge this.lexer.peek().type sequences like > and = into >=
 
             this.reScanGreaterToken();
             const newPrecedence = getBinaryOperatorPrecedence();
 
-            // Nodes.Check the precedence to see if we should "take" this operator
-            // - Nodes.For left associative operator (all operator but **), consume the operator,
+            // nodes.Check the precedence to see if we should "take" this operator
+            // - nodes.For left associative operator (all operator but **), consume the operator,
             //   recursively call the function below, and parse binaryExpression as a rightOperand
             //   of the caller if the new precedence of the operator is greater then or equal to the current precedence.
-            //   Nodes.For example:
+            //   nodes.For example:
             //      a - b - c;
-            //            ^this.lexer.peek().type; leftOperand = b. Nodes.Return b to the caller as a rightOperand
+            //            ^this.lexer.peek().type; leftOperand = b. nodes.Return b to the caller as a rightOperand
             //      a * b - c
-            //            ^this.lexer.peek().type; leftOperand = b. Nodes.Return b to the caller as a rightOperand
+            //            ^this.lexer.peek().type; leftOperand = b. nodes.Return b to the caller as a rightOperand
             //      a - b * c;
-            //            ^this.lexer.peek().type; leftOperand = b. Nodes.Return b * c to the caller as a rightOperand
-            // - Nodes.For right associative operator (**), consume the operator, recursively call the function
+            //            ^this.lexer.peek().type; leftOperand = b. nodes.Return b * c to the caller as a rightOperand
+            // - nodes.For right associative operator (**), consume the operator, recursively call the function
             //   and parse binaryExpression as a rightOperand of the caller if the new precedence of
             //   the operator is strictly grater than the current precedence
-            //   Nodes.For example:
+            //   nodes.For example:
             //      a ** b ** c;
-            //             ^^this.lexer.peek().type; leftOperand = b. Nodes.Return b ** c to the caller as a rightOperand
+            //             ^^this.lexer.peek().type; leftOperand = b. nodes.Return b ** c to the caller as a rightOperand
             //      a - b ** c;
-            //            ^^this.lexer.peek().type; leftOperand = b. Nodes.Return b ** c to the caller as a rightOperand
+            //            ^^this.lexer.peek().type; leftOperand = b. nodes.Return b ** c to the caller as a rightOperand
             //      a ** b - c
-            //             ^this.lexer.peek().type; leftOperand = b. Nodes.Return b to the caller as a rightOperand
+            //             ^this.lexer.peek().type; leftOperand = b. nodes.Return b to the caller as a rightOperand
             const consumeCurrentOperator = this.lexer.peek().type === TokenType.asteriskAsterisk ?
                 newPrecedence >= precedence :
                 newPrecedence > precedence;
@@ -3333,11 +3505,11 @@ export class Parser {
             }
 
             if (this.lexer.peek().type === TokenType.as) {
-                // Nodes.Make sure we *do* perform Nodes.ASI for constructs like this:
+                // nodes.Make sure we *do* perform nodes.ASI for constructs like this:
                 //    var x = foo
-                //    as (Nodes.Bar)
-                // Nodes.This should be parsed as an initialized variable, followed
-                // by a function call to 'as' with the argument 'Nodes.Bar'
+                //    as (nodes.Bar)
+                // nodes.This should be parsed as an initialized variable, followed
+                // by a function call to 'as' with the argument 'nodes.Bar'
                 if (this.lexer.peek().hasLineBreakBeforeStar) {
                     break;
                 }
@@ -3362,23 +3534,23 @@ export class Parser {
         return getBinaryOperatorPrecedence() > 0;
     }
 
-    private makeBinaryExpression(left: Nodes.Expression, operatorToken: Nodes.Node, right: Nodes.Expression): Nodes.BinaryExpression {
-        const result = new Nodes.BinaryExpression();
+    private makeBinaryExpression(left: nodes.Expression, operatorToken: nodes.Node, right: nodes.Expression): nodes.BinaryExpression {
+        const result = new nodes.BinaryExpression();
         result.left = left;
         result.operatorToken = operatorToken;
         result.right = right;
         return result;
     }
 
-    private makeAsExpression(left: Nodes.Expression, right: Nodes.TypeNode): Nodes.AsExpression {
-        const result = new Nodes.AsExpression();
+    private makeAsExpression(left: nodes.Expression, right: nodes.TypeNode): nodes.AsExpression {
+        const result = new nodes.AsExpression();
         result.expression = left;
         result.type = right;
         return result;
     }
 
     private parsePrefixUnaryExpression() {
-        const result = new Nodes.PrefixUnaryExpression();
+        const result = new nodes.PrefixUnaryExpression();
         result.operator = this.lexer.peek().type;
         this.nextToken();
         result.operand = this.parseSimpleUnaryExpression();
@@ -3387,21 +3559,21 @@ export class Parser {
     }
 
     private parseDeleteExpression() {
-        const result = new Nodes.DeleteExpression();
+        const result = new nodes.DeleteExpression();
         this.nextToken();
         result.expression = this.parseSimpleUnaryExpression();
         return result;
     }
 
     private parseTypeOfExpression() {
-        const result = new Nodes.TypeOfExpression();
+        const result = new nodes.TypeOfExpression();
         this.nextToken();
         result.expression = this.parseSimpleUnaryExpression();
         return result;
     }
 
     private parseVoidExpression() {
-        const result = new Nodes.VoidExpression();
+        const result = new nodes.VoidExpression();
         this.nextToken();
         result.expression = this.parseSimpleUnaryExpression();
         return result;
@@ -3421,20 +3593,20 @@ export class Parser {
     }
 
     private parseAwaitExpression() {
-        const result = new Nodes.AwaitExpression();
+        const result = new nodes.AwaitExpression();
         this.nextToken();
         result.expression = this.parseSimpleUnaryExpression();
         return result;
     }
 
     /**
-     * Nodes.Parse Nodes.ES7 unary expression and await expression
+     * nodes.Parse nodes.ES7 unary expression and await expression
      *
-     * Nodes.ES7 Nodes.UnaryExpression:
-     *      1) Nodes.SimpleUnaryExpression[?yield]
-     *      2) Nodes.IncrementExpression[?yield] ** Nodes.UnaryExpression[?yield]
+     * nodes.ES7 nodes.UnaryExpression:
+     *      1) nodes.SimpleUnaryExpression[?yield]
+     *      2) nodes.IncrementExpression[?yield] ** nodes.UnaryExpression[?yield]
      */
-    private parseUnaryExpressionOrHigher(): Nodes.UnaryExpression | Nodes.BinaryExpression {
+    private parseUnaryExpressionOrHigher(): nodes.UnaryExpression | nodes.BinaryExpression {
         if (this.isAwaitExpression()) {
             return this.parseAwaitExpression();
         }
@@ -3442,7 +3614,7 @@ export class Parser {
         if (this.isIncrementExpression()) {
             const incrementExpression = this.parseIncrementExpression();
             return this.lexer.peek().type === TokenType.asteriskAsterisk ?
-                <Nodes.BinaryExpression>this.parseBinaryExpressionRest(getBinaryOperatorPrecedence(), incrementExpression) :
+                <nodes.BinaryExpression>this.parseBinaryExpressionRest(getBinaryOperatorPrecedence(), incrementExpression) :
                 incrementExpression;
         }
 
@@ -3451,29 +3623,29 @@ export class Parser {
         if (this.lexer.peek().type === TokenType.asteriskAsterisk) {
             const start = skipTrivia(this.sourceText, simpleUnaryExpression.pos);
             if (simpleUnaryExpression.kind === TokenType.TypeAssertionExpression) {
-                this.parseErrorAtPosition(start, simpleUnaryExpression.end - start, Nodes.Diagnostics.A_type_assertion_expression_is_not_allowed_in_the_left_hand_side_of_an_exponentiation_expression_Consider_enclosing_the_expression_in_parentheses);
+                this.parseErrorAtPosition(start, simpleUnaryExpression.end - start, nodes.Diagnostics.A_type_assertion_expression_is_not_allowed_in_the_left_hand_side_of_an_exponentiation_expression_Consider_enclosing_the_expression_in_parentheses);
             }
             else {
-                this.parseErrorAtPosition(start, simpleUnaryExpression.end - start, Nodes.Diagnostics.An_unary_expression_with_the_0_operator_is_not_allowed_in_the_left_hand_side_of_an_exponentiation_expression_Consider_enclosing_the_expression_in_parentheses, tokenToString(unaryOperator));
+                this.parseErrorAtPosition(start, simpleUnaryExpression.end - start, nodes.Diagnostics.An_unary_expression_with_the_0_operator_is_not_allowed_in_the_left_hand_side_of_an_exponentiation_expression_Consider_enclosing_the_expression_in_parentheses, tokenToString(unaryOperator));
             }
         }
         return simpleUnaryExpression;
     }
 
     /**
-     * Nodes.Parse Nodes.ES7 simple-unary expression or higher:
+     * nodes.Parse nodes.ES7 simple-unary expression or higher:
      *
-     * Nodes.ES7 Nodes.SimpleUnaryExpression:
-     *      1) Nodes.IncrementExpression[?yield]
-     *      2) delete Nodes.UnaryExpression[?yield]
-     *      3) void Nodes.UnaryExpression[?yield]
-     *      4) typeof Nodes.UnaryExpression[?yield]
-     *      5) + Nodes.UnaryExpression[?yield]
-     *      6) - Nodes.UnaryExpression[?yield]
-     *      7) ~ Nodes.UnaryExpression[?yield]
-     *      8) ! Nodes.UnaryExpression[?yield]
+     * nodes.ES7 nodes.SimpleUnaryExpression:
+     *      1) nodes.IncrementExpression[?yield]
+     *      2) delete nodes.UnaryExpression[?yield]
+     *      3) void nodes.UnaryExpression[?yield]
+     *      4) typeof nodes.UnaryExpression[?yield]
+     *      5) + nodes.UnaryExpression[?yield]
+     *      6) - nodes.UnaryExpression[?yield]
+     *      7) ~ nodes.UnaryExpression[?yield]
+     *      8) ! nodes.UnaryExpression[?yield]
      */
-    private parseSimpleUnaryExpression(): Nodes.UnaryExpression {
+    private parseSimpleUnaryExpression(): nodes.UnaryExpression {
         switch (this.lexer.peek().type) {
             case TokenType.plus:
             case TokenType.minus:
@@ -3487,9 +3659,9 @@ export class Parser {
             case TokenType.void:
                 return this.parseVoidExpression();
             case TokenType.lessThan:
-                // Nodes.This is modified Nodes.UnaryExpression grammar in Nodes.TypeScript
-                //  Nodes.UnaryExpression (modified):
-                //      < type > Nodes.UnaryExpression
+                // nodes.This is modified nodes.UnaryExpression grammar in nodes.TypeScript
+                //  nodes.UnaryExpression (modified):
+                //      < type > nodes.UnaryExpression
                 return this.parseTypeAssertion();
             default:
                 return this.parseIncrementExpression();
@@ -3497,17 +3669,17 @@ export class Parser {
     }
 
     /**
-     * Nodes.Check if the current this.lexer.peek().type can possibly be an Nodes.ES7 increment expression.
+     * nodes.Check if the current this.lexer.peek().type can possibly be an nodes.ES7 increment expression.
      *
-     * Nodes.ES7 Nodes.IncrementExpression:
-     *      Nodes.LeftHandSideExpression[?Nodes.Yield]
-     *      Nodes.LeftHandSideExpression[?Nodes.Yield][no Nodes.LineTerminator here]++
-     *      Nodes.LeftHandSideExpression[?Nodes.Yield][no Nodes.LineTerminator here]--
-     *      ++Nodes.LeftHandSideExpression[?Nodes.Yield]
-     *      --Nodes.LeftHandSideExpression[?Nodes.Yield]
+     * nodes.ES7 nodes.IncrementExpression:
+     *      nodes.LeftHandSideExpression[?nodes.Yield]
+     *      nodes.LeftHandSideExpression[?nodes.Yield][no nodes.LineTerminator here]++
+     *      nodes.LeftHandSideExpression[?nodes.Yield][no nodes.LineTerminator here]--
+     *      ++nodes.LeftHandSideExpression[?nodes.Yield]
+     *      --nodes.LeftHandSideExpression[?nodes.Yield]
      */
     private isIncrementExpression(): boolean {
-        // Nodes.This function is called inside parseUnaryExpression to decide
+        // nodes.This function is called inside parseUnaryExpression to decide
         // whether to call this.parseSimpleUnaryExpression or call this.parseIncrementExpression directly
         switch (this.lexer.peek().type) {
             case TokenType.plus:
@@ -3519,38 +3691,38 @@ export class Parser {
             case TokenType.void:
                 return false;
             case TokenType.lessThan:
-                // Nodes.If we are not in Nodes.JSX context, we are parsing Nodes.TypeAssertion which is an Nodes.UnaryExpression
-                if (this.sourceFile.languageVariant !== Nodes.LanguageVariant.JSX) {
+                // nodes.If we are not in nodes.JSX context, we are parsing nodes.TypeAssertion which is an nodes.UnaryExpression
+                if (this.sourceFile.languageVariant !== nodes.LanguageVariant.JSX) {
                     return false;
                 }
-            // Nodes.We are in Nodes.JSX context and the this.lexer.peek().type is part of Nodes.JSXElement.
-            // Nodes.Fall through
+            // nodes.We are in nodes.JSX context and the this.lexer.peek().type is part of nodes.JSXElement.
+            // nodes.Fall through
             default:
                 return true;
         }
     }
 
     /**
-     * Nodes.Parse Nodes.ES7 Nodes.IncrementExpression. Nodes.IncrementExpression is used instead of Nodes.ES6's Nodes.PostFixExpression.
+     * nodes.Parse nodes.ES7 nodes.IncrementExpression. nodes.IncrementExpression is used instead of nodes.ES6's nodes.PostFixExpression.
      *
-     * Nodes.ES7 Nodes.IncrementExpression[yield]:
-     *      1) Nodes.LeftHandSideExpression[?yield]
-     *      2) Nodes.LeftHandSideExpression[?yield] [[no Nodes.LineTerminator here]]++
-     *      3) Nodes.LeftHandSideExpression[?yield] [[no Nodes.LineTerminator here]]--
-     *      4) ++Nodes.LeftHandSideExpression[?yield]
-     *      5) --Nodes.LeftHandSideExpression[?yield]
-     * Nodes.In Nodes.TypeScript (2), (3) are parsed as Nodes.PostfixUnaryExpression. (4), (5) are parsed as Nodes.PrefixUnaryExpression
+     * nodes.ES7 nodes.IncrementExpression[yield]:
+     *      1) nodes.LeftHandSideExpression[?yield]
+     *      2) nodes.LeftHandSideExpression[?yield] [[no nodes.LineTerminator here]]++
+     *      3) nodes.LeftHandSideExpression[?yield] [[no nodes.LineTerminator here]]--
+     *      4) ++nodes.LeftHandSideExpression[?yield]
+     *      5) --nodes.LeftHandSideExpression[?yield]
+     * nodes.In nodes.TypeScript (2), (3) are parsed as nodes.PostfixUnaryExpression. (4), (5) are parsed as nodes.PrefixUnaryExpression
      */
-    private parseIncrementExpression(): Nodes.IncrementExpression {
+    private parseIncrementExpression(): nodes.IncrementExpression {
         if (this.lexer.peek().type === TokenType.plusPlus || this.lexer.peek().type === TokenType.minusMinus) {
-            const result = new Nodes.PrefixUnaryExpression();
+            const result = new nodes.PrefixUnaryExpression();
             result.operator = this.lexer.peek().type;
             this.nextToken();
             result.operand = this.parseLeftHandSideExpressionOrHigher();
             return result;
         }
-        else if (this.sourceFile.languageVariant === Nodes.LanguageVariant.JSX && this.lexer.peek().type === TokenType.lessThan && this.lookAhead(this.nextTokenIsIdentifierOrKeyword)) {
-            // Nodes.JSXElement is part of primaryExpression
+        else if (this.sourceFile.languageVariant === nodes.LanguageVariant.JSX && this.lexer.peek().type === TokenType.lessThan && this.lookAhead(this.nextTokenIsIdentifierOrKeyword)) {
+            // nodes.JSXElement is part of primaryExpression
             return this.parseJsxElementOrSelfClosingElement(/*inExpressionContext*/ true);
         }
 
@@ -3558,7 +3730,7 @@ export class Parser {
 
         console.assert(isLeftHandSideExpression(expression));
         if ((this.lexer.peek().type === TokenType.plusPlus || this.lexer.peek().type === TokenType.minusMinus) && !this.lexer.peek().hasLineBreakBeforeStar) {
-            const result = new Nodes.PostfixUnaryExpression();
+            const result = new nodes.PostfixUnaryExpression();
             result.operand = expression;
             result.operator = this.lexer.peek().type;
             this.nextToken();
@@ -3568,187 +3740,187 @@ export class Parser {
         return expression;
     }
 
-    private parseLeftHandSideExpressionOrHigher(): Nodes.LeftHandSideExpression {
-        // Nodes.Original Nodes.Ecma:
-        // Nodes.LeftHandSideExpression: Nodes.See 11.2
-        //      Nodes.NewExpression
-        //      Nodes.CallExpression
+    private parseLeftHandSideExpressionOrHigher(): nodes.LeftHandSideExpression {
+        // nodes.Original nodes.Ecma:
+        // nodes.LeftHandSideExpression: nodes.See 11.2
+        //      nodes.NewExpression
+        //      nodes.CallExpression
         //
-        // Nodes.Our simplification:
+        // nodes.Our simplification:
         //
-        // Nodes.LeftHandSideExpression: Nodes.See 11.2
-        //      Nodes.MemberExpression
-        //      Nodes.CallExpression
+        // nodes.LeftHandSideExpression: nodes.See 11.2
+        //      nodes.MemberExpression
+        //      nodes.CallExpression
         //
-        // Nodes.See comment in this.parseMemberExpressionOrHigher on how we replaced Nodes.NewExpression with
-        // Nodes.MemberExpression to make our lives easier.
+        // nodes.See comment in this.parseMemberExpressionOrHigher on how we replaced nodes.NewExpression with
+        // nodes.MemberExpression to make our lives easier.
         //
-        // to best understand the below code, it's important to see how Nodes.CallExpression expands
+        // to best understand the below code, it's important to see how nodes.CallExpression expands
         // out into its own productions:
         //
-        // Nodes.CallExpression:
-        //      Nodes.MemberExpression Nodes.Arguments
-        //      Nodes.CallExpression Nodes.Arguments
-        //      Nodes.CallExpression[Nodes.Expression]
-        //      Nodes.CallExpression.IdentifierName
-        //      super   (   Nodes.ArgumentListopt   )
+        // nodes.CallExpression:
+        //      nodes.MemberExpression nodes.Arguments
+        //      nodes.CallExpression nodes.Arguments
+        //      nodes.CallExpression[nodes.Expression]
+        //      nodes.CallExpression.IdentifierName
+        //      super   (   nodes.ArgumentListopt   )
         //      super.IdentifierName
         //
-        // Nodes.Because of the recursion in these calls, we need to bottom out first.  Nodes.There are two
-        // bottom out states we can run into.  Nodes.Either we see 'super' which must start either of
-        // the last two Nodes.CallExpression productions.  Nodes.Or we have a Nodes.MemberExpression which either
-        // completes the Nodes.LeftHandSideExpression, or starts the beginning of the first four
-        // Nodes.CallExpression productions.
+        // nodes.Because of the recursion in these calls, we need to bottom out first.  nodes.There are two
+        // bottom out states we can run into.  nodes.Either we see 'super' which must start either of
+        // the last two nodes.CallExpression productions.  nodes.Or we have a nodes.MemberExpression which either
+        // completes the nodes.LeftHandSideExpression, or starts the beginning of the first four
+        // nodes.CallExpression productions.
         const expression = this.lexer.peek().type === TokenType.super
             ? this.parseSuperExpression()
             : this.parseMemberExpressionOrHigher();
 
-        // Nodes.Now, we *may* be complete.  Nodes.However, we might have consumed the start of a
-        // Nodes.CallExpression.  Nodes.As such, we need to consume the rest of it here to be complete.
+        // nodes.Now, we *may* be complete.  nodes.However, we might have consumed the start of a
+        // nodes.CallExpression.  nodes.As such, we need to consume the rest of it here to be complete.
         return this.parseCallExpressionRest(expression);
     }
 
-    private parseMemberExpressionOrHigher(): Nodes.MemberExpression {
-        // Nodes.Note: to make our lives simpler, we decompose the the Nodes.NewExpression productions and
-        // place Nodes.ObjectCreationExpression and Nodes.FunctionExpression into Nodes.PrimaryExpression.
+    private parseMemberExpressionOrHigher(): nodes.MemberExpression {
+        // nodes.Note: to make our lives simpler, we decompose the the nodes.NewExpression productions and
+        // place nodes.ObjectCreationExpression and nodes.FunctionExpression into nodes.PrimaryExpression.
         // like so:
         //
-        //   Nodes.PrimaryExpression : Nodes.See 11.1
+        //   nodes.PrimaryExpression : nodes.See 11.1
         //      this
-        //      Nodes.Identifier
-        //      Nodes.Literal
-        //      Nodes.ArrayLiteral
-        //      Nodes.ObjectLiteral
-        //      (Nodes.Expression)
-        //      Nodes.FunctionExpression
-        //      new Nodes.MemberExpression Nodes.Arguments?
+        //      nodes.Identifier
+        //      nodes.Literal
+        //      nodes.ArrayLiteral
+        //      nodes.ObjectLiteral
+        //      (nodes.Expression)
+        //      nodes.FunctionExpression
+        //      new nodes.MemberExpression nodes.Arguments?
         //
-        //   Nodes.MemberExpression : Nodes.See 11.2
-        //      Nodes.PrimaryExpression
-        //      Nodes.MemberExpression[Nodes.Expression]
-        //      Nodes.MemberExpression.IdentifierName
+        //   nodes.MemberExpression : nodes.See 11.2
+        //      nodes.PrimaryExpression
+        //      nodes.MemberExpression[nodes.Expression]
+        //      nodes.MemberExpression.IdentifierName
         //
-        //   Nodes.CallExpression : Nodes.See 11.2
-        //      Nodes.MemberExpression
-        //      Nodes.CallExpression Nodes.Arguments
-        //      Nodes.CallExpression[Nodes.Expression]
-        //      Nodes.CallExpression.IdentifierName
+        //   nodes.CallExpression : nodes.See 11.2
+        //      nodes.MemberExpression
+        //      nodes.CallExpression nodes.Arguments
+        //      nodes.CallExpression[nodes.Expression]
+        //      nodes.CallExpression.IdentifierName
         //
-        // Nodes.Technically this is ambiguous.  i.e. Nodes.CallExpression defines:
+        // nodes.Technically this is ambiguous.  i.e. nodes.CallExpression defines:
         //
-        //   Nodes.CallExpression:
-        //      Nodes.CallExpression Nodes.Arguments
+        //   nodes.CallExpression:
+        //      nodes.CallExpression nodes.Arguments
         //
-        // Nodes.If you see: "new Nodes.Foo()"
+        // nodes.If you see: "new nodes.Foo()"
         //
-        // Nodes.Then that could be treated as a single Nodes.ObjectCreationExpression, or it could be
-        // treated as the invocation of "new Nodes.Foo".  Nodes.We disambiguate that in code (to match
-        // the original grammar) by making sure that if we see an Nodes.ObjectCreationExpression
-        // we always consume arguments if they are there. Nodes.So we treat "new Nodes.Foo()" as an
-        // object creation only, and not at all as an invocation)  Nodes.Another way to think
+        // nodes.Then that could be treated as a single nodes.ObjectCreationExpression, or it could be
+        // treated as the invocation of "new nodes.Foo".  nodes.We disambiguate that in code (to match
+        // the original grammar) by making sure that if we see an nodes.ObjectCreationExpression
+        // we always consume arguments if they are there. nodes.So we treat "new nodes.Foo()" as an
+        // object creation only, and not at all as an invocation)  nodes.Another way to think
         // about this is that for every "new" that we see, we will consume an argument list if
-        // it is there as part of the *associated* object creation result.  Nodes.Any additional
+        // it is there as part of the *associated* object creation result.  nodes.Any additional
         // argument lists we see, will become invocation expressions.
         //
-        // Nodes.Because there are no other places in the grammar now that refer to Nodes.FunctionExpression
-        // or Nodes.ObjectCreationExpression, it is safe to push down into the Nodes.PrimaryExpression
+        // nodes.Because there are no other places in the grammar now that refer to nodes.FunctionExpression
+        // or nodes.ObjectCreationExpression, it is safe to push down into the nodes.PrimaryExpression
         // production.
         //
-        // Nodes.Because Nodes.CallExpression and Nodes.MemberExpression are left recursive, we need to bottom out
-        // of the recursion immediately.  Nodes.So we parse out a primary expression to start with.
+        // nodes.Because nodes.CallExpression and nodes.MemberExpression are left recursive, we need to bottom out
+        // of the recursion immediately.  nodes.So we parse out a primary expression to start with.
         const expression = this.parsePrimaryExpression();
         return this.parseMemberExpressionRest(expression);
     }
 
-    private parseSuperExpression(): Nodes.MemberExpression {
-        const expression = this.parseTokenNode<Nodes.PrimaryExpression>();
+    private parseSuperExpression(): nodes.MemberExpression {
+        const expression = this.parseTokenNode<nodes.PrimaryExpression>();
         if (this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.dot || this.lexer.peek().type === TokenType.openBracket) {
             return expression;
         }
 
-        // Nodes.If we have seen "super" it must be followed by '(' or '.'.
-        // Nodes.If it wasn't then just try to parse out a '.' and report an error.
-        const result = new Nodes.PropertyAccessExpression();
+        // nodes.If we have seen "super" it must be followed by '(' or '.'.
+        // nodes.If it wasn't then just try to parse out a '.' and report an error.
+        const result = new nodes.PropertyAccessExpression();
         result.expression = expression;
-        this.parseExpectedToken(TokenType.dot, /*reportAtCurrentPosition*/ false, Nodes.Diagnostics.super_must_be_followed_by_an_argument_list_or_member_access);
+        this.parseExpectedToken(TokenType.dot, /*reportAtCurrentPosition*/ false, nodes.Diagnostics.super_must_be_followed_by_an_argument_list_or_member_access);
         result.name = this.parseRightSideOfDot(/*allowIdentifierNames*/ true);
         return result;
     }
 
-    private tagNamesAreEquivalent(lhs: Nodes.JsxTagNameExpression, rhs: Nodes.JsxTagNameExpression): boolean {
+    private tagNamesAreEquivalent(lhs: nodes.JsxTagNameExpression, rhs: nodes.JsxTagNameExpression): boolean {
         if (lhs.kind !== rhs.kind) {
             return false;
         }
 
         if (lhs.kind === TokenType.Identifier) {
-            return (<Nodes.Identifier>lhs).text === (<Nodes.Identifier>rhs).text;
+            return (<nodes.Identifier>lhs).text === (<nodes.Identifier>rhs).text;
         }
 
         if (lhs.kind === TokenType.this) {
             return true;
         }
 
-        // Nodes.If we are at this statement then we must have Nodes.PropertyAccessExpression and because tag name in Nodes.Jsx element can only
-        // take forms of Nodes.JsxTagNameExpression which includes an identifier, "this" expression, or another propertyAccessExpression
-        // it is safe to case the expression property as such. Nodes.See this.parseJsxElementName for how we parse tag name in Nodes.Jsx element
-        return (<Nodes.PropertyAccessExpression>lhs).name.text === (<Nodes.PropertyAccessExpression>rhs).name.text &&
-            this.tagNamesAreEquivalent((<Nodes.PropertyAccessExpression>lhs).expression as Nodes.JsxTagNameExpression, (<Nodes.PropertyAccessExpression>rhs).expression as Nodes.JsxTagNameExpression);
+        // nodes.If we are at this statement then we must have nodes.PropertyAccessExpression and because tag name in nodes.Jsx element can only
+        // take forms of nodes.JsxTagNameExpression which includes an identifier, "this" expression, or another propertyAccessExpression
+        // it is safe to case the expression property as such. nodes.See this.parseJsxElementName for how we parse tag name in nodes.Jsx element
+        return (<nodes.PropertyAccessExpression>lhs).name.text === (<nodes.PropertyAccessExpression>rhs).name.text &&
+            this.tagNamesAreEquivalent((<nodes.PropertyAccessExpression>lhs).expression as nodes.JsxTagNameExpression, (<nodes.PropertyAccessExpression>rhs).expression as nodes.JsxTagNameExpression);
     }
 
 
-    private parseJsxElementOrSelfClosingElement(inExpressionContext: boolean): Nodes.JsxElement | Nodes.JsxSelfClosingElement {
+    private parseJsxElementOrSelfClosingElement(inExpressionContext: boolean): nodes.JsxElement | nodes.JsxSelfClosingElement {
         const opening = this.parseJsxOpeningOrSelfClosingElement(inExpressionContext);
-        let this.result: Nodes.JsxElement | Nodes.JsxSelfClosingElement;
+        let this.result: nodes.JsxElement | nodes.JsxSelfClosingElement;
         if (opening.kind === TokenType.JsxOpeningElement) {
-            const result = new Nodes.JsxElement();
+            const result = new nodes.JsxElement();
             result.openingElement = opening;
 
             result.children = this.parseJsxChildren(result.openingElement.tagName);
             result.closingElement = this.parseJsxClosingElement(inExpressionContext);
 
             if (!this.tagNamesAreEquivalent(result.openingElement.tagName, result.closingElement.tagName)) {
-                this.parseErrorAtPosition(result.closingElement.pos, result.closingElement.end - result.closingElement.pos, Nodes.Diagnostics.Expected_corresponding_JSX_closing_tag_for_0, getTextOfNodeFromSourceText(this.sourceText, result.openingElement.tagName));
+                this.parseErrorAtPosition(result.closingElement.pos, result.closingElement.end - result.closingElement.pos, nodes.Diagnostics.Expected_corresponding_JSX_closing_tag_for_0, getTextOfNodeFromSourceText(this.sourceText, result.openingElement.tagName));
             }
 
             this.result = result;
         }
         else {
             console.assert(opening.kind === TokenType.JsxSelfClosingElement);
-            // Nodes.Nothing else to do for self-closing elements
-            this.result = <Nodes.JsxSelfClosingElement>opening;
+            // nodes.Nothing else to do for self-closing elements
+            this.result = <nodes.JsxSelfClosingElement>opening;
         }
 
-        // Nodes.If the user writes the invalid code '<div></div><div></div>' in an expression context (i.e. not wrapped in
+        // nodes.If the user writes the invalid code '<div></div><div></div>' in an expression context (i.e. not wrapped in
         // an enclosing tag), we'll naively try to parse   ^ this as a 'less than' operator and the remainder of the tag
-        // as garbage, which will cause the formatter to badly mangle the Nodes.JSX. Nodes.Perform a speculative parse of a Nodes.JSX
+        // as garbage, which will cause the formatter to badly mangle the nodes.JSX. nodes.Perform a speculative parse of a nodes.JSX
         // element if we see a < this.lexer.peek().type so that we can wrap it in a synthetic binary expression so the formatter
         // does less damage and we can report a better error.
-        // Nodes.Since Nodes.JSX elements are invalid < operands anyway, this lookahead parse will only occur in error scenarios
+        // nodes.Since nodes.JSX elements are invalid < operands anyway, this lookahead parse will only occur in error scenarios
         // of one sort or another.
         if (inExpressionContext && this.lexer.peek().type === TokenType.lessThan) {
             const invalidElement = this.tryParse(() => this.parseJsxElementOrSelfClosingElement(/*inExpressionContext*/true));
             if (invalidElement) {
-                this.parseErrorAtCurrentToken(Nodes.Diagnostics.JSX_expressions_must_have_one_parent_element);
-                const badNode = new Nodes.BinaryExpression();
+                this.parseErrorAtCurrentToken(nodes.Diagnostics.JSX_expressions_must_have_one_parent_element);
+                const badNode = new nodes.BinaryExpression();
                 badNode.end = invalidElement.end;
                 badNode.left = this.result;
                 badNode.right = invalidElement;
                 badNode.operatorToken = this.createMissingNode(TokenType.comma, /*reportAtCurrentPosition*/ false, /*diagnosticMessage*/ undefined);
                 badNode.operatorToken.pos = badNode.operatorToken.end = badNode.right.pos;
-                return <Nodes.JsxElement><Nodes.Node>badNode;
+                return <nodes.JsxElement><nodes.Node>badNode;
             }
         }
 
         return this.result;
     }
 
-    private parseJsxText(): Nodes.JsxText {
-        const result = new Nodes.JsxText());
+    private parseJsxText(): nodes.JsxText {
+        const result = new nodes.JsxText());
         this.lexer.peek().type = this.lexer.scanJsxToken();
         return result;
     }
 
-    private parseJsxChild(): Nodes.JsxChild {
+    private parseJsxChild(): nodes.JsxChild {
         switch (this.lexer.peek().type) {
             case TokenType.JsxText:
                 return this.parseJsxText();
@@ -3757,25 +3929,25 @@ export class Parser {
             case TokenType.lessThan:
                 return this.parseJsxElementOrSelfClosingElement(/*inExpressionContext*/ false);
         }
-        Nodes.Debug.fail("Nodes.Unknown Nodes.JSX child kind " + this.lexer.peek().type);
+        nodes.Debug.fail("nodes.Unknown nodes.JSX child kind " + this.lexer.peek().type);
     }
 
-    private parseJsxChildren(openingTagName: Nodes.LeftHandSideExpression): Nodes.NodeList<Nodes.JsxChild> {
-        const this.result = <Nodes.NodeList<Nodes.JsxChild>>[];
+    private parseJsxChildren(openingTagName: nodes.LeftHandSideExpression): nodes.NodeList<nodes.JsxChild> {
+        const this.result = <nodes.NodeList<nodes.JsxChild>>[];
         this.result.pos = this.lexer.getStartPos();
         const saveParsingContext = this.parsingContext;
-        this.parsingContext |= 1 << Nodes.ParsingContext.JsxChildren;
+        this.parsingContext |= 1 << nodes.ParsingContext.JsxChildren;
 
         while (true) {
             this.lexer.peek().type = this.lexer.reScanJsxToken();
             if (this.lexer.peek().type === TokenType.lessThanSlash) {
-                // Nodes.Closing tag
+                // nodes.Closing tag
                 break;
             }
             else if (this.lexer.peek().type === TokenType.endOfFile) {
-                // Nodes.If we hit Nodes.EOF, issue the error at the tag that lacks the closing element
+                // nodes.If we hit nodes.EOF, issue the error at the tag that lacks the closing element
                 // rather than at the end of the file (which is useless)
-                this.parseErrorAtPosition(openingTagName.pos, openingTagName.end - openingTagName.pos, Nodes.Diagnostics.JSX_element_0_has_no_corresponding_closing_tag, getTextOfNodeFromSourceText(this.sourceText, openingTagName));
+                this.parseErrorAtPosition(openingTagName.pos, openingTagName.end - openingTagName.pos, nodes.Diagnostics.JSX_element_0_has_no_corresponding_closing_tag, getTextOfNodeFromSourceText(this.sourceText, openingTagName));
                 break;
             }
             this.result.push(this.parseJsxChild());
@@ -3788,21 +3960,21 @@ export class Parser {
         return this.result;
     }
 
-    private parseJsxOpeningOrSelfClosingElement(inExpressionContext: boolean): Nodes.JsxOpeningElement | Nodes.JsxSelfClosingElement {
+    private parseJsxOpeningOrSelfClosingElement(inExpressionContext: boolean): nodes.JsxOpeningElement | nodes.JsxSelfClosingElement {
         const fullStart = this.lexer.getStartPos();
 
         this.parseExpected(TokenType.lessThan);
 
         const tagName = this.parseJsxElementName();
 
-        const attributes = this.parseList(Nodes.ParsingContext.JsxAttributes, this.parseJsxAttribute);
-        let result: Nodes.JsxOpeningLikeElement;
+        const attributes = this.parseList(nodes.ParsingContext.JsxAttributes, this.parseJsxAttribute);
+        let result: nodes.JsxOpeningLikeElement;
 
         if (this.lexer.peek().type === TokenType.greaterThan) {
-            // Nodes.Closing tag, so scan the immediately-following text with the Nodes.JSX scanning instead
+            // nodes.Closing tag, so scan the immediately-following text with the nodes.JSX scanning instead
             // of regular scanning to avoid treating illegal characters (e.g. '#') as immediate
             // scanning errors
-            result = new Nodes.JsxOpeningElement();
+            result = new nodes.JsxOpeningElement();
             this.scanJsxText();
         }
         else {
@@ -3814,7 +3986,7 @@ export class Parser {
                 this.parseExpected(TokenType.greaterThan, /*diagnostic*/ undefined, /*shouldAdvance*/ false);
                 this.scanJsxText();
             }
-            result = new Nodes.JsxSelfClosingElement();
+            result = new nodes.JsxSelfClosingElement();
         }
 
         result.tagName = tagName;
@@ -3823,17 +3995,17 @@ export class Parser {
         return result;
     }
 
-    private parseJsxElementName(): Nodes.JsxTagNameExpression {
+    private parseJsxElementName(): nodes.JsxTagNameExpression {
         this.scanJsxIdentifier();
-        // Nodes.JsxElement can have name in the form of
+        // nodes.JsxElement can have name in the form of
         //      propertyAccessExpression
         //      primaryExpression in the form of an identifier and "this" keyword
-        // Nodes.We can't just simply use this.parseLeftHandSideExpressionOrHigher because then we will start consider class,function etc as a keyword
-        // Nodes.We only want to consider "this" as a primaryExpression
-        let expression: Nodes.JsxTagNameExpression = this.lexer.peek().type === TokenType.this ?
-            this.parseTokenNode<Nodes.PrimaryExpression>() : this.parseIdentifierName();
+        // nodes.We can't just simply use this.parseLeftHandSideExpressionOrHigher because then we will start consider class,function etc as a keyword
+        // nodes.We only want to consider "this" as a primaryExpression
+        let expression: nodes.JsxTagNameExpression = this.lexer.peek().type === TokenType.this ?
+            this.parseTokenNode<nodes.PrimaryExpression>() : this.parseIdentifierName();
         while (this.parseOptional(TokenType.dot)) {
-            const propertyAccess: Nodes.PropertyAccessExpression = new Nodes.PropertyAccessExpression();
+            const propertyAccess: nodes.PropertyAccessExpression = new nodes.PropertyAccessExpression();
             propertyAccess.expression = expression;
             propertyAccess.name = this.parseRightSideOfDot(/*allowIdentifierNames*/ true);
             expression = this.finishNode(propertyAccess);
@@ -3841,8 +4013,8 @@ export class Parser {
         return expression;
     }
 
-    private parseJsxExpression(inExpressionContext: boolean): Nodes.JsxExpression {
-        const result = new Nodes.JsxExpression();
+    private parseJsxExpression(inExpressionContext: boolean): nodes.JsxExpression {
+        const result = new nodes.JsxExpression();
 
         this.parseExpected(TokenType.openBrace);
         if (this.lexer.peek().type !== TokenType.closeBrace) {
@@ -3859,13 +4031,13 @@ export class Parser {
         return result;
     }
 
-    private parseJsxAttribute(): Nodes.JsxAttribute | Nodes.JsxSpreadAttribute {
+    private parseJsxAttribute(): nodes.JsxAttribute | nodes.JsxSpreadAttribute {
         if (this.lexer.peek().type === TokenType.openBrace) {
             return this.parseJsxSpreadAttribute();
         }
 
         this.scanJsxIdentifier();
-        const result = new Nodes.JsxAttribute();
+        const result = new nodes.JsxAttribute();
         result.name = this.parseIdentifierName();
         if (this.parseOptional(TokenType.equals)) {
             switch (this.lexer.peek().type) {
@@ -3880,8 +4052,8 @@ export class Parser {
         return result;
     }
 
-    private parseJsxSpreadAttribute(): Nodes.JsxSpreadAttribute {
-        const result = new Nodes.JsxSpreadAttribute();
+    private parseJsxSpreadAttribute(): nodes.JsxSpreadAttribute {
+        const result = new nodes.JsxSpreadAttribute();
         this.parseExpected(TokenType.openBrace);
         this.parseExpected(TokenType.dotDotDot);
         result.expression = this.parseExpression();
@@ -3889,8 +4061,8 @@ export class Parser {
         return result;
     }
 
-    private parseJsxClosingElement(inExpressionContext: boolean): Nodes.JsxClosingElement {
-        const result = new Nodes.JsxClosingElement();
+    private parseJsxClosingElement(inExpressionContext: boolean): nodes.JsxClosingElement {
+        const result = new nodes.JsxClosingElement();
         this.parseExpected(TokenType.lessThanSlash);
         result.tagName = this.parseJsxElementName();
         if (inExpressionContext) {
@@ -3903,8 +4075,8 @@ export class Parser {
         return result;
     }
 
-    private parseTypeAssertion(): Nodes.TypeAssertion {
-        const result = new Nodes.TypeAssertion();
+    private parseTypeAssertion(): nodes.TypeAssertion {
+        const result = new nodes.TypeAssertion();
         this.parseExpected(TokenType.lessThan);
         result.type = this.parseType();
         this.parseExpected(TokenType.greaterThan);
@@ -3912,11 +4084,11 @@ export class Parser {
         return result;
     }
 
-    private parseMemberExpressionRest(expression: Nodes.LeftHandSideExpression): Nodes.MemberExpression {
+    private parseMemberExpressionRest(expression: nodes.LeftHandSideExpression): nodes.MemberExpression {
         while (true) {
             const dotToken = this.parseOptionalToken(TokenType.dot);
             if (dotToken) {
-                const propertyAccess = new Nodes.PropertyAccessExpression();
+                const propertyAccess = new nodes.PropertyAccessExpression();
                 propertyAccess.expression = expression;
                 propertyAccess.name = this.parseRightSideOfDot(/*allowIdentifierNames*/ true);
                 expression = this.finishNode(propertyAccess);
@@ -3925,23 +4097,23 @@ export class Parser {
 
             if (this.lexer.peek().type === TokenType.exclamation && !this.lexer.peek().hasLineBreakBeforeStar) {
                 this.nextToken();
-                const nonNullExpression = new Nodes.NonNullExpression();
+                const nonNullExpression = new nodes.NonNullExpression();
                 nonNullExpression.expression = expression;
                 expression = this.finishNode(nonNullExpression);
                 continue;
             }
 
-            // when in the [Nodes.Decorator] context, we do not parse Nodes.ElementAccess as it could be part of a Nodes.ComputedPropertyName
+            // when in the [nodes.Decorator] context, we do not parse nodes.ElementAccess as it could be part of a nodes.ComputedPropertyName
             if (!this.inDecoratorContext() && this.parseOptional(TokenType.openBracket)) {
-                const indexedAccess = new Nodes.ElementAccessExpression();
+                const indexedAccess = new nodes.ElementAccessExpression();
                 indexedAccess.expression = expression;
 
-                // Nodes.It's not uncommon for a user to write: "new Nodes.Type[]".
-                // Nodes.Check for that common pattern and report a better error message.
+                // nodes.It's not uncommon for a user to write: "new nodes.Type[]".
+                // nodes.Check for that common pattern and report a better error message.
                 if (this.lexer.peek().type !== TokenType.closeBracket) {
                     indexedAccess.argumentExpression = this.allowInAnd(this.parseExpression);
                     if (indexedAccess.argumentExpression.kind === TokenType.StringLiteral || indexedAccess.argumentExpression.kind === TokenType.NumericLiteral) {
-                        const literal = <Nodes.LiteralExpression>indexedAccess.argumentExpression;
+                        const literal = <nodes.LiteralExpression>indexedAccess.argumentExpression;
                         literal.text = this.internIdentifier(literal.text);
                     }
                 }
@@ -3952,7 +4124,7 @@ export class Parser {
             }
 
             if (this.lexer.peek().type === TokenType.NoSubstitutionTemplateLiteral || this.lexer.peek().type === TokenType.TemplateHead) {
-                const tagExpression = new Nodes.TaggedTemplateExpression();
+                const tagExpression = new nodes.TaggedTemplateExpression();
                 tagExpression.tag = expression;
                 tagExpression.template = this.lexer.peek().type === TokenType.NoSubstitutionTemplateLiteral
                     ? this.parseLiteralNode()
@@ -3961,24 +4133,24 @@ export class Parser {
                 continue;
             }
 
-            return <Nodes.MemberExpression>expression;
+            return <nodes.MemberExpression>expression;
         }
     }
 
-    private parseCallExpressionRest(expression: Nodes.LeftHandSideExpression): Nodes.LeftHandSideExpression {
+    private parseCallExpressionRest(expression: nodes.LeftHandSideExpression): nodes.LeftHandSideExpression {
         while (true) {
             expression = this.parseMemberExpressionRest(expression);
             if (this.lexer.peek().type === TokenType.lessThan) {
-                // Nodes.See if this is the start of a generic invocation.  Nodes.If so, consume it and
-                // keep checking for postfix expressions.  Nodes.Otherwise, it's just a '<' that's
-                // part of an arithmetic expression.  Nodes.Break out so we consume it higher in the
+                // nodes.See if this is the start of a generic invocation.  nodes.If so, consume it and
+                // keep checking for postfix expressions.  nodes.Otherwise, it's just a '<' that's
+                // part of an arithmetic expression.  nodes.Break out so we consume it higher in the
                 // stack.
                 const typeArguments = this.tryParse(this.parseTypeArgumentsInExpression);
                 if (!typeArguments) {
                     return expression;
                 }
 
-                const callExpr = new Nodes.CallExpression();
+                const callExpr = new nodes.CallExpression();
                 callExpr.expression = expression;
                 callExpr.typeArguments = typeArguments;
                 callExpr.arguments = this.parseArgumentList();
@@ -3986,7 +4158,7 @@ export class Parser {
                 continue;
             }
             else if (this.lexer.peek().type === TokenType.openParen) {
-                const callExpr = new Nodes.CallExpression();
+                const callExpr = new nodes.CallExpression();
                 callExpr.expression = expression;
                 callExpr.arguments = this.parseArgumentList();
                 expression = this.finishNode(callExpr);
@@ -3999,7 +4171,7 @@ export class Parser {
 
     private parseArgumentList() {
         this.parseExpected(TokenType.openParen);
-        const this.result = this.parseDelimitedList(Nodes.ParsingContext.ArgumentExpressions, this.parseArgumentExpression);
+        const this.result = this.parseDelimitedList(nodes.ParsingContext.ArgumentExpressions, this.parseArgumentExpression);
         this.parseExpected(TokenType.closeParen);
         return this.result;
     }
@@ -4009,13 +4181,13 @@ export class Parser {
             return undefined;
         }
 
-        const typeArguments = this.parseDelimitedList(Nodes.ParsingContext.TypeArguments, this.parseType);
+        const typeArguments = this.parseDelimitedList(nodes.ParsingContext.TypeArguments, this.parseType);
         if (!this.parseExpected(TokenType.greaterThan)) {
-            // Nodes.If it doesn't have the closing >  then it's definitely not an type argument list.
+            // nodes.If it doesn't have the closing >  then it's definitely not an type argument list.
             return undefined;
         }
 
-        // Nodes.If we have a '<', then only parse this as a argument list if the type arguments
+        // nodes.If we have a '<', then only parse this as a argument list if the type arguments
         // are complete and we have an open paren.  if we don't, rewind and return nothing.
         return typeArguments && this.canFollowTypeArgumentsInExpression()
             ? typeArguments
@@ -4026,7 +4198,7 @@ export class Parser {
         switch (this.lexer.peek().type) {
             case TokenType.openParen:                 // foo<x>(
             // this case are the only case where this this.lexer.peek().type can legally follow a type argument
-            // list.  Nodes.So we definitely want to treat this as a type arg list.
+            // list.  nodes.So we definitely want to treat this as a type arg list.
 
             case TokenType.dot:                       // foo<x>.
             case TokenType.closeParen:                // foo<x>)
@@ -4045,24 +4217,24 @@ export class Parser {
             case TokenType.bar:                       // foo<x> |
             case TokenType.closeBrace:                // foo<x> }
             case TokenType.endOfFile:                 // foo<x>
-                // these cases can't legally follow a type arg list.  Nodes.However, they're not legal
-                // expressions either.  Nodes.The user is probably in the middle of a generic type. Nodes.So
+                // these cases can't legally follow a type arg list.  nodes.However, they're not legal
+                // expressions either.  nodes.The user is probably in the middle of a generic type. nodes.So
                 // treat it as such.
                 return true;
 
             case TokenType.comma:                     // foo<x>,
             case TokenType.openBrace:                 // foo<x> {
-            // Nodes.We don't want to treat these as type arguments.  Nodes.Otherwise we'll parse this
-            // as an invocation expression.  Nodes.Instead, we want to parse out the expression
+            // nodes.We don't want to treat these as type arguments.  nodes.Otherwise we'll parse this
+            // as an invocation expression.  nodes.Instead, we want to parse out the expression
             // in isolation from the type arguments.
 
             default:
-                // Nodes.Anything else treat as an expression.
+                // nodes.Anything else treat as an expression.
                 return false;
         }
     }
 
-    private parsePrimaryExpression(): Nodes.PrimaryExpression {
+    private parsePrimaryExpression(): nodes.PrimaryExpression {
         switch (this.lexer.peek().type) {
             case TokenType.NumericLiteral:
             case TokenType.StringLiteral:
@@ -4073,7 +4245,7 @@ export class Parser {
             case TokenType.null:
             case TokenType.true:
             case TokenType.false:
-                return this.parseTokenNode<Nodes.PrimaryExpression>();
+                return this.parseTokenNode<nodes.PrimaryExpression>();
             case TokenType.openParen:
                 return this.parseParenthesizedExpression();
             case TokenType.openBracket:
@@ -4081,8 +4253,8 @@ export class Parser {
             case TokenType.openBrace:
                 return this.parseObjectLiteralExpression();
             case TokenType.async:
-                // Nodes.Async arrow functions are parsed earlier in this.parseAssignmentExpressionOrHigher.
-                // Nodes.If we encounter `async [no Nodes.LineTerminator here] function` then this is an async
+                // nodes.Async arrow functions are parsed earlier in this.parseAssignmentExpressionOrHigher.
+                // nodes.If we encounter `async [no nodes.LineTerminator here] function` then this is an async
                 // function; otherwise, its an identifier.
                 if (!this.lookAhead(this.nextTokenIsFunctionKeywordOnSameLine)) {
                     break;
@@ -4105,46 +4277,46 @@ export class Parser {
                 return this.parseTemplateExpression();
         }
 
-        return this.parseIdentifier(Nodes.Diagnostics.Expression_expected);
+        return this.parseIdentifier(nodes.Diagnostics.Expression_expected);
     }
 
-    private parseParenthesizedExpression(): Nodes.ParenthesizedExpression {
-        const result = new Nodes.ParenthesizedExpression();
+    private parseParenthesizedExpression(): nodes.ParenthesizedExpression {
+        const result = new nodes.ParenthesizedExpression();
         this.parseExpected(TokenType.openParen);
         result.expression = this.allowInAnd(this.parseExpression);
         this.parseExpected(TokenType.closeParen);
         return result;
     }
 
-    private parseSpreadElement(): Nodes.Expression {
-        const result = new Nodes.SpreadElementExpression();
+    private parseSpreadElement(): nodes.Expression {
+        const result = new nodes.SpreadElementExpression();
         this.parseExpected(TokenType.dotDotDot);
         result.expression = this.parseAssignmentExpressionOrHigher();
         return result;
     }
 
-    private parseArgumentOrArrayLiteralElement(): Nodes.Expression {
+    private parseArgumentOrArrayLiteralElement(): nodes.Expression {
         return this.lexer.peek().type === TokenType.dotDotDot ? this.parseSpreadElement() :
-            this.lexer.peek().type === TokenType.comma ? new Nodes.Expression() :
+            this.lexer.peek().type === TokenType.comma ? new nodes.Expression() :
                 this.parseAssignmentExpressionOrHigher();
     }
 
-    private parseArgumentExpression(): Nodes.Expression {
+    private parseArgumentExpression(): nodes.Expression {
         return this.doOutsideOfContext(this.disallowInAndDecoratorContext, this.parseArgumentOrArrayLiteralElement);
     }
 
-    private parseArrayLiteralExpression(): Nodes.ArrayLiteralExpression {
-        const result = new Nodes.ArrayLiteralExpression();
+    private parseArrayLiteralExpression(): nodes.ArrayLiteralExpression {
+        const result = new nodes.ArrayLiteralExpression();
         this.parseExpected(TokenType.openBracket);
         if (this.lexer.peek().hasLineBreakBeforeStar) {
             result.multiLine = true;
         }
-        result.elements = this.parseDelimitedList(Nodes.ParsingContext.ArrayLiteralMembers, this.parseArgumentOrArrayLiteralElement);
+        result.elements = this.parseDelimitedList(nodes.ParsingContext.ArrayLiteralMembers, this.parseArgumentOrArrayLiteralElement);
         this.parseExpected(TokenType.closeBracket);
         return result;
     }
 
-    private tryParseAccessorDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.AccessorDeclaration {
+    private tryParseAccessorDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.AccessorDeclaration {
         if (this.parseContextualModifier(TokenType.get)) {
             return this.parseJsDocComment(this.parseAccessorDeclaration(TokenType.GetAccessor, fullStart, decorators, modifiers));
         }
@@ -4155,7 +4327,7 @@ export class Parser {
         return undefined;
     }
 
-    private parseObjectLiteralElement(): Nodes.ObjectLiteralElement {
+    private parseObjectLiteralElement(): nodes.ObjectLiteralElement {
         const fullStart = this.lexer.getStartPos();
         const decorators = this.parseDecorators();
         const modifiers = this.parseModifiers();
@@ -4169,23 +4341,23 @@ export class Parser {
         const tokenIsIdentifier = this.isIdentifier();
         const propertyName = this.parsePropertyName();
 
-        // Nodes.Disallowing of optional property assignments happens in the grammar checker.
+        // nodes.Disallowing of optional property assignments happens in the grammar checker.
         const questionToken = this.parseOptionalToken(TokenType.question);
         if (asteriskToken || this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.lessThan) {
             return this.parseMethodDeclaration(fullStart, decorators, modifiers, asteriskToken, propertyName, questionToken);
         }
 
         // check if it is short-hand property assignment or normal property assignment
-        // Nodes.NOTE: if this.lexer.peek().type is Nodes.EqualsToken it is interpreted as Nodes.CoverInitializedName production
-        // Nodes.CoverInitializedName[Nodes.Yield] :
-        //     Nodes.IdentifierReference[?Nodes.Yield] Nodes.Initializer[Nodes.In, ?Nodes.Yield]
-        // this is necessary because Nodes.ObjectLiteral productions are also used to cover grammar for Nodes.ObjectAssignmentPattern
+        // nodes.NOTE: if this.lexer.peek().type is nodes.EqualsToken it is interpreted as nodes.CoverInitializedName production
+        // nodes.CoverInitializedName[nodes.Yield] :
+        //     nodes.IdentifierReference[?nodes.Yield] nodes.Initializer[nodes.In, ?nodes.Yield]
+        // this is necessary because nodes.ObjectLiteral productions are also used to cover grammar for nodes.ObjectAssignmentPattern
         const isShorthandPropertyAssignment =
             tokenIsIdentifier && (this.lexer.peek().type === TokenType.comma || this.lexer.peek().type === TokenType.closeBrace || this.lexer.peek().type === TokenType.equals);
 
         if (isShorthandPropertyAssignment) {
-            const shorthandDeclaration = new Nodes.ShorthandPropertyAssignment();
-            shorthandDeclaration.name = <Nodes.Identifier>propertyName;
+            const shorthandDeclaration = new nodes.ShorthandPropertyAssignment();
+            shorthandDeclaration.name = <nodes.Identifier>propertyName;
             shorthandDeclaration.questionToken = questionToken;
             const equalsToken = this.parseOptionalToken(TokenType.equals);
             if (equalsToken) {
@@ -4195,7 +4367,7 @@ export class Parser {
             return this.parseJsDocComment(this.finishNode(shorthandDeclaration));
         }
         else {
-            const propertyAssignment = new Nodes.PropertyAssignment();
+            const propertyAssignment = new nodes.PropertyAssignment();
             propertyAssignment.modifiers = modifiers;
             propertyAssignment.name = propertyName;
             propertyAssignment.questionToken = questionToken;
@@ -4205,36 +4377,36 @@ export class Parser {
         }
     }
 
-    private parseObjectLiteralExpression(): Nodes.ObjectLiteralExpression {
-        const result = new Nodes.ObjectLiteralExpression();
+    private parseObjectLiteralExpression(): nodes.ObjectLiteralExpression {
+        const result = new nodes.ObjectLiteralExpression();
         this.parseExpected(TokenType.openBrace);
         if (this.lexer.peek().hasLineBreakBeforeStar) {
             result.multiLine = true;
         }
 
-        result.properties = this.parseDelimitedList(Nodes.ParsingContext.ObjectLiteralMembers, this.parseObjectLiteralElement, /*considerSemicolonAsDelimiter*/ true);
+        result.properties = this.parseDelimitedList(nodes.ParsingContext.ObjectLiteralMembers, this.parseObjectLiteralElement, /*considerSemicolonAsDelimiter*/ true);
         this.parseExpected(TokenType.closeBrace);
         return result;
     }
 
-    private parseFunctionExpression(): Nodes.FunctionExpression {
-        // Nodes.GeneratorExpression:
-        //      function* Nodes.BindingIdentifier [Nodes.Yield][opt](Nodes.FormalParameters[Nodes.Yield]){ Nodes.GeneratorBody }
+    private parseFunctionExpression(): nodes.FunctionExpression {
+        // nodes.GeneratorExpression:
+        //      function* nodes.BindingIdentifier [nodes.Yield][opt](nodes.FormalParameters[nodes.Yield]){ nodes.GeneratorBody }
         //
-        // Nodes.FunctionExpression:
-        //      function Nodes.BindingIdentifier[opt](Nodes.FormalParameters){ Nodes.FunctionBody }
+        // nodes.FunctionExpression:
+        //      function nodes.BindingIdentifier[opt](nodes.FormalParameters){ nodes.FunctionBody }
         const saveDecoratorContext = this.inDecoratorContext();
         if (saveDecoratorContext) {
             this.setDecoratorContext(/*val*/ false);
         }
 
-        const result = new Nodes.FunctionExpression();
+        const result = new nodes.FunctionExpression();
         this.setModifiers(result, this.parseModifiers());
         this.parseExpected(TokenType.function);
         result.asteriskToken = this.parseOptionalToken(TokenType.asterisk);
 
         const isGenerator = !!result.asteriskToken;
-        const isAsync = !!(result.flags & Nodes.NodeFlags.Async);
+        const isAsync = !!(result.flags & nodes.NodeFlags.Async);
         result.name =
             isGenerator && isAsync ? this.doInYieldAndAwaitContext(this.parseOptionalIdentifier) :
                 isGenerator ? this.doInYieldContext(this.parseOptionalIdentifier) :
@@ -4255,8 +4427,8 @@ export class Parser {
         return this.isIdentifier() ? this.parseIdentifier() : undefined;
     }
 
-    private parseNewExpression(): Nodes.NewExpression {
-        const result = new Nodes.NewExpression();
+    private parseNewExpression(): nodes.NewExpression {
+        const result = new nodes.NewExpression();
         this.parseExpected(TokenType.new);
         result.expression = this.parseMemberExpressionOrHigher();
         result.typeArguments = this.tryParse(this.parseTypeArgumentsInExpression);
@@ -4267,17 +4439,17 @@ export class Parser {
         return result;
     }
 
-    // Nodes.STATEMENTS
+    // nodes.STATEMENTS
 
-    private parseFunctionBlock(allowYield: boolean, allowAwait: boolean, ignoreMissingOpenBrace: boolean, diagnosticMessage?: Nodes.DiagnosticMessage): Nodes.Block {
+    private parseFunctionBlock(allowYield: boolean, allowAwait: boolean, ignoreMissingOpenBrace: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.Block {
         const savedYieldContext = this.inYieldContext();
         this.setYieldContext(allowYield);
 
         const savedAwaitContext = this.inAwaitContext();
         this.setAwaitContext(allowAwait);
 
-        // Nodes.We may be in a [Nodes.Decorator] context when parsing a function expression or
-        // arrow function. Nodes.The body of the function is not in [Nodes.Decorator] context.
+        // nodes.We may be in a [nodes.Decorator] context when parsing a function expression or
+        // arrow function. nodes.The body of the function is not in [nodes.Decorator] context.
         const saveDecoratorContext = this.inDecoratorContext();
         if (saveDecoratorContext) {
             this.setDecoratorContext(/*val*/ false);
@@ -4293,82 +4465,6 @@ export class Parser {
         this.setAwaitContext(savedAwaitContext);
 
         return block;
-    }
-
-
-    private parseReturnStatement(): Nodes.ReturnStatement {
-        const result = new Nodes.ReturnStatement();
-
-        this.parseExpected(TokenType.return);
-        if (!this.canParseSemicolon()) {
-            result.expression = this.allowInAnd(this.parseExpression);
-        }
-
-        this.expectSemicolon();
-        return result;
-    }
-
-    private parseWithStatement(): Nodes.WithStatement {
-        const result = new Nodes.WithStatement();
-        this.parseExpected(TokenType.with);
-        this.parseExpected(TokenType.openParen);
-        result.expression = this.allowInAnd(this.parseExpression);
-        this.parseExpected(TokenType.closeParen);
-        result.statement = this.parseStatement();
-        return result;
-    }
-
-    private parseThrowStatement(): Nodes.ThrowStatement {
-        // Nodes.ThrowStatement[Nodes.Yield] :
-        //      throw [no Nodes.LineTerminator here]Nodes.Expression[Nodes.In, ?Nodes.Yield];
-
-        // Nodes.Because of automatic semicolon insertion, we need to report error if this
-        // throw could be terminated with a semicolon.  Nodes.Note: we can't call 'this.parseExpression'
-        // directly as that might consume an expression on the following line.
-        // Nodes.We just return 'undefined' in that case.  Nodes.The actual error will be reported in the
-        // grammar walker.
-        const result = new Nodes.ThrowStatement();
-        this.parseExpected(TokenType.throw);
-        result.expression = this.lexer.peek().hasLineBreakBeforeStar ? undefined : this.allowInAnd(this.parseExpression);
-        this.expectSemicolon();
-        return result;
-    }
-
-    // Nodes.TODO: Nodes.Review for error recovery
-    private parseTryStatement(): Nodes.TryStatement {
-        const result = new Nodes.TryStatement();
-
-        this.parseExpected(TokenType.try);
-        result.tryBlock = this.parseBlockStatement(/*ignoreMissingOpenBrace*/ false);
-        result.catchClause = this.lexer.peek().type === TokenType.catch ? this.parseCatchClause() : undefined;
-
-        // Nodes.If we don't have a catch clause, then we must have a finally clause.  Nodes.Try to parse
-        // one out no matter what.
-        if (!result.catchClause || this.lexer.peek().type === TokenType.finally) {
-            this.parseExpected(TokenType.finally);
-            result.finallyBlock = this.parseBlockStatement(/*ignoreMissingOpenBrace*/ false);
-        }
-
-        return result;
-    }
-
-    private parseCatchClause(): Nodes.CatchClause {
-        const this.result = new Nodes.CatchClause();
-        this.parseExpected(TokenType.catch);
-        if (this.parseExpected(TokenType.openParen)) {
-            this.result.variableDeclaration = this.parseVariableDeclaration();
-        }
-
-        this.parseExpected(TokenType.closeParen);
-        this.result.block = this.parseBlockStatement(/*ignoreMissingOpenBrace*/ false);
-        return this.finishNode(this.result);
-    }
-
-    private parseDebuggerStatement(): Nodes.Statement {
-        const result = new Nodes.Statement();
-        this.parseExpected(TokenType.debugger);
-        this.expectSemicolon();
-        return result;
     }
 
     private nextTokenIsIdentifierOrKeywordOnSameLine() {
@@ -4397,21 +4493,21 @@ export class Parser {
                 case TokenType.enum:
                     return true;
 
-                // 'declare', 'module', 'namespace', 'interface'* and 'type' are all legal Nodes.JavaScript this.identifiers;
-                // however, an identifier cannot be followed by another identifier on the same line. Nodes.This is what we
-                // count on to parse out the respective declarations. Nodes.For instance, we exploit this to say that
+                // 'declare', 'module', 'namespace', 'interface'* and 'type' are all legal nodes.JavaScript this.identifiers;
+                // however, an identifier cannot be followed by another identifier on the same line. nodes.This is what we
+                // count on to parse out the respective declarations. nodes.For instance, we exploit this to say that
                 //
                 //    namespace n
                 //
-                // can be none other than the beginning of a namespace declaration, but need to respect that Nodes.JavaScript sees
+                // can be none other than the beginning of a namespace declaration, but need to respect that nodes.JavaScript sees
                 //
                 //    namespace
                 //    n
                 //
                 // as the identifier 'namespace' on one line followed by the identifier 'n' on another.
-                // Nodes.We need to look one this.lexer.peek().type ahead to see if it permissible to try parsing a declaration.
+                // nodes.We need to look one this.lexer.peek().type ahead to see if it permissible to try parsing a declaration.
                 //
-                // *Nodes.Note*: 'interface' is actually a strict mode reserved word. Nodes.So while
+                // *nodes.Note*: 'interface' is actually a strict mode reserved word. nodes.So while
                 //
                 //   "use strict"
                 //   interface
@@ -4432,7 +4528,7 @@ export class Parser {
                 case TokenType.public:
                 case TokenType.readonly:
                     this.nextToken();
-                    // Nodes.ASI takes effect for this modifier.
+                    // nodes.ASI takes effect for this modifier.
                     if (this.lexer.peek().hasLineBreakBeforeStar) {
                         return false;
                     }
@@ -4508,7 +4604,7 @@ export class Parser {
             case TokenType.namespace:
             case TokenType.type:
             case TokenType.global:
-                // Nodes.When these don't start a declaration, they're an identifier in an expression statement
+                // nodes.When these don't start a declaration, they're an identifier in an expression statement
                 return true;
 
             case TokenType.public:
@@ -4516,8 +4612,8 @@ export class Parser {
             case TokenType.protected:
             case TokenType.static:
             case TokenType.readonly:
-                // Nodes.When these don't start a declaration, they may be the start of a class member if an identifier
-                // immediately follows. Nodes.Otherwise they're an identifier in an expression statement.
+                // nodes.When these don't start a declaration, they may be the start of a class member if an identifier
+                // immediately follows. nodes.Otherwise they're an identifier in an expression statement.
                 return this.isStartOfDeclaration() || !this.lookAhead(this.nextTokenIsIdentifierOrKeywordOnSameLine);
 
             default:
@@ -4531,12 +4627,12 @@ export class Parser {
     }
 
     private isLetDeclaration() {
-        // Nodes.In Nodes.ES6 'let' always starts a lexical declaration if followed by an identifier or {
+        // nodes.In nodes.ES6 'let' always starts a lexical declaration if followed by an identifier or {
         // or [.
         return this.lookAhead(this.nextTokenIsIdentifierOrStartOfDestructuring);
     }
 
-    private parseDeclaration(): Nodes.Statement {
+    private parseDeclaration(): nodes.Statement {
         const fullStart = this.getNodePos();
         const decorators = this.parseDecorators();
         const modifiers = this.parseModifiers();
@@ -4574,9 +4670,9 @@ export class Parser {
                 }
             default:
                 if (decorators || modifiers) {
-                    // Nodes.We reached this point because we encountered decorators and/or modifiers and assumed a declaration
-                    // would follow. Nodes.For recovery and error reporting purposes, return an incomplete declaration.
-                    const result = <Nodes.Statement>this.createMissingNode(TokenType.MissingDeclaration, /*reportAtCurrentPosition*/ true, Nodes.Diagnostics.Declaration_expected);
+                    // nodes.We reached this point because we encountered decorators and/or modifiers and assumed a declaration
+                    // would follow. nodes.For recovery and error reporting purposes, return an incomplete declaration.
+                    const result = <nodes.Statement>this.createMissingNode(TokenType.MissingDeclaration, /*reportAtCurrentPosition*/ true, nodes.Diagnostics.Declaration_expected);
                     result.pos = fullStart;
                     result.decorators = decorators;
                     this.setModifiers(result, modifiers);
@@ -4590,34 +4686,34 @@ export class Parser {
         return !this.lexer.peek().hasLineBreakBeforeStar && (this.isIdentifier() || this.lexer.peek().type === TokenType.StringLiteral);
     }
 
-    private parseFunctionBlockOrSemicolon(isGenerator: boolean, isAsync: boolean, diagnosticMessage?: Nodes.DiagnosticMessage): Nodes.Block {
+    private parseFunctionBlockOrSemicolon(isGenerator: boolean, isAsync: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.Block {
         if (this.lexer.peek().type !== TokenType.openBrace && this.canParseSemicolon()) {
-            this.expectSemicolon();
+            this.tryReadSemicolon();
             return;
         }
 
         return this.parseFunctionBlock(isGenerator, isAsync, /*ignoreMissingOpenBrace*/ false, diagnosticMessage);
     }
 
-    // Nodes.DECLARATIONS
+    // nodes.DECLARATIONS
 
-    private parseArrayBindingElement(): Nodes.BindingElement {
+    private parseArrayBindingElement(): nodes.BindingElement {
         if (this.lexer.peek().type === TokenType.comma) {
-            return new Nodes.BindingElement();
+            return new nodes.BindingElement();
         }
-        const result = new Nodes.BindingElement();
+        const result = new nodes.BindingElement();
         result.dotDotDotToken = this.parseOptionalToken(TokenType.dotDotDot);
         result.name = this.parseBindingName();
         result.initializer = this.parseBindingElementInitializer(/*inParameter*/ false);
         return result;
     }
 
-    private parseObjectBindingElement(): Nodes.BindingElement {
-        const result = new Nodes.BindingElement();
+    private parseObjectBindingElement(): nodes.BindingElement {
+        const result = new nodes.BindingElement();
         const tokenIsIdentifier = this.isIdentifier();
         const propertyName = this.parsePropertyName();
         if (tokenIsIdentifier && this.lexer.peek().type !== TokenType.colon) {
-            result.name = <Nodes.Identifier>propertyName;
+            result.name = <nodes.Identifier>propertyName;
         }
         else {
             this.parseExpected(TokenType.colon);
@@ -4628,18 +4724,18 @@ export class Parser {
         return result;
     }
 
-    private parseObjectBindingPattern(): Nodes.BindingPattern {
-        const result = new Nodes.BindingPattern();
+    private parseObjectBindingPattern(): nodes.BindingPattern {
+        const result = new nodes.BindingPattern();
         this.parseExpected(TokenType.openBrace);
-        result.elements = this.parseDelimitedList(Nodes.ParsingContext.ObjectBindingElements, this.parseObjectBindingElement);
+        result.elements = this.parseDelimitedList(nodes.ParsingContext.ObjectBindingElements, this.parseObjectBindingElement);
         this.parseExpected(TokenType.closeBrace);
         return result;
     }
 
-    private parseArrayBindingPattern(): Nodes.BindingPattern {
-        const result = new Nodes.BindingPattern();
+    private parseArrayBindingPattern(): nodes.BindingPattern {
+        const result = new nodes.BindingPattern();
         this.parseExpected(TokenType.openBracket);
-        result.elements = this.parseDelimitedList(Nodes.ParsingContext.ArrayBindingElements, this.parseArrayBindingElement);
+        result.elements = this.parseDelimitedList(nodes.ParsingContext.ArrayBindingElements, this.parseArrayBindingElement);
         this.parseExpected(TokenType.closeBracket);
         return result;
     }
@@ -4648,7 +4744,7 @@ export class Parser {
         return this.lexer.peek().type === TokenType.openBrace || this.lexer.peek().type === TokenType.openBracket || this.isIdentifier();
     }
 
-    private parseBindingName(): Nodes.Identifier | Nodes.BindingPattern {
+    private parseBindingName(): nodes.Identifier | nodes.BindingPattern {
         if (this.lexer.peek().type === TokenType.openBracket) {
             return this.parseArrayBindingPattern();
         }
@@ -4662,78 +4758,78 @@ export class Parser {
         return this.nextTokenIsIdentifier() && this.nextToken() === TokenType.closeParen;
     }
 
-    private parseFunctionDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.FunctionDeclaration {
-        const result = new Nodes.FunctionDeclaration();
+    private parseFunctionDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.FunctionDeclaration {
+        const result = new nodes.FunctionDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         this.parseExpected(TokenType.function);
         result.asteriskToken = this.parseOptionalToken(TokenType.asterisk);
-        result.name = result.flags & Nodes.NodeFlags.Default ? this.parseOptionalIdentifier() : this.parseIdentifier();
+        result.name = result.flags & nodes.NodeFlags.Default ? this.parseOptionalIdentifier() : this.parseIdentifier();
         const isGenerator = !!result.asteriskToken;
-        const isAsync = !!(result.flags & Nodes.NodeFlags.Async);
+        const isAsync = !!(result.flags & nodes.NodeFlags.Async);
         this.fillSignature(TokenType.colon, /*yieldContext*/ isGenerator, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ false, result);
-        result.body = this.parseFunctionBlockOrSemicolon(isGenerator, isAsync, Nodes.Diagnostics.or_expected);
+        result.body = this.parseFunctionBlockOrSemicolon(isGenerator, isAsync, nodes.Diagnostics.or_expected);
         return this.parseJsDocComment(result);
     }
 
-    private parseConstructorDeclaration(pos: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.ConstructorDeclaration {
-        const result = new Nodes.ConstructorDeclaration();
+    private parseConstructorDeclaration(pos: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.ConstructorDeclaration {
+        const result = new nodes.ConstructorDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         this.parseExpected(TokenType.constructor);
         this.fillSignature(TokenType.colon, /*yieldContext*/ false, /*awaitContext*/ false, /*requireCompleteParameterList*/ false, result);
-        result.body = this.parseFunctionBlockOrSemicolon(/*isGenerator*/ false, /*isAsync*/ false, Nodes.Diagnostics.or_expected);
+        result.body = this.parseFunctionBlockOrSemicolon(/*isGenerator*/ false, /*isAsync*/ false, nodes.Diagnostics.or_expected);
         return this.parseJsDocComment(result);
     }
 
-    private parseMethodDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray, asteriskToken: Nodes.Node, name: Nodes.PropertyName, questionToken: Nodes.Node, diagnosticMessage?: Nodes.DiagnosticMessage): Nodes.MethodDeclaration {
-        const method = new Nodes.MethodDeclaration();
+    private parseMethodDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray, asteriskToken: nodes.Node, name: nodes.PropertyName, questionToken: nodes.Node, diagnosticMessage?: nodes.DiagnosticMessage): nodes.MethodDeclaration {
+        const method = new nodes.MethodDeclaration();
         method.decorators = decorators;
         this.setModifiers(method, modifiers);
         method.asteriskToken = asteriskToken;
         method.name = name;
         method.questionToken = questionToken;
         const isGenerator = !!asteriskToken;
-        const isAsync = !!(method.flags & Nodes.NodeFlags.Async);
+        const isAsync = !!(method.flags & nodes.NodeFlags.Async);
         this.fillSignature(TokenType.colon, /*yieldContext*/ isGenerator, /*awaitContext*/ isAsync, /*requireCompleteParameterList*/ false, method);
         method.body = this.parseFunctionBlockOrSemicolon(isGenerator, isAsync, diagnosticMessage);
         return this.parseJsDocComment(this.finishNode(method));
     }
 
-    private parsePropertyDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray, name: Nodes.PropertyName, questionToken: Nodes.Node): Nodes.ClassElement {
-        const property = new Nodes.PropertyDeclaration();
+    private parsePropertyDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray, name: nodes.PropertyName, questionToken: nodes.Node): nodes.ClassElement {
+        const property = new nodes.PropertyDeclaration();
         property.decorators = decorators;
         this.setModifiers(property, modifiers);
         property.name = name;
         property.questionToken = questionToken;
         property.type = this.parseTypeAnnotation();
 
-        // Nodes.For instance properties specifically, since they are evaluated inside the constructor,
+        // nodes.For instance properties specifically, since they are evaluated inside the constructor,
         // we do *not * want to parse yield expressions, so we specifically turn the yield context
-        // off. Nodes.The grammar would look something like this:
+        // off. nodes.The grammar would look something like this:
         //
-        //    Nodes.MemberVariableDeclaration[Nodes.Yield]:
-        //        Nodes.AccessibilityModifier_opt   Nodes.PropertyName   Nodes.TypeAnnotation_opt   Nodes.Initializer_opt[Nodes.In];
-        //        Nodes.AccessibilityModifier_opt  static_opt  Nodes.PropertyName   Nodes.TypeAnnotation_opt   Nodes.Initializer_opt[Nodes.In, ?Nodes.Yield];
+        //    nodes.MemberVariableDeclaration[nodes.Yield]:
+        //        nodes.AccessibilityModifier_opt   nodes.PropertyName   nodes.TypeAnnotation_opt   nodes.Initializer_opt[nodes.In];
+        //        nodes.AccessibilityModifier_opt  static_opt  nodes.PropertyName   nodes.TypeAnnotation_opt   nodes.Initializer_opt[nodes.In, ?nodes.Yield];
         //
-        // Nodes.The checker may still error in the static case to explicitly disallow the yield expression.
-        property.initializer = modifiers && modifiers.flags & Nodes.NodeFlags.Static
+        // nodes.The checker may still error in the static case to explicitly disallow the yield expression.
+        property.initializer = modifiers && modifiers.flags & nodes.NodeFlags.Static
             ? this.allowInAnd(this.parseNonParameterInitializer)
-            : this.doOutsideOfContext(Nodes.NodeFlags.YieldContext | Nodes.NodeFlags.DisallowInContext, this.parseNonParameterInitializer);
+            : this.doOutsideOfContext(nodes.NodeFlags.YieldContext | nodes.NodeFlags.DisallowInContext, this.parseNonParameterInitializer);
 
-        this.expectSemicolon();
+        this.tryReadSemicolon();
         return this.finishNode(property);
     }
 
-    private parsePropertyOrMethodDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.ClassElement {
+    private parsePropertyOrMethodDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.ClassElement {
         const asteriskToken = this.parseOptionalToken(TokenType.asterisk);
         const name = this.parsePropertyName();
 
-        // Nodes.Note: this is not legal as per the grammar.  Nodes.But we allow it in the parser and
+        // nodes.Note: this is not legal as per the grammar.  nodes.But we allow it in the parser and
         // report an error in the grammar checker.
         const questionToken = this.parseOptionalToken(TokenType.question);
         if (asteriskToken || this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.lessThan) {
-            return this.parseMethodDeclaration(fullStart, decorators, modifiers, asteriskToken, name, questionToken, Nodes.Diagnostics.or_expected);
+            return this.parseMethodDeclaration(fullStart, decorators, modifiers, asteriskToken, name, questionToken, nodes.Diagnostics.or_expected);
         }
         else {
             return this.parsePropertyDeclaration(fullStart, decorators, modifiers, name, questionToken);
@@ -4744,8 +4840,8 @@ export class Parser {
         return this.parseInitializer(/*inParameter*/ false);
     }
 
-    private parseAccessorDeclaration(kind: TokenType, fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.AccessorDeclaration {
-        const result = new Nodes.AccessorDeclaration();
+    private parseAccessorDeclaration(kind: TokenType, fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.AccessorDeclaration {
+        const result = new nodes.AccessorDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         result.name = this.parsePropertyName();
@@ -4774,12 +4870,12 @@ export class Parser {
             return true;
         }
 
-        // Nodes.Eat up all modifiers, but hold on to the last one in case it is actually an identifier.
+        // nodes.Eat up all modifiers, but hold on to the last one in case it is actually an identifier.
         while (isModifierKind(this.lexer.peek().type)) {
             idToken = this.lexer.peek().type;
-            // Nodes.If the idToken is a class modifier (protected, private, public, and static), it is
-            // certain that we are starting to parse class member. Nodes.This allows better error recovery
-            // Nodes.Example:
+            // nodes.If the idToken is a class modifier (protected, private, public, and static), it is
+            // certain that we are starting to parse class member. nodes.This allows better error recovery
+            // nodes.Example:
             //      public foo() ...     // true
             //      public @dec blah ... // true; we will then report an error later
             //      export public ...    // true; we will then report an error later
@@ -4794,40 +4890,40 @@ export class Parser {
             return true;
         }
 
-        // Nodes.Try to get the first property-like this.lexer.peek().type following all modifiers.
-        // Nodes.This can either be an identifier or the 'get' or 'set' keywords.
+        // nodes.Try to get the first property-like this.lexer.peek().type following all modifiers.
+        // nodes.This can either be an identifier or the 'get' or 'set' keywords.
         if (this.isLiteralPropertyName()) {
             idToken = this.lexer.peek().type;
             this.nextToken();
         }
 
-        // Nodes.Index signatures and computed properties are class members; we can parse.
+        // nodes.Index signatures and computed properties are class members; we can parse.
         if (this.lexer.peek().type === TokenType.openBracket) {
             return true;
         }
 
-        // Nodes.If we were able to get any potential identifier...
+        // nodes.If we were able to get any potential identifier...
         if (idToken !== undefined) {
-            // Nodes.If we have a non-keyword identifier, or if we have an accessor, then it's safe to parse.
+            // nodes.If we have a non-keyword identifier, or if we have an accessor, then it's safe to parse.
             if (!isKeyword(idToken) || idToken === TokenType.set || idToken === TokenType.get) {
                 return true;
             }
 
-            // Nodes.If it *is* a keyword, but not an accessor, check a little farther along
+            // nodes.If it *is* a keyword, but not an accessor, check a little farther along
             // to see if it should actually be parsed as a class member.
             switch (this.lexer.peek().type) {
-                case TokenType.openParen:     // Nodes.Method declaration
-                case TokenType.lessThan:      // Nodes.Generic Nodes.Method declaration
-                case TokenType.colon:         // Nodes.Type Nodes.Annotation for declaration
-                case TokenType.equals:        // Nodes.Initializer for declaration
-                case TokenType.question:      // Nodes.Not valid, but permitted so that it gets caught later on.
+                case TokenType.openParen:     // nodes.Method declaration
+                case TokenType.lessThan:      // nodes.Generic nodes.Method declaration
+                case TokenType.colon:         // nodes.Type nodes.Annotation for declaration
+                case TokenType.equals:        // nodes.Initializer for declaration
+                case TokenType.question:      // nodes.Not valid, but permitted so that it gets caught later on.
                     return true;
                 default:
-                    // Nodes.Covers
-                    //  - Nodes.Semicolons     (declaration termination)
-                    //  - Nodes.Closing braces (end-of-class, must be declaration)
-                    //  - Nodes.End-of-files   (not valid, but permitted so that it gets caught later on)
-                    //  - Nodes.Line-breaks    (enabling *automatic semicolon insertion*)
+                    // nodes.Covers
+                    //  - nodes.Semicolons     (declaration termination)
+                    //  - nodes.Closing braces (end-of-class, must be declaration)
+                    //  - nodes.End-of-files   (not valid, but permitted so that it gets caught later on)
+                    //  - nodes.Line-breaks    (enabling *automatic semicolon insertion*)
                     return this.canParseSemicolon();
             }
         }
@@ -4835,8 +4931,8 @@ export class Parser {
         return false;
     }
 
-    private parseDecorators(): Nodes.NodeList<Nodes.Decorator> {
-        let decorators: Nodes.NodeList<Nodes.Decorator>;
+    private parseDecorators(): nodes.NodeList<nodes.Decorator> {
+        let decorators: nodes.NodeList<nodes.Decorator>;
         while (true) {
             const decoratorStart = this.getNodePos();
             if (!this.parseOptional(TokenType.at)) {
@@ -4844,11 +4940,11 @@ export class Parser {
             }
 
             if (!decorators) {
-                decorators = <Nodes.NodeList<Nodes.Decorator>>[];
+                decorators = <nodes.NodeList<nodes.Decorator>>[];
                 decorators.pos = decoratorStart;
             }
 
-            const decorator = new Nodes.Decorator();
+            const decorator = new nodes.Decorator();
             decorator.expression = this.doInDecoratorContext(this.parseLeftHandSideExpressionOrHigher);
             decorators.push(this.finishNode(decorator));
         }
@@ -4859,21 +4955,21 @@ export class Parser {
     }
 
     /*
-     * Nodes.There are situations in which a modifier like 'const' will appear unexpectedly, such as on a class member.
-     * Nodes.In those situations, if we are entirely sure that 'const' is not valid on its own (such as when Nodes.ASI takes effect
+     * nodes.There are situations in which a modifier like 'const' will appear unexpectedly, such as on a class member.
+     * nodes.In those situations, if we are entirely sure that 'const' is not valid on its own (such as when nodes.ASI takes effect
      * and turns it into a standalone declaration), then it is better to parse it and report an error later.
      *
-     * Nodes.In such situations, 'permitInvalidConstAsModifier' should be set to true.
+     * nodes.In such situations, 'permitInvalidConstAsModifier' should be set to true.
      */
-    private parseModifiers(permitInvalidConstAsModifier?: boolean): Nodes.ModifiersArray {
-        let flags: Nodes.NodeFlags = 0;
-        let modifiers: Nodes.ModifiersArray;
+    private parseModifiers(permitInvalidConstAsModifier?: boolean): nodes.ModifiersArray {
+        let flags: nodes.NodeFlags = 0;
+        let modifiers: nodes.ModifiersArray;
         while (true) {
             const modifierStart = this.lexer.getStartPos();
             const modifierKind = this.lexer.peek().type;
 
             if (this.lexer.peek().type === TokenType.const && permitInvalidConstAsModifier) {
-                // Nodes.We need to ensure that any subsequent modifiers appear on the same line
+                // nodes.We need to ensure that any subsequent modifiers appear on the same line
                 // so that when 'const' is a standalone declaration, we don't issue an error.
                 if (!this.tryParse(this.nextTokenIsOnSameLineAndCanFollowModifier)) {
                     break;
@@ -4886,7 +4982,7 @@ export class Parser {
             }
 
             if (!modifiers) {
-                modifiers = <Nodes.ModifiersArray>[];
+                modifiers = <nodes.ModifiersArray>[];
                 modifiers.pos = modifierStart;
             }
 
@@ -4900,14 +4996,14 @@ export class Parser {
         return modifiers;
     }
 
-    private parseModifiersForArrowFunction(): Nodes.ModifiersArray {
+    private parseModifiersForArrowFunction(): nodes.ModifiersArray {
         let flags = 0;
-        let modifiers: Nodes.ModifiersArray;
+        let modifiers: nodes.ModifiersArray;
         if (this.lexer.peek().type === TokenType.async) {
             const modifierStart = this.lexer.getStartPos();
             const modifierKind = this.lexer.peek().type;
             this.nextToken();
-            modifiers = <Nodes.ModifiersArray>[];
+            modifiers = <nodes.ModifiersArray>[];
             modifiers.pos = modifierStart;
             flags |= modifierToFlag(modifierKind);
             modifiers.push(this.finishNode(this.createNode(modifierKind, modifierStart)));
@@ -4918,9 +5014,9 @@ export class Parser {
         return modifiers;
     }
 
-    private parseClassElement(): Nodes.ClassElement {
+    private parseClassElement(): nodes.ClassElement {
         if (this.lexer.peek().type === TokenType.semicolon) {
-            const this.result = new Nodes.SemicolonClassElement();
+            const this.result = new nodes.SemicolonClassElement();
             this.nextToken();
             return this.finishNode(this.result);
         }
@@ -4942,7 +5038,7 @@ export class Parser {
             return this.parseIndexSignatureDeclaration(fullStart, decorators, modifiers);
         }
 
-        // Nodes.It is very important that we check this *after* checking indexers because
+        // nodes.It is very important that we check this *after* checking indexers because
         // the [ this.lexer.peek().type can start an index signature or a computed property name
         if (tokenIsIdentifierOrKeyword(this.lexer.peek().type) ||
             this.lexer.peek().type === TokenType.StringLiteral ||
@@ -4955,28 +5051,28 @@ export class Parser {
 
         if (decorators || modifiers) {
             // treat this as a property declaration with a missing name.
-            const name = <Nodes.Identifier>this.createMissingNode(TokenType.Identifier, /*reportAtCurrentPosition*/ true, Nodes.Diagnostics.Declaration_expected);
+            const name = <nodes.Identifier>this.createMissingNode(TokenType.Identifier, /*reportAtCurrentPosition*/ true, nodes.Diagnostics.Declaration_expected);
             return this.parsePropertyDeclaration(fullStart, decorators, modifiers, name, /*questionToken*/ undefined);
         }
 
         // 'this.isClassMemberStart' should have hinted not to attempt parsing.
-        Nodes.Debug.fail("Nodes.Should not have attempted to parse class member declaration.");
+        nodes.Debug.fail("nodes.Should not have attempted to parse class member declaration.");
     }
 
-    private parseClassExpression(): Nodes.ClassExpression {
-        return <Nodes.ClassExpression>this.parseClassDeclarationOrExpression(
+    private parseClassExpression(): nodes.ClassExpression {
+        return <nodes.ClassExpression>this.parseClassDeclarationOrExpression(
                 /*fullStart*/ this.lexer.getStartPos(),
                 /*decorators*/ undefined,
                 /*modifiers*/ undefined,
             TokenType.ClassExpression);
     }
 
-    private parseClassDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.ClassDeclaration {
-        return <Nodes.ClassDeclaration>this.parseClassDeclarationOrExpression(fullStart, decorators, modifiers, TokenType.ClassDeclaration);
+    private parseClassDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.ClassDeclaration {
+        return <nodes.ClassDeclaration>this.parseClassDeclarationOrExpression(fullStart, decorators, modifiers, TokenType.ClassDeclaration);
     }
 
-    private parseClassDeclarationOrExpression(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray, kind: TokenType): Nodes.ClassLikeDeclaration {
-        const result = new Nodes.ClassLikeDeclaration();
+    private parseClassDeclarationOrExpression(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray, kind: TokenType): nodes.ClassLikeDeclaration {
+        const result = new nodes.ClassLikeDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         this.parseExpected(TokenType.class);
@@ -4985,19 +5081,19 @@ export class Parser {
         result.heritageClauses = this.parseHeritageClauses(/*isClassHeritageClause*/ true);
 
         if (this.parseExpected(TokenType.openBrace)) {
-            // Nodes.ClassTail[Nodes.Yield,Nodes.Await] : (Nodes.Modified) Nodes.See 14.5
-            //      Nodes.ClassHeritage[?Nodes.Yield,?Nodes.Await]opt { Nodes.ClassBody[?Nodes.Yield,?Nodes.Await]opt }
+            // nodes.ClassTail[nodes.Yield,nodes.Await] : (nodes.Modified) nodes.See 14.5
+            //      nodes.ClassHeritage[?nodes.Yield,?nodes.Await]opt { nodes.ClassBody[?nodes.Yield,?nodes.Await]opt }
             result.members = this.parseClassMembers();
             this.parseExpected(TokenType.closeBrace);
         }
         else {
-            result.members = this.createMissingList<Nodes.ClassElement>();
+            result.members = this.createMissingList<nodes.ClassElement>();
         }
 
         return result;
     }
 
-    private parseNameOfClassDeclarationOrExpression(): Nodes.Identifier {
+    private parseNameOfClassDeclarationOrExpression(): nodes.Identifier {
         // implements is a future reserved word so
         // 'class implements' might mean either
         // - class expression with omitted name, 'implements' starts heritage clause
@@ -5012,12 +5108,12 @@ export class Parser {
         return this.lexer.peek().type === TokenType.implements && this.lookAhead(this.nextTokenIsIdentifierOrKeyword);
     }
 
-    private parseHeritageClauses(isClassHeritageClause: boolean): Nodes.NodeList<Nodes.HeritageClause> {
-        // Nodes.ClassTail[Nodes.Yield,Nodes.Await] : (Nodes.Modified) Nodes.See 14.5
-        //      Nodes.ClassHeritage[?Nodes.Yield,?Nodes.Await]opt { Nodes.ClassBody[?Nodes.Yield,?Nodes.Await]opt }
+    private parseHeritageClauses(isClassHeritageClause: boolean): nodes.NodeList<nodes.HeritageClause> {
+        // nodes.ClassTail[nodes.Yield,nodes.Await] : (nodes.Modified) nodes.See 14.5
+        //      nodes.ClassHeritage[?nodes.Yield,?nodes.Await]opt { nodes.ClassBody[?nodes.Yield,?nodes.Await]opt }
 
         if (this.isHeritageClause()) {
-            return this.parseList(Nodes.ParsingContext.HeritageClauses, this.parseHeritageClause);
+            return this.parseList(nodes.ParsingContext.HeritageClauses, this.parseHeritageClause);
         }
 
         return undefined;
@@ -5025,21 +5121,21 @@ export class Parser {
 
     private parseHeritageClause() {
         if (this.lexer.peek().type === TokenType.extends || this.lexer.peek().type === TokenType.implements) {
-            const result = new Nodes.HeritageClause();
+            const result = new nodes.HeritageClause();
             result.token = this.lexer.peek().type;
             this.nextToken();
-            result.types = this.parseDelimitedList(Nodes.ParsingContext.HeritageClauseElement, this.parseExpressionWithTypeArguments);
+            result.types = this.parseDelimitedList(nodes.ParsingContext.HeritageClauseElement, this.parseExpressionWithTypeArguments);
             return result;
         }
 
         return undefined;
     }
 
-    private parseExpressionWithTypeArguments(): Nodes.ExpressionWithTypeArguments {
-        const result = new Nodes.ExpressionWithTypeArguments();
+    private parseExpressionWithTypeArguments(): nodes.ExpressionWithTypeArguments {
+        const result = new nodes.ExpressionWithTypeArguments();
         result.expression = this.parseLeftHandSideExpressionOrHigher();
         if (this.lexer.peek().type === TokenType.lessThan) {
-            result.typeArguments = this.parseBracketedList(Nodes.ParsingContext.TypeArguments, this.parseType, TokenType.lessThan, TokenType.greaterThan);
+            result.typeArguments = this.parseBracketedList(nodes.ParsingContext.TypeArguments, this.parseType, TokenType.lessThan, TokenType.greaterThan);
         }
 
         return result;
@@ -5050,11 +5146,11 @@ export class Parser {
     }
 
     private parseClassMembers() {
-        return this.parseList(Nodes.ParsingContext.ClassMembers, this.parseClassElement);
+        return this.parseList(nodes.ParsingContext.ClassMembers, this.parseClassElement);
     }
 
-    private parseInterfaceDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.InterfaceDeclaration {
-        const result = new Nodes.InterfaceDeclaration();
+    private parseInterfaceDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.InterfaceDeclaration {
+        const result = new nodes.InterfaceDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         this.parseExpected(TokenType.interface);
@@ -5065,8 +5161,8 @@ export class Parser {
         return result;
     }
 
-    private parseTypeAliasDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.TypeAliasDeclaration {
-        const result = new Nodes.TypeAliasDeclaration();
+    private parseTypeAliasDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.TypeAliasDeclaration {
+        const result = new nodes.TypeAliasDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         this.parseExpected(TokenType.type);
@@ -5074,72 +5170,72 @@ export class Parser {
         result.typeParameters = this.parseTypeParameters();
         this.parseExpected(TokenType.equals);
         result.type = this.parseType();
-        this.expectSemicolon();
+        this.tryReadSemicolon();
         return result;
     }
 
-    // Nodes.In an ambient declaration, the grammar only allows integer literals as initializers.
-    // Nodes.In a non-ambient declaration, the grammar allows uninitialized members only in a
-    // Nodes.ConstantEnumMemberSection, which starts at the beginning of an this.enum declaration
+    // nodes.In an ambient declaration, the grammar only allows integer literals as initializers.
+    // nodes.In a non-ambient declaration, the grammar allows uninitialized members only in a
+    // nodes.ConstantEnumMemberSection, which starts at the beginning of an this.enum declaration
     // or any time an integer literal initializer is encountered.
-    private parseEnumMember(): Nodes.EnumMember {
-        const result = new Nodes.EnumMember());
+    private parseEnumMember(): nodes.EnumMember {
+        const result = new nodes.EnumMember());
         result.name = this.parsePropertyName();
         result.initializer = this.allowInAnd(this.parseNonParameterInitializer);
         return result;
     }
 
-    private parseEnumDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.EnumDeclaration {
-        const result = new Nodes.EnumDeclaration();
+    private parseEnumDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.EnumDeclaration {
+        const result = new nodes.EnumDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         this.parseExpected(TokenType.enum);
         result.name = this.parseIdentifier();
         if (this.parseExpected(TokenType.openBrace)) {
-            result.members = this.parseDelimitedList(Nodes.ParsingContext.EnumMembers, this.parseEnumMember);
+            result.members = this.parseDelimitedList(nodes.ParsingContext.EnumMembers, this.parseEnumMember);
             this.parseExpected(TokenType.closeBrace);
         }
         else {
-            result.members = this.createMissingList<Nodes.EnumMember>();
+            result.members = this.createMissingList<nodes.EnumMember>();
         }
         return result;
     }
 
-    private parseModuleBlock(): Nodes.ModuleBlock {
-        const result = new Nodes.ModuleBlock());
+    private parseModuleBlock(): nodes.ModuleBlock {
+        const result = new nodes.ModuleBlock());
         if (this.parseExpected(TokenType.openBrace)) {
-            result.statements = this.parseList(Nodes.ParsingContext.BlockStatements, this.parseStatement);
+            result.statements = this.parseList(nodes.ParsingContext.BlockStatements, this.parseStatement);
             this.parseExpected(TokenType.closeBrace);
         }
         else {
-            result.statements = this.createMissingList<Nodes.Statement>();
+            result.statements = this.createMissingList<nodes.Statement>();
         }
         return result;
     }
 
-    private parseModuleOrNamespaceDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray, flags: Nodes.NodeFlags): Nodes.ModuleDeclaration {
-        const result = new Nodes.ModuleDeclaration();
-        // Nodes.If we are parsing a dotted namespace name, we want to
-        // propagate the 'Nodes.Namespace' flag across the names if set.
-        const namespaceFlag = flags & Nodes.NodeFlags.Namespace;
+    private parseModuleOrNamespaceDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray, flags: nodes.NodeFlags): nodes.ModuleDeclaration {
+        const result = new nodes.ModuleDeclaration();
+        // nodes.If we are parsing a dotted namespace name, we want to
+        // propagate the 'nodes.Namespace' flag across the names if set.
+        const namespaceFlag = flags & nodes.NodeFlags.Namespace;
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         result.flags |= flags;
         result.name = this.parseIdentifier();
         result.body = this.parseOptional(TokenType.dot)
-            ? this.parseModuleOrNamespaceDeclaration(this.getNodePos(), /*decorators*/ undefined, /*modifiers*/ undefined, Nodes.NodeFlags.Export | namespaceFlag)
+            ? this.parseModuleOrNamespaceDeclaration(this.getNodePos(), /*decorators*/ undefined, /*modifiers*/ undefined, nodes.NodeFlags.Export | namespaceFlag)
             : this.parseModuleBlock();
         return result;
     }
 
-    private parseAmbientExternalModuleDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.ModuleDeclaration {
-        const result = new Nodes.ModuleDeclaration();
+    private parseAmbientExternalModuleDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.ModuleDeclaration {
+        const result = new nodes.ModuleDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         if (this.lexer.peek().type === TokenType.global) {
             // parse 'global' as name of global scope augmentation
             result.name = this.parseIdentifier();
-            result.flags |= Nodes.NodeFlags.GlobalAugmentation;
+            result.flags |= nodes.NodeFlags.GlobalAugmentation;
         }
         else {
             result.name = this.parseLiteralNode(/*internName*/ true);
@@ -5149,20 +5245,20 @@ export class Parser {
             result.body = this.parseModuleBlock();
         }
         else {
-            this.expectSemicolon();
+            this.tryReadSemicolon();
         }
 
         return result;
     }
 
-    private parseModuleDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.ModuleDeclaration {
+    private parseModuleDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.ModuleDeclaration {
         let flags = modifiers ? modifiers.flags : 0;
         if (this.lexer.peek().type === TokenType.global) {
             // global augmentation
             return this.parseAmbientExternalModuleDeclaration(fullStart, decorators, modifiers);
         }
         else if (this.parseOptional(TokenType.namespace)) {
-            flags |= Nodes.NodeFlags.Namespace;
+            flags |= nodes.NodeFlags.Namespace;
         }
         else {
             this.parseExpected(TokenType.module);
@@ -5186,8 +5282,8 @@ export class Parser {
         return this.nextToken() === TokenType.slash;
     }
 
-    private parseNamespaceExportDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.NamespaceExportDeclaration {
-        const exportDeclaration = new Nodes.NamespaceExportDeclaration();
+    private parseNamespaceExportDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.NamespaceExportDeclaration {
+        const exportDeclaration = new nodes.NamespaceExportDeclaration();
         exportDeclaration.decorators = decorators;
         exportDeclaration.modifiers = modifiers;
         this.parseExpected(TokenType.as);
@@ -5200,36 +5296,36 @@ export class Parser {
         return this.finishNode(exportDeclaration);
     }
 
-    private parseImportDeclarationOrImportEqualsDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.ImportEqualsDeclaration | Nodes.ImportDeclaration {
+    private parseImportDeclarationOrImportEqualsDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.ImportEqualsDeclaration | nodes.ImportDeclaration {
         this.parseExpected(TokenType.import);
         const afterImportPos = this.lexer.getStartPos();
 
-        let identifier: Nodes.Identifier;
+        let identifier: nodes.Identifier;
         if (this.isIdentifier()) {
             identifier = this.parseIdentifier();
             if (this.lexer.peek().type !== TokenType.comma && this.lexer.peek().type !== TokenType.from) {
-                // Nodes.ImportEquals declaration of type:
+                // nodes.ImportEquals declaration of type:
                 // import x = require("mod"); or
                 // import x = M.x;
-                const importEqualsDeclaration = new Nodes.ImportEqualsDeclaration();
+                const importEqualsDeclaration = new nodes.ImportEqualsDeclaration();
                 importEqualsDeclaration.decorators = decorators;
                 this.setModifiers(importEqualsDeclaration, modifiers);
                 importEqualsDeclaration.name = identifier;
                 this.parseExpected(TokenType.equals);
                 importEqualsDeclaration.moduleReference = this.parseModuleReference();
-                this.expectSemicolon();
+                this.tryReadSemicolon();
                 return this.finishNode(importEqualsDeclaration);
             }
         }
 
-        // Nodes.Import statement
-        const importDeclaration = new Nodes.ImportDeclaration();
+        // nodes.Import statement
+        const importDeclaration = new nodes.ImportDeclaration();
         importDeclaration.decorators = decorators;
         this.setModifiers(importDeclaration, modifiers);
 
-        // Nodes.ImportDeclaration:
-        //  import Nodes.ImportClause from Nodes.ModuleSpecifier ;
-        //  import Nodes.ModuleSpecifier;
+        // nodes.ImportDeclaration:
+        //  import nodes.ImportClause from nodes.ModuleSpecifier ;
+        //  import nodes.ModuleSpecifier;
         if (identifier || // import id
             this.lexer.peek().type === TokenType.asterisk || // import *
             this.lexer.peek().type === TokenType.openBrace) { // import {
@@ -5238,26 +5334,26 @@ export class Parser {
         }
 
         importDeclaration.moduleSpecifier = this.parseModuleSpecifier();
-        this.expectSemicolon();
+        this.tryReadSemicolon();
         return this.finishNode(importDeclaration);
     }
 
-    private parseImportClause(identifier: Nodes.Identifier, fullStart: number) {
-        // Nodes.ImportClause:
-        //  Nodes.ImportedDefaultBinding
-        //  Nodes.NameSpaceImport
-        //  Nodes.NamedImports
-        //  Nodes.ImportedDefaultBinding, Nodes.NameSpaceImport
-        //  Nodes.ImportedDefaultBinding, Nodes.NamedImports
+    private parseImportClause(identifier: nodes.Identifier, fullStart: number) {
+        // nodes.ImportClause:
+        //  nodes.ImportedDefaultBinding
+        //  nodes.NameSpaceImport
+        //  nodes.NamedImports
+        //  nodes.ImportedDefaultBinding, nodes.NameSpaceImport
+        //  nodes.ImportedDefaultBinding, nodes.NamedImports
 
-        const importClause = new Nodes.ImportClause();
+        const importClause = new nodes.ImportClause();
         if (identifier) {
-            // Nodes.ImportedDefaultBinding:
-            //  Nodes.ImportedBinding
+            // nodes.ImportedDefaultBinding:
+            //  nodes.ImportedBinding
             importClause.name = identifier;
         }
 
-        // Nodes.If there was no default import or if there is comma this.lexer.peek().type after default import
+        // nodes.If there was no default import or if there is comma this.lexer.peek().type after default import
         // parse namespace or named imports
         if (!importClause.name ||
             this.parseOptional(TokenType.comma)) {
@@ -5274,7 +5370,7 @@ export class Parser {
     }
 
     private parseExternalModuleReference() {
-        const result = new Nodes.ExternalModuleReference();
+        const result = new nodes.ExternalModuleReference();
         this.parseExpected(TokenType.require);
         this.parseExpected(TokenType.openParen);
         result.expression = this.parseModuleSpecifier();
@@ -5282,42 +5378,42 @@ export class Parser {
         return result;
     }
 
-    private parseModuleSpecifier(): Nodes.Expression {
+    private parseModuleSpecifier(): nodes.Expression {
         if (this.lexer.peek().type === TokenType.StringLiteral) {
             const this.result = this.parseLiteralNode();
-            this.internIdentifier((<Nodes.LiteralExpression>this.result).text);
+            this.internIdentifier((<nodes.LiteralExpression>this.result).text);
             return this.result;
         }
         else {
-            // Nodes.We allow arbitrary expressions here, even though the grammar only allows string
-            // literals.  Nodes.We check to ensure that it is only a string literal later in the grammar
+            // nodes.We allow arbitrary expressions here, even though the grammar only allows string
+            // literals.  nodes.We check to ensure that it is only a string literal later in the grammar
             // check pass.
             return this.parseExpression();
         }
     }
 
-    private parseNamespaceImport(): Nodes.NamespaceImport {
-        // Nodes.NameSpaceImport:
-        //  * as Nodes.ImportedBinding
-        const namespaceImport = new Nodes.NamespaceImport();
+    private parseNamespaceImport(): nodes.NamespaceImport {
+        // nodes.NameSpaceImport:
+        //  * as nodes.ImportedBinding
+        const namespaceImport = new nodes.NamespaceImport();
         this.parseExpected(TokenType.asterisk);
         this.parseExpected(TokenType.as);
         namespaceImport.name = this.parseIdentifier();
         return this.finishNode(namespaceImport);
     }
 
-    private parseNamedImportsOrExports(kind: TokenType): Nodes.NamedImportsOrExports {
-        const result = new Nodes.NamedImports();
+    private parseNamedImportsOrExports(kind: TokenType): nodes.NamedImportsOrExports {
+        const result = new nodes.NamedImports();
 
-        // Nodes.NamedImports:
+        // nodes.NamedImports:
         //  { }
-        //  { Nodes.ImportsList }
-        //  { Nodes.ImportsList, }
+        //  { nodes.ImportsList }
+        //  { nodes.ImportsList, }
 
-        // Nodes.ImportsList:
-        //  Nodes.ImportSpecifier
-        //  Nodes.ImportsList, Nodes.ImportSpecifier
-        result.elements = this.parseBracketedList(Nodes.ParsingContext.ImportOrExportSpecifiers,
+        // nodes.ImportsList:
+        //  nodes.ImportSpecifier
+        //  nodes.ImportsList, nodes.ImportSpecifier
+        result.elements = this.parseBracketedList(nodes.ParsingContext.ImportOrExportSpecifiers,
             kind === TokenType.NamedImports ? this.parseImportSpecifier : this.parseExportSpecifier,
             TokenType.openBrace, TokenType.closeBrace);
         return result;
@@ -5331,14 +5427,14 @@ export class Parser {
         return this.parseImportOrExportSpecifier(TokenType.ImportSpecifier);
     }
 
-    private parseImportOrExportSpecifier(kind: TokenType): Nodes.ImportOrExportSpecifier {
-        const result = new Nodes.ImportSpecifier();
-        // Nodes.ImportSpecifier:
-        //   Nodes.BindingIdentifier
-        //   Nodes.IdentifierName as Nodes.BindingIdentifier
-        // Nodes.ExportSpecifier:
-        //   Nodes.IdentifierName
-        //   Nodes.IdentifierName as Nodes.IdentifierName
+    private parseImportOrExportSpecifier(kind: TokenType): nodes.ImportOrExportSpecifier {
+        const result = new nodes.ImportSpecifier();
+        // nodes.ImportSpecifier:
+        //   nodes.BindingIdentifier
+        //   nodes.IdentifierName as nodes.BindingIdentifier
+        // nodes.ExportSpecifier:
+        //   nodes.IdentifierName
+        //   nodes.IdentifierName as nodes.IdentifierName
         let checkIdentifierIsKeyword = isKeyword(this.lexer.peek().type) && !this.isIdentifier();
         let checkIdentifierStart = this.lexer.getTokenPos();
         let checkIdentifierEnd = this.lexer.getTextPos();
@@ -5355,14 +5451,14 @@ export class Parser {
             result.name = identifierName;
         }
         if (kind === TokenType.ImportSpecifier && checkIdentifierIsKeyword) {
-            // Nodes.Report error identifier expected
-            this.parseErrorAtPosition(checkIdentifierStart, checkIdentifierEnd - checkIdentifierStart, Nodes.Diagnostics.Identifier_expected);
+            // nodes.Report error identifier expected
+            this.parseErrorAtPosition(checkIdentifierStart, checkIdentifierEnd - checkIdentifierStart, nodes.Diagnostics.Identifier_expected);
         }
         return result;
     }
 
-    private parseExportDeclaration(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.ExportDeclaration {
-        const result = new Nodes.ExportDeclaration();
+    private parseExportDeclaration(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.ExportDeclaration {
+        const result = new nodes.ExportDeclaration();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         if (this.parseOptional(TokenType.asterisk)) {
@@ -5372,20 +5468,20 @@ export class Parser {
         else {
             result.exportClause = this.parseNamedImportsOrExports(TokenType.NamedExports);
 
-            // Nodes.It is not uncommon to accidentally omit the 'from' keyword. Nodes.Additionally, in editing scenarios,
+            // nodes.It is not uncommon to accidentally omit the 'from' keyword. nodes.Additionally, in editing scenarios,
             // the 'from' keyword can be parsed as a named export when the export clause is unterminated (i.e. `export { from "moduleName";`)
-            // Nodes.If we don't have a 'from' keyword, see if we have a string literal such that Nodes.ASI won't take effect.
+            // nodes.If we don't have a 'from' keyword, see if we have a string literal such that nodes.ASI won't take effect.
             if (this.lexer.peek().type === TokenType.from || (this.lexer.peek().type === TokenType.StringLiteral && !this.lexer.peek().hasLineBreakBeforeStar)) {
                 this.parseExpected(TokenType.from);
                 result.moduleSpecifier = this.parseModuleSpecifier();
             }
         }
-        this.expectSemicolon();
+        this.tryReadSemicolon();
         return result;
     }
 
-    private parseExportAssignment(fullStart: number, decorators: Nodes.NodeList<Nodes.Decorator>, modifiers: Nodes.ModifiersArray): Nodes.ExportAssignment {
-        const result = new Nodes.ExportAssignment();
+    private parseExportAssignment(fullStart: number, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.ModifiersArray): nodes.ExportAssignment {
+        const result = new nodes.ExportAssignment();
         result.decorators = decorators;
         this.setModifiers(result, modifiers);
         if (this.parseOptional(TokenType.equals)) {
@@ -5395,19 +5491,19 @@ export class Parser {
             this.parseExpected(TokenType.default);
         }
         result.expression = this.parseAssignmentExpressionOrHigher();
-        this.expectSemicolon();
+        this.tryReadSemicolon();
         return result;
     }
 
-    private processReferenceComments(sourceFile: Nodes.SourceFile): void {
-        const triviaScanner = createScanner(this.sourceFile.languageVersion, /*skipTrivia*/false, Nodes.LanguageVariant.Standard, this.sourceText);
-        const referencedFiles: Nodes.FileReference[] = [];
-        const typeReferenceDirectives: Nodes.FileReference[] = [];
+    private processReferenceComments(sourceFile: nodes.SourceFile): void {
+        const triviaScanner = createScanner(this.sourceFile.languageVersion, /*skipTrivia*/false, nodes.LanguageVariant.Standard, this.sourceText);
+        const referencedFiles: nodes.FileReference[] = [];
+        const typeReferenceDirectives: nodes.FileReference[] = [];
         const amdDependencies: { path: string; name: string }[] = [];
         let amdModuleName: string;
 
-        // Nodes.Keep scanning all the leading trivia in the file until we get to something that
-        // isn't trivia.  Nodes.Any single line comment will be analyzed to see if it is a
+        // nodes.Keep scanning all the leading trivia in the file until we get to something that
+        // isn't trivia.  nodes.Any single line comment will be analyzed to see if it is a
         // reference comment.
         while (true) {
             const kind = triviaScanner.scan();
@@ -5445,7 +5541,7 @@ export class Parser {
                 const amdModuleNameMatchResult = amdModuleNameRegEx.exec(comment);
                 if (amdModuleNameMatchResult) {
                     if (amdModuleName) {
-                        this.parseDiagnostics.push(createFileDiagnostic(this.sourceFile, range.pos, range.end - range.pos, Nodes.Diagnostics.An_AMD_module_cannot_have_multiple_name_assignments));
+                        this.parseDiagnostics.push(createFileDiagnostic(this.sourceFile, range.pos, range.end - range.pos, nodes.Diagnostics.An_AMD_module_cannot_have_multiple_name_assignments));
                     }
                     amdModuleName = amdModuleNameMatchResult[2];
                 }
@@ -5471,10 +5567,10 @@ export class Parser {
         this.sourceFile.moduleName = amdModuleName;
     }
 
-    private setExternalModuleIndicator(sourceFile: Nodes.SourceFile) {
+    private setExternalModuleIndicator(sourceFile: nodes.SourceFile) {
         this.sourceFile.externalModuleIndicator = forEach(this.sourceFile.statements, result =>
-            result.flags & Nodes.NodeFlags.Export
-                || result.kind === TokenType.ImportEqualsDeclaration && (<Nodes.ImportEqualsDeclaration>result).moduleReference.kind === TokenType.ExternalModuleReference
+            result.flags & nodes.NodeFlags.Export
+                || result.kind === TokenType.ImportEqualsDeclaration && (<nodes.ImportEqualsDeclaration>result).moduleReference.kind === TokenType.ExternalModuleReference
                 || result.kind === TokenType.ImportDeclaration
                 || result.kind === TokenType.ExportAssignment
                 || result.kind === TokenType.ExportDeclaration
@@ -5483,5 +5579,82 @@ export class Parser {
     }
 
     // #endregion
+
+}
+
+/**
+ * 表示语法解析的相关配置。
+ */
+export interface ParserOptions extends LexerOptions {
+
+    /**
+     * 禁止省略语句末尾的分号。
+     */
+    disallowMissingSemicolon?: boolean,
+
+    /**
+     * 使用智能分号插入策略。使用该策略可以减少省略分号引发的语法错误。
+     */
+    useStandardSemicolonInsertion?: boolean,
+
+    /**
+     * 禁止省略条件表达式的括号。
+     */
+    disallowMissingParenthese?: boolean,
+
+    /**
+     * 禁止省略 switch (true) 中的 (true)。
+     */
+    disallowMissingSwitchCondition?: boolean,
+
+    /**
+     * 禁止使用 case else 语法代替 default。
+     */
+    disallowCaseElse?: boolean,
+
+    /**
+     * 使用 for..in 兼容变量定义。
+     */
+    useCompatibleForInAndForOf?: boolean,
+
+    /**
+     * 禁止使用 for..of 语法。
+     */
+    disallowForOf?: boolean,
+
+    /**
+     * 禁止使用 for..of 逗号语法。
+     */
+    disallowForOfCommaExpression?: boolean,
+
+    /**
+     * 禁止使用 for..to 语法。
+     */
+    disallowForTo?: boolean,
+
+    /**
+     * 禁止使用 throw 空参数语法。
+     */
+    disallowRethrow?: boolean,
+
+    /**
+     * 禁止使用 with 语句定义语法。
+     */
+    disallowWithVaribale?: boolean,
+
+    /**
+     * 禁止省略 try 语句块的 {}。
+     */
+    disallowMissingTryBlock?: boolean,
+
+    /**
+     * 禁止省略 catch 分句的变量名。
+     */
+    disallowMissingCatchVaribale?: boolean,
+
+    /**
+     * 禁止不含 catch 和 finally 分句的 try 语句。
+     */
+    disallowSimpleTryBlock?: boolean,
 
 }

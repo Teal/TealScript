@@ -1081,7 +1081,7 @@ export class BreakStatement extends Statement {
 }
 
 /**
- * 表示一个 return 语句(`return xx;`)。
+ * 表示一个 return 语句(`return x;`)。
  */
 export class ReturnStatement extends Statement {
 
@@ -1117,7 +1117,7 @@ export class ReturnStatement extends Statement {
 }
 
 /**
- * 表示一个 throw 语句(`throw xx;`)。
+ * 表示一个 throw 语句(`throw x;`)。
  */
 export class ThrowStatement extends Statement {
 
@@ -1153,7 +1153,7 @@ export class ThrowStatement extends Statement {
 }
 
 /**
- * 表示一个 try 语句(try {...} catch(`e) {...}`)。
+ * 表示一个 try 语句(`try {...} catch(e) {...}`)。
  */
 export class TryStatement extends Statement {
 
@@ -1309,7 +1309,7 @@ export class DebuggerStatement extends Statement {
 }
 
 /**
- * 表示一个 with 语句(with(`xx) ...`)。
+ * 表示一个 with 语句(`with(x) ...`)。
  */
 export class WithStatement extends Statement {
 

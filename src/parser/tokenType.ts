@@ -1,8 +1,10 @@
 ﻿/**
  * @fileOverview 标记和关键字
+ * @author xuld@vip.qq.com
+ * @statable
  */
 
-import {CharCode} from './charCode';
+import {CharCode} from './unicode';
 
 /**
  * 表示一个标记类型。
@@ -32,9 +34,19 @@ export enum TokenType {
     MIN_EXPRESSION_START,
 
     /**
+     * 最小的定义开始。
+     */
+    MIN_DECLARATION_START,
+
+    /**
      * 最小的修饰符前缀。
      */
     MIN_MODIFIER,
+
+    /**
+     * 最小的保留字 1。
+     */
+    MIN_RESERVERD_WORD_1,
 
     /**
      * 关键字 export(仅在 JavaScript 7)。
@@ -91,11 +103,6 @@ export enum TokenType {
     // #region 定义(Declarations)
 
     /**
-     * 最小的定义前缀。
-     */
-    MIN_DECLARATION,
-
-    /**
      * 关键字 enum(仅在 JavaScript 7)。
      */
     enum,
@@ -111,14 +118,19 @@ export enum TokenType {
     class,
 
     /**
+     * 最大的保留字 1。
+     */
+    MAX_RESERVERD_WORD_1,
+
+    /**
      * 关键字 function。
      */
     function,
 
     /**
-     * 最大的定义前缀。
+     * 最大的定义开始。
      */
-    MAX_DECLARATION,
+    MAX_DECLARATION_START,
 
     // #endregion
 
@@ -635,9 +647,24 @@ export enum TokenType {
     try,
 
     /**
+     * 关键字 debugger。
+     */
+    debugger,
+
+    /**
+     * 关键字 with。
+     */
+    with,
+
+    /**
      * 关键字 var。
      */
     var,
+
+    /**
+     * 最小的保留字 2。
+     */
+    MIN_RESERVERD_WORD_2,
 
     /**
      * 关键字 const(仅在 JavaScript 7)。
@@ -648,16 +675,6 @@ export enum TokenType {
      * 关键字 let(仅在 JavaScript 7)。
      */
     let,
-
-    /**
-     * 关键字 debugger。
-     */
-    debugger,
-
-    /**
-     * 关键字 with。
-     */
-    with,
 
     /**
      * 关键字 import(仅在 JavaScript 7)。
@@ -683,6 +700,11 @@ export enum TokenType {
      * 关键字 module(仅在 TypeScript)。
      */
     module,
+
+    /**
+     * 最大的保留字 2。
+     */
+    MAX_RESERVERD_WORD_2,
 
     /**
      * 最大的语句开始。
@@ -717,6 +739,11 @@ export enum TokenType {
      * 关键字 finally。
      */
     finally,
+
+    /**
+     * 最小的保留字 3。
+     */
+    MIN_RESERVERD_WORD_3,
 
     /**
      * 关键字 from(仅在 JavaScript 7)。
@@ -808,6 +835,11 @@ export enum TokenType {
     never,
 
     /**
+     * 最大的保留字 3。
+     */
+    MAX_RESERVERD_WORD_3,
+
+    /**
      * 最大的内置类型。
      */
     MAX_PREDEFINED_TYPE,
@@ -871,6 +903,15 @@ export function isModifier(token: TokenType) {
 }
 
 /**
+ * 判断指定的标记是否是定义开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isDeclarationStart(token: TokenType) {
+    return token > TokenType.MIN_DECLARATION_START && token < TokenType.MAX_DECLARATION_START;
+}
+
+/**
  * 判断指定的标记是否是语句开始。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
@@ -896,6 +937,19 @@ export function isExpressionStart(token: TokenType) {
 export function isKeyword(token: TokenType) {
     const ch = tokenToString(token).charCodeAt(0);
     return ch >= CharCode.a && ch <= CharCode.z;
+}
+
+/**
+ * 判断指定的标记是否是保留字。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isReservedWord(token: TokenType) {
+    return token > TokenType.MIN_RESERVERD_WORD_1 && token < TokenType.MAX_RESERVERD_WORD_1 ||
+        token > TokenType.MIN_RESERVERD_WORD_2 && token < TokenType.MAX_RESERVERD_WORD_2 ||
+        token > TokenType.MIN_RESERVERD_WORD_3 && token < TokenType.MAX_RESERVERD_WORD_3 ||
+        token === TokenType.super || token === TokenType.yield || token === TokenType.await ||
+        token === TokenType.as || token === TokenType.is;
 }
 
 /**

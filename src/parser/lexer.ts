@@ -148,7 +148,7 @@ export class Lexer {
      * @param start 注释的开始位置。
      * @param end 注释的结束位置。
      */
-    comment(multiLineComment: boolean, start: number, end: number) {
+    comment(multiLineComment?: boolean, start: number, end: number) {
         if (options.parseComments) {
             this.comments = this.comments || [];
             this.comments.push({ start, end });
@@ -1058,6 +1058,38 @@ export class Lexer {
 }
 
 /**
+ * 表示词法解析的相关配置。
+ */
+export interface LexerOptions {
+
+    /**
+     * 是否使用 ES3 规范的标识符编码。
+     */
+    useES3Identifier?: boolean,
+
+    /**
+     * 禁止出现 Unix #! 标记。
+     */
+    disallowShebang?: boolean,
+
+    /**
+     * 禁止出现未关闭的多行字符串和注释。
+     */
+    disallowUnterminatedLiteral?: boolean,
+
+    /**
+     * 禁止出现 Git 冲突标记(<<<<<<<)。
+     */
+    disallowGitConflictMarker?: boolean,
+
+    /**
+     * 禁止使用 Unicode 编码的关键字字符串。
+     */
+    disallowEscapedKeyword?: boolean,
+
+}
+
+/**
  * 表示一个标记。
  */
 export interface Token {
@@ -1085,7 +1117,7 @@ export interface Token {
     /**
      * 判断当前标记之前是否存在换行符。如果不存在换行符则返回 undefined。
      */
-    hasLineBreakBeforeStart?: boolean;
+    hasLineBreakBeforeStart??: boolean;
 
     /**
      * 获取当前标记相关的数据。如果当前标记不存在数据则返回 undefined。

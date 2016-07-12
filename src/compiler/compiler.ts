@@ -8,101 +8,7 @@
  */
 export var options = {
 
-    // #region 词法
-
-    /**
-     * 是否使用 ES3 规范的标识符编码。
-     */
-    useES3Identifier: false,
-
-    /**
-     * 禁止出现 Unix #! 标记。
-     */
-    disallowShebang: false,
-
-    /**
-     * 禁止出现未关闭的多行字符串和注释。
-     */
-    disallowUnterminatedLiteral: false,
-
-    /**
-     * 禁止出现 Git 冲突标记(<<<<<<<)。
-     */
-    disallowGitConflictMarker: false,
-
-    /**
-     * 禁止使用 Unicode 编码的关键字字符串。
-     */
-    disallowEscapedKeyword: false,
-
-    // #endregion
-
     // #region 语法
-
-    /**
-     * 禁止省略语句末尾的分号。
-     */
-    disallowMissingSemicolon: false,
-
-    /**
-     * 使用智能分号插入策略。使用该策略可以减少省略分号引发的语法错误。
-     */
-    smartSemicolonInsertion: false,
-
-    /**
-     * 禁止省略条件表达式的括号。
-     */
-    disallowMissingParenthese: false,
-
-    /**
-     * 禁止省略 switch (true) 中的 (true)。
-     */
-    disallowMissingSwitchCondition: false,
-
-    /**
-     * 禁止使用 case else 语法代替 default。
-     */
-    disallowCaseElse: false,
-
-    /**
-     * 禁止使用 for..in 兼容变量定义。
-     */
-    disallowCompatibleForInAndForOf: true,
-
-    /**
-     * 禁止使用 for..of 语法。
-     */
-    disallowForOf: false,
-
-    /**
-     * 禁止使用 for..of 逗号语法。
-     */
-    disallowForOfCommaExpression: false,
-
-    /**
-     * 禁止使用 for..to 语法。
-     */
-    disallowForTo: false,
-
-    /**
-     * 禁止使用 throw 空参数语法。
-     */
-    disallowRethrow: false,
-
-    /**
-     * 禁止使用 with 语句定义语法。
-     */
-    disallowWithVaribale: false,
-
-    /**
-     * 禁止省略 try 语句块的 {}。
-     */
-    disallowMissingTryBlock: false,
-
-    /**
-     * 禁止省略 catch 分句的变量名。
-     */
-    disallowMissingCatchVaribale: false,
 
     // #endregion
 
@@ -111,27 +17,27 @@ export var options = {
     /**
      * 设置是否解析注释。
      */
-    parseComments: false,
+    parseComments?: boolean,
 
     /**
      * 解析 <reference /> 注释。此选项要求 {@link parseComments} 为 true。
      */
-    parseReferenceComments: false,
+    parseReferenceComments?: boolean,
 
     /**
      * 解析 JsDoc 文档注释(/** 段)。此选项要求 {@link parseComments} 为 true。
      */
-    parseJsDocComments: false,
+    parseJsDocComments?: boolean,
 
     /**
      * 解析 TealDoc 文档注释(/// 段)。此选项要求 {@link parseComments} 为 true。
      */
-    parseTealDocComments: false,
+    parseTealDocComments?: boolean,
 
     /**
      * 跳过 Jsx 语法(<xx/>)。
      */
-    parseJsx: false,
+    parseJsx?: boolean,
 
     // #endregion
 
