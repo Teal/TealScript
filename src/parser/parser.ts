@@ -362,7 +362,7 @@ export class Parser {
                 if (!this.options.disallowCaseElse && this.lexer.peek().type === TokenType.else) {
                     caseCaluse.elseToken = this.lexer.read().start;
                 } else {
-                    caseCaluse.label = this.parseExpression();
+                    caseCaluse.label = this.allowInAnd(this.parseExpression);
                 }
             }
             caseCaluse.colonToken = this.readToken(TokenType.colon);
@@ -398,7 +398,7 @@ export class Parser {
 
         const disallowIn = this.disallowIn;
         this.disallowIn = true;
-        const initializer = this.lexer.peek().type === TokenType.semicolon ? undefined : this.isVariableStatement() ? this.parseVariableStatement() : this.parseExpression();
+        const initializer = this.lexer.peek().type === TokenType.semicolon ? undefined : this.isVariableStatement() ? this.parseVariableStatement() : this.allowInAnd(this.parseExpression);
         this.disallowIn = disallowIn;
 
         let type = this.lexer.peek().type;
@@ -450,27 +450,27 @@ export class Parser {
                 result = new nodes.ForStatement();
                 (<nodes.ForStatement>result).firstSemicolonToken = this.readToken(TokenType.semicolon);
                 if (this.lexer.peek().type !== TokenType.semicolon) {
-                    result.condition = this.parseExpression();
+                    result.condition = this.allowInAnd(this.parseExpression);
                 }
                 (<nodes.ForStatement>result).secondSemicolonToken = this.readToken(TokenType.semicolon);
                 if (openParan != undefined ? this.lexer.peek().type !== TokenType.closeParen : isExpressionStart(this.lexer.peek().type)) {
-                    (<nodes.ForStatement>result).iterator = this.parseExpression();
+                    (<nodes.ForStatement>result).iterator = this.allowInAnd(this.parseExpression);
                 }
                 break;
             case TokenType.in:
                 result = new nodes.ForInStatement();
                 (<nodes.ForInStatement>result).inToken = this.lexer.read().start;
-                result.condition = this.parseExpression();
+                result.condition = this.allowInAnd(this.parseExpression);
                 break;
             case TokenType.of:
                 result = new nodes.ForOfStatement();
                 (<nodes.ForOfStatement>result).ofToken = this.lexer.read().start;
-                result.condition = this.options.disallowForOfCommaExpression ? this.parseAssignmentExpressionOrHigher() : this.parseExpression();
+                result.condition = this.options.disallowForOfCommaExpression ? this.allowInAnd(this.parseAssignmentExpressionOrHigher) : this.allowInAnd(this.parseExpression);
                 break;
             case TokenType.to:
                 result = new nodes.ForToStatement();
                 (<nodes.ForToStatement>result).toToken = this.lexer.read().start;
-                result.condition = this.parseExpression();
+                result.condition = this.allowInAnd(this.parseExpression);
                 break;
         }
 
@@ -552,7 +552,7 @@ export class Parser {
         const result = new nodes.ReturnStatement();
         result.start = this.lexer.read().start;
         if (this.options.useStandardSemicolonInsertion ? !this.hasSemicolon() : isExpressionStart(this.lexer.peek().type)) {
-            result.value = this.parseExpression();
+            result.value = this.allowInAnd(this.parseExpression);
         }
         result.end = this.tryReadSemicolon();
         return result;
@@ -566,7 +566,7 @@ export class Parser {
         const result = new nodes.ThrowStatement();
         result.start = this.lexer.read().start;
         if (this.options.useStandardSemicolonInsertion ? !this.hasSemicolon() : isExpressionStart(this.lexer.peek().type)) {
-            result.value = this.parseExpression();
+            result.value = this.allowInAnd(this.parseExpression);
         } else if (this.options.disallowRethrow) {
             this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "应输入表达式。");
         }
@@ -647,16 +647,16 @@ export class Parser {
         if (this.lexer.peek().type === TokenType.openParen) {
             result.openParanToken = this.lexer.read().start;
             result.value = !this.options.disallowWithVaribale && this.isVariableStatement() ?
-                this.parseVariableStatement() :
-                this.parseExpression();
+                this.allowInAnd(this.parseVariableStatement) :
+                this.allowInAnd(this.parseExpression);
             result.closeParanToken = this.readToken(TokenType.closeParen);
         } else {
             if (this.options.disallowMissingParenthese) {
                 this.expectToken(TokenType.openParen);
             }
             result.value = !this.options.disallowWithVaribale && this.isVariableStatement() ?
-                this.parseVariableStatement() :
-                this.parseExpression();
+                this.allowInAnd(this.parseVariableStatement) :
+                this.allowInAnd(this.parseExpression);
         }
         result.body = this.parseEmbeddedStatement();
         return result;
@@ -721,13 +721,13 @@ export class Parser {
     private parseCondition(result: nodes.IfStatement | nodes.SwitchStatement | nodes.WhileStatement | nodes.DoWhileStatement) {
         if (this.lexer.peek().type === TokenType.openParen) {
             result.openParanToken = this.lexer.read().type;
-            result.condition = this.parseExpression();
+            result.condition = this.allowInAnd(this.parseExpression);
             result.closeParanToken = this.readToken(TokenType.closeParen);
         } else {
             if (!this.options.disallowMissingParenthese) {
                 this.expectToken(TokenType.openParen);
             }
-            result.condition = this.parseExpression();
+            result.condition = this.allowInAnd(this.parseExpression);
         }
     }
 
@@ -3012,11 +3012,15 @@ export class Parser {
         return this.parseIdentifier(nodes.Diagnostics.Expression_expected);
     }
 
-    private parseParenthesizedExpression(): nodes.ParenthesizedExpression {
+    /**
+     * 解析一个括号表达式(`(x)`)。
+     */
+    private parseParenthesizedExpression() {
+        console.assert(this.lexer.peek().type === TokenType.openParen);
         const result = new nodes.ParenthesizedExpression();
-        this.parseExpected(TokenType.openParen);
-        result.expression = this.allowInAnd(this.parseExpression);
-        this.parseExpected(TokenType.closeParen);
+        result.start = this.lexer.read().start;
+        result.body = this.allowInAnd(this.parseExpression);
+        result.end = this.readToken(TokenType.closeParen);
         return result;
     }
 
@@ -3159,15 +3163,17 @@ export class Parser {
         return this.isIdentifier() ? this.parseIdentifier() : undefined;
     }
 
-    private parseNewExpression(): nodes.NewExpression {
+    /**
+     * 解析一个 new 表达式(`new x()`)。
+     */
+    private parseNewExpression() {
+        console.assert(this.lexer.peek().type === TokenType.new);
         const result = new nodes.NewExpression();
-        this.parseExpected(TokenType.new);
-        result.expression = this.parseMemberExpressionOrHigher();
-        result.typeArguments = this.tryParse(this.parseTypeArgumentsInExpression);
-        if (result.typeArguments || this.lexer.peek().type === TokenType.openParen) {
+        result.start = this.lexer.read().start;
+        result.target = this.parseMemberExpressionOrHigher();
+        if (this.lexer.peek().type === TokenType.openParen) {
             result.arguments = this.parseArgumentList();
         }
-
         return result;
     }
 
