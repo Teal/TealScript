@@ -844,6 +844,11 @@ export enum TokenType {
      */
     MAX_PREDEFINED_TYPE,
 
+    /**
+     * 最大的合法标签。
+     */
+    MAX_TOKEN,
+
     // #endregion
 
 }
