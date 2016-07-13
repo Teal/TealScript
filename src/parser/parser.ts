@@ -167,7 +167,7 @@ export class Parser {
         if (this.lexer.peek().type === TokenType.new) {
             return this.parseFunctionOrConstructorTypeNode(true);
         }
-        return this.parseUnionTypeOrHigher();
+        return this.parseUnionOrIntersectionTypeOrHigher(TokenType.bar);
         // todo: 防止用户输入表达式。
     }
 
@@ -415,11 +415,27 @@ export class Parser {
         return modifiers;
     }
 
+    /**
+     * 解析一个联合类型节点(`number | string`)或交错类型节点(`number & string`)。
+     * @param type 解析的类型。合法的值有：|、&。
+     */
+    private parseUnionOrIntersectionTypeOrHigher(type: TokenType) {
+        let result = type === TokenType.ampersand ? this.parseArrayTypeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
+        while (this.lexer.peek().type === type) {
+            const unionOrIntersectionType = type === TokenType.ampersand ? new nodes.IntersectionTypeNode() : new nodes.UnionTypeNode();
+            unionOrIntersectionType.leftOperand = result;
+            unionOrIntersectionType.operatorToken = this.readToken(type);
+            unionOrIntersectionType.rightOperand = type === TokenType.ampersand ? this.parseArrayTypeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
+            result = unionOrIntersectionType;
+        }
+        return result;
+    }
+
     private parseTypeReference(): nodes.TypeReferenceNode {
         const typeName = this.parseEntityName(/*allowReservedWords*/ false, nodes.Diagnostics.Type_expected);
         const result = new nodes.TypeReferenceNode();
         result.typeName = typeName;
-        if (!this.lexer.peek().hasLineBreakBeforeStar && this.lexer.peek().type === TokenType.lessThan) {
+        if (!this.lexer.peek().hasLineBreakBeforeStart && this.lexer.peek().type === TokenType.lessThan) {
             result.typeArguments = this.parseBracketedList(nodes.ParsingContext.TypeArguments, this.parseTypeNode, TokenType.lessThan, TokenType.greaterThan);
         }
         return result;
@@ -707,7 +723,7 @@ export class Parser {
                 return this.parseTokenNode<nodes.TypeNode>();
             case TokenType.this: {
                 const thisKeyword = this.parseThisTypeNode();
-                if (this.lexer.peek().type === TokenType.is && !this.lexer.peek().hasLineBreakBeforeStar) {
+                if (this.lexer.peek().type === TokenType.is && !this.lexer.peek().hasLineBreakBeforeStart) {
                     return this.parseThisTypePredicate(thisKeyword);
                 }
                 else {
@@ -762,37 +778,13 @@ export class Parser {
 
     private parseArrayTypeOrHigher(): nodes.TypeNode {
         let type = this.parseNonArrayType();
-        while (!this.lexer.peek().hasLineBreakBeforeStar && this.tryReadToken(TokenType.openBracket)) {
+        while (!this.lexer.peek().hasLineBreakBeforeStart && this.tryReadToken(TokenType.openBracket)) {
             this.readToken(TokenType.closeBracket);
             const result = new nodes.ArrayTypeNode();
             result.elementType = type;
             type = result;
         }
         return type;
-    }
-
-    private parseUnionOrIntersectionType(kind: TokenType, parseConstituentType: () => nodes.TypeNode, operator: TokenType): nodes.TypeNode {
-        let type = parseConstituentType();
-        if (this.lexer.peek().type === operator) {
-            const types = <nodes.NodeList<nodes.TypeNode>>[type];
-            types.pos = type.pos;
-            while (this.tryReadToken(operator)) {
-                types.push(parseConstituentType());
-            }
-            types.end = this.getNodeEnd();
-            const result = new nodes.UnionOrIntersectionTypeNode();
-            result.types = types;
-            type = result;
-        }
-        return type;
-    }
-
-    private parseIntersectionTypeOrHigher(): nodes.TypeNode {
-        return this.parseUnionOrIntersectionType(TokenType.IntersectionType, this.parseArrayTypeOrHigher, TokenType.ampersand);
-    }
-
-    private parseUnionTypeOrHigher(): nodes.TypeNode {
-        return this.parseUnionOrIntersectionType(TokenType.UnionType, this.parseIntersectionTypeOrHigher, TokenType.bar);
     }
 
     private parseTypeOrTypePredicate(): nodes.TypeNode {
@@ -811,7 +803,7 @@ export class Parser {
 
     private parseTypePredicatePrefix() {
         const id = this.parseIdentifier();
-        if (this.lexer.peek().type === TokenType.is && !this.lexer.peek().hasLineBreakBeforeStar) {
+        if (this.lexer.peek().type === TokenType.is && !this.lexer.peek().hasLineBreakBeforeStart) {
             this.lexer.read().type;
             return id;
         }
@@ -1066,7 +1058,7 @@ export class Parser {
         //      yield [no nodes.LineTerminator here] * [nodes.Lexical goal nodes.InputElementRegExp]nodes.AssignmentExpression[?nodes.In, nodes.Yield]
         this.lexer.read().type;
 
-        if (!this.lexer.peek().hasLineBreakBeforeStar &&
+        if (!this.lexer.peek().hasLineBreakBeforeStart &&
             (this.lexer.peek().type === TokenType.asterisk || this.isStartOfExpression())) {
             result.asteriskToken = this.tryReadTokenToken(TokenType.asterisk);
             result.expression = this.parseAssignmentExpressionOrHigher();
@@ -1160,7 +1152,7 @@ export class Parser {
     private isParenthesizedArrowFunctionExpressionWorker() {
         if (this.lexer.peek().type === TokenType.async) {
             this.lexer.read().type;
-            if (this.lexer.peek().hasLineBreakBeforeStar) {
+            if (this.lexer.peek().hasLineBreakBeforeStart) {
                 return nodes.Tristate.False;
             }
             if (this.lexer.peek().type !== TokenType.openParen && this.lexer.peek().type !== TokenType.lessThan) {
@@ -1289,12 +1281,12 @@ export class Parser {
             this.lexer.read().type;
             // nodes.If the "async" is followed by "=>" this.lexer.peek().type then it is not a begining of an async arrow-function
             // but instead a simple arrow-function which will be parsed inside "this.parseAssignmentExpressionOrHigher"
-            if (this.lexer.peek().hasLineBreakBeforeStar || this.lexer.peek().type === TokenType.equalsGreaterThan) {
+            if (this.lexer.peek().hasLineBreakBeforeStart || this.lexer.peek().type === TokenType.equalsGreaterThan) {
                 return nodes.Tristate.False;
             }
             // nodes.Check for un-parenthesized nodes.AsyncArrowFunction
             const expr = this.parseBinaryExpressionOrHigher(/*precedence*/ 0);
-            if (!this.lexer.peek().hasLineBreakBeforeStar && expr.kind === TokenType.Identifier && this.lexer.peek().type === TokenType.equalsGreaterThan) {
+            if (!this.lexer.peek().hasLineBreakBeforeStart && expr.kind === TokenType.Identifier && this.lexer.peek().type === TokenType.equalsGreaterThan) {
                 return nodes.Tristate.True;
             }
         }
@@ -1444,7 +1436,7 @@ export class Parser {
                 //    as (nodes.Bar)
                 // nodes.This should be parsed as an initialized variable, followed
                 // by a function call to 'as' with the argument 'nodes.Bar'
-                if (this.lexer.peek().hasLineBreakBeforeStar) {
+                if (this.lexer.peek().hasLineBreakBeforeStart) {
                     break;
                 }
                 else {
@@ -1663,7 +1655,7 @@ export class Parser {
         const expression = this.parseLeftHandSideExpressionOrHigher();
 
         console.assert(isLeftHandSideExpression(expression));
-        if ((this.lexer.peek().type === TokenType.plusPlus || this.lexer.peek().type === TokenType.minusMinus) && !this.lexer.peek().hasLineBreakBeforeStar) {
+        if ((this.lexer.peek().type === TokenType.plusPlus || this.lexer.peek().type === TokenType.minusMinus) && !this.lexer.peek().hasLineBreakBeforeStart) {
             const result = new nodes.PostfixUnaryExpression();
             result.operand = expression;
             result.operator = this.lexer.peek().type;
@@ -2029,7 +2021,7 @@ export class Parser {
                 continue;
             }
 
-            if (this.lexer.peek().type === TokenType.exclamation && !this.lexer.peek().hasLineBreakBeforeStar) {
+            if (this.lexer.peek().type === TokenType.exclamation && !this.lexer.peek().hasLineBreakBeforeStart) {
                 this.lexer.read().type;
                 const nonNullExpression = new nodes.NonNullExpression();
                 nonNullExpression.expression = expression;
@@ -2246,7 +2238,7 @@ export class Parser {
     private parseArrayLiteralExpression(): nodes.ArrayLiteralExpression {
         const result = new nodes.ArrayLiteralExpression();
         this.readToken(TokenType.openBracket);
-        if (this.lexer.peek().hasLineBreakBeforeStar) {
+        if (this.lexer.peek().hasLineBreakBeforeStart) {
             result.multiLine = true;
         }
         result.elements = this.parseDelimitedList(nodes.ParsingContext.ArrayLiteralMembers, this.parseArgumentOrArrayLiteralElement);
@@ -2318,7 +2310,7 @@ export class Parser {
     private parseObjectLiteralExpression(): nodes.ObjectLiteralExpression {
         const result = new nodes.ObjectLiteralExpression();
         this.readToken(TokenType.openBrace);
-        if (this.lexer.peek().hasLineBreakBeforeStar) {
+        if (this.lexer.peek().hasLineBreakBeforeStart) {
             result.multiLine = true;
         }
 
@@ -3143,17 +3135,17 @@ export class Parser {
 
     private nextTokenIsIdentifierOrKeywordOnSameLine() {
         this.lexer.read().type;
-        return tokenIsIdentifierOrKeyword(this.lexer.peek().type) && !this.lexer.peek().hasLineBreakBeforeStar;
+        return tokenIsIdentifierOrKeyword(this.lexer.peek().type) && !this.lexer.peek().hasLineBreakBeforeStart;
     }
 
     private nextTokenIsFunctionKeywordOnSameLine() {
         this.lexer.read().type;
-        return this.lexer.peek().type === TokenType.function && !this.lexer.peek().hasLineBreakBeforeStar;
+        return this.lexer.peek().type === TokenType.function && !this.lexer.peek().hasLineBreakBeforeStart;
     }
 
     private nextTokenIsIdentifierOrKeywordOrNumberOnSameLine() {
         this.lexer.read().type;
-        return (tokenIsIdentifierOrKeyword(this.lexer.peek().type) || this.lexer.peek().type === TokenType.NumericLiteral) && !this.lexer.peek().hasLineBreakBeforeStar;
+        return (tokenIsIdentifierOrKeyword(this.lexer.peek().type) || this.lexer.peek().type === TokenType.NumericLiteral) && !this.lexer.peek().hasLineBreakBeforeStart;
     }
 
     private isStartOfDeclaration(): boolean {
@@ -3279,7 +3271,7 @@ export class Parser {
 
     private nextTokenIsIdentifierOrStringLiteralOnSameLine() {
         this.lexer.read().type;
-        return !this.lexer.peek().hasLineBreakBeforeStar && (this.isIdentifier() || this.lexer.peek().type === TokenType.StringLiteral);
+        return !this.lexer.peek().hasLineBreakBeforeStart && (this.isIdentifier() || this.lexer.peek().type === TokenType.StringLiteral);
     }
 
     private parseFunctionBlockOrSemicolon(isGenerator: boolean, isAsync: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.Block {
@@ -4011,7 +4003,7 @@ export class Parser {
             // nodes.It is not uncommon to accidentally omit the 'from' keyword. nodes.Additionally, in editing scenarios,
             // the 'from' keyword can be parsed as a named export when the export clause is unterminated (i.e. `export { from "moduleName";`)
             // nodes.If we don't have a 'from' keyword, see if we have a string literal such that nodes.ASI won't take effect.
-            if (this.lexer.peek().type === TokenType.from || (this.lexer.peek().type === TokenType.StringLiteral && !this.lexer.peek().hasLineBreakBeforeStar)) {
+            if (this.lexer.peek().type === TokenType.from || (this.lexer.peek().type === TokenType.StringLiteral && !this.lexer.peek().hasLineBreakBeforeStart)) {
                 this.readToken(TokenType.from);
                 result.moduleSpecifier = this.parseModuleSpecifier();
             }
@@ -4631,7 +4623,7 @@ export class Parser {
         }
 
         // nodes.We can parse out an optional semicolon in nodes.ASI cases in the following cases.
-        return this.lexer.peek().type === TokenType.closeBrace || this.lexer.peek().type === TokenType.endOfFile || this.lexer.peek().hasLineBreakBeforeStar;
+        return this.lexer.peek().type === TokenType.closeBrace || this.lexer.peek().type === TokenType.endOfFile || this.lexer.peek().hasLineBreakBeforeStart;
     }
 
     private parseSemicolon(): boolean {
@@ -4762,7 +4754,7 @@ export class Parser {
 
     private nextTokenIsOnSameLineAndCanFollowModifier() {
         this.lexer.read().type;
-        if (this.lexer.peek().hasLineBreakBeforeStar) {
+        if (this.lexer.peek().hasLineBreakBeforeStart) {
             return false;
         }
         return this.canFollowModifier();
@@ -5409,7 +5401,7 @@ export class Parser {
     //            // parse errors.  nodes.For example, this can happen when people do things like use
     //            // a semicolon to delimit object literal members.   nodes.Note: we'll have already
     //            // reported an error when we called this.readToken above.
-    //            if (considerSemicolonAsDelimiter && this.lexer.peek().type === TokenType.semicolon && !this.lexer.peek().hasLineBreakBeforeStar) {
+    //            if (considerSemicolonAsDelimiter && this.lexer.peek().type === TokenType.semicolon && !this.lexer.peek().hasLineBreakBeforeStart) {
     //                this.lexer.read().type;
     //            }
     //            continue;
@@ -5479,7 +5471,7 @@ export class Parser {
         // the code would be implicitly: "name.identifierOrKeyword; identifierNameOrKeyword".
         // nodes.In the first case though, nodes.ASI will not take effect because there is not a
         // line terminator after the identifier or keyword.
-        if (this.lexer.peek().hasLineBreakBeforeStar && tokenIsIdentifierOrKeyword(this.lexer.peek().type)) {
+        if (this.lexer.peek().hasLineBreakBeforeStart && tokenIsIdentifierOrKeyword(this.lexer.peek().type)) {
             const matchesPattern = this.lookAhead(this.nextTokenIsIdentifierOrKeywordOnSameLine);
 
             if (matchesPattern) {

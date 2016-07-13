@@ -271,7 +271,7 @@ export class TypeParameterDeclaration extends Node {
 }
 
 /**
- * 表示一个参数声明(`x、x = 1、...x`)。
+ * 表示一个参数声明(`x`、`x = 1`、`...x`、...)。
  */
 export class ParameterDeclaration extends Node {
 
@@ -551,6 +551,31 @@ export class TupleTypeNode extends TypeNode {
 export class UnionTypeNode extends TypeNode {
 
     /**
+     * 获取当前表达式的左值部分。
+     */
+    leftOperand: TypeNode;
+
+    /**
+     * 获取运算符的位置。
+     */
+    operatorToken: number;
+
+    /**
+     * 获取当前表达式的右值部分。
+     */
+    rightOperand: TypeNode;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.leftOperand.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.rightOperand.end; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      * @returns 返回访问器的处理结果。
@@ -565,6 +590,31 @@ export class UnionTypeNode extends TypeNode {
  * 表示一个交错类型节点(`number & string`)。
  */
 export class IntersectionTypeNode extends TypeNode {
+
+    /**
+     * 获取当前表达式的左值部分。
+     */
+    leftOperand: TypeNode;
+
+    /**
+     * 获取运算符的位置。
+     */
+    operatorToken: number;
+
+    /**
+     * 获取当前表达式的右值部分。
+     */
+    rightOperand: TypeNode;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.leftOperand.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.rightOperand.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
