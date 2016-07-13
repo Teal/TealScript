@@ -1558,7 +1558,7 @@ namespace ts {
         }
 
         function parseAnyContextualModifier(): boolean {
-            return isModifierKind(token) && tryParse(nextTokenCanFollowModifier);
+            return isModifier(token) && tryParse(nextTokenCanFollowModifier);
         }
 
         function canFollowModifier(): boolean {
@@ -2426,7 +2426,7 @@ namespace ts {
         }
 
         function isStartOfParameter(): boolean {
-            return token === TokenType.dotDotDot || isIdentifierOrPattern() || isModifierKind(token) || token === TokenType.at || token === TokenType.this;
+            return token === TokenType.dotDotDot || isIdentifierOrPattern() || isModifier(token) || token === TokenType.at || token === TokenType.this;
         }
 
         function setModifiers(node: Node, modifiers: ModifiersArray) {
@@ -2451,7 +2451,7 @@ namespace ts {
             // FormalParameter [Yield,Await]:
             //      BindingElement[?Yield,?Await]
             node.name = parseIdentifierOrPattern();
-            if (getFullWidth(node.name) === 0 && node.flags === 0 && isModifierKind(token)) {
+            if (getFullWidth(node.name) === 0 && node.flags === 0 && isModifier(token)) {
                 // in cases like
                 // 'use strict'
                 // function foo(static)
@@ -2599,7 +2599,7 @@ namespace ts {
                 return true;
             }
 
-            if (isModifierKind(token)) {
+            if (isModifier(token)) {
                 nextToken();
                 if (isIdentifier()) {
                     return true;
@@ -2684,7 +2684,7 @@ namespace ts {
                 return true;
             }
             // Eat up all modifiers, but hold on to the last one in case it is actually an identifier
-            while (isModifierKind(token)) {
+            while (isModifier(token)) {
                 idToken = token;
                 nextToken();
             }
@@ -2750,7 +2750,7 @@ namespace ts {
 
         function parseTupleType(): TupleTypeNode {
             const node = <TupleTypeNode>createNode(TokenType.TupleType);
-            node.elementTypes = parseBracketedList(ParsingContext.TupleElementTypes, parseType, TokenType.openBracket, TokenType.closeBracket);
+            node.elements = parseBracketedList(ParsingContext.TupleElementTypes, parseType, TokenType.openBracket, TokenType.closeBracket);
             return finishNode(node);
         }
 
@@ -2891,7 +2891,7 @@ namespace ts {
         }
 
         function skipParameterStart(): boolean {
-            if (isModifierKind(token)) {
+            if (isModifier(token)) {
                 // Skip modifiers
                 parseModifiers();
             }
@@ -5322,7 +5322,7 @@ namespace ts {
             }
 
             // Eat up all modifiers, but hold on to the last one in case it is actually an identifier.
-            while (isModifierKind(token)) {
+            while (isModifier(token)) {
                 idToken = token;
                 // If the idToken is a class modifier (protected, private, public, and static), it is
                 // certain that we are starting to parse class member. This allows better error recovery

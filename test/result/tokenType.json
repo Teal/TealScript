@@ -81,15 +81,17 @@
         "is"
     ],
     "isModifier": [
-        "export",
+        "abstract",
         "async",
+		"const",
+		"declare",
+        "default",
+        "export",",
+        "public",
         "private",
         "protected",
-        "public",
-        "static",
-        "abstract",
-        "declare",
-        "readonly"
+        "readonly",
+        "static"
     ],
     "isDeclarationStart": [
         "export",

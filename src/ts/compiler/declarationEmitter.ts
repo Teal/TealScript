@@ -490,7 +490,7 @@ namespace ts {
 
             function emitTupleType(type: TupleTypeNode) {
                 write("[");
-                emitCommaList(type.elementTypes, emitType);
+                emitCommaList(type.elements, emitType);
                 write("]");
             }
 

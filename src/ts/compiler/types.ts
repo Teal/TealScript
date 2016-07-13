@@ -414,7 +414,7 @@ namespace ts {
 
     // @kind(SyntaxKind.TupleType)
     export interface TupleTypeNode extends TypeNode {
-        elementTypes: NodeArray<TypeNode>;
+        elements: NodeArray<TypeNode>;
     }
 
     export interface UnionOrIntersectionTypeNode extends TypeNode {

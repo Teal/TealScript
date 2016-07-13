@@ -5088,7 +5088,7 @@ namespace ts {
         function getTypeFromTupleTypeNode(node: TupleTypeNode): Type {
             const links = getNodeLinks(node);
             if (!links.resolvedType) {
-                links.resolvedType = createTupleType(map(node.elementTypes, getTypeFromTypeNode));
+                links.resolvedType = createTupleType(map(node.elements, getTypeFromTypeNode));
             }
             return links.resolvedType;
         }
@@ -13657,12 +13657,12 @@ namespace ts {
 
         function checkTupleType(node: TupleTypeNode) {
             // Grammar checking
-            const hasErrorFromDisallowedTrailingComma = checkGrammarForDisallowedTrailingComma(node.elementTypes);
-            if (!hasErrorFromDisallowedTrailingComma && node.elementTypes.length === 0) {
+            const hasErrorFromDisallowedTrailingComma = checkGrammarForDisallowedTrailingComma(node.elements);
+            if (!hasErrorFromDisallowedTrailingComma && node.elements.length === 0) {
                 grammarErrorOnNode(node, Diagnostics.A_tuple_type_element_list_cannot_be_empty);
             }
 
-            forEach(node.elementTypes, checkSourceElement);
+            forEach(node.elements, checkSourceElement);
         }
 
         function checkUnionOrIntersectionType(node: UnionOrIntersectionTypeNode) {

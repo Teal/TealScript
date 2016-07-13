@@ -194,7 +194,7 @@
             case TokenType.ArrayType:
                 return visitNode(cbNode, (<ArrayTypeNode>node).elementType);
             case TokenType.TupleType:
-                return visitNodes(cbNodes, (<TupleTypeNode>node).elementTypes);
+                return visitNodes(cbNodes, (<TupleTypeNode>node).elements);
             case TokenType.UnionType:
             case TokenType.IntersectionType:
                 return visitNodes(cbNodes, (<UnionOrIntersectionTypeNode>node).types);

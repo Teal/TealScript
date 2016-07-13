@@ -1,5 +1,23 @@
 ﻿namespace ts {
 
+    export function isModifier(token: TokenType): boolean {
+        switch (token) {
+            case TokenType.abstract:
+            case TokenType.async:
+            case TokenType.const:
+            case TokenType.declare:
+            case TokenType.default:
+            case TokenType.export:
+            case TokenType.public:
+            case TokenType.private:
+            case TokenType.protected:
+            case TokenType.readonly:
+            case TokenType.static:
+                return true;
+        }
+        return false;
+    }
+
     export  function error(a: any) { return }
 
     function getLanguageVariant(scriptKind: ScriptKind) {

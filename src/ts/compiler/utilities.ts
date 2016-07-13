@@ -1856,24 +1856,6 @@ namespace ts {
         return node.kind === TokenType.Identifier && (<Identifier>node).text === "Symbol";
     }
 
-    export function isModifierKind(token: TokenType): boolean {
-        switch (token) {
-            case TokenType.abstract:
-            case TokenType.async:
-            case TokenType.const:
-            case TokenType.declare:
-            case TokenType.default:
-            case TokenType.export:
-            case TokenType.public:
-            case TokenType.private:
-            case TokenType.protected:
-            case TokenType.readonly:
-            case TokenType.static:
-                return true;
-        }
-        return false;
-    }
-
     export function isParameterDeclaration(node: VariableLikeDeclaration) {
         const root = getRootDeclaration(node);
         return root.kind === TokenType.Parameter;
