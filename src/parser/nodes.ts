@@ -316,6 +316,11 @@ export class ParameterDeclaration extends Node {
     initializer: Expression;
 
     /**
+     * 获取当前类型参数后的逗号位置(可能不存在)。
+     */
+    commaToken: number;
+
+    /**
      * 获取当前节点的开始位置。
      */
     get start() { return this.modifiers && this.modifiers.length ? this.modifiers[0].start : this.name.start; }
