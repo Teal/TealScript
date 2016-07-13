@@ -121,8 +121,8 @@ export class Parser {
     }
 
     /**
-     * 解析一个简单列表。
-     * @param parseElement 解析每个元素的函数。
+     * 解析一个没有开始和结束标记的列表。
+     * @param parseElement 解析每个项的函数。
      */
     private parseSimpleList<T extends nodes.Node>(parseElement: () => T) {
         const result = new nodes.NodeList<T>();
@@ -135,7 +135,7 @@ export class Parser {
     }
 
     /**
-     * 解析一个含分割的列表。
+     * 解析一个有开始和结束标记的列表。
      * @param openToken 列表的开始标记。
      * @param parseElement 解析每个元素的函数。
      * @param closeToken 列表的结束标记。
@@ -152,6 +152,68 @@ export class Parser {
         return result;
     }
 
+    /**
+     * 在不影响现有状态的情况下尝试解析。
+     * @param parser 解析的函数。
+     * @return 如果尝试解析成功则返回 true，否则返回 false。
+     */
+    private tryParse<T>(parser: (errors: IArguments[]) => T) {
+        const errors = [];
+        const error = this.error;
+        this.error = function () { errors.push(arguments); };
+        this.lexer.stashSave();
+        if (parser.call(this, errors) === false) {
+            this.error = error;
+            this.lexer.stashRestore();
+            return false;
+        }
+
+        this.error = error;
+        this.lexer.stashClear();
+        for (const e of errors) {
+            this.error.apply(this, e);
+        }
+        return true;
+    }
+
+    /**
+     * 存储临时保存状态后累积的错误。
+     */
+    private stashErrors: IArguments[];
+
+    /**
+     * 临时保存状态用于处理错误的函数。
+     */
+    private orignalError: Function;
+
+    /**
+     * 临时保存状态用于处理错误的函数。
+     */
+    private stashError() {
+        this.stashErrors.push(arguments);
+    }
+
+    /**
+     * 保存当前读取的进度。保存之后可以通过 {@link stashRestore} 恢复进度。
+     */
+    private stashSave() {
+        this.orignalError = this.error;
+    }
+
+    /**
+     * 恢复之前保存的进度。
+     */
+    private stashRestore() {
+
+    }
+
+    /**
+     * 清除之前保存的进度。
+     */
+    private stashClear() {
+
+    }
+
     // #endregion
 
     // #region 解析类型节点
@@ -161,72 +223,82 @@ export class Parser {
      */
     private parseTypeNode() {
         // todo: 关闭 yield | await
-        if (this.isFunctionTypeStart()) {
-            return this.parseFunctionOrConstructorTypeNode(false);
-        }
-        if (this.lexer.peek().type === TokenType.new) {
-            return this.parseFunctionOrConstructorTypeNode(true);
+        switch (this.lexer.peek().type) {
+            case TokenType.openParen:
+                if (this.isArrowFunction()) {
+                    return this.parseFunctionOrConstructorTypeNode(TokenType.function);
+                }
+                break;
+            case TokenType.lessThan:
+                return this.parseFunctionOrConstructorTypeNode(TokenType.function);
+            case TokenType.new:
+                return this.parseFunctionOrConstructorTypeNode(TokenType.new);
         }
         return this.parseUnionOrIntersectionTypeOrHigher(TokenType.bar);
         // todo: 防止用户输入表达式。
     }
 
     /**
-     * 判断是否紧跟函数类型函数。
+     * 尝试解析之后的定义。
      */
-    private isFunctionTypeStart() {
-        if (this.lexer.peek().type === TokenType.lessThan) {
-            return true;
-        }
-        return this.lexer.peek().type === TokenType.openParen && this.lookAhead(this.isUnambiguouslyStartOfFunctionType);
+    private tryParseParameterDeclarations() {
+        return this.tryParse(() => {
+            const parameters = this.parseParameterDeclarations();
+            if (this.lexer.peek().type === TokenType.equalsGreaterThan || this.lexer.peek().type === TokenType.colon) {
+                return parameters;
+            }
+        });
     }
 
-    private isUnambiguouslyStartOfFunctionType() {
-        this.lexer.read();
-        // ( )、 ( ...
-        if (this.lexer.peek().type === TokenType.closeParen || this.lexer.peek().type === TokenType.dotDotDot) {
-            return true;
-        }
-        if (this.skipParameterStart()) {
-            // ( xxx :、( xxx ,、( xxx ?、( xxx =
-            if (this.lexer.peek().type === TokenType.colon || this.lexer.peek().type === TokenType.comma ||
-                this.lexer.peek().type === TokenType.question || this.lexer.peek().type === TokenType.equals) {
+    /**
+     * 判断是否紧跟箭头函数。
+     */
+    private isArrowFunction() {
+
+    }
+
+    /**
+     * 判断下一个字符是否可作为变量名。
+     */
+    private isBindingName() {
+        switch (this.lexer.peek().type) {
+            case TokenType.identifier:
+            case TokenType.openBracket:
+            case TokenType.openBrace:
                 return true;
-            }
-            if (this.lexer.peek().type === TokenType.closeParen) {
-                this.lexer.read();
-                // ( xxx ) =>
-                if (this.lexer.peek().type === TokenType.equalsGreaterThan) {
-                    return true;
-                }
-            }
+            default:
+                return isReservedWord(this.lexer.peek().type);
         }
-        return false;
     }
 
-    private skipParameterStart() {
-        if (isModifier(this.lexer.peek().type)) {
-            this.parseModifiers();
-        }
-        if (this.isIdentifier() || this.lexer.peek().type === TokenType.this) {
-            this.lexer.read();
+    // nodes.Ignore strict mode flag because we will report an error in type checker instead.
+    private isIdentifier(): boolean {
+        if (this.lexer.peek().type === TokenType.Identifier) {
             return true;
         }
-        if (this.lexer.peek().type === TokenType.openBracket || this.lexer.peek().type === TokenType.openBrace) {
-            const previousErrorCount = this.parseDiagnostics.length;
-            this.parseBindingName();
-            return previousErrorCount === this.parseDiagnostics.length;
+
+        // nodes.If we have a 'yield' keyword, and we're in the [yield] context, then 'yield' is
+        // considered a keyword and is not an identifier.
+        if (this.lexer.peek().type === TokenType.yield && this.inYieldContext()) {
+            return false;
         }
-        return false;
+
+        // nodes.If we have a 'await' keyword, and we're in the [nodes.Await] context, then 'await' is
+        // considered a keyword and is not an identifier.
+        if (this.lexer.peek().type === TokenType.await && this.inAwaitContext()) {
+            return false;
+        }
+
+        return this.lexer.peek().type > TokenType.LastReservedWord;
     }
 
     /**
      * 解析一个函数类型节点(`()=>void`)或构造函数类型节点(`new ()=>void`)。
-     * @param constructor 是否解析构造函数类型。
+     * @param type 解析的类型。合法的值有：function、new
      */
-    private parseFunctionOrConstructorTypeNode(constructor: boolean) {
-        const result = constructor ? new nodes.ConstructorTypeNode() : new nodes.FunctionTypeNode();
-        if (constructor) result.start = this.readToken(TokenType.new);
+    private parseFunctionOrConstructorTypeNode(type: TokenType) {
+        const result = type === TokenType.new ? new nodes.ConstructorTypeNode() : new nodes.FunctionTypeNode();
+        if (type === TokenType.new) result.start = this.readToken(TokenType.new);
         this.parseMethodSignature(result, true, false, false, false);
         return result;
     }
@@ -420,13 +492,13 @@ export class Parser {
      * @param type 解析的类型。合法的值有：|、&。
      */
     private parseUnionOrIntersectionTypeOrHigher(type: TokenType) {
-        let result = type === TokenType.ampersand ? this.parseArrayTypeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
+        let result: nodes.TypeNode = type === TokenType.ampersand ? this.parseArrayTypeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
         while (this.lexer.peek().type === type) {
-            const unionOrIntersectionType = type === TokenType.ampersand ? new nodes.IntersectionTypeNode() : new nodes.UnionTypeNode();
-            unionOrIntersectionType.leftOperand = result;
-            unionOrIntersectionType.operatorToken = this.readToken(type);
-            unionOrIntersectionType.rightOperand = type === TokenType.ampersand ? this.parseArrayTypeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
-            result = unionOrIntersectionType;
+            const newResult = type === TokenType.ampersand ? new nodes.IntersectionTypeNode() : new nodes.UnionTypeNode();
+            newResult.leftOperand = result;
+            newResult.operatorToken = this.readToken(type);
+            newResult.rightOperand = type === TokenType.ampersand ? this.parseArrayTypeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
+            result = newResult;
         }
         return result;
     }
@@ -3005,20 +3077,6 @@ export class Parser {
         }
     }
 
-    /**
-     * 判断下一个字符是否可作为变量名。
-     */
-    private isBindingName() {
-        switch (this.lexer.peek().type) {
-            case TokenType.identifier:
-            case TokenType.openBracket:
-            case TokenType.openBrace:
-                return true;
-            default:
-                return false;
-        }
-    }
-
     // #endregion
 
     // #region 解析声明
@@ -4566,36 +4624,6 @@ export class Parser {
      */
     private lookAhead<T>(callback: () => T): T {
         return this.speculationHelper(callback, /*isLookAhead*/ true);
-    }
-
-    /** nodes.Invokes the provided callback.  nodes.If the callback returns something falsy, then it restores
-     * the parser to the state it was in immediately prior to invoking the callback.  nodes.If the
-     * callback returns something truthy, then the parser state is not rolled back.  nodes.The this.result
-     * of invoking the callback is returned from this function.
-     */
-    private tryParse<T>(callback: () => T): T {
-        return this.speculationHelper(callback, /*isLookAhead*/ false);
-    }
-
-    // nodes.Ignore strict mode flag because we will report an error in type checker instead.
-    private isIdentifier(): boolean {
-        if (this.lexer.peek().type === TokenType.Identifier) {
-            return true;
-        }
-
-        // nodes.If we have a 'yield' keyword, and we're in the [yield] context, then 'yield' is
-        // considered a keyword and is not an identifier.
-        if (this.lexer.peek().type === TokenType.yield && this.inYieldContext()) {
-            return false;
-        }
-
-        // nodes.If we have a 'await' keyword, and we're in the [nodes.Await] context, then 'await' is
-        // considered a keyword and is not an identifier.
-        if (this.lexer.peek().type === TokenType.await && this.inAwaitContext()) {
-            return false;
-        }
-
-        return this.lexer.peek().type > TokenType.LastReservedWord;
     }
 
     private tryReadTokenToken(t: TokenType): nodes.Node {
