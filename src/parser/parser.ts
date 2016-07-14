@@ -95,35 +95,6 @@ export class Parser {
     // #region 解析节点底层
 
     /**
-     * 在不影响现有状态的情况下尝试解析。
-     * @param parser 解析的函数。
-     * @return 如果尝试解析成功则返回 true，否则返回 false。
-     */
-    private tryParse<T>(parser: (errors: IArguments[]) => T) {
-        // 保存状态。
-        const errors = [];
-        const orignalError = this.error;
-        this.error = function () { errors.push(arguments); };
-        this.lexer.stashSave();
-
-        // 解析节点。        
-        const result = parser.call(this, errors);
-
-        // 恢复状态。        
-        this.error = orignalError;
-        if (result) {
-            this.lexer.stashClear();
-            for (const e of errors) {
-                this.error.apply(this, e);
-            }
-        } else {
-            this.lexer.stashRestore();
-        }
-
-        return result;
-    }
-
-    /**
      * 读取一个指定类型的标记。如果下一个标记不是指定的类型则报告错误。
      * @param token 期待的标记。
      * @returns 返回读取的标记位置。
@@ -150,38 +121,69 @@ export class Parser {
     }
 
     /**
-     * 解析一个没有开始和结束标记的列表。
-     * @param parseElement 解析每个项的函数。
+     * 解析一个节点列表。
+     * @param parseElement 解析每个元素的函数。
+     * @param openToken 列表的开始标记。
+     * @param closeToken 列表的结束标记。
+     * @param separator 分隔符类型。合法的值有 unknown、comma、semicolon。
+     * @param continueParse 列表的结束标记。
      */
-    private parseSimpleList<T extends nodes.Node>(parseElement: () => T) {
+    private parseNodeList<T extends nodes.Node & { commaToken?: number, semicolonToken?: number }>(parseElement: () => T, openToken?: TokenType, closeToken?: TokenType, separator?: TokenType, continueParse?: () => boolean) {
         const result = new nodes.NodeList<T>();
-        while (this.lexer.peek().type !== TokenType.endOfFile) {
+        if (openToken) {
+            result.start = this.readToken(openToken);
+        }
+        while (this.lexer.peek().type !== TokenType.endOfFile && (!closeToken || this.lexer.peek().type !== closeToken)) {
             const element = <T>parseElement.call(this);
             if (!element) break;
             result.push(element);
+            if (separator) {
+                if (this.lexer.peek().type === TokenType.comma) {
+                    element.commaToken = this.readToken(TokenType.comma);
+                    continue;
+                }
+                if (separator === TokenType.semicolon && this.lexer.peek().type === TokenType.semicolon) {
+                    element.semicolonToken = this.readToken(TokenType.semicolon);
+                    continue;
+                }
+            }
+            if (continueParse && continueParse.call(this)) {
+                continue;
+            }
+            break;
+        }
+        if (closeToken) {
+            result.end = this.readToken(closeToken);
         }
         return result;
     }
 
     /**
-     * 解析一个有开始和结束标记的列表。
-     * @param openToken 列表的开始标记。
-     * @param parseElement 解析每个元素的函数。
-     * @param closeToken 列表的结束标记。
+     * 在不影响现有状态的情况下尝试解析。
+     * @param parser 解析的函数。
+     * @return 如果尝试解析成功则返回 true，否则返回 false。
      */
-    private parseCommaDelimitedList<T extends nodes.Node & { commaToken: number }>(openToken: TokenType, parseElement: () => T, closeToken: TokenType) {
-        const result = new nodes.NodeList<T>();
-        result.start = this.readToken(openToken);
-        while (this.lexer.peek().type !== closeToken && this.lexer.peek().type !== TokenType.endOfFile) {
-            const element = <T>parseElement.call(this);
-            if (!element) break;
-            result.push(element);
-            if (this.lexer.peek().type !== TokenType.comma) {
-                break;
+    private tryParse<T>(parser: (errors: IArguments[]) => T) {
+        // 保存状态。
+        const errors = [];
+        const orignalError = this.error;
+        this.error = function () { errors.push(arguments); };
+        this.lexer.stashSave();
+
+        // 解析节点。        
+        const result = parser.call(this, errors);
+
+        // 恢复状态。        
+        this.error = orignalError;
+        if (result) {
+            this.lexer.stashClear();
+            for (const e of errors) {
+                this.error.apply(this, e);
             }
-            element.commaToken = this.readToken(TokenType.comma);
+        } else {
+            this.lexer.stashRestore();
         }
-        result.end = this.readToken(closeToken);
+
         return result;
     }
 
