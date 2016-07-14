@@ -1,44 +1,54 @@
-TypeNode: // 类型节点(`number`、`string[]`、...)。
+#region 类型
+
+TypeNode: // 类型节点(`number`、`string[]`、...)
 	UnionOrIntersectionOrPrimaryTypeNode:
-		UnionTypeNode:
-			UnionOrIntersectionOrPrimaryTypeNode	| IntersectionOrPrimaryTypeNode
+		UnionTypeNode: -> BinaryTypeNode
+			UnionOrIntersectionOrPrimaryTypeNode | IntersectionOrPrimaryTypeNode
 		IntersectionOrPrimaryTypeNode:
-			IntersectionTypeNode:
-				IntersectionOrPrimaryTypeNode	& PrimaryTypeNode
+			IntersectionTypeNode: -> BinaryTypeNode
+				IntersectionOrPrimaryTypeNode & PrimaryTypeNode
 			PrimaryTypeNode:
-				PredefinedTypeNode // 内置类型节点(`number`、`string`、...)。
-					any
-					number
-					boolean
-					string
-					symbol
-					void
-					never
-					null
-					*
-					?
-					this
-				ParenthesizedTypeNode
-					( body:TypeNode )
-				TypeReference
+				GenericTypeNode: // 泛型节点(`Array<T>`)。
 					TypeName [no_LineTerminator_here] TypeArguments?
-				ObjectTypeNode
+				TypeName:
+					PredefinedTypeNode // 内置类型节点(`number`、`string`、...)
+						any
+						number
+						boolean
+						string
+						symbol
+						void
+						never
+						null
+						*
+						?
+						this
+					IdentifierTypeNode // 标识符类型节点(`x`)
+					QualifiedNameTypeNode: // 限定名称类型节点(`"abc"`、`true`)
+						TypeName . IdentifierReference
+				ParenthesizedTypeNode: // 括号类型节点(`(number)`)
+					( body:TypeNode )
+				ObjectTypeNode:
 					{ TypeBody? }
-				ArrayTypeNode
+				ArrayTypeNode:
 					PrimaryTypeNode [no_LineTerminator_here]	[ ]
-				TupleTypeNode
+				TupleTypeNode:
 					[ TupleElementTypes	]
-				TypeQuery
-					typeof TypeQueryExpression
+					- TupleElementTypes:
+						TupleElementTypeNode:
+							TypeNode
+						TupleElementTypes	, TupleElementTypeNode
+				TypeQueryNode: // 类型查询节点(`typeof x`)。
+					typeof operand:TypeQueryExpression
 	FunctionTypeNode:
-		TypeParameterDeclarations? ParameterDeclarations => TypeNode
+		TypeParameterDeclarations? ParameterDeclarations@try => TypeNode
 	ConstructorTypeNode: // 构造函数类型节点(`new ()=>void`)。
 		new TypeParameterDeclarations? ParameterDeclarations => TypeNode
 
-parameters:ParameterDeclarations:
+ParameterDeclarations: // @name=parameters
 	( ParameterDeclarationList? )
 
-typeParameters:TypeParameterDeclarations:
+TypeParameterDeclarations: // @name=typeParameters
 	< TypeParameterDeclarationList	>
 
 TypeParameterDeclarationList:
@@ -61,14 +71,6 @@ TypeArgumentList:
 TypeArgument:
 	TypeNode
 
-TypeName:
-	IdentifierReference
-	NamespaceName . IdentifierReference
-
-NamespaceName:
-	IdentifierReference
-	NamespaceName . IdentifierReference
-
 TypeBody:
 	TypeMemberList	;?
 	TypeMemberList	,?
@@ -84,13 +86,6 @@ TypeMember:
 	ConstructSignature
 	IndexSignature
 	MethodSignature
-
-TupleElementTypes:
-	TupleElementTypeNode
-	TupleElementTypes	, TupleElementTypeNode
-
-TupleElementTypeNode:
-	TypeNode
 
 TypeQueryExpression:
 	IdentifierReference
@@ -157,3 +152,5 @@ IndexSignature:
 
 MethodSignature:
 	PropertyName ?? CallSignature
+
+#endregion
