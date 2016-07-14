@@ -418,7 +418,7 @@ export class Parser {
     /**
      * 解析一个已计算的属性名。
      */
-    private parseComputedPropertyName(): nodes.ComputedPropertyName {
+    private parseComputedPropertyName() {
         const result = new nodes.ComputedPropertyName();
         result.start = this.readToken(TokenType.openBracket);
         result.body = this.allowInAnd(this.parseExpression);
@@ -506,12 +506,20 @@ export class Parser {
     private parseUnionOrIntersectionTypeOrHigher(type: TokenType) {
         let result: nodes.TypeNode = type === TokenType.ampersand ? this.parseArrayTypeNodeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
         while (this.lexer.peek().type === type) {
-            const newResult = type === TokenType.ampersand ? new nodes.IntersectionTypeNode() : new nodes.UnionTypeNode();
-            newResult.leftOperand = result;
-            newResult.operatorToken = this.readToken(type);
-            newResult.rightOperand = type === TokenType.ampersand ? this.parseArrayTypeNodeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
-            result = newResult;
+            result = this.createBinaryTypeNode(result, type, this.readToken(type), type === TokenType.ampersand ? this.parseArrayTypeNodeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand));
         }
+        return result;
+    }
+
+    /**
+     * 创建一个双目类型节点(`number | string`、`number & string`、`number is string`)。
+     */
+    private createBinaryTypeNode(left: nodes.TypeNode, type: TokenType, token: number, right: nodes.TypeNode) {
+        const result = new nodes.BinaryTypeNode();
+        result.leftOperand = left;
+        result.operator = type;
+        result.operatorToken = token;
+        result.rightOperand = right;
         return result;
     }
 
@@ -535,7 +543,7 @@ export class Parser {
      * 解析一个调用类型节点(`a.b`)或其它内部类型。
      * @param type 解析的类型。合法的值有：|、&。
      */
-    private parseCallTypeNodeOrHigher(x) {
+    private parseCallTypeNodeOrHigher() {
         switch (this.lexer.peek().type) {
             case TokenType.stringLiteral:
             case TokenType.numericLiteral:
@@ -569,15 +577,6 @@ export class Parser {
             // result.leftOperand = 
         }
         return parsed;
-    }
-
-    private createBinaryTypeNode(left: nodes.TypeNode, type: TokenType, right: nodes.TypeNode) {
-        const result = new nodes.BinaryTypeNode();
-        result.leftOperand = left;
-        result.operator = type;
-        result.operatorToken = this.readToken(type);
-        result.rightOperand = right;
-        return result;
     }
 
     /**
@@ -621,8 +620,8 @@ export class Parser {
     }
 
     // nodes.The allowReservedWords parameter controls whether reserved words are permitted after the first dot
-    private parseEntityName(allowReservedWords: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.EntityName {
-        let entity: nodes.EntityName = this.parseIdentifier(diagnosticMessage);
+    private parseEntityName() {
+        let entity = this.parseIdentifier();
         while (this.tryReadToken(TokenType.dot)) {
             const result: nodes.QualifiedName = new nodes.QualifiedName();  // !!!
             result.left = entity;
@@ -646,10 +645,13 @@ export class Parser {
         return result;
     }
 
-    private parseTypeQuery(): nodes.TypeQueryNode {
+    /**
+     * 解析一个类型查询节点(`typeof x`)。
+     */
+    private parseTypeQuery() {
         const result = new nodes.TypeQueryNode();
-        this.readToken(TokenType.typeof);
-        result.exprName = this.parseEntityName(/*allowReservedWords*/ true);
+        result.start = this.readToken(TokenType.typeof);
+        result.expression = this.parseMemberExpressionOrHigher();
         return result;
     }
 
@@ -5426,8 +5428,8 @@ export class Parser {
         return this.result;
     }
 
-    private parseRightSideOfDot(allowIdentifierNames: boolean): nodes.Identifier {
-        // nodes.Technically a keyword is valid here as all this.identifiers and keywords are identifier names.
+    private parseRightSideOfDot(allowIdentifierNames: boolean) {
+        // Technically a keyword is valid here as all this.identifiers and keywords are identifier names.
         // nodes.However, often we'll encounter this in error situations when the identifier or keyword
         // is actually starting another valid construct.
         //

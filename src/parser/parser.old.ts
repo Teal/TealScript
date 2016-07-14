@@ -1430,14 +1430,6 @@ export class Parser {
     //}
 
     /**
-     * 解析一个简单类型节点(`number`、`string`、...)。
-     * @param node 要解析的节点。
-     */
-    private parseSimpleTypeNode(node: nodes.SimpleTypeNode) {
-
-    }
-
-    /**
      * 解析一个泛型节点(`Array<T>`)。
      * @param node 要解析的节点。
      */
@@ -1491,14 +1483,6 @@ export class Parser {
      * @param node 要解析的节点。
      */
     private parseObjectTypeNode(node: nodes.ObjectTypeNode) {
-
-    }
-
-    /**
-     * 解析一个类型查询节点(`typeof x`)。
-     * @param node 要解析的节点。
-     */
-    private parseTypeQueryNode(node: nodes.TypeQueryNode) {
 
     }
 

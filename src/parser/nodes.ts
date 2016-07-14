@@ -134,7 +134,7 @@ export class FunctionTypeNode extends TypeNode {
     /**
      * 获取当前声明的所有类型参数(可能不存在)。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
     /**
      * 获取当前声明的所有类型参数(可能不存在)。
@@ -190,7 +190,7 @@ export class ConstructorTypeNode extends TypeNode {
     /**
      * 获取当前声明的所有类型参数(可能不存在)。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
     /**
      * 获取当前声明的所有类型参数(可能不存在)。
@@ -219,6 +219,256 @@ export class ConstructorTypeNode extends TypeNode {
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitConstructorTypeNode(this);
+    }
+
+}
+
+/**
+ * 表示一个绑定名称(`xx`, `[xx]`, `{x: x}`)。
+ */
+export type BindingName = Identifier | ArrayBindingPattern | ObjectBindingPattern;
+
+/**
+ * 表示一个属性名称(`xx`、`"xx"`、`[xx]`)。
+ */
+export type PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName;
+
+/**
+ * 表示一个数组绑定模式项(`[xx]`)。
+ */
+export class ArrayBindingPattern extends Node {
+
+    /**
+     * 获取当前数组绑定模式项的所有元素。
+     */
+    elements: NodeList<ArrayBindingElement>;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.elements.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.elements.end; }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrayBindingPattern(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return this.elements.each(callback, scope);
+    }
+
+}
+
+/**
+ * 表示一个数组绑定模式项(`x`)
+ */
+export class ArrayBindingElement extends Node {
+
+    /**
+     * 获取当前绑定模式项的点点点位置(可能不存在)。
+     */
+    dotDotDotToken: number;
+
+    /**
+     * 获取当前声明的名字部分(可能不存在)。
+     */
+    name: BindingName;
+
+    /**
+     * 获取当前绑定模式项的等号位置(可能不存在)。
+     */
+    equalToken: number;
+
+    /**
+     * 获取当前绑定模式项的初始值(可能不存在)。
+     */
+    initializer: Expression;
+
+    /**
+     * 获取当前绑定模式项的逗号(可能不存在)。
+     */
+    commaToken: number;
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get start() { return this.dotDotDot != undefined ? this.dotDotDot : this.name ? this.name.start : this.commaToken; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.initializer ? this.initializer.end : this.name ? this.name.end : this.commaToken; }
+
+    /**
+     * 获取空绑定。
+     */
+    static empty = Object.freeze(new ArrayBindingElement());
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitArrayBindingElement(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.initializer, "initializer", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个对象绑定模式项(`{x: x}`)。
+ */
+export class ObjectBindingPattern extends Node {
+
+    /**
+     * 获取当前对象绑定模式项的所有元素。
+     */
+    elements: NodeList<ObjectBindingElement>;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.elements.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.elements.end; }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return this.elements.each(callback, scope);
+    }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitObjectBindingPattern(this);
+    }
+
+}
+
+/**
+ * 表示一个对象绑定模式项(`x: y`)
+ */
+export class ObjectBindingElement extends Node {
+
+    /**
+     * 获取对象绑定模式项的属性名。
+     */
+    property: PropertyName;
+
+    /**
+     * 获取当前属性名后冒号的位置(可能不存在)。
+     */
+    colonToken: number;
+
+    /**
+     * 获取当前声明的名字部分(可能不存在)。
+     */
+    name: BindingName;
+
+    /**
+     * 获取当前绑定模式项的等号位置(可能不存在)。
+     */
+    equalToken: number;
+
+    /**
+     * 获取当前绑定模式项的初始值。
+     */
+    initializer: Expression;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.propertyName.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return (this.initializer || this.name || this.propertyName).end; }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitObjectBindingElement(this);
+    }
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.initializer, "initializer", this) !== false;
+    }
+
+}
+
+/**
+ * 表示一个已计算的属性名。
+ */
+export class ComputedPropertyName extends Node {
+
+    /**
+     * 获取当前属性名的主体部分。
+     */
+    body: Expression;
+
+    /**
+     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
+     * @param callback 对每个子节点执行的回调函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return callback.call(scope, this.body, "body", this) !== false;
+    }
+
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visitComputedPropertyName(this);
     }
 
 }
@@ -264,7 +514,7 @@ export class TypeParameterDeclaration extends Node {
      * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitTypeParametersDeclaration(this);
+        return vistior.visitTypeParameterDeclaration(this);
     }
 
     /**
@@ -642,6 +892,8 @@ export class ObjectTypeNode extends TypeNode {
  */
 export class TypeQueryNode extends TypeNode {
 
+    expression: Expression;
+
     /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
@@ -742,22 +994,6 @@ export class QualifiedNameTypeNode extends TypeNode {
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitQualifiedNameTypeNode(this);
-    }
-
-}
-
-/**
- * 表示一个类型别名声明(`type A = number`)。
- */
-export class TypeAliasDeclaration extends Statement {
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitTypeAliasDeclaration(this);
     }
 
 }
@@ -3184,7 +3420,7 @@ export abstract class Declaration extends Statement {
     /**
      * 获取当前声明的所有类型参数(可能不存在)。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
 }
 
@@ -3273,7 +3509,7 @@ export class FunctionExpression extends Expression {
     /**
      * 获取成员的类型参数。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
     /**
      * 获取当前函数定义的参数列表。
@@ -3338,7 +3574,7 @@ export class ArrowFunctionExpression extends Expression {
     /**
      * 获取当前箭头函数的所有类型参数(可能不存在)。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
     /**
      * 获取当前箭头函数的所有参数(可能不存在)。
@@ -3480,7 +3716,7 @@ export class ClassExpression extends Expression {
     /**
      * 获取当前类表达式的所有类型参数(可能不存在)。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
     /**
      * 获取 extends 关键字的位置(可能不存在)。
@@ -3631,7 +3867,7 @@ export class MethodDeclaration extends TypeMemberDeclaration {
     /**
      * 获取当前方法的所有类型参数(可能不存在)。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
     /**
      * 获取当前方法的所有参数。
@@ -3765,7 +4001,7 @@ export class InterfaceDeclaration extends Declaration {
     /**
      * 获取当前接口的所有类型参数(可能不存在)。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
     /**
      * 获取当前接口的所有成员(可能不存在)。
@@ -3821,7 +4057,7 @@ export class InterfaceExpression extends Expression {
     /**
      * 获取当前类型定义的类型参数列表(可能不存在)。
      */
-    typeParameters: NodeList<TypeParametersDeclaration>;
+    typeParameters: NodeList<TypeParameterDeclaration>;
 
     /**
      * 获取当前容器内的所有成员(可能不存在)。
@@ -4255,34 +4491,9 @@ export class ExportEqualsDirective extends Statement {
 }
 
 /**
- * 表示一个绑定名称(`xx`, `[xx]`, `{x: x}`)。
+ * 表示一个类型别名声明(`type A = number`)。
  */
-export type BindingName = Identifier | ArrayBindingPattern | ObjectBindingPattern;
-
-/**
- * 表示一个属性名称(`xx`、`"xx"`、`[xx]`)。
- */
-export type PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName;
-
-/**
- * 表示一个数组绑定模式项(`[xx]`)。
- */
-export class ArrayBindingPattern extends Node {
-
-    /**
-     * 获取当前数组绑定模式项的所有元素。
-     */
-    elements: NodeList<ArrayBindingElement>;
-
-    /**
-     * 获取当前节点的开始位置。
-     */
-    get start() { return this.elements.start; }
-
-    /**
-     * 获取当前节点的结束位置。
-     */
-    get end() { return this.elements.end; }
+export class TypeAliasDeclaration extends Statement {
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -4290,216 +4501,7 @@ export class ArrayBindingPattern extends Node {
      * @returns 返回访问器的处理结果。
      */
     accept(vistior: NodeVisitor) {
-        return vistior.visitArrayBindingPattern(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每个子节点执行的回调函数。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: EachCallback, scope?: any) {
-        return this.elements.each(callback, scope);
-    }
-
-}
-
-/**
- * 表示一个数组绑定模式项(`x`)
- */
-export class ArrayBindingElement extends Node {
-
-    /**
-     * 获取当前绑定模式项的点点点位置(可能不存在)。
-     */
-    dotDotDotToken: number;
-
-    /**
-     * 获取当前声明的名字部分(可能不存在)。
-     */
-    name: BindingName;
-
-    /**
-     * 获取当前绑定模式项的等号位置(可能不存在)。
-     */
-    equalToken: number;
-
-    /**
-     * 获取当前绑定模式项的初始值(可能不存在)。
-     */
-    initializer: Expression;
-
-    /**
-     * 获取当前绑定模式项的逗号(可能不存在)。
-     */
-    commaToken: number;
-
-    /**
-     * 获取当前节点的结束位置。
-     */
-    get start() { return this.dotDotDot != undefined ? this.dotDotDot : this.name ? this.name.start : this.commaToken; }
-
-    /**
-     * 获取当前节点的结束位置。
-     */
-    get end() { return this.initializer ? this.initializer.end : this.name ? this.name.end : this.commaToken; }
-
-    /**
-     * 获取空绑定。
-     */
-    static empty = Object.freeze(new ArrayBindingElement());
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitArrayBindingElement(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每个子节点执行的回调函数。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: EachCallback, scope?: any) {
-        return callback.call(scope, this.initializer, "initializer", this) !== false;
-    }
-
-}
-
-/**
- * 表示一个对象绑定模式项(`{x: x}`)。
- */
-export class ObjectBindingPattern extends Node {
-
-    /**
-     * 获取当前对象绑定模式项的所有元素。
-     */
-    elements: NodeList<ObjectBindingElement>;
-
-    /**
-     * 获取当前节点的开始位置。
-     */
-    get start() { return this.elements.start; }
-
-    /**
-     * 获取当前节点的结束位置。
-     */
-    get end() { return this.elements.end; }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每个子节点执行的回调函数。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: EachCallback, scope?: any) {
-        return this.elements.each(callback, scope);
-    }
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitObjectBindingPattern(this);
-    }
-
-}
-
-/**
- * 表示一个对象绑定模式项(`x: y`)
- */
-export class ObjectBindingElement extends Node {
-
-    /**
-     * 获取对象绑定模式项的属性名。
-     */
-    property: PropertyName;
-
-    /**
-     * 获取当前属性名后冒号的位置(可能不存在)。
-     */
-    colonToken: number;
-
-    /**
-     * 获取当前声明的名字部分(可能不存在)。
-     */
-    name: BindingName;
-
-    /**
-     * 获取当前绑定模式项的等号位置(可能不存在)。
-     */
-    equalToken: number;
-
-    /**
-     * 获取当前绑定模式项的初始值。
-     */
-    initializer: Expression;
-
-    /**
-     * 获取当前节点的开始位置。
-     */
-    get start() { return this.propertyName.start; }
-
-    /**
-     * 获取当前节点的结束位置。
-     */
-    get end() { return (this.initializer || this.name || this.propertyName).end; }
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitObjectBindingElement(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每个子节点执行的回调函数。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: EachCallback, scope?: any) {
-        return callback.call(scope, this.initializer, "initializer", this) !== false;
-    }
-
-}
-
-/**
- * 表示一个已计算的属性名。
- */
-export class ComputedPropertyName extends Node {
-
-    /**
-     * 获取当前属性名的主体部分。
-     */
-    body: Expression;
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每个子节点执行的回调函数。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: EachCallback, scope?: any) {
-        return callback.call(scope, this.body, "body", this) !== false;
-    }
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitComputedPropertyName(this);
+        return vistior.visitTypeAliasDeclaration(this);
     }
 
 }
