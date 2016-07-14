@@ -958,6 +958,31 @@ export function isReservedWord(token: TokenType) {
 }
 
 /**
+ * 判断指定的标记是否是内置类型。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isPredefinedType(token: TokenType) {
+    return token > TokenType.MIN_PREDEFINED_TYPE && token < TokenType.MAX_PREDEFINED_TYPE || token == TokenType.null || token == TokenType.undefined;
+}
+
+/**
+ * 判断指定的标记是否是绑定名称开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isBindingNameStart(token: TokenType) {
+    switch (token) {
+        case TokenType.identifier:
+        case TokenType.openBracket:
+        case TokenType.openBrace:
+            return true;
+        default:
+            return isReservedWord(token);
+    }
+}
+
+/**
  * 存储所有优先级。
  */
 const precedences = {

@@ -4,7 +4,7 @@
  */
 
 import {CharCode} from './unicode';
-import {TokenType, tokenToString, isKeyword, isReservedWord, isExpressionStart, isDeclarationStart, isModifier} from './tokenType';
+import {TokenType, tokenToString, isKeyword, isReservedWord, isExpressionStart, isDeclarationStart, isModifier, isBindingNameStart, isPredefinedType} from './tokenType';
 import {TextRange} from './location';
 import {Lexer, LexerOptions} from './lexer';
 import * as nodes from './nodes';
@@ -126,7 +126,7 @@ export class Parser {
      * @param delimiter 分隔符类型。合法的值有 unknown、comma、semicolon。
      * @param continueParse 用于判断出现错误后是否继续解析列表项的函数。
      */
-    private parseNodeList<T extends nodes.Node & { commaToken?: number, semicolonToken?: number }>(parseElement: () => T, openToken?: TokenType, closeToken?: TokenType, delimiter?: TokenType, continueParse?: () => boolean) {
+    private parseNodeList<T extends nodes.Node & { commaToken?: number, semicolonToken?: number }>(parseElement: () => T, openToken?: TokenType, closeToken?: TokenType, delimiter?: TokenType, continueParse?: (token: TokenType) => boolean) {
         let result = openToken ? new nodes.NodeList<T>() : undefined;
         if (openToken) result.start = this.readToken(openToken);
         while (this.lexer.peek().type !== TokenType.endOfFile &&
@@ -145,7 +145,7 @@ export class Parser {
                     continue;
                 }
             }
-            if (continueParse && continueParse.call(this)) {
+            if (continueParse && continueParse.call(this, this.lexer.peek().type)) {
                 continue;
             }
             break;
@@ -225,7 +225,7 @@ export class Parser {
      */
     private parseParameterDeclarationList() {
         // todo: 设置 yield  和 await
-        return this.parseNodeList(this.parseParameterDeclaration, TokenType.openParen, TokenType.closeParen, TokenType.comma, this.isBindingName);
+        return this.parseNodeList(this.parseParameterDeclaration, TokenType.openParen, TokenType.closeParen, TokenType.comma, isBindingNameStart);
 
 
         //if (this.readToken(TokenType.openParen)) {
@@ -282,7 +282,7 @@ export class Parser {
      * 解析一个修饰器(`@x`)。
      */
     private parseDecorator() {
-        if (!this.tryReadToken(TokenType.comma)) return;
+        if (this.tryReadToken(TokenType.comma) == undefined) return;
         const result = new nodes.Decorator();
         result.start = this.lexer.current.start;
         result.body = this.doInDecoratorContext(this.parseLeftHandSideExpressionOrHigher);
@@ -315,14 +315,15 @@ export class Parser {
             switch (usage) {
                 case ModifierUsage.parameter:
                     if (this.lexer.peek().type === TokenType.comma ||
-                        this.lexer.peek().type === TokenType.closeParen ||
-                        this.lexer.peek().type === TokenType.colon) {
+                        this.lexer.peek().type === TokenType.colon ||
+                        this.lexer.peek().type === TokenType.closeParen) {
                         return;
                     }
                 case ModifierUsage.property:
                     if (this.lexer.peek().type === TokenType.comma ||
-                        this.lexer.peek().type === TokenType.closeBrace ||
-                        this.lexer.peek().type === TokenType.colon) {
+                        this.lexer.peek().type === TokenType.colon ||
+                        this.lexer.peek().type === TokenType.semicolon ||
+                        this.lexer.peek().type === TokenType.closeBrace) {
                         return;
                     }
                 case ModifierUsage.declaration:
@@ -332,10 +333,97 @@ export class Parser {
             }
 
             const result = new nodes.Modifier();
+            result.start = this.lexer.current.start;
             result.type = this.lexer.current.type;
-            result.start = this.lexer.current.type;
             return result;
         });
+    }
+
+    /**
+     * 解析一个绑定名称(`xx`, `[xx]`, `{x: x}`)。
+     */
+    private parseBindingName(): nodes.BindingName {
+        switch (this.lexer.peek().type) {
+            case TokenType.openBracket:
+                return this.parseArrayBindingPattern();
+            case TokenType.openBrace:
+                return this.parseObjectBindingPattern();
+            default:
+                return this.parseIdentifier();
+        }
+    }
+
+    /**
+     * 解析一个数组绑定模式项(`[xx]`)。
+     */
+    private parseArrayBindingPattern() {
+        const result = new nodes.ArrayBindingPattern();
+        result.elements = this.parseNodeList(this.parseArrayBindingElement, TokenType.openBracket, TokenType.closeBracket, TokenType.comma, isBindingNameStart);
+        return result;
+    }
+
+    /**
+     * 解析一个数组绑定模式项(`x`)
+     */
+    private parseArrayBindingElement() {
+        const result = new nodes.ArrayBindingElement();
+        result.dotDotDotToken = this.tryReadToken(TokenType.dotDotDot);
+        if (this.lexer.peek().type !== TokenType.comma) {
+            result.name = this.parseBindingName();
+        }
+        this.parseInitializer(result);
+        return result;
+    }
+
+    /**
+     * 解析一个对象绑定模式项(`{x: x}`)。
+     */
+    private parseObjectBindingPattern() {
+        const result = new nodes.ObjectBindingPattern();
+        result.elements = this.parseNodeList(this.parseObjectBindingElement, TokenType.openBrace, TokenType.closeBrace, TokenType.comma, isBindingNameStart);
+        return result;
+    }
+
+    /**
+     * 解析一个对象绑定模式项(`x: y`)
+     */
+    private parseObjectBindingElement() {
+        const result = new nodes.ObjectBindingElement();
+        result.property = this.parsePropertyName();
+        if ((result.colonToken = this.tryReadToken(TokenType.colon)) != undefined) {
+            result.name = this.parseBindingName();
+        } else if (this.lexer.peek().type !== TokenType.comma && this.lexer.peek().type !== TokenType.closeBrace) {
+            this.readToken(TokenType.colon);
+        }
+        this.parseInitializer(result);
+        return result;
+    }
+
+    /**
+     * 解析一个属性名称(`xx`、`"xx"`、`[xx]`)。
+     */
+    private parsePropertyName(): nodes.PropertyName {
+        switch (this.lexer.peek().type) {
+            case TokenType.stringLiteral:
+                return this.parseStringLiteral();
+            case TokenType.numericLiteral:
+                return this.parseNumericLiteral();
+            case TokenType.openBracket:
+                return this.parseComputedPropertyName();
+            default:
+                return this.parseIdentifier();
+        }
+    }
+
+    /**
+     * 解析一个已计算的属性名。
+     */
+    private parseComputedPropertyName(): nodes.ComputedPropertyName {
+        const result = new nodes.ComputedPropertyName();
+        result.start = this.readToken(TokenType.openBracket);
+        result.body = this.allowInAnd(this.parseExpression);
+        result.end = this.readToken(TokenType.closeBracket);
+        return result;
     }
 
     /**
@@ -343,7 +431,7 @@ export class Parser {
      * @param result 存放结果的对象。
      */
     private parseTypeAnnotation(result: { colonToken: number, type: nodes.TypeNode }) {
-        if (result.colonToken = this.tryReadToken(TokenType.colon)) {
+        if ((result.colonToken = this.tryReadToken(TokenType.colon)) != undefined) {
             result.type = this.parseTypeNode();
         }
     }
@@ -353,54 +441,20 @@ export class Parser {
      * @param result 存放结果的对象。
      */
     private parseInitializer(result: { equalToken: number, initializer: nodes.Expression }) {
-        if (result.equalToken = this.tryReadToken(TokenType.equals)) {
+        if ((result.equalToken = this.tryReadToken(TokenType.equals)) != undefined) {
             result.initializer = this.parseExpression();
         }
     }
 
     /**
-     * 判断下一个字符是否可作为变量名。
-     */
-    private isBindingName() {
-        switch (this.lexer.peek().type) {
-            case TokenType.identifier:
-            case TokenType.openBracket:
-            case TokenType.openBrace:
-                return true;
-            default:
-                return isReservedWord(this.lexer.peek().type);
-        }
-    }
-
-    // nodes.Ignore strict mode flag because we will report an error in type checker instead.
-    private isIdentifier(): boolean {
-        if (this.lexer.peek().type === TokenType.Identifier) {
-            return true;
-        }
-
-        // nodes.If we have a 'yield' keyword, and we're in the [yield] context, then 'yield' is
-        // considered a keyword and is not an identifier.
-        if (this.lexer.peek().type === TokenType.yield && this.inYieldContext()) {
-            return false;
-        }
-
-        // nodes.If we have a 'await' keyword, and we're in the [nodes.Await] context, then 'await' is
-        // considered a keyword and is not an identifier.
-        if (this.lexer.peek().type === TokenType.await && this.inAwaitContext()) {
-            return false;
-        }
-
-        return this.lexer.peek().type > TokenType.LastReservedWord;
-    }
-
-    /**
      * 解析一个函数类型节点(`()=>void`)或构造函数类型节点(`new ()=>void`)。
      * @param type 解析的类型。合法的值有：function、new
+     * @param parameters 已解析的参数部分。
      */
-    private parseFunctionOrConstructorTypeNode(type: TokenType, parameters: NodeList<ParameterDeclaration>) {
+    private parseFunctionOrConstructorTypeNode(type: TokenType, parameters?: nodes.NodeList<nodes.ParameterDeclaration>) {
         const result = type === TokenType.new ? new nodes.ConstructorTypeNode() : new nodes.FunctionTypeNode();
         if (type === TokenType.new) result.start = this.readToken(TokenType.new);
-        this.parseMethodSignature(result, true, false, false, false);
+        this.parseMethodSignature(result, TokenType.equalsGreaterThan, parameters);
         return result;
     }
 
@@ -408,28 +462,28 @@ export class Parser {
      * 解析方法签名。
      * @param result 解析的结果。
      * @param returnToken 表示结果的返回类型。
-     * @param yieldContext
-     * @param awaitContext
-     * @param requireCompleteParameterList
+     * @param parameters 已解析的参数部分。
      */
-    private parseMethodSignature(result: nodes.FunctionTypeNode | nodes.MethodDeclaration | nodes.AccessorDeclaration, isType: boolean, yieldContext: boolean, awaitContext: boolean, requireCompleteParameterList: boolean) {
-        result.typeParameters = this.parseTypeParameterDeclarations();
-        result.parameters = this.parseParameterDeclarations(yieldContext, awaitContext, requireCompleteParameterList);
-        if (isType) {
+    private parseMethodSignature(result: nodes.FunctionTypeNode | nodes.MethodDeclaration | nodes.AccessorDeclaration, returnType: TokenType, parameters?: nodes.NodeList<nodes.ParameterDeclaration>) {
+        // yieldContext: boolean, awaitContext: boolean, requireCompleteParameterList: boolean, 
+        result.typeParameters = this.parseTypeParameterDeclarationList();
+        result.parameters = parameters || this.parseParameterDeclarationList();
+        if (returnType === TokenType.equalsGreaterThan) {
             (<nodes.FunctionTypeNode | nodes.ConstructorTypeNode>result).arrowToken = this.readToken(TokenType.equalsGreaterThan);
-            result.returnType = this.parseTypeOrTypePredicate();
         } else if (this.tryReadToken(TokenType.comma)) {
             (<nodes.MethodDeclaration | nodes.AccessorDeclaration>result).colonToken = this.lexer.current.start;
-            result.returnType = this.parseTypeOrTypePredicate();
+        } else {
+            return;
         }
+        result.returnType = this.parseTypeOrTypePredicate();
     }
 
     /**
      * 解析一个泛型参数声明列表。
      */
-    private parseTypeParameterDeclarations() {
+    private parseTypeParameterDeclarationList() {
         if (this.lexer.peek().type === TokenType.lessThan) {
-            return this.parseDelimitedList(TokenType.lessThan, this.parseTypeParameterDeclaration, TokenType.greaterThan);
+            return this.parseNodeList(this.parseTypeParameterDeclaration, TokenType.lessThan, TokenType.greaterThan, TokenType.comma, isBindingNameStart);
         }
     }
 
@@ -437,45 +491,145 @@ export class Parser {
      * 解析一个类型参数声明(`T`、`T extends R`)。
      */
     private parseTypeParameterDeclaration() {
-        // 当前必须是 < 或 , 才是类型参数开始。
-        if (this.lexer.current.type !== TokenType.comma &&
-            this.lexer.current.type !== TokenType.lessThan) return;
         const result = new nodes.TypeParameterDeclaration();
         result.name = this.parseIdentifier();
-        if (this.tryReadToken(TokenType.extends)) {
-            result.extendsToken = this.lexer.current.start;
+        if ((result.extendsToken = this.tryReadToken(TokenType.extends)) != undefined) {
             result.extends = this.parseTypeNode();
-        }
-        if (this.tryReadToken(TokenType.comma)) {
-            result.commaToken = this.lexer.current.start;
         }
         return result;
     }
 
     /**
-     * 解析一个联合类型节点(`number | string`)或交错类型节点(`number & string`)。
+     * 解析一个联合类型节点(`number | string`)或交错类型节点(`number & string`)或其它内部类型。
      * @param type 解析的类型。合法的值有：|、&。
      */
     private parseUnionOrIntersectionTypeOrHigher(type: TokenType) {
-        let result: nodes.TypeNode = type === TokenType.ampersand ? this.parseArrayTypeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
+        let result: nodes.TypeNode = type === TokenType.ampersand ? this.parseArrayTypeNodeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
         while (this.lexer.peek().type === type) {
             const newResult = type === TokenType.ampersand ? new nodes.IntersectionTypeNode() : new nodes.UnionTypeNode();
             newResult.leftOperand = result;
             newResult.operatorToken = this.readToken(type);
-            newResult.rightOperand = type === TokenType.ampersand ? this.parseArrayTypeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
+            newResult.rightOperand = type === TokenType.ampersand ? this.parseArrayTypeNodeOrHigher() : this.parseUnionOrIntersectionTypeOrHigher(TokenType.ampersand);
             result = newResult;
         }
         return result;
     }
 
-    private parseTypeReference(): nodes.TypeReferenceNode {
+    /**
+     * 解析一个数组类型节点(`T[]`)或其它内部类型。
+     * @param type 解析的类型。合法的值有：|、&。
+     */
+    private parseArrayTypeNodeOrHigher() {
+        let result = this.parseCallTypeNodeOrHigher();
+        while (!this.lexer.peek().hasLineBreakBeforeStart && this.tryReadToken(TokenType.openBracket)) {
+            const newResult = new nodes.ArrayTypeNode();
+            newResult.element = result;
+            newResult.openBracketToken = this.lexer.current.start;
+            newResult.closeBracketToken = this.readToken(TokenType.closeBracket);
+            result = newResult;
+        }
+        return result;
+    }
+
+    /**
+     * 解析一个调用类型节点(`a.b`)或其它内部类型。
+     * @param type 解析的类型。合法的值有：|、&。
+     */
+    private parseCallTypeNodeOrHigher(x) {
+        switch (this.lexer.peek().type) {
+            case TokenType.stringLiteral:
+            case TokenType.numericLiteral:
+            case TokenType.true:
+            case TokenType.false:
+                return this.parseExpressionTypeNode();
+            case TokenType.this: {
+                const thisKeyword = this.parsePredefinedTypeNode();
+                if (this.lexer.peek().type === TokenType.is && !this.lexer.peek().hasLineBreakBeforeStart) {
+                    return this.parseThisTypePredicate(thisKeyword);
+                } else {
+                    return thisKeyword;
+                }
+            }
+            case TokenType.typeof:
+                return this.parseTypeQuery();
+            case TokenType.openBrace:
+                return this.parseTypeLiteral();
+            case TokenType.openBracket:
+                return this.parseTupleType();
+            case TokenType.openParen:
+                return this.parseParenthesizedType();
+            default:
+                return this.parseTypeReference();
+        }
+    }
+
+    private parsePredicateTypeNodeOrHigher(parsed: nodes.TypeNode) {
+        if (this.lexer.peek().type === TokenType.is && !this.canParseSemicolon()) {
+            const result = new nodes.PredicateTypeNode();
+            // result.leftOperand = 
+        }
+        return parsed;
+    }
+
+    private createBinaryTypeNode(left: nodes.TypeNode, type: TokenType, right: nodes.TypeNode) {
+        const result = new nodes.BinaryTypeNode();
+        result.leftOperand = left;
+        result.operator = type;
+        result.operatorToken = this.readToken(type);
+        result.rightOperand = right;
+        return result;
+    }
+
+    /**
+     * 解析一个表达式类型节点(`"abc"`、`true`)。
+     */
+    private parseExpressionTypeNode() {
+        const result = new nodes.ExpressionTypeNode();
+        result.body = this.parseExpression();
+        return result;
+    }
+
+    /**
+     * 解析一个主要类型节点或其它内部类型。
+     * @param type 解析的类型。合法的值有：|、&。
+     */
+    private parsePrimaryTypeNodeOrHigher() {
+
+    }
+
+    /**
+     * 解析一个简单类型节点(`number`、`string`、...)。
+     */
+    private parsePredefinedTypeNode() {
+        const result = new nodes.PredefinedTypeNode();
+        result.start = this.lexer.read().start;
+        result.type = this.lexer.current.type;
+        return result;
+    }
+
+    private parseTypeReference() {
+        if (isPredefinedType(this.lexer.peek().type)) {
+            return this.parsePredefinedTypeNode();
+        }
         const typeName = this.parseEntityName(/*allowReservedWords*/ false, nodes.Diagnostics.Type_expected);
         const result = new nodes.TypeReferenceNode();
         result.typeName = typeName;
         if (!this.lexer.peek().hasLineBreakBeforeStart && this.lexer.peek().type === TokenType.lessThan) {
-            result.typeArguments = this.parseBracketedList(nodes.ParsingContext.TypeArguments, this.parseTypeNode, TokenType.lessThan, TokenType.greaterThan);
+            result.typeArguments = this.parseBracketedList(this.parseTypeNode, TokenType.lessThan, TokenType.greaterThan, TokenType.comma);
         }
         return result;
+    }
+
+    // nodes.The allowReservedWords parameter controls whether reserved words are permitted after the first dot
+    private parseEntityName(allowReservedWords: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.EntityName {
+        let entity: nodes.EntityName = this.parseIdentifier(diagnosticMessage);
+        while (this.tryReadToken(TokenType.dot)) {
+            const result: nodes.QualifiedName = new nodes.QualifiedName();  // !!!
+            result.left = entity;
+            result.right = this.parseRightSideOfDot(allowReservedWords);
+            entity = result;
+        }
+        return entity;
     }
 
     private parseThisTypePredicate(lhs: nodes.ThisTypeNode): nodes.TypePredicateNode {
@@ -733,45 +887,6 @@ export class Parser {
         return this.lexer.peek().type === TokenType.dot ? undefined : result;
     }
 
-    private parseNonArrayType(): nodes.TypeNode {
-        switch (this.lexer.peek().type) {
-            case TokenType.any:
-            case TokenType.string:
-            case TokenType.number:
-            case TokenType.boolean:
-            case TokenType.symbol:
-            case TokenType.undefined:
-            case TokenType.never:
-                // nodes.If these are followed by a dot, then parse these out as a dotted type reference instead.
-                const result = this.tryParse(this.parseKeywordAndNoDot);
-                return result || this.parseTypeReference();
-            case TokenType.StringLiteral:
-                return this.parseStringLiteralTypeNode();
-            case TokenType.void:
-            case TokenType.null:
-                return this.parseTokenNode<nodes.TypeNode>();
-            case TokenType.this: {
-                const thisKeyword = this.parseThisTypeNode();
-                if (this.lexer.peek().type === TokenType.is && !this.lexer.peek().hasLineBreakBeforeStart) {
-                    return this.parseThisTypePredicate(thisKeyword);
-                }
-                else {
-                    return thisKeyword;
-                }
-            }
-            case TokenType.typeof:
-                return this.parseTypeQuery();
-            case TokenType.openBrace:
-                return this.parseTypeLiteral();
-            case TokenType.openBracket:
-                return this.parseTupleType();
-            case TokenType.openParen:
-                return this.parseParenthesizedType();
-            default:
-                return this.parseTypeReference();
-        }
-    }
-
     private isStartOfType(): boolean {
         switch (this.lexer.peek().type) {
             case TokenType.any:
@@ -805,15 +920,25 @@ export class Parser {
         return this.lexer.peek().type === TokenType.closeParen || this.isStartOfParameter() || this.isStartOfType();
     }
 
-    private parseArrayTypeOrHigher(): nodes.TypeNode {
-        let type = this.parseNonArrayType();
-        while (!this.lexer.peek().hasLineBreakBeforeStart && this.tryReadToken(TokenType.openBracket)) {
-            this.readToken(TokenType.closeBracket);
-            const result = new nodes.ArrayTypeNode();
-            result.elementType = type;
-            type = result;
+    // nodes.Ignore strict mode flag because we will report an error in type checker instead.
+    private isIdentifier(): boolean {
+        if (this.lexer.peek().type === TokenType.Identifier) {
+            return true;
         }
-        return type;
+
+        // nodes.If we have a 'yield' keyword, and we're in the [yield] context, then 'yield' is
+        // considered a keyword and is not an identifier.
+        if (this.lexer.peek().type === TokenType.yield && this.inYieldContext()) {
+            return false;
+        }
+
+        // nodes.If we have a 'await' keyword, and we're in the [nodes.Await] context, then 'await' is
+        // considered a keyword and is not an identifier.
+        if (this.lexer.peek().type === TokenType.await && this.inAwaitContext()) {
+            return false;
+        }
+
+        return this.lexer.peek().type > TokenType.LastReservedWord;
     }
 
     private parseTypeOrTypePredicate(): nodes.TypeNode {
@@ -951,29 +1076,29 @@ export class Parser {
         return expr;
     }
 
-    private parseInitializer(inParameter: boolean): nodes.Expression {
-        if (this.lexer.peek().type !== TokenType.equals) {
-            // It's not uncommon during typing for the user to miss writing the '=' this.lexer.peek().type.  Check if
-            // there is no newline after the last this.lexer.peek().type and if we're on an expression.  If so, parse
-            // this as an equals-value clause with a missing equals.
-            // NOTE: There are two places where we allow equals-value clauses.  The first is in a
-            // variable declarator.  The second is with a parameter.  For variable declarators
-            // it's more likely that a { would be a allowed (as an object literal).  While this
-            // is also allowed for parameters, the risk is that we consume the { as an object
-            // literal when it really will be for the block following the parameter.
-            if (this.lexer.peek().hasLineBreakBeforeStart || (inParameter && this.lexer.peek().type === TokenType.openBrace) || !this.isStartOfExpression()) {
-                // preceding line break, open brace in a parameter (likely a function body) or current this.lexer.peek().type is not an expression -
-                // do not try to parse initializer
-                return undefined;
-            }
-        }
+    //private parseInitializer(inParameter: boolean): nodes.Expression {
+    //    if (this.lexer.peek().type !== TokenType.equals) {
+    //        // It's not uncommon during typing for the user to miss writing the '=' this.lexer.peek().type.  Check if
+    //        // there is no newline after the last this.lexer.peek().type and if we're on an expression.  If so, parse
+    //        // this as an equals-value clause with a missing equals.
+    //        // NOTE: There are two places where we allow equals-value clauses.  The first is in a
+    //        // variable declarator.  The second is with a parameter.  For variable declarators
+    //        // it's more likely that a { would be a allowed (as an object literal).  While this
+    //        // is also allowed for parameters, the risk is that we consume the { as an object
+    //        // literal when it really will be for the block following the parameter.
+    //        if (this.lexer.peek().hasLineBreakBeforeStart || (inParameter && this.lexer.peek().type === TokenType.openBrace) || !this.isStartOfExpression()) {
+    //            // preceding line break, open brace in a parameter (likely a function body) or current this.lexer.peek().type is not an expression -
+    //            // do not try to parse initializer
+    //            return undefined;
+    //        }
+    //    }
 
-        // nodes.Initializer[nodes.In, nodes.Yield] :
-        //     = nodes.AssignmentExpression[?nodes.In, ?nodes.Yield]
+    //    // nodes.Initializer[nodes.In, nodes.Yield] :
+    //    //     = nodes.AssignmentExpression[?nodes.In, ?nodes.Yield]
 
-        this.readToken(TokenType.equals);
-        return this.parseAssignmentExpressionOrHigher();
-    }
+    //    this.readToken(TokenType.equals);
+    //    return this.parseAssignmentExpressionOrHigher();
+    //}
 
     private parseAssignmentExpressionOrHigher(): nodes.Expression {
         //  nodes.AssignmentExpression[in,yield]:
@@ -3295,61 +3420,8 @@ export class Parser {
 
     // nodes.DECLARATIONS
 
-    private parseArrayBindingElement(): nodes.BindingElement {
-        if (this.lexer.peek().type === TokenType.comma) {
-            return new nodes.BindingElement();
-        }
-        const result = new nodes.BindingElement();
-        result.dotDotDotToken = this.tryReadTokenToken(TokenType.dotDotDot);
-        result.name = this.parseBindingName();
-        result.initializer = this.parseBindingElementInitializer(/*inParameter*/ false);
-        return result;
-    }
-
-    private parseObjectBindingElement(): nodes.BindingElement {
-        const result = new nodes.BindingElement();
-        const tokenIsIdentifier = this.isIdentifier();
-        const propertyName = this.parsePropertyName();
-        if (tokenIsIdentifier && this.lexer.peek().type !== TokenType.colon) {
-            result.name = <nodes.Identifier>propertyName;
-        }
-        else {
-            this.readToken(TokenType.colon);
-            result.propertyName = propertyName;
-            result.name = this.parseBindingName();
-        }
-        result.initializer = this.parseBindingElementInitializer(/*inParameter*/ false);
-        return result;
-    }
-
-    private parseObjectBindingPattern(): nodes.BindingPattern {
-        const result = new nodes.BindingPattern();
-        this.readToken(TokenType.openBrace);
-        result.elements = this.parseDelimitedList(nodes.ParsingContext.ObjectBindingElements, this.parseObjectBindingElement);
-        this.readToken(TokenType.closeBrace);
-        return result;
-    }
-
-    private parseArrayBindingPattern(): nodes.BindingPattern {
-        const result = new nodes.BindingPattern();
-        this.readToken(TokenType.openBracket);
-        result.elements = this.parseDelimitedList(nodes.ParsingContext.ArrayBindingElements, this.parseArrayBindingElement);
-        this.readToken(TokenType.closeBracket);
-        return result;
-    }
-
     private isIdentifierOrPattern() {
         return this.lexer.peek().type === TokenType.openBrace || this.lexer.peek().type === TokenType.openBracket || this.isIdentifier();
-    }
-
-    private parseBindingName(): nodes.Identifier | nodes.BindingPattern {
-        if (this.lexer.peek().type === TokenType.openBracket) {
-            return this.parseArrayBindingPattern();
-        }
-        if (this.lexer.peek().type === TokenType.openBrace) {
-            return this.parseObjectBindingPattern();
-        }
-        return this.parseIdentifier();
     }
 
     private canFollowContextualOfKeyword(): boolean {
@@ -4690,42 +4762,12 @@ export class Parser {
             this.lexer.peek().type === TokenType.NumericLiteral;
     }
 
-    private parsePropertyNameWorker(allowComputedPropertyNames: boolean): nodes.PropertyName {
-        if (this.lexer.peek().type === TokenType.StringLiteral || this.lexer.peek().type === TokenType.NumericLiteral) {
-            return this.parseLiteralNode(/*internName*/ true);
-        }
-        if (allowComputedPropertyNames && this.lexer.peek().type === TokenType.openBracket) {
-            return this.parseComputedPropertyName();
-        }
-        return this.parseIdentifierName();
-    }
-
-    private parsePropertyName(): nodes.PropertyName {
-        return this.parsePropertyNameWorker(/*allowComputedPropertyNames*/ true);
-    }
-
     private parseSimplePropertyName(): nodes.Identifier | nodes.LiteralExpression {
         return <nodes.Identifier | nodes.LiteralExpression>this.parsePropertyNameWorker(/*allowComputedPropertyNames*/ false);
     }
 
     private isSimplePropertyName() {
         return this.lexer.peek().type === TokenType.StringLiteral || this.lexer.peek().type === TokenType.NumericLiteral || tokenIsIdentifierOrKeyword(this.lexer.peek().type);
-    }
-
-    private parseComputedPropertyName(): nodes.ComputedPropertyName {
-        // nodes.PropertyName [nodes.Yield]:
-        //      nodes.LiteralPropertyName
-        //      nodes.ComputedPropertyName[?nodes.Yield]
-        const result = new nodes.ComputedPropertyName();
-        this.readToken(TokenType.openBracket);
-
-        // nodes.We parse any expression (including a comma expression). nodes.But the grammar
-        // says that only an assignment expression is allowed, so the grammar checker
-        // will error if it sees a comma expression.
-        result.expression = this.allowInAnd(this.parseExpression);
-
-        this.readToken(TokenType.closeBracket);
-        return result;
     }
 
     private parseContextualModifier(t: TokenType): boolean {
@@ -5384,18 +5426,6 @@ export class Parser {
         return this.result;
     }
 
-    // nodes.The allowReservedWords parameter controls whether reserved words are permitted after the first dot
-    private parseEntityName(allowReservedWords: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.EntityName {
-        let entity: nodes.EntityName = this.parseIdentifier(diagnosticMessage);
-        while (this.tryReadToken(TokenType.dot)) {
-            const result: nodes.QualifiedName = new nodes.QualifiedName();  // !!!
-            result.left = entity;
-            result.right = this.parseRightSideOfDot(allowReservedWords);
-            entity = result;
-        }
-        return entity;
-    }
-
     private parseRightSideOfDot(allowIdentifierNames: boolean): nodes.Identifier {
         // nodes.Technically a keyword is valid here as all this.identifiers and keywords are identifier names.
         // nodes.However, often we'll encounter this in error situations when the identifier or keyword
@@ -5466,10 +5496,6 @@ export class Parser {
 
         span.literal = literal;
         return this.finishNode(span);
-    }
-
-    private parseStringLiteralTypeNode(): nodes.StringLiteralTypeNode {
-        return <nodes.StringLiteralTypeNode>this.parseLiteralLikeNode(TokenType.StringLiteralType, /*internName*/ true);
     }
 
     private parseLiteralNode(internName?: boolean): nodes.LiteralExpression {

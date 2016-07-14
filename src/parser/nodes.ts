@@ -249,6 +249,16 @@ export class TypeParameterDeclaration extends Node {
     commaToken: number;
 
     /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.name.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return (this.extends || this.name).end; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      * @returns 返回访问器的处理结果。
@@ -421,12 +431,12 @@ export class Modifier extends Node {
 }
 
 /**
- * 表示一个简单类型节点(`number`、`string`、...)。
+ * 表示一个内置类型节点(`number`、`string`、...)。
  */
-export class SimpleTypeNode extends TypeNode {
+export class PredefinedTypeNode extends TypeNode {
 
     /**
-     * 获取当前简单类型节点的类型。合法的值有：this、any、number、string、boolean、symbol、void、never、*、?。
+     * 获取当前简单类型节点的类型。合法的值有：this、any、number、string、boolean、symbol、void、null、never、*、?。
      */
     type: TokenType;
 
@@ -504,6 +514,16 @@ export class ArrayTypeNode extends TypeNode {
     closeBracketToken: number;
 
     /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.element.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.closeBracketToken; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      * @returns 返回访问器的处理结果。
@@ -556,14 +576,19 @@ export class TupleTypeNode extends TypeNode {
 }
 
 /**
- * 表示一个联合类型节点(`number | string`)。
+ * 表示一个双目类型节点(`number | string`、`number & string`、`number is string`)。
  */
-export class UnionTypeNode extends TypeNode {
+export class BinaryTypeNode extends TypeNode {
 
     /**
      * 获取当前表达式的左值部分。
      */
     leftOperand: TypeNode;
+
+    /**
+     * 获取当前表达式的类型。合法的值有：|、&、is。
+     */
+    operator: TokenType;
 
     /**
      * 获取运算符的位置。
@@ -592,47 +617,6 @@ export class UnionTypeNode extends TypeNode {
      */
     accept(vistior: NodeVisitor) {
         return vistior.visitUnionTypeNode(this);
-    }
-
-}
-
-/**
- * 表示一个交错类型节点(`number & string`)。
- */
-export class IntersectionTypeNode extends TypeNode {
-
-    /**
-     * 获取当前表达式的左值部分。
-     */
-    leftOperand: TypeNode;
-
-    /**
-     * 获取运算符的位置。
-     */
-    operatorToken: number;
-
-    /**
-     * 获取当前表达式的右值部分。
-     */
-    rightOperand: TypeNode;
-
-    /**
-     * 获取当前节点的开始位置。
-     */
-    get start() { return this.leftOperand.start; }
-
-    /**
-     * 获取当前节点的结束位置。
-     */
-    get end() { return this.rightOperand.end; }
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitIntersectionTypeNode(this);
     }
 
 }
@@ -706,6 +690,21 @@ export class ParenthesizedTypeNode extends TypeNode {
 export class ExpressionTypeNode extends TypeNode {
 
     /**
+     * 获取当前表达式类型的主体。
+     */
+    body: Expression;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.elements.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.elements.end; }
+
+    /**
      * 使用指定的节点访问器处理当前节点。
      * @param vistior 要使用的节点访问器。
      * @returns 返回访问器的处理结果。
@@ -720,6 +719,21 @@ export class ExpressionTypeNode extends TypeNode {
  * 表示一个限定名称类型节点(`"abc"`、`true`)。
  */
 export class QualifiedNameTypeNode extends TypeNode {
+
+    /**
+     * 获取当前表达式的左值部分。
+     */
+    target: TypeNode;
+
+    /**
+     * 获取点的位置。
+     */
+    dotToken: number;
+
+    /**
+     * 获取当前表达式的右值部分。
+     */
+    argument: Identifier;
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -4241,12 +4255,12 @@ export class ExportEqualsDirective extends Statement {
 }
 
 /**
- * 表示一个绑定名称(`xx、[xx]、{x:x}`)。
+ * 表示一个绑定名称(`xx`, `[xx]`, `{x: x}`)。
  */
 export type BindingName = Identifier | ArrayBindingPattern | ObjectBindingPattern;
 
 /**
- * 表示一个属性名称(`xx、"xx"、[xx]`)。
+ * 表示一个属性名称(`xx`、`"xx"`、`[xx]`)。
  */
 export type PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName;
 
@@ -4259,6 +4273,16 @@ export class ArrayBindingPattern extends Node {
      * 获取当前数组绑定模式项的所有元素。
      */
     elements: NodeList<ArrayBindingElement>;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.elements.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.elements.end; }
 
     /**
      * 使用指定的节点访问器处理当前节点。
@@ -4282,19 +4306,19 @@ export class ArrayBindingPattern extends Node {
 }
 
 /**
- * 表示一个数组绑定模式项(xx、..)
+ * 表示一个数组绑定模式项(`x`)
  */
 export class ArrayBindingElement extends Node {
 
     /**
-     * 获取当前声明的名字部分。
-     */
-    name: BindingName;
-
-    /**
      * 获取当前绑定模式项的点点点位置(可能不存在)。
      */
-    get dotDotDot() { return this.name.start > this.start; }
+    dotDotDotToken: number;
+
+    /**
+     * 获取当前声明的名字部分(可能不存在)。
+     */
+    name: BindingName;
 
     /**
      * 获取当前绑定模式项的等号位置(可能不存在)。
@@ -4302,14 +4326,24 @@ export class ArrayBindingElement extends Node {
     equalToken: number;
 
     /**
-     * 获取当前绑定模式项的初始值。
+     * 获取当前绑定模式项的初始值(可能不存在)。
      */
     initializer: Expression;
 
     /**
+     * 获取当前绑定模式项的逗号(可能不存在)。
+     */
+    commaToken: number;
+
+    /**
      * 获取当前节点的结束位置。
      */
-    get end() { return (this.initializer || this.name).end; }
+    get start() { return this.dotDotDot != undefined ? this.dotDotDot : this.name ? this.name.start : this.commaToken; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.initializer ? this.initializer.end : this.name ? this.name.end : this.commaToken; }
 
     /**
      * 获取空绑定。
@@ -4338,7 +4372,7 @@ export class ArrayBindingElement extends Node {
 }
 
 /**
- * 表示一个对象绑定模式项(`{xx: xx}`)。
+ * 表示一个对象绑定模式项(`{x: x}`)。
  */
 export class ObjectBindingPattern extends Node {
 
@@ -4346,6 +4380,16 @@ export class ObjectBindingPattern extends Node {
      * 获取当前对象绑定模式项的所有元素。
      */
     elements: NodeList<ObjectBindingElement>;
+
+    /**
+     * 获取当前节点的开始位置。
+     */
+    get start() { return this.elements.start; }
+
+    /**
+     * 获取当前节点的结束位置。
+     */
+    get end() { return this.elements.end; }
 
     /**
      * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
@@ -4369,7 +4413,7 @@ export class ObjectBindingPattern extends Node {
 }
 
 /**
- * 表示一个对象绑定模式项(xx: y)
+ * 表示一个对象绑定模式项(`x: y`)
  */
 export class ObjectBindingElement extends Node {
 
