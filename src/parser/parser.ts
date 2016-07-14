@@ -4,8 +4,8 @@
  */
 
 import {CharCode} from './unicode';
-import {TextRange} from './location';
 import {TokenType, tokenToString, isKeyword, isReservedWord, isExpressionStart, isDeclarationStart, isModifier} from './tokenType';
+import {TextRange} from './location';
 import {Lexer, LexerOptions} from './lexer';
 import * as nodes from './nodes';
 
@@ -74,10 +74,10 @@ export class Parser {
      * @param start 解析的源码开始位置。
      * @param fileName 解析的源码位置。
      */
-    parseAsTypeExpression(text: string, start?: number, fileName?: string) {
+    parseAsTypeNode(text: string, start?: number, fileName?: string) {
         delete this.lexer.comment;
         this.lexer.setSource(text, start, fileName);
-        return this.parseTypeExpression();
+        return this.parseTypeNode();
     }
 
     /**
@@ -95,9 +95,20 @@ export class Parser {
     // #region 解析节点底层
 
     /**
-     * 读取一个指定类型的标记。如果下一个标记不是指定的类型则报告错误。
-     * @param token 期待的标记。
-     * @returns 返回读取的标记位置。
+     * 尝试读取指定类型的标记。如果下一个标记不是指定的类型则不读取。
+     * @param token 要读取的标记类型。
+     * @returns 如果已读取则返回读取的标记位置，否则返回 undefined。
+     */
+    private tryReadToken(token: TokenType) {
+        if (this.lexer.peek().type === token) {
+            return this.lexer.read().start;
+        }
+    }
+
+    /**
+     * 读取指定类型的标记，如果下一个标记不是指定的类型则报告错误。
+     * @param token 要读取的标记类型。
+     * @returns 如果已读取则返回读取的标记位置，否则返回当前的结束位置。
      */
     private readToken(token: TokenType) {
         if (this.lexer.peek().type === token) {
@@ -108,41 +119,28 @@ export class Parser {
     }
 
     /**
-     * 尝试读取一个指定类型的标记。如果下一个标记不是指定的类型则不读取。
-     * @param token 期待的标记。
-     * @returns 如果读取成功则返回 true，否则返回 false。
-     */
-    private tryReadToken(token: TokenType) {
-        if (this.lexer.peek().type === token) {
-            this.lexer.read();
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * 解析一个节点列表。
-     * @param parseElement 解析每个元素的函数。
+     * @param parseElement 解析每个元素的函数。如果解析失败函数返回 undefined。
      * @param openToken 列表的开始标记。
      * @param closeToken 列表的结束标记。
-     * @param separator 分隔符类型。合法的值有 unknown、comma、semicolon。
-     * @param continueParse 列表的结束标记。
+     * @param delimiter 分隔符类型。合法的值有 unknown、comma、semicolon。
+     * @param continueParse 用于判断出现错误后是否继续解析列表项的函数。
      */
-    private parseNodeList<T extends nodes.Node & { commaToken?: number, semicolonToken?: number }>(parseElement: () => T, openToken?: TokenType, closeToken?: TokenType, separator?: TokenType, continueParse?: () => boolean) {
-        const result = new nodes.NodeList<T>();
-        if (openToken) {
-            result.start = this.readToken(openToken);
-        }
-        while (this.lexer.peek().type !== TokenType.endOfFile && (!closeToken || this.lexer.peek().type !== closeToken)) {
+    private parseNodeList<T extends nodes.Node & { commaToken?: number, semicolonToken?: number }>(parseElement: () => T, openToken?: TokenType, closeToken?: TokenType, delimiter?: TokenType, continueParse?: () => boolean) {
+        let result = openToken ? new nodes.NodeList<T>() : undefined;
+        if (openToken) result.start = this.readToken(openToken);
+        while (this.lexer.peek().type !== TokenType.endOfFile &&
+            (!closeToken || this.lexer.peek().type !== closeToken)) {
             const element = <T>parseElement.call(this);
             if (!element) break;
+            if (!result) result = new nodes.NodeList<T>();
             result.push(element);
-            if (separator) {
+            if (delimiter) {
                 if (this.lexer.peek().type === TokenType.comma) {
                     element.commaToken = this.readToken(TokenType.comma);
                     continue;
                 }
-                if (separator === TokenType.semicolon && this.lexer.peek().type === TokenType.semicolon) {
+                if (delimiter === TokenType.semicolon && this.lexer.peek().type === TokenType.semicolon) {
                     element.semicolonToken = this.readToken(TokenType.semicolon);
                     continue;
                 }
@@ -152,36 +150,34 @@ export class Parser {
             }
             break;
         }
-        if (closeToken) {
-            result.end = this.readToken(closeToken);
-        }
+        if (closeToken) result.end = this.readToken(closeToken);
         return result;
     }
 
     /**
      * 在不影响现有状态的情况下尝试解析。
      * @param parser 解析的函数。
-     * @return 如果尝试解析成功则返回 true，否则返回 false。
+     * @return 返回尝试解析的结果。如果尝试解析失败则返回 undefined。
      */
     private tryParse<T>(parser: (errors: IArguments[]) => T) {
+
         // 保存状态。
-        const errors = [];
+        const orignalToken = this.lexer.current;
         const orignalError = this.error;
-        this.error = function () { errors.push(arguments); };
-        this.lexer.stashSave();
+        const cachedErrors = [];
+        this.error = function () { cachedErrors.push(arguments); };
 
         // 解析节点。        
-        const result = parser.call(this, errors);
+        const result = parser.call(this, cachedErrors);
 
         // 恢复状态。        
         this.error = orignalError;
         if (result) {
-            this.lexer.stashClear();
-            for (const e of errors) {
+            for (const e of cachedErrors) {
                 this.error.apply(this, e);
             }
         } else {
-            this.lexer.stashRestore();
+            this.lexer.current = orignalToken;
         }
 
         return result;
@@ -198,7 +194,7 @@ export class Parser {
         // todo: 关闭 yield | await
         switch (this.lexer.peek().type) {
             case TokenType.openParen:
-                const parameters = this.tryParseParameterDeclarations();
+                const parameters = this.tryParseParameterDeclarationList();
                 if (parameters) {
                     return this.parseFunctionOrConstructorTypeNode(TokenType.function, parameters);
                 }
@@ -215,18 +211,21 @@ export class Parser {
     /**
      * 尝试解析一个参数定义列表。
      */
-    private tryParseParameterDeclarations() {
+    private tryParseParameterDeclarationList() {
         return this.tryParse(() => {
-            const parameters = this.parseParameterDeclarations();
+            const parameters = this.parseParameterDeclarationList();
             if (this.lexer.peek().type === TokenType.equalsGreaterThan || this.lexer.peek().type === TokenType.colon) {
                 return parameters;
             }
         });
     }
 
-    private parseParameterDeclarations() {
+    /**
+     * 解析一个参数定义列表。
+     */
+    private parseParameterDeclarationList() {
         // todo: 设置 yield  和 await
-        return this.parseCommaDelimitedList(TokenType.openParen, this.parseParameterDeclaration, TokenType.closeParen);
+        return this.parseNodeList(this.parseParameterDeclaration, TokenType.openParen, TokenType.closeParen, TokenType.comma, this.isBindingName);
 
 
         //if (this.readToken(TokenType.openParen)) {
@@ -262,47 +261,101 @@ export class Parser {
      */
     private parseParameterDeclaration() {
         const result = new nodes.ParameterDeclaration();
-        result.decorators = this.parseDecorators();
-        result.modifiers = this.parseModifiers();
+        result.decorators = this.parseDecoratorList();
+        result.modifiers = this.parseModifierList(ModifierUsage.parameter);
+        result.dotDotDotToken = this.tryReadToken(TokenType.dotDotDot);
+        result.name = this.lexer.peek().type === TokenType.this ? this.createIdentifier() : this.parseBindingName();
+        result.questionToken = this.tryReadToken(TokenType.question);
+        this.parseTypeAnnotation(result);
+        this.parseInitializer(result);
+        return result;
+    }
 
-        if (this.lexer.peek().type === TokenType.this) {
-            result.name = this.createIdentifier(/*this.isIdentifier*/true, undefined);
-            result.type = this.parseParameterType();
+    /**
+     * 解释一个修饰器列表。
+     */
+    private parseDecoratorList() {
+        return this.parseNodeList(this.parseDecorator);
+    }
+
+    /**
+     * 解析一个修饰器(`@x`)。
+     */
+    private parseDecorator() {
+        if (!this.tryReadToken(TokenType.comma)) return;
+        const result = new nodes.Decorator();
+        result.start = this.lexer.current.start;
+        result.body = this.doInDecoratorContext(this.parseLeftHandSideExpressionOrHigher);
+        return result;
+    }
+
+    /**
+     * 解析一个修饰符列表(`static`、`private`、...)。
+     */
+    private parseModifierList(usage: ModifierUsage) {
+        return this.parseNodeList(() => this.parseModifier(usage));
+    }
+
+    /**
+     * 解析一个修饰符(`static`、`private`、...)。
+     * @param usage 当前修饰符的使用场景。
+     */
+    private parseModifier(usage: ModifierUsage) {
+
+        // 仅当：修饰符关键字 + 未换行 + 声明/变量开始 时才解析为修饰符。
+        if (!isModifier(this.lexer.peek().type)) {
+            return;
+        }
+
+        return this.tryParse(() => {
+            this.lexer.read();
+            if (this.options.useStandardSemicolonInsertion && this.lexer.peek().hasLineBreakBeforeStart) return;
+
+            // 修饰符本身可能是变量名，推断之后的内容判断当前修饰符是否有效。
+            switch (usage) {
+                case ModifierUsage.parameter:
+                    if (this.lexer.peek().type === TokenType.comma ||
+                        this.lexer.peek().type === TokenType.closeParen ||
+                        this.lexer.peek().type === TokenType.colon) {
+                        return;
+                    }
+                case ModifierUsage.property:
+                    if (this.lexer.peek().type === TokenType.comma ||
+                        this.lexer.peek().type === TokenType.closeBrace ||
+                        this.lexer.peek().type === TokenType.colon) {
+                        return;
+                    }
+                case ModifierUsage.declaration:
+                    if (!isDeclarationStart(this.lexer.peek().type)) {
+                        return;
+                    }
+            }
+
+            const result = new nodes.Modifier();
+            result.type = this.lexer.current.type;
+            result.start = this.lexer.current.type;
             return result;
+        });
+    }
+
+    /**
+     * 解析一个参数注解(`: number`)。
+     * @param result 存放结果的对象。
+     */
+    private parseTypeAnnotation(result: { colonToken: number, type: nodes.TypeNode }) {
+        if (result.colonToken = this.tryReadToken(TokenType.colon)) {
+            result.type = this.parseTypeNode();
         }
+    }
 
-
-        result.dotDotDotToken = this.tryReadTokenToken(TokenType.dotDotDot);
-
-        // nodes.FormalParameter [nodes.Yield,nodes.Await]:
-        //      nodes.BindingElement[?nodes.Yield,?nodes.Await]
-        result.name = this.parseBindingName();
-        if (getFullWidth(result.name) === 0 && result.flags === 0 && isModifierKind(this.lexer.peek().type)) {
-            // in cases like
-            // 'use strict'
-            // function foo(static)
-            // isParameter('static') === true, because of isModifier('static')
-            // however 'static' is not a legal identifier in a strict mode.
-            // so this.result of this function will be nodes.ParameterDeclaration (flags = 0, name = missing, type = undefined, initializer = undefined)
-            // and current this.lexer.peek().type will not change => parsing of the enclosing parameter list will last till the end of time (or nodes.OOM)
-            // to avoid this we'll advance cursor to the next this.lexer.peek().type.
-            this.lexer.read().type;
+    /**
+     * 解析一个初始值(`= 0`)。
+     * @param result 存放结果的对象。
+     */
+    private parseInitializer(result: { equalToken: number, initializer: nodes.Expression }) {
+        if (result.equalToken = this.tryReadToken(TokenType.equals)) {
+            result.initializer = this.parseExpression();
         }
-
-        result.questionToken = this.tryReadTokenToken(TokenType.question);
-        result.type = this.parseParameterType();
-        result.initializer = this.parseBindingElementInitializer(/*inParameter*/ true);
-
-        // nodes.Do not check for initializers in an ambient context for parameters. nodes.This is not
-        // a grammar error because the grammar allows arbitrary call signatures in
-        // an ambient context.
-        // nodes.It is actually not necessary for this to be an error at all. nodes.The reason is that
-        // function/constructor implementations are syntactically disallowed in ambient
-        // contexts. nodes.In addition, parameter initializers are semantically disallowed in
-        // overload signatures. nodes.So parameter initializers are transitively disallowed in
-        // ambient contexts.
-
-        return this.parseJsDocComment(result);
     }
 
     /**
@@ -400,81 +453,6 @@ export class Parser {
     }
 
     /**
-     * 解释所有修饰器(`@x @y`)。
-     */
-    private parseDecorators() {
-        return this.parseSimpleList(this.parseDecorator);
-    }
-
-    /**
-     * 解析一个修饰器(`@x`)。
-     */
-    private parseDecorator() {
-        if (this.tryReadToken(TokenType.at)) {
-            const result = new nodes.Decorator();
-            result.start = this.lexer.current.start;
-            result.body = this.doInDecoratorContext(this.parseLeftHandSideExpressionOrHigher);
-            return result;
-        }
-    }
-
-    /*
-     * nodes.There are situations in which a modifier like 'const' will appear unexpectedly, such as on a class member.
-     * nodes.In those situations, if we are entirely sure that 'const' is not valid on its own (such as when nodes.ASI takes effect
-     * and turns it into a standalone declaration), then it is better to parse it and report an error later.
-     *
-     * nodes.In such situations, 'permitInvalidConstAsModifier' should be set to true.
-     */
-
-    /**
-     * 解析一个修饰符列表(`static`、`private`、...)。
-     */
-    private parseModifiers(permitInvalidConstAsModifier?: boolean): nodes.NodeList<nodes.Modifier> {
-        let flags: nodes.NodeFlags = 0;
-        let modifiers: nodes.NodeList<nodes.Modifier>;
-        while (true) {
-            const modifierStart = this.lexer.getStartPos();
-            const modifierKind = this.lexer.peek().type;
-
-            if (this.lexer.peek().type === TokenType.const && permitInvalidConstAsModifier) {
-                // nodes.We need to ensure that any subsequent modifiers appear on the same line
-                // so that when 'const' is a standalone declaration, we don't issue an error.
-                if (!this.tryParse(this.nextTokenIsOnSameLineAndCanFollowModifier)) {
-                    break;
-                }
-            }
-            else {
-                if (!this.parseAnyContextualModifier()) {
-                    break;
-                }
-            }
-
-            if (!modifiers) {
-                modifiers = <nodes.NodeList<nodes.Modifier>>[];
-                modifiers.pos = modifierStart;
-            }
-
-            flags |= modifierToFlag(modifierKind);
-            modifiers.push(this.finishNode(this.createNode(modifierKind, modifierStart)));
-        }
-        if (modifiers) {
-            modifiers.flags = flags;
-            modifiers.end = this.lexer.getStartPos();
-        }
-        return modifiers;
-    }
-
-    /**
-     * 解析一个修饰符(`static`、`private`、...)。
-     */
-    private parseModifier() {
-        const result = new nodes.Modifier();
-        result.type = this.lexer.read().type;
-        result.start = this.lexer.current.type;
-        return result;
-    }
-
-    /**
      * 解析一个联合类型节点(`number | string`)或交错类型节点(`number & string`)。
      * @param type 解析的类型。合法的值有：|、&。
      */
@@ -519,14 +497,6 @@ export class Parser {
         this.readToken(TokenType.typeof);
         result.exprName = this.parseEntityName(/*allowReservedWords*/ true);
         return result;
-    }
-
-    private parseParameterType(): nodes.TypeNode {
-        if (this.tryReadToken(TokenType.colon)) {
-            return this.parseTypeNode();
-        }
-
-        return undefined;
     }
 
     private isStartOfParameter(): boolean {
@@ -710,7 +680,7 @@ export class Parser {
             return this.parseSignatureMember(TokenType.ConstructSignature);
         }
         const fullStart = this.getNodePos();
-        const modifiers = this.parseModifiers();
+        const modifiers = this.parseModifierList();
         if (this.isIndexSignature()) {
             return this.parseIndexSignatureDeclaration(fullStart, /*decorators*/ undefined, modifiers);
         }
@@ -867,11 +837,6 @@ export class Parser {
             return id;
         }
     }
-
-    private parseTypeAnnotation(): nodes.TypeNode {
-        return this.tryReadToken(TokenType.colon) ? this.parseTypeNode() : undefined;
-    }
-
 
     // #endregion
 
@@ -2318,8 +2283,8 @@ export class Parser {
 
     private parseObjectLiteralElement(): nodes.ObjectLiteralElement {
         const fullStart = this.lexer.getStartPos();
-        const decorators = this.parseDecorators();
-        const modifiers = this.parseModifiers();
+        const decorators = this.parseDecoratorList();
+        const modifiers = this.parseModifierList();
 
         const accessor = this.tryParseAccessorDeclaration(fullStart, decorators, modifiers);
         if (accessor) {
@@ -2390,7 +2355,7 @@ export class Parser {
         }
 
         const result = new nodes.FunctionExpression();
-        result.modifiers = this.parseModifiers();
+        result.modifiers = this.parseModifierList();
         this.readToken(TokenType.function);
         result.asteriskToken = this.tryReadTokenToken(TokenType.asterisk);
 
@@ -3267,8 +3232,8 @@ export class Parser {
 
     private parseDeclaration(): nodes.Statement {
         const fullStart = this.getNodePos();
-        const decorators = this.parseDecorators();
-        const modifiers = this.parseModifiers();
+        const decorators = this.parseDecoratorList();
+        const modifiers = this.parseModifierList();
         switch (this.lexer.peek().type) {
             case TokenType.var:
             case TokenType.let:
@@ -3595,8 +3560,8 @@ export class Parser {
         }
 
         const fullStart = this.getNodePos();
-        const decorators = this.parseDecorators();
-        const modifiers = this.parseModifiers(/*permitInvalidConstAsModifier*/ true);
+        const decorators = this.parseDecoratorList();
+        const modifiers = this.parseModifierList(/*permitInvalidConstAsModifier*/ true);
 
         const accessor = this.tryParseAccessorDeclaration(fullStart, decorators, modifiers);
         if (accessor) {
@@ -4694,7 +4659,7 @@ export class Parser {
     // nodes.An identifier that starts with two underscores has an extra underscore character prepended to it to avoid issues
     // with magic property names like '__proto__'. nodes.The 'this.identifiers' object is used to share a single string instance for
     // each identifier in order to reduce memory consumption.
-    private createIdentifier(isIdentifier: boolean, diagnosticMessage?: nodes.DiagnosticMessage): nodes.Identifier {
+    private createIdentifier() {
         this.identifierCount++;
         if (this.isIdentifier) {
             const result = new nodes.Identifier();
@@ -4773,41 +4738,6 @@ export class Parser {
             return false;
         }
         return this.canFollowModifier();
-    }
-
-    private nextTokenCanFollowModifier() {
-        if (this.lexer.peek().type === TokenType.const) {
-            // 'const' is only a modifier if followed by '.enum'.
-            return this.lexer.read().type === TokenType.enum;
-        }
-        if (this.lexer.peek().type === TokenType.export) {
-            this.lexer.read().type;
-            if (this.lexer.peek().type === TokenType.default) {
-                return this.lookAhead(this.nextTokenIsClassOrFunctionOrAsync);
-            }
-            return this.lexer.peek().type !== TokenType.asterisk && this.lexer.peek().type !== TokenType.as && this.lexer.peek().type !== TokenType.openBrace && this.canFollowModifier();
-        }
-        if (this.lexer.peek().type === TokenType.default) {
-            return this.nextTokenIsClassOrFunctionOrAsync();
-        }
-        if (this.lexer.peek().type === TokenType.static) {
-            this.lexer.read().type;
-            return this.canFollowModifier();
-        }
-
-        return this.nextTokenIsOnSameLineAndCanFollowModifier();
-    }
-
-    private parseAnyContextualModifier(): boolean {
-        return isModifierKind(this.lexer.peek().type) && this.tryParse(this.nextTokenCanFollowModifier);
-    }
-
-    private canFollowModifier(): boolean {
-        return this.lexer.peek().type === TokenType.openBracket
-            || this.lexer.peek().type === TokenType.openBrace
-            || this.lexer.peek().type === TokenType.asterisk
-            || this.lexer.peek().type === TokenType.dotDotDot
-            || this.isLiteralPropertyName();
     }
 
     private nextTokenIsClassOrFunctionOrAsync(): boolean {
@@ -5700,5 +5630,27 @@ export interface ParserOptions extends LexerOptions {
      * 禁止不含 catch 和 finally 分句的 try 语句。
      */
     disallowSimpleTryBlock?: boolean,
+
+}
+
+/**
+ * 表示修饰符的使用场景。
+ */
+const enum ModifierUsage {
+
+    /**
+     * 参数。
+     */
+    parameter,
+
+    /**
+     * 属性。
+     */
+    property,
+
+    /**
+     * 定义。
+     */
+    declaration,
 
 }

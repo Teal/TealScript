@@ -286,6 +286,11 @@ export class ParameterDeclaration extends Node {
     modifiers: NodeList<Modifier>;
 
     /**
+     * 获取当前参数点点点的位置(可能不存在)。
+     */
+    dotDotDotToken: number;
+
+    /**
      * 获取当前参数声明的名字部分。
      */
     name: BindingName;
@@ -390,12 +395,12 @@ export class Decorator extends Node {
 }
 
 /**
- * 表示一个修饰符(`static、private、...`)。
+ * 表示一个修饰符(`static`、`private`、...)。
  */
 export class Modifier extends Node {
 
     /**
-     * 获取当前修饰符的类型。合法的值有：static、abstract、public、protected、private、...。
+     * 获取当前修饰符的类型。合法的值有：static、abstract、public、protected、private。
      */
     type: TokenType;
 

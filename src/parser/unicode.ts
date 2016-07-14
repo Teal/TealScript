@@ -7,7 +7,7 @@
 /**
  * 表示 Unicode 字符码表。
  */
-export enum CharCode {
+export const enum CharCode {
 
     // #region ASCII 字符
 

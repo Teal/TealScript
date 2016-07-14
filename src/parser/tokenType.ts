@@ -10,7 +10,7 @@ import {CharCode} from './unicode';
  * 表示一个标记类型。
  * @internal
  */
-export enum TokenType {
+export const enum TokenType {
 
     // #region 控制符(Control)
 
@@ -74,6 +74,16 @@ export enum TokenType {
     public,
 
     /**
+     * 关键字 readonly(仅在 TypeScript)。
+     */
+    readonly,
+
+    /**
+     * 关键字 declare(仅在 TypeScript)。
+     */
+    declare,
+
+    /**
      * 关键字 static(仅在 JavaScript 7)。
      */
     static,
@@ -82,16 +92,6 @@ export enum TokenType {
      * 关键字 abstract(仅在 JavaScript 7)。
      */
     abstract,
-
-    /**
-     * 关键字 declare(仅在 TypeScript)。
-     */
-    declare,
-
-    /**
-     * 关键字 readonly(仅在 TypeScript)。
-     */
-    readonly,
 
     /**
      * 最大的修饰符前缀。
@@ -904,7 +904,7 @@ export function isBinaryOperator(token: TokenType) {
  * @returns 如果是则返回 true，否则返回 false。
  */
 export function isModifier(token: TokenType) {
-    return token > TokenType.MIN_MODIFIER && token < TokenType.MAX_MODIFIER;
+    return token > TokenType.MIN_MODIFIER && token < TokenType.MAX_MODIFIER || token === TokenType.const;
 }
 
 /**

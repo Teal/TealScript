@@ -101,33 +101,6 @@ export class Lexer {
         return this.current = next;
     }
 
-    /**
-     * 存储临时缓存的标记。
-     */
-    private stash: Token;
-
-    /**
-     * 保存当前读取的进度。保存之后可以通过 {@link stashRestore} 恢复进度。
-     */
-    stashSave() {
-        this.stash = this.current;
-    }
-
-    /**
-     * 恢复之前保存的进度。
-     */
-    stashRestore() {
-        this.current = this.stash;
-        delete this.stash;
-    }
-
-    /**
-     * 清除之前保存的进度。
-     */
-    stashClear() {
-        delete this.stash;
-    }
-
     // #endregion
 
     // #region 解析
