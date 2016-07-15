@@ -1,3 +1,6 @@
+// TealScript 语法定义文件
+// 此文件可用于生成 nodes.ts, nodeVisitor.ts, parser.ts。 
+
 #region 类型
 
 TypeNode: // 类型节点(`number`、`string[]`、...)
@@ -157,8 +160,7 @@ MethodSignature:
 
 #region 表达式
 
-Expression[In, Yield] :
-	Expression[?In, ?Yield] , AssignmentExpression[?In, ?Yield]
+Expression[In, Yield] : // 表达式。
 	AssignmentExpression[?In, ?Yield]
 		LeftHandSideExpression[?Yield] = AssignmentExpression[?In, ?Yield]
 		LeftHandSideExpression[?Yield] *= AssignmentExpression[?In, ?Yield]
@@ -173,11 +175,11 @@ Expression[In, Yield] :
 		LeftHandSideExpression[?Yield] ^= AssignmentExpression[?In, ?Yield]
 		LeftHandSideExpression[?Yield] |= AssignmentExpression[?In, ?Yield]
 		LeftHandSideExpression[?Yield] **= AssignmentExpression[?In, ?Yield]
-		ConditionalExpression[?In, ?Yield]
-			LogicalORExpression[?In, ?Yield] ? AssignmentExpression[In, ?Yield] : AssignmentExpression[?In, ?Yield]
-			LogicalORExpression[?In, ?Yield]
-				LogicalORExpression[?In, ?Yield] || LogicalANDExpression[?In, ?Yield]
-				LogicalANDExpression[?In, ?Yield]
+		ConditionalExpression[?In, ?Yield]: // 条件表达式(`x ? y : z`)
+			LogicalORExpression[?In, ?Yield]->condition ? AssignmentExpression[In, ?Yield]->then : AssignmentExpression[?In, ?Yield]->else
+		LogicalORExpression[?In, ?Yield]
+			LogicalORExpression[?In, ?Yield] || LogicalANDExpression[?In, ?Yield]
+			LogicalANDExpression[?In, ?Yield]
 					LogicalANDExpression[?In, ?Yield] && BitwiseORExpression[?In, ?Yield]
 					BitwiseORExpression[?In, ?Yield]
 						BitwiseORExpression[?In, ?Yield] | BitwiseXORExpression[?In, ?Yield]
@@ -218,6 +220,7 @@ Expression[In, Yield] :
 															‐ UnaryExpression[?Yield]
 															~ UnaryExpression[?Yield]
 															! UnaryExpression[?Yield]
+															@try()< TypeNode > UnaryExpression
 															UpdateExpression[?Yield]
 																++ UnaryExpression[?Yield]
 																‐‐ UnaryExpression[?Yield]
@@ -231,64 +234,73 @@ Expression[In, Yield] :
 			yield [nobr] * AssignmentExpression[?In, Yield]
 		ArrowFunction[?In, ?Yield]
 			ArrowParameters[?Yield] [nobr] => ConciseBody[?In]
-			- ArrowParameters[Yield] :
+				- ArrowParameters[Yield] :
 				BindingIdentifier[?Yield]
-						Identifier
+						Identifier // 标识符(`x`)。
 						[~Yield] yield
 				CoverParenthesizedExpressionAndArrowParameterList[?Yield]
+	Expression[?In, ?Yield] , AssignmentExpression[?In, ?Yield]
 
-LeftHandSideExpression[Yield] :
-	NewExpression[?Yield]
-		new NewExpression[?Yield]
+LeftHandSideExpression[Yield] : // 左值表达式。
+	NewOrCallExpression[?Yield]
+		NewExpression // new 表达式(`new x()`)。
+			new NewOrCallExpression[?Yield]
 		MemberExpression[?Yield]
 			new MemberExpression[?Yield] Arguments[?Yield]
-			PrimaryExpression[?Yield]
+			IdentifierReference[?Yield]
+			SimpleLiteral : // 简单字面量(`this`、`super`、`null`、`true`、`false`)。
+				null
+				true
+				false
 				this
-				IdentifierReference[?Yield]
-				Literal
-				ArrayLiteral[?Yield]
-					[ Elisionopt ]
-					[ ElementList[?Yield] ]
-					[ ElementList[?Yield] , Elisionopt ]
-				ObjectLiteral[?Yield]
-					{ }
-					{ PropertyDefinitionList[?Yield] }
-					{ PropertyDefinitionList[?Yield] , }
-				FunctionExpression
-					function BindingIdentifieropt ( FormalParameters ) { FunctionBody }
-				ClassExpression[?Yield]
-					class BindingIdentifier[?Yield] opt ClassTail[?Yield]
-					- ClassTail[Yield] :
-						ClassHeritage[?Yield] opt { ClassBody[?Yield] opt }
-					- ClassHeritage[Yield] :
-						extends LeftHandSideExpression[?Yield]
-					- ClassBody[Yield] :
-						ClassElementList[?Yield]
-							ClassElementList[?Yield] ClassElement[?Yield]
-							ClassElement[?Yield]
-								MethodDefinition[?Yield]
-								static MethodDefinition[?Yield]
-								;
-				GeneratorExpression
-					function * BindingIdentifier[Yield] opt ( FormalParameters[Yield] ) { GeneratorBody }
-					- GeneratorBody :
-						FunctionBody[Yield]
-				RegularExpressionLiteral
-				TemplateLiteral[?Yield]
-				CoverParenthesizedExpressionAndArrowParameterList[?Yield]
-					ParenthesizedExpression[Yield] :
-						( Expression[In, ?Yield] )
-					( )
-					( ... 	BindingIdentifier[?Yield] )
-					( ... 	BindingPattern[?Yield] )
-					( Expression[In, ?Yield] , ... 	BindingIdentifier[?Yield] ) 
-					( Expression[In, ?Yield] , ... 	BindingPattern[?Yield] )	
-			MemberExpression[?Yield] [ Expression[In, ?Yield] ]
-			MemberExpression[?Yield] . IdentifierName
-			MemberExpression[?Yield] TemplateLiteral[?Yield]
+				super
 			SuperProperty[?Yield]
 				super [ Expression[In, ?Yield] ]
 				super . IdentifierName
+			NumericLiteral // 数字字面量(`1`)。
+				<numericLiteral>->value
+			StringLiteral // 字符串字面量(`'abc'`、`"abc"`、`\`abc\``)。
+				<stringLiteral>->value
+			ArrayLiteral[?Yield] // 数组字面量(`[x, y]`)。
+				[ Elisionopt ]
+				[ ElementList[?Yield] ]
+				[ ElementList[?Yield] , Elisionopt ]
+			ObjectLiteral[?Yield] // 对象字面量(`{x: y}`)。
+				{ }
+				{ PropertyDefinitionList[?Yield] }
+				{ PropertyDefinitionList[?Yield] , }
+			FunctionExpression
+				function BindingIdentifieropt ( FormalParameters ) { FunctionBody }
+			ClassExpression[?Yield]
+				class BindingIdentifier[?Yield] opt ClassTail[?Yield]
+				- ClassTail[Yield] :
+					ClassHeritage[?Yield] opt { ClassBody[?Yield] opt }
+				- ClassHeritage[Yield] :
+					extends LeftHandSideExpression[?Yield]
+				- ClassBody[Yield] :
+					ClassElementList[?Yield]
+						ClassElementList[?Yield] ClassElement[?Yield]
+						ClassElement[?Yield]
+							MethodDefinition[?Yield]
+							static MethodDefinition[?Yield]
+							;
+			GeneratorExpression
+				function * BindingIdentifier[Yield] opt ( FormalParameters[Yield] ) { GeneratorBody }
+				- GeneratorBody :
+					FunctionBody[Yield]
+			RegularExpressionLiteral
+			TemplateLiteral[?Yield]
+			CoverParenthesizedExpressionAndArrowParameterList[?Yield]
+				ParenthesizedExpression[Yield] :
+					( Expression[In, ?Yield] )
+				( )
+				( ... 	BindingIdentifier[?Yield] )
+				( ... 	BindingPattern[?Yield] )
+				( Expression[In, ?Yield] , ... 	BindingIdentifier[?Yield] ) 
+				( Expression[In, ?Yield] , ... 	BindingPattern[?Yield] )	
+			MemberExpression[?Yield] [ Expression[In, ?Yield] ]
+			MemberExpression[?Yield] . IdentifierName
+			MemberExpression[?Yield] TemplateLiteral[?Yield]
 			MetaProperty :
 				NewTarget :
 					new . target
@@ -318,11 +330,7 @@ LabelIdentifier[Yield] :
 	Identifier
 	[~Yield] yield
 
-Literal :
-	NullLiteral
-	BooleanLiteral
-	NumericLiteral
-	StringLiteral
+
 
 ElementList[Yield] :
 	Elisionopt AssignmentExpression[In, ?Yield]
