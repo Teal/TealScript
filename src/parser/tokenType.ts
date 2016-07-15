@@ -985,59 +985,171 @@ export function isBindingNameStart(token: TokenType) {
 /**
  * 存储所有优先级。
  */
-const precedences = {
-    [TokenType.comma]: 1,
+const precedences: { [key: number]: Precedence } = {
+    [TokenType.comma]: Precedence.comma,
 
-    [TokenType.equals]: 2,
-    [TokenType.plusEquals]: 2,
-    [TokenType.minusEquals]: 2,
-    [TokenType.asteriskEquals]: 2,
-    [TokenType.slashEquals]: 2,
-    [TokenType.percentEquals]: 2,
-    [TokenType.lessThanLessThanEquals]: 2,
-    [TokenType.greaterThanGreaterThanEquals]: 2,
-    [TokenType.greaterThanGreaterThanGreaterThanEquals]: 2,
-    [TokenType.ampersandEquals]: 2,
-    [TokenType.barEquals]: 2,
-    [TokenType.caretEquals]: 2,
-    [TokenType.asteriskEquals]: 2,
-    [TokenType.asteriskAsteriskEquals]: 2,
+    [TokenType.equals]: Precedence.assignment,
+    [TokenType.plusEquals]: Precedence.assignment,
+    [TokenType.minusEquals]: Precedence.assignment,
+    [TokenType.asteriskEquals]: Precedence.assignment,
+    [TokenType.slashEquals]: Precedence.assignment,
+    [TokenType.percentEquals]: Precedence.assignment,
+    [TokenType.lessThanLessThanEquals]: Precedence.assignment,
+    [TokenType.greaterThanGreaterThanEquals]: Precedence.assignment,
+    [TokenType.greaterThanGreaterThanGreaterThanEquals]: Precedence.assignment,
+    [TokenType.ampersandEquals]: Precedence.assignment,
+    [TokenType.barEquals]: Precedence.assignment,
+    [TokenType.caretEquals]: Precedence.assignment,
+    [TokenType.asteriskEquals]: Precedence.assignment,
+    [TokenType.asteriskAsteriskEquals]: Precedence.assignment,
 
-    [TokenType.question]: 3,
-    [TokenType.barBar]: 4,
-    [TokenType.ampersandAmpersand]: 5,
-    [TokenType.bar]: 6,
-    [TokenType.caret]: 7,
-    [TokenType.ampersand]: 8,
+    [TokenType.question]: Precedence.conditional,
+    [TokenType.barBar]: Precedence.logicalOr,
+    [TokenType.ampersandAmpersand]: Precedence.logicalAnd,
+    [TokenType.bar]: Precedence.bitwiseOr,
+    [TokenType.caret]: Precedence.bitwiseXOr,
+    [TokenType.ampersand]: Precedence.bitwiseAnd,
 
-    [TokenType.equalsEquals]: 9,
-    [TokenType.exclamationEquals]: 9,
-    [TokenType.equalsEqualsEquals]: 9,
-    [TokenType.exclamationEqualsEquals]: 9,
+    [TokenType.equalsEquals]: Precedence.equality,
+    [TokenType.exclamationEquals]: Precedence.equality,
+    [TokenType.equalsEqualsEquals]: Precedence.equality,
+    [TokenType.exclamationEqualsEquals]: Precedence.equality,
 
-    [TokenType.lessThan]: 10,
-    [TokenType.greaterThan]: 10,
-    [TokenType.lessThanEquals]: 10,
-    [TokenType.greaterThanEquals]: 10,
-    [TokenType.instanceOf]: 10,
-    [TokenType.in]: 10,
-    [TokenType.is]: 10,
-    [TokenType.as]: 10,
+    [TokenType.lessThan]: Precedence.relational,
+    [TokenType.greaterThan]: Precedence.relational,
+    [TokenType.lessThanEquals]: Precedence.relational,
+    [TokenType.greaterThanEquals]: Precedence.relational,
+    [TokenType.instanceOf]: Precedence.relational,
+    [TokenType.in]: Precedence.relational,
+    [TokenType.is]: Precedence.relational,
+    [TokenType.as]: Precedence.relational,
 
-    [TokenType.lessThanLessThan]: 11,
-    [TokenType.greaterThanGreaterThan]: 11,
-    [TokenType.greaterThanGreaterThanGreaterThan]: 11,
+    [TokenType.lessThanLessThan]: Precedence.shift,
+    [TokenType.greaterThanGreaterThan]: Precedence.shift,
+    [TokenType.greaterThanGreaterThanGreaterThan]: Precedence.shift,
 
-    [TokenType.plus]: 12,
-    [TokenType.minus]: 12,
+    [TokenType.plus]: Precedence.additive,
+    [TokenType.minus]: Precedence.additive,
 
-    [TokenType.asterisk]: 13,
-    [TokenType.slash]: 13,
-    [TokenType.percent]: 13,
+    [TokenType.asterisk]: Precedence.multiplicative,
+    [TokenType.slash]: Precedence.multiplicative,
+    [TokenType.percent]: Precedence.multiplicative,
 
-    [TokenType.asteriskAsterisk]: 14,
+    [TokenType.asteriskAsterisk]: Precedence.exponentiation,
+
+    [TokenType.openBracket]: Precedence.member,
+    [TokenType.dot]: Precedence.member,
+    [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
+    [TokenType.templateHead]: Precedence.member,
 
 };
+
+/**
+ * 表示一个优先级。
+ */
+export const enum Precedence {
+
+    /**
+     * 任意操作符。
+     */
+    any,
+
+    /**
+     * 逗号。
+     */
+    comma,
+
+    /**
+     * 赋值表达式。
+     */
+    assignment,
+
+    /**
+     * 问号。
+     */
+    conditional,
+
+    /**
+     * 逻辑或。
+     */
+    logicalOr,
+
+    /**
+     * 逻辑且。
+     */
+    logicalAnd,
+
+    /**
+     * 位或。
+     */
+    bitwiseOr,
+
+    /**
+     * 位异或。
+     */
+    bitwiseXOr,
+
+    /**
+     * 位且。
+     */
+    bitwiseAnd,
+
+    /**
+     * 等于判断。
+     */
+    equality,
+
+    /**
+     * 大小比较。
+     */
+    relational,
+
+    /**
+     * 位移。
+     */
+    shift,
+
+    /**
+     * 加减。
+     */
+    additive,
+
+    /**
+     * 乘除。
+     */
+    multiplicative,
+
+    /**
+     * 次方。
+     */
+    exponentiation,
+
+    /**
+     * 单目表达式。
+     */
+    unary,
+
+    /**
+     * 左值表达式。
+     */
+    leftHand,
+
+    /**
+     * 函数调用表达式。
+     */
+    functionCall,
+
+    /**
+     * new 表达式。
+     */
+    new,
+
+    /**
+     * 成员表达式。
+     */
+    member,
+
+}
 
 /**
  * 获取操作符的优先级。
@@ -1045,5 +1157,5 @@ const precedences = {
  * @returns 返回一个数字。数字越大说明优先级越高。
  */
 export function getPrecedence(token: TokenType) {
-    return precedences[token] || 15;
+    return precedences[token] || Precedence.any;
 }
