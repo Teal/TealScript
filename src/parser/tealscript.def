@@ -1,0 +1,1354 @@
+#region 类型
+
+TypeNode: // 类型节点(`number`、`string[]`、...)
+UnionOrIntersectionOrPrimaryTypeNode:
+		UnionTypeNode: -> BinaryTypeNode
+			UnionOrIntersectionOrPrimaryTypeNode | IntersectionOrPrimaryTypeNode
+	IntersectionOrPrimaryTypeNode:
+			IntersectionTypeNode: -> BinaryTypeNode
+				IntersectionOrPrimaryTypeNode & PrimaryTypeNode
+		PrimaryTypeNode:
+				GenericTypeNode: // 泛型节点(`Array<T>`)。
+					TypeName [nobr] TypeArguments?
+			TypeName:
+					PredefinedTypeNode // 内置类型节点(`number`、`string`、...)
+						any
+						number
+						boolean
+						string
+						symbol
+						void
+						never
+						null
+						*
+						?
+						this
+					IdentifierTypeNode // 标识符类型节点(`x`)
+					QualifiedNameTypeNode: // 限定名称类型节点(`"abc"`、`true`)
+						TypeName . IdentifierReference
+				ParenthesizedTypeNode: // 括号类型节点(`(number)`)
+					( body:TypeNode )
+			ObjectTypeNode:
+					{ TypeBody? }
+			ArrayTypeNode:
+					PrimaryTypeNode [nobr]	[ ]
+			TupleTypeNode:
+					[ TupleElementTypes	]
+				- TupleElementTypes:
+					TupleElementTypeNode:
+							TypeNode
+						TupleElementTypes	, TupleElementTypeNode
+				TypeQueryNode: // 类型查询节点(`typeof x`)。
+					typeof operand:TypeQueryExpression
+FunctionTypeNode:
+		TypeParameterDeclarations? ParameterDeclarations@try => TypeNode
+	ConstructorTypeNode: // 构造函数类型节点(`new ()=>void`)。
+		new TypeParameterDeclarations? ParameterDeclarations => TypeNode
+
+ParameterDeclarations: // @name=parameters
+	( ParameterDeclarationList? )
+
+TypeParameterDeclarations: // @name=typeParameters
+	< TypeParameterDeclarationList	>
+
+TypeParameterDeclarationList:
+	TypeParameterDeclaration
+	TypeParameterDeclarationList	, TypeParameterDeclaration
+
+TypeParameterDeclaration:
+	BindingIdentifier Constraint?
+
+Constraint:
+	extends TypeNode
+
+TypeArguments:
+	< TypeArgumentList	>
+
+TypeArgumentList:
+	TypeArgument
+	TypeArgumentList	, TypeArgument
+
+TypeArgument:
+	TypeNode
+
+TypeBody:
+	TypeMemberList	;?
+	TypeMemberList	,?
+
+TypeMemberList:
+	TypeMember
+	TypeMemberList	; TypeMember
+	TypeMemberList	, TypeMember
+
+TypeMember:
+	PropertySignature
+	CallSignature
+	ConstructSignature
+	IndexSignature
+	MethodSignature
+
+TypeQueryExpression:
+	IdentifierReference
+	TypeQueryExpression	. IdentifierName
+
+PropertySignature:
+	PropertyName ?? TypeAnnotation?
+
+PropertyName:
+	IdentifierName
+	StringLiteral
+	NumericLiteral
+
+TypeAnnotation:
+	 TypeNode
+
+CallSignature:
+	TypeParameterDeclarations? ( ParameterDeclarationList? ) TypeAnnotation?
+
+ParameterDeclarationList:
+	RequiredParameterDeclarationList
+	OptionalParameterDeclarationList
+	RestParameter
+	RequiredParameterDeclarationList	, OptionalParameterDeclarationList
+	RequiredParameterDeclarationList	, RestParameter
+	OptionalParameterDeclarationList	, RestParameter
+	RequiredParameterDeclarationList	, OptionalParameterDeclarationList	, RestParameter
+
+RequiredParameterDeclarationList:
+	RequiredParameter
+	RequiredParameterDeclarationList	, RequiredParameter
+
+RequiredParameter:
+	AccessibilityModifier? BindingIdentifierOrPattern TypeAnnotation?
+	BindingIdentifier  StringLiteral
+
+AccessibilityModifier:
+	public
+	private
+	protected
+
+BindingIdentifierOrPattern:
+	BindingIdentifier
+	BindingPattern
+
+OptionalParameterDeclarationList:
+	OptionalParameter
+	OptionalParameterDeclarationList	, OptionalParameter
+
+OptionalParameter:
+	AccessibilityModifier? BindingIdentifierOrPattern	? TypeAnnotation?
+	AccessibilityModifier? BindingIdentifierOrPattern TypeAnnotation? Initializer
+	BindingIdentifier ?  StringLiteral
+
+RestParameter:
+	... 	BindingIdentifier TypeAnnotation?
+
+ConstructSignature:
+	new TypeParameterDeclarations? ( ParameterDeclarationList? ) TypeAnnotation?
+
+IndexSignature:
+	[ BindingIdentifier  string ] TypeAnnotation
+	[ BindingIdentifier  number ] TypeAnnotation
+
+MethodSignature:
+	PropertyName ?? CallSignature
+
+#endregion
+
+#region 表达式
+
+Expression[In, Yield] :
+	Expression[?In, ?Yield] , AssignmentExpression[?In, ?Yield]
+	AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] = AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] *= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] /= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] %= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] += AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] ‐= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] <<= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] >>= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] >>>= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] &= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] ^= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] |= AssignmentExpression[?In, ?Yield]
+		LeftHandSideExpression[?Yield] **= AssignmentExpression[?In, ?Yield]
+		ConditionalExpression[?In, ?Yield]
+			LogicalORExpression[?In, ?Yield] ? AssignmentExpression[In, ?Yield] : AssignmentExpression[?In, ?Yield]
+			LogicalORExpression[?In, ?Yield]
+				LogicalORExpression[?In, ?Yield] || LogicalANDExpression[?In, ?Yield]
+				LogicalANDExpression[?In, ?Yield]
+					LogicalANDExpression[?In, ?Yield] && BitwiseORExpression[?In, ?Yield]
+					BitwiseORExpression[?In, ?Yield]
+						BitwiseORExpression[?In, ?Yield] | BitwiseXORExpression[?In, ?Yield]
+						BitwiseXORExpression[?In, ?Yield]
+							BitwiseXORExpression[?In, ?Yield] ^ BitwiseANDExpression[?In, ?Yield]
+							BitwiseANDExpression[?In, ?Yield]
+								BitwiseANDExpression[?In, ?Yield] & EqualityExpression[?In, ?Yield]
+								EqualityExpression[?In, ?Yield]
+									EqualityExpression[?In, ?Yield] == RelationalExpression[?In, ?Yield]
+									EqualityExpression[?In, ?Yield] != RelationalExpression[?In, ?Yield]
+									EqualityExpression[?In, ?Yield] === RelationalExpression[?In, ?Yield]
+									EqualityExpression[?In, ?Yield] !== RelationalExpression[?In, ?Yield]
+									RelationalExpression[?In, ?Yield]
+										RelationalExpression[?In, ?Yield] < ShiftExpression[?Yield]
+										RelationalExpression[?In, ?Yield] > ShiftExpression[?Yield]
+										RelationalExpression[?In, ?Yield] <= ShiftExpression[?Yield]
+										RelationalExpression[?In, ?Yield] >= ShiftExpression[?Yield]
+										RelationalExpression[?In, ?Yield] instanceof ShiftExpression[?Yield]
+										[+In] RelationalExpression[In, ?Yield] in ShiftExpression[?Yield]
+										ShiftExpression[?Yield]
+											ShiftExpression[?Yield] << AdditiveExpression[?Yield] 
+											ShiftExpression[?Yield] >> AdditiveExpression[?Yield]
+											ShiftExpression[?Yield] >>> AdditiveExpression[?Yield]
+											AdditiveExpression[?Yield]
+												AdditiveExpression[?Yield] + MultiplicativeExpression[?Yield]
+												AdditiveExpression[?Yield] ‐ MultiplicativeExpression[?Yield]
+												MultiplicativeExpression[?Yield]
+													MultiplicativeExpression[?Yield] * ExponentiationExpression[?Yield]
+													MultiplicativeExpression[?Yield] / ExponentiationExpression[?Yield]
+													MultiplicativeExpression[?Yield] % ExponentiationExpression[?Yield]
+													ExponentiationExpression[?Yield]
+														UpdateExpression[?Yield] ** ExponentiationExpression[?Yield]
+														UnaryExpression[?Yield]
+															delete UnaryExpression[?Yield]
+															void UnaryExpression[?Yield]
+															typeof UnaryExpression[?Yield]
+															+ UnaryExpression[?Yield]
+															‐ UnaryExpression[?Yield]
+															~ UnaryExpression[?Yield]
+															! UnaryExpression[?Yield]
+															UpdateExpression[?Yield]
+																++ UnaryExpression[?Yield]
+																‐‐ UnaryExpression[?Yield]
+																PostfixIncrementExpression // 后缀增量运算表达式(`x++`、`x--`)
+																	LeftHandSideExpression[?Yield] [nobr] ++
+																	LeftHandSideExpression[?Yield] [nobr] ‐‐
+																LeftHandSideExpression[?Yield]
+		[+Yield] YieldExpression[?In]
+			yield
+			yield [nobr] AssignmentExpression[?In, Yield]
+			yield [nobr] * AssignmentExpression[?In, Yield]
+		ArrowFunction[?In, ?Yield]
+			ArrowParameters[?Yield] [nobr] => ConciseBody[?In]
+			- ArrowParameters[Yield] :
+				BindingIdentifier[?Yield]
+						Identifier
+						[~Yield] yield
+				CoverParenthesizedExpressionAndArrowParameterList[?Yield]
+
+LeftHandSideExpression[Yield] :
+	NewExpression[?Yield]
+		new NewExpression[?Yield]
+		MemberExpression[?Yield]
+			new MemberExpression[?Yield] Arguments[?Yield]
+			PrimaryExpression[?Yield]
+				this
+				IdentifierReference[?Yield]
+				Literal
+				ArrayLiteral[?Yield]
+					[ Elisionopt ]
+					[ ElementList[?Yield] ]
+					[ ElementList[?Yield] , Elisionopt ]
+				ObjectLiteral[?Yield]
+					{ }
+					{ PropertyDefinitionList[?Yield] }
+					{ PropertyDefinitionList[?Yield] , }
+				FunctionExpression
+					function BindingIdentifieropt ( FormalParameters ) { FunctionBody }
+				ClassExpression[?Yield]
+					class BindingIdentifier[?Yield] opt ClassTail[?Yield]
+					- ClassTail[Yield] :
+						ClassHeritage[?Yield] opt { ClassBody[?Yield] opt }
+					- ClassHeritage[Yield] :
+						extends LeftHandSideExpression[?Yield]
+					- ClassBody[Yield] :
+						ClassElementList[?Yield]
+							ClassElementList[?Yield] ClassElement[?Yield]
+							ClassElement[?Yield]
+								MethodDefinition[?Yield]
+								static MethodDefinition[?Yield]
+								;
+				GeneratorExpression
+					function * BindingIdentifier[Yield] opt ( FormalParameters[Yield] ) { GeneratorBody }
+					- GeneratorBody :
+						FunctionBody[Yield]
+				RegularExpressionLiteral
+				TemplateLiteral[?Yield]
+				CoverParenthesizedExpressionAndArrowParameterList[?Yield]
+					ParenthesizedExpression[Yield] :
+						( Expression[In, ?Yield] )
+					( )
+					( ... 	BindingIdentifier[?Yield] )
+					( ... 	BindingPattern[?Yield] )
+					( Expression[In, ?Yield] , ... 	BindingIdentifier[?Yield] ) 
+					( Expression[In, ?Yield] , ... 	BindingPattern[?Yield] )	
+			MemberExpression[?Yield] [ Expression[In, ?Yield] ]
+			MemberExpression[?Yield] . IdentifierName
+			MemberExpression[?Yield] TemplateLiteral[?Yield]
+			SuperProperty[?Yield]
+				super [ Expression[In, ?Yield] ]
+				super . IdentifierName
+			MetaProperty :
+				NewTarget :
+					new . target
+	CallExpression[?Yield]
+		CallExpression[?Yield] Arguments[?Yield]
+			- Arguments[Yield] :
+				( )
+				( ArgumentList[?Yield] )
+				- ArgumentList[Yield] :
+					AssignmentExpression[In, ?Yield]
+					... 	AssignmentExpression[In, ?Yield]
+					ArgumentList[?Yield] , AssignmentExpression[In, ?Yield]
+					ArgumentList[?Yield] , ... 	AssignmentExpression[In, ?Yield]
+		CallExpression[?Yield] [ Expression[In, ?Yield] ]
+		CallExpression[?Yield] . IdentifierName
+		CallExpression[?Yield] TemplateLiteral[?Yield] 
+		MemberExpression[?Yield] Arguments[?Yield]
+		SuperCall[?Yield]
+			super Arguments[?Yield]
+
+IdentifierReference[Yield] :
+	Identifier
+		IdentifierName but not ReservedWord
+	[~Yield] yield
+
+LabelIdentifier[Yield] :
+	Identifier
+	[~Yield] yield
+
+Literal :
+	NullLiteral
+	BooleanLiteral
+	NumericLiteral
+	StringLiteral
+
+ElementList[Yield] :
+	Elisionopt AssignmentExpression[In, ?Yield]
+	Elisionopt SpreadElement[?Yield]
+	ElementList[?Yield] , Elisionopt AssignmentExpression[In, ?Yield]
+	ElementList[?Yield] , Elisionopt SpreadElement[?Yield]
+	- Elision :
+		,
+		Elision ,
+	- SpreadElement[Yield] :
+		... 	AssignmentExpression[In, ?Yield]
+
+PropertyDefinitionList[Yield] :
+	PropertyDefinitionList[?Yield] , PropertyDefinition[?Yield]
+	PropertyDefinition[?Yield]
+		IdentifierReference[?Yield]
+		CoverInitializedName[?Yield]
+			IdentifierReference[?Yield] Initializer[In, ?Yield]
+			- Initializer[In, Yield] :
+				= AssignmentExpression[?In, ?Yield]
+		PropertyName[?Yield] : AssignmentExpression[In, ?Yield]
+		- PropertyName[Yield] :
+			LiteralPropertyName
+				IdentifierName 
+				StringLiteral
+				NumericLiteral
+			ComputedPropertyName[?Yield]
+				[ AssignmentExpression[In, ?Yield] ]
+		MethodDefinition[?Yield]
+
+TemplateLiteral[Yield] :
+	NoSubstitutionTemplate
+	TemplateHead Expression[In, ?Yield] TemplateSpans[?Yield]
+	- TemplateSpans[Yield] :
+		TemplateTail
+		TemplateMiddleList[?Yield] TemplateTail
+		- TemplateMiddleList[Yield] :
+			TemplateMiddle Expression[In, ?Yield]
+			TemplateMiddleList[?Yield] TemplateMiddle Expression[In, ?Yield]
+
+#endregion
+
+#region JSX 节点
+
+#endregion
+
+#region 语句
+
+Statement[Yield, Return] :
+	BlockStatement[?Yield, ?Return]
+		Block[?Yield, ?Return]
+			{ StatementList }
+	VariableStatement[?Yield]
+		var VariableDeclarationList[In, ?Yield] ;
+		- VariableDeclarationList[In, Yield] :
+			VariableDeclaration[?In, ?Yield]
+			VariableDeclarationList[?In, ?Yield] , VariableDeclaration[?In, ?Yield]
+		- VariableDeclaration[In, Yield] :
+			BindingIdentifier[?Yield] Initializer[?In, ?Yield] opt
+			BindingPattern[?Yield] Initializer[?In, ?Yield]
+	EmptyStatement
+		;
+	ExpressionStatement[?Yield] 
+		[lookahead ∉ { { , function , class , let [ }] Expression[In, ?Yield] ;
+	IfStatement[?Yield, ?Return]
+		if ( Expression[In, ?Yield] ) Statement[?Yield, ?Return] else Statement[?Yield, ?Return]
+		if ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
+	BreakableStatement[?Yield, ?Return]
+		IterationStatement[?Yield, ?Return]
+			do Statement[?Yield, ?Return] while ( Expression[In, ?Yield] ) ;
+			while ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
+			for ( [lookahead ∉ { let [ }] Expression[?Yield] opt ; Expression[In, ?Yield] opt ;
+			Expression[In, ?Yield] opt ) Statement[?Yield, ?Return]
+			for ( var VariableDeclarationList[?Yield] ; Expression[In, ?Yield] opt ; Expression[In, ?Yield] opt )
+			Statement[?Yield, ?Return]
+			for ( LexicalDeclaration[?Yield] Expression[In, ?Yield] opt ; Expression[In, ?Yield] opt )
+			Statement[?Yield, ?Return]
+			for ( [lookahead ∉ { let [ }] LeftHandSideExpression[?Yield] in Expression[In, ?Yield] )
+			Statement[?Yield, ?Return]
+			for ( var ForBinding[?Yield] in Expression[In, ?Yield] ) Statement[?Yield, ?Return]
+			for ( ForDeclaration[?Yield] in Expression[In, ?Yield] ) Statement[?Yield, ?Return]
+			for ( [lookahead ≠ let] LeftHandSideExpression[?Yield] of AssignmentExpression[In, ?Yield] )
+			Statement[?Yield, ?Return]
+			for ( var ForBinding[?Yield] of AssignmentExpression[In, ?Yield] ) Statement[?Yield, ?Return]
+			for ( ForDeclaration[?Yield] of AssignmentExpression[In, ?Yield] ) Statement[?Yield, ?Return]
+			- ForDeclaration[Yield] :
+				LetOrConst ForBinding[?Yield]
+				- ForBinding[Yield] :
+					BindingIdentifier[?Yield]
+					BindingPattern[?Yield]
+		SwitchStatement[?Yield, ?Return]
+			switch ( Expression[In, ?Yield] ) CaseBlock[?Yield, ?Return]
+			- CaseBlock[Yield, Return] :
+				{ CaseClauses[?Yield, ?Return] opt }
+				{ CaseClauses[?Yield, ?Return] opt DefaultClause[?Yield, ?Return] CaseClauses[?Yield, ?Return] opt } 
+			- CaseClauses[Yield, Return] :
+				CaseClause[?Yield, ?Return]
+				CaseClauses[?Yield, ?Return] CaseClause[?Yield, ?Return]
+			- CaseClause[Yield, Return] :
+				case Expression[In, ?Yield] : StatementList[?Yield, ?Return] opt
+			- DefaultClause[Yield, Return] :
+				default : StatementList[?Yield, ?Return] opt
+	ContinueStatement[?Yield]
+		continue ;
+		continue [nobr] LabelIdentifier[?Yield] ;
+	BreakStatement[?Yield]
+		break ;
+		break [nobr] LabelIdentifier[?Yield] ;
+	[+Return] ReturnStatement[?Yield]
+		return ;
+		return [nobr] Expression[In, ?Yield] ;
+	WithStatement[?Yield, ?Return]
+		with ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
+	LabelledStatement[?Yield, ?Return]
+		LabelIdentifier[?Yield] : LabelledItem[?Yield, ?Return]
+		- LabelledItem[Yield, Return] :
+			Statement[?Yield, ?Return]
+			FunctionDeclaration[?Yield]
+	ThrowStatement[?Yield]
+		throw [nobr] Expression[In, ?Yield] ;
+	TryStatement[?Yield, ?Return]
+		try Block[?Yield, ?Return] Catch[?Yield, ?Return]
+		try Block[?Yield, ?Return] Finally[?Yield, ?Return]
+		try Block[?Yield, ?Return] Catch[?Yield, ?Return] Finally[?Yield, ?Return]
+		- Catch[Yield, Return] :
+			catch ( CatchParameter[?Yield] ) Block[?Yield, ?Return]
+			- CatchParameter[Yield] :
+				BindingIdentifier[?Yield]
+				BindingPattern[?Yield]
+		- Finally[Yield, Return] :
+			finally Block[?Yield, ?Return]
+	DebuggerStatement
+		debugger ;
+
+StatementList[Yield, Return] :
+	StatementList[?Yield, ?Return] StatementListItem[?Yield, ?Return]
+	StatementListItem[?Yield, ?Return]
+		Statement[?Yield, ?Return]
+		Declaration[?Yield]
+			HoistableDeclaration[?Yield]
+				FunctionDeclaration[?Yield, ?Default]
+				GeneratorDeclaration[?Yield, ?Default]
+					function * BindingIdentifier[?Yield] ( FormalParameters[Yield] ) { GeneratorBody }
+					[+Default] function * ( FormalParameters[Yield] ) { GeneratorBody } 
+			ClassDeclaration[?Yield]
+				class BindingIdentifier[?Yield] ClassTail[?Yield]
+				[+Default] class ClassTail[?Yield]
+			LexicalDeclaration[In, ?Yield]
+				LetOrConst BindingList[?In, ?Yield] ;
+				- LetOrConst :
+					let
+					const
+				- BindingList[In, Yield] :
+					BindingList[?In, ?Yield] , LexicalBinding[?In, ?Yield]
+					LexicalBinding[?In, ?Yield]
+						BindingIdentifier[?Yield] Initializer[?In, ?Yield] opt
+						BindingPattern[?Yield] Initializer[?In, ?Yield]
+
+BindingPattern[Yield] :
+	ObjectBindingPattern[?Yield]
+		{ }
+		{ BindingPropertyList[?Yield] }
+		{ BindingPropertyList[?Yield] , }
+		- BindingPropertyList[Yield] :
+			BindingPropertyList[?Yield] , BindingProperty[?Yield]
+			BindingProperty[?Yield]
+				SingleNameBinding[?Yield]
+				PropertyName[?Yield] : BindingElement[?Yield]
+	ArrayBindingPattern[?Yield]
+		[ Elisionopt BindingRestElement[?Yield] opt ]
+		[ BindingElementList[?Yield] ]
+		[ BindingElementList[?Yield] , Elisionopt BindingRestElement[?Yield] opt ]
+		- BindingElementList[Yield] :
+			BindingElementList[?Yield] , BindingElisionElement[?Yield]
+			BindingElisionElement[?Yield]
+				Elisionopt BindingElement[?Yield]
+		- BindingRestElement[Yield] :
+			... 	BindingIdentifier[?Yield]
+			... 	BindingPattern[?Yield]
+	- BindingElement[Yield] :
+		BindingPattern[?Yield] Initializer[In, ?Yield] opt
+		SingleNameBinding[?Yield]
+			BindingIdentifier[?Yield] Initializer[In, ?Yield] opt
+
+AssignmentPattern[Yield] :
+	ObjectAssignmentPattern[?Yield]
+		{ }
+		{ AssignmentPropertyList[?Yield] }
+		{ AssignmentPropertyList[?Yield] , }
+		- AssignmentPropertyList[Yield] :
+			AssignmentPropertyList[?Yield] , AssignmentProperty[?Yield]
+			AssignmentProperty[?Yield]
+				IdentifierReference[?Yield] Initializer[In, ?Yield] opt
+				PropertyName[?Yield] : AssignmentElement[?Yield]
+	ArrayAssignmentPattern[?Yield]
+		[ Elisionopt AssignmentRestElement[?Yield] opt ]
+		[ AssignmentElementList[?Yield] ]
+		[ AssignmentElementList[?Yield] , Elisionopt AssignmentRestElement[?Yield] opt ]
+		- AssignmentRestElement[Yield] :
+			... 	DestructuringAssignmentTarget[?Yield]
+		- AssignmentElementList[Yield] :
+			AssignmentElementList[?Yield] , AssignmentElisionElement[?Yield]
+			AssignmentElisionElement[?Yield]
+				Elisionopt AssignmentElement[?Yield]
+	- AssignmentElement[Yield] :
+		DestructuringAssignmentTarget[?Yield] Initializer[In, ?Yield] opt
+			- DestructuringAssignmentTarget[Yield] :
+				LeftHandSideExpression[?Yield]
+
+#endregion
+
+#region 声明
+
+FunctionDeclaration[Yield, Default] :
+	function BindingIdentifier[?Yield] ( FormalParameters ) { FunctionBody }
+	[+Default] function ( FormalParameters ) { FunctionBody }
+
+StrictFormalParameters[Yield] :
+	FormalParameters[?Yield]
+
+FormalParameters[Yield] :
+	[empty]
+	FormalParameterList[?Yield]
+
+	FormalParameterList[Yield] : 
+	FunctionRestParameter[?Yield]
+	FormalsList[?Yield]
+	FormalsList[?Yield] , FunctionRestParameter[?Yield]
+
+FormalsList[Yield] :
+	FormalParameter[?Yield]
+	FormalsList[?Yield] , FormalParameter[?Yield]
+
+FunctionRestParameter[Yield] :
+	BindingRestElement[?Yield]
+
+FormalParameter[Yield] :
+	BindingElement[?Yield]
+
+FunctionBody[Yield] :
+	FunctionStatementList[?Yield]
+
+FunctionStatementList[Yield] :
+	StatementList[?Yield, Return] opt
+
+ConciseBody[In] :
+	[lookahead ≠ {] AssignmentExpression[?In]
+	{ FunctionBody }
+
+	When the production ArrowParameters : CoverParenthesizedExpressionAndArrowParameterList  is recognized the following
+grammar is used to re伀氂ine the interpretation of CoverParenthesizedExpressionAndArrowParameterList:
+
+ArrowFormalParameters[Yield] :
+	( StrictFormalParameters[?Yield] )
+	
+
+MethodDefinition[Yield] :
+	PropertyName[?Yield] ( StrictFormalParameters ) { FunctionBody }
+	GeneratorMethod[?Yield]
+		* PropertyName[?Yield] ( StrictFormalParameters[Yield] ) { GeneratorBody }
+	get PropertyName[?Yield] ( ) { FunctionBody }
+	set PropertyName[?Yield] ( PropertySetParameterList ) { FunctionBody }
+PropertySetParameterList :
+	FormalParameter
+
+Script :
+	ScriptBodyopt
+ScriptBody :
+	StatementList
+Module :
+	ModuleBodyopt
+ModuleBody :
+	ModuleItemList
+ModuleItemList :
+	ModuleItem
+	ModuleItemList ModuleItem
+ModuleItem :
+	ImportDeclaration 
+	ExportDeclaration
+	StatementListItem
+ImportDeclaration :
+	import ImportClause FromClause ;
+	import ModuleSpecifier ;
+
+ImportClause :
+	ImportedDefaultBinding
+	NameSpaceImport
+	NamedImports
+	ImportedDefaultBinding , NameSpaceImport
+	ImportedDefaultBinding , NamedImports
+
+ImportedDefaultBinding :
+	ImportedBinding
+NameSpaceImport :
+	* as ImportedBinding
+
+NamedImports :
+	{ }
+	{ ImportsList }
+	{ ImportsList , }
+
+FromClause :
+	from ModuleSpecifier
+
+ImportsList :
+	ImportSpecifier
+	ImportsList , ImportSpecifier
+
+ImportSpecifier :
+	ImportedBinding
+	IdentifierName as ImportedBinding
+
+ModuleSpecifier :
+	StringLiteral
+ImportedBinding :
+	BindingIdentifier
+ExportDeclaration :
+	export * FromClause ;
+	export ExportClause FromClause ;
+	export ExportClause ;
+	export VariableStatement
+	export Declaration
+	export default HoistableDeclaration[Default]
+	export default ClassDeclaration[Default]
+	export default [lookahead ∉ { function , class }] AssignmentExpression[In] ;
+ExportClause :
+	{ }
+	{ ExportsList }
+	{ ExportsList , } 
+ExportsList :
+	ExportSpecifier
+	ExportsList , ExportSpecifier
+
+ExportSpecifier :
+	IdentifierName
+	IdentifierName as IdentifierName
+
+#endregion
+
+#region 源文件
+
+#endregion
+
+#region 词法
+
+SourceCharacter ::
+	any Unicode code point
+
+InputElementDiv ::
+	WhiteSpace
+	LineTerminator
+	Comment
+	CommonToken
+	DivPunctuator
+	RightBracePunctuator
+InputElementRegExp ::
+	WhiteSpace
+	LineTerminator
+	Comment
+	CommonToken
+	RightBracePunctuator
+	RegularExpressionLiteral
+InputElementRegExpOrTemplateTail ::
+	WhiteSpace
+	LineTerminator
+	Comment
+	CommonToken
+	RegularExpressionLiteral
+	TemplateSubstitutionTail
+InputElementTemplateTail ::
+	WhiteSpace
+	LineTerminator
+	Comment
+	CommonToken
+	DivPunctuator
+	TemplateSubstitutionTail
+WhiteSpace ::
+	<TAB>
+	<VT>
+	<FF>
+	<SP>
+	<NBSP>
+	<ZWNBSP>
+	<USP>
+
+LineTerminator ::
+	<LF>
+	
+	<CR>
+	<LS>
+	<PS>
+
+LineTerminatorSequence ::
+	<LF>
+	<CR>[lookahead ≠ <LF>]
+	<LS>
+	<PS>
+	<CR><LF>
+
+Comment ::
+	MultiLineComment
+	SingleLineComment
+MultiLineComment ::
+	/* MultiLineCommentCharsopt */
+MultiLineCommentChars ::
+	MultiLineNotAsteriskChar MultiLineCommentCharsopt
+	* PostAsteriskCommentCharsopt
+PostAsteriskCommentChars ::
+	MultiLineNotForwardSlashOrAsteriskChar MultiLineCommentCharsopt
+	* PostAsteriskCommentCharsopt
+MultiLineNotAsteriskChar ::
+	SourceCharacter but not *
+
+MultiLineNotForwardSlashOrAsteriskChar ::
+	SourceCharacter but not one of /  or *
+
+SingleLineComment ::
+	// SingleLineCommentCharsopt
+SingleLineCommentChars ::
+	SingleLineCommentChar SingleLineCommentCharsopt
+SingleLineCommentChar ::
+	SourceCharacter but not LineTerminator
+CommonToken ::
+	IdentifierName
+	Punctuator
+	NumericLiteral
+	StringLiteral
+	Template
+IdentifierName ::
+	IdentifierStart
+	IdentifierName IdentifierPart
+IdentifierStart ::
+	UnicodeIDStart
+	$
+	_
+	\ UnicodeEscapeSequence 
+IdentifierPart ::
+	UnicodeIDContinue
+	$
+	_
+	\ UnicodeEscapeSequence
+	<ZWNJ>
+	<ZWJ>
+
+UnicodeIDStart ::
+	any Unicode code point with the Unicode property “ID_Start”
+
+UnicodeIDContinue ::
+	any Unicode code point with the Unicode property “ID_Continue”
+
+ReservedWord ::
+	Keyword
+	FutureReservedWord
+	NullLiteral
+	BooleanLiteral
+
+Keyword :: one of
+	break do in typeof case else instanceof var catch export new void class extends return while
+	const finally super with continue for switch yield debugger function this default if
+	throw delete import try
+
+FutureReservedWord ::
+	enum
+	await
+
+	await is only treated as a FutureReservedWord when Module is the goal symbol of the syntactic grammar.
+
+The following tokens are also considered to be FutureReservedWords when parsing strict mode code:
+	implements  package  protected 
+	interface  private  public
+
+Punctuator :: one of
+	{ ( ) [ ] . ... 	; , < > <= >= == != === !== + ‐ * % ++ ‐‐ << >> >>> & | ^ ! ~ && || ? : = +=
+	‐= *= %= <<= >>= >>>= &= |= ^= => ** **=
+
+DivPunctuator ::
+	/
+	/=
+
+RightBracePunctuator ::
+	}
+
+NullLiteral ::
+	null
+
+BooleanLiteral ::
+	true
+	false
+
+NumericLiteral ::
+	DecimalLiteral 
+	BinaryIntegerLiteral
+	OctalIntegerLiteral
+	HexIntegerLiteral
+DecimalLiteral ::
+	DecimalIntegerLiteral . DecimalDigitsopt ExponentPartopt
+	. DecimalDigits ExponentPartopt
+	DecimalIntegerLiteral ExponentPartopt
+DecimalIntegerLiteral ::
+	0
+	NonZeroDigit DecimalDigitsopt
+DecimalDigits ::
+	DecimalDigit
+	DecimalDigits DecimalDigit
+	DecimalDigit :: one of
+	0 1 2 3 4 5 6 7 8 9
+
+	NonZeroDigit :: one of
+	1 2 3 4 5 6 7 8 9
+
+ExponentPart ::
+	ExponentIndicator SignedInteger
+	ExponentIndicator :: one of
+	e E
+
+SignedInteger ::
+	DecimalDigits
+	+ DecimalDigits
+	‐ DecimalDigits
+
+BinaryIntegerLiteral ::
+	0b BinaryDigits
+	0B BinaryDigits
+
+BinaryDigits ::
+	BinaryDigit
+	BinaryDigits BinaryDigit
+	BinaryDigit :: one of
+	0 1
+
+OctalIntegerLiteral ::
+	0o OctalDigits
+	0O OctalDigits
+
+OctalDigits ::
+	OctalDigit
+	OctalDigits OctalDigit
+	OctalDigit :: one of
+	0 1 2 3 4 5 6 7
+
+HexIntegerLiteral ::
+	0x HexDigits 
+	0X HexDigits
+
+HexDigits ::
+	HexDigit
+	HexDigits HexDigit
+	HexDigit :: one of
+	0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
+
+StringLiteral ::
+	" DoubleStringCharactersopt "
+	' SingleStringCharactersopt '
+DoubleStringCharacters ::
+	DoubleStringCharacter DoubleStringCharactersopt
+SingleStringCharacters ::
+	SingleStringCharacter SingleStringCharactersopt
+DoubleStringCharacter ::
+	SourceCharacter but not one of "  or \  or LineTerminator
+	\ EscapeSequence
+	LineContinuation
+SingleStringCharacter ::
+	SourceCharacter but not one of '  or \  or LineTerminator
+	\ EscapeSequence
+	LineContinuation
+LineContinuation ::
+	\ LineTerminatorSequence
+
+EscapeSequence ::
+	CharacterEscapeSequence
+	0 [lookahead ∉ DecimalDigit]
+	HexEscapeSequence
+	UnicodeEscapeSequence
+CharacterEscapeSequence ::
+	SingleEscapeCharacter
+	NonEscapeCharacter
+	SingleEscapeCharacter :: one of
+	' " \ b f n r t v
+
+NonEscapeCharacter ::
+	SourceCharacter but not one of EscapeCharacter  or LineTerminator
+EscapeCharacter ::
+	SingleEscapeCharacter
+	DecimalDigit
+	x
+	u
+
+HexEscapeSequence ::
+	x HexDigit HexDigit
+
+	UnicodeEscapeSequence :: 
+	u Hex4Digits
+	u{ HexDigits }
+
+Hex4Digits ::
+	HexDigit HexDigit HexDigit HexDigit
+RegularExpressionLiteral ::
+	/ RegularExpressionBody / RegularExpressionFlags
+
+RegularExpressionBody ::
+	RegularExpressionFirstChar RegularExpressionChars
+RegularExpressionChars ::
+	[empty]
+	RegularExpressionChars RegularExpressionChar
+RegularExpressionFirstChar ::
+	RegularExpressionNonTerminator but not one of *  or \  or /  or [
+	RegularExpressionBackslashSequence
+	RegularExpressionClass
+RegularExpressionChar ::
+	RegularExpressionNonTerminator but not one of \  or /  or [
+	RegularExpressionBackslashSequence
+	RegularExpressionClass
+RegularExpressionBackslashSequence ::
+	\ RegularExpressionNonTerminator
+
+RegularExpressionNonTerminator ::
+	SourceCharacter but not LineTerminator
+RegularExpressionClass ::
+	[ RegularExpressionClassChars ]
+
+RegularExpressionClassChars ::
+	[empty]
+	RegularExpressionClassChars RegularExpressionClassChar
+RegularExpressionClassChar ::
+	RegularExpressionNonTerminator but not one of ]  or \
+	RegularExpressionBackslashSequence
+RegularExpressionFlags ::
+	[empty]
+	RegularExpressionFlags IdentifierPart
+Template ::
+	NoSubstitutionTemplate
+	TemplateHead
+NoSubstitutionTemplate ::
+	` TemplateCharactersopt `
+TemplateHead ::
+	` TemplateCharactersopt ${
+TemplateSubstitutionTail ::
+	TemplateMiddle 
+	TemplateTail
+TemplateMiddle ::
+	} TemplateCharactersopt ${
+TemplateTail ::
+	} TemplateCharactersopt `
+TemplateCharacters ::
+	TemplateCharacter TemplateCharactersopt
+TemplateCharacter ::
+	$ [lookahead ≠ {]
+	\ EscapeSequence
+	LineContinuation
+	LineTerminatorSequence
+	SourceCharacter but not one of `  or \  or $  or LineTerminator
+#endregion
+
+A.6 Number Conversions
+
+StringNumericLiteral :::
+	StrWhiteSpaceopt
+	StrWhiteSpaceopt StrNumericLiteral StrWhiteSpaceopt
+StrWhiteSpace :::
+	StrWhiteSpaceChar StrWhiteSpaceopt
+StrWhiteSpaceChar :::
+	WhiteSpace
+	LineTerminator
+StrNumericLiteral :::
+	StrDecimalLiteral
+	BinaryIntegerLiteral
+	OctalIntegerLiteral
+	HexIntegerLiteral
+StrDecimalLiteral :::
+	StrUnsignedDecimalLiteral
+	+ StrUnsignedDecimalLiteral
+	‐ StrUnsignedDecimalLiteral
+
+StrUnsignedDecimalLiteral :::
+	Infinity
+	DecimalDigits . DecimalDigitsopt ExponentPartopt
+	. DecimalDigits ExponentPartopt
+	DecimalDigits ExponentPartopt
+DecimalDigits ::
+	DecimalDigit
+	DecimalDigits DecimalDigit
+	DecimalDigit :: one of
+	0 1 2 3 4 5 6 7 8 9
+
+ExponentPart ::
+	ExponentIndicator SignedInteger
+	ExponentIndicator :: one of
+	e E
+
+SignedInteger ::
+	DecimalDigits
+	+ DecimalDigits
+	‐ DecimalDigits
+
+	HexIntegerLiteral :: 
+	0x HexDigits
+	0X HexDigits
+
+	HexDigit :: one of
+	0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
+
+	All grammar symbols not explicitly de伀氂ined by the StringNumericLiteral grammar have the defininitions used in the Lexical
+	Grammar for numeric literals.
+
+	A.7 Universal Resource Identifier Character Classes
+
+uri :::
+	uriCharactersopt
+uriCharacters :::
+	uriCharacter uriCharactersopt
+uriCharacter :::
+	uriReserved
+	uriUnescaped
+	uriEscaped
+	uriReserved ::: one of
+	; / ? : @ & = + $ ,
+
+uriUnescaped :::
+	uriAlpha
+	DecimalDigit
+	uriMark
+uriEscaped :::
+	% HexDigit HexDigit
+
+	uriAlpha ::: one of
+	a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F G H I J K L M N O P Q R S T U V
+	W X Y Z
+
+	uriMark ::: one of
+	‐ _ . ! ~ * ' ( )
+
+	A.8 Regular Expressions
+
+Pattern[U] ::
+	Disjunction[?U]
+
+Disjunction[U] ::
+	Alternative[?U]
+	Alternative[?U] | Disjunction[?U]
+
+Alternative[U] ::
+	[empty]
+	Alternative[?U] Term[?U]
+
+Term[U] ::
+	Assertion[?U]
+	Atom[?U] 
+	Atom[?U] Quantifier
+
+Assertion[U] ::
+	^
+	$
+	\ b
+	\ B
+	( ? = Disjunction[?U] )
+	( ? ! Disjunction[?U] )
+Quantifier ::
+	QuantifierPrefix
+	QuantifierPrefix ?
+
+QuantifierPrefix ::
+	*
+	+
+	?
+	{ DecimalDigits }
+	{ DecimalDigits , }
+	{ DecimalDigits , DecimalDigits }
+
+Atom[U] ::
+	PatternCharacter
+	.
+	\ AtomEscape[?U]
+	CharacterClass[?U]
+	( Disjunction[?U] )
+	( ? : Disjunction[?U] )
+	SyntaxCharacter :: one of
+	^ $ \ . * + ? ( ) [ ] { } |
+
+PatternCharacter ::
+	SourceCharacter but not SyntaxCharacter
+
+AtomEscape[U] ::
+	DecimalEscape
+	CharacterEscape[?U]
+	CharacterClassEscape
+
+CharacterEscape[U] ::
+	ControlEscape
+	c ControlLetter
+	HexEscapeSequence
+	RegExpUnicodeEscapeSequence[?U]
+	IdentityEscape[?U]
+	ControlEscape :: one of
+	f n r t v
+
+	ControlLetter :: one of
+	a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F G H I J K L M N O P Q R S T U V
+	W X Y Z 
+RegExpUnicodeEscapeSequence[U] ::
+	[+U] u LeadSurrogate \u TrailSurrogate
+	[+U] u LeadSurrogate
+	[+U] u TrailSurrogate
+	[+U] u NonSurrogate
+	[~U] u Hex4Digits
+	[+U] u{ HexDigits }
+
+	Each \u TrailSurrogate for which the choice of associated u LeadSurrogate is ambiguous shall be associated with the nearest
+	possible u LeadSurrogate that would otherwise have no corresponding \u TrailSurrogate.
+
+	
+LeadSurrogate ::
+	Hex4Digits but only if the SV of Hex4Digits  is in the inclusive range 0xD800 to 0xDBFF
+TrailSurrogate ::
+	Hex4Digits but only if the SV of Hex4Digits  is in the inclusive range 0xDC00 to 0xDFFF
+NonSurrogate ::
+	Hex4Digits but only if the SV of Hex4Digits  is not in the inclusive range 0xD800 to 0xDFFF
+
+IdentityEscape[U] ::
+	[+U] SyntaxCharacter
+	[+U] /
+	[~U] SourceCharacter but not UnicodeIDContinue
+DecimalEscape ::
+	DecimalIntegerLiteral [lookahead ∉ DecimalDigit]
+	CharacterClassEscape :: one of
+	d D s S w W
+
+CharacterClass[U] ::
+	[ [lookahead ∉ { ^ }] ClassRanges[?U] ]
+	[ ^ ClassRanges[?U] ]
+
+ClassRanges[U] ::
+	[empty]
+	NonemptyClassRanges[?U]
+
+NonemptyClassRanges[U] ::
+	ClassAtom[?U]
+	ClassAtom[?U] NonemptyClassRangesNoDash[?U]
+	ClassAtom[?U] ‐ ClassAtom[?U] ClassRanges[?U]
+
+NonemptyClassRangesNoDash[U] ::
+	ClassAtom[?U]
+	ClassAtomNoDash[?U] NonemptyClassRangesNoDash[?U]
+	ClassAtomNoDash[?U] ‐ ClassAtom[?U] ClassRanges[?U]
+
+ClassAtom[U] ::
+	‐
+	ClassAtomNoDash[?U]
+
+	ClassAtomNoDash[U] :: 
+	SourceCharacter but not one of \  or ]  or ‐
+	\ ClassEscape[?U]
+
+ClassEscape[U] ::
+	DecimalEscape
+	b
+	[+U] ‐
+	CharacterEscape[?U]
+	CharacterClassEscape 
+
+NumericLiteral ::
+	DecimalLiteral
+	BinaryIntegerLiteral
+	OctalIntegerLiteral
+	HexIntegerLiteral
+	LegacyOctalIntegerLiteral
+LegacyOctalIntegerLiteral ::
+	0 OctalDigit
+	LegacyOctalIntegerLiteral OctalDigit
+DecimalIntegerLiteral ::
+	0
+	NonZeroDigit DecimalDigitsopt
+	NonOctalDecimalIntegerLiteral
+NonOctalDecimalIntegerLiteral ::
+	0 NonOctalDigit
+	LegacyOctalLikeDecimalIntegerLiteral NonOctalDigit
+	NonOctalDecimalIntegerLiteral DecimalDigit
+LegacyOctalLikeDecimalIntegerLiteral ::
+	0 OctalDigit
+	LegacyOctalLikeDecimalIntegerLiteral OctalDigit
+	NonOctalDigit :: one of
+	
+EscapeSequence ::
+	CharacterEscapeSequence
+	LegacyOctalEscapeSequence
+	HexEscapeSequence
+	UnicodeEscapeSequence
+LegacyOctalEscapeSequence ::
+	OctalDigit [lookahead ∉ OctalDigit]
+	ZeroToThree OctalDigit [lookahead ∉ OctalDigit]
+	FourToSeven OctalDigit
+	ZeroToThree OctalDigit OctalDigit
+	ZeroToThree :: one of
+	0 1 2 3
+
+	FourToSeven :: one of
+	4 5 6 7
+
+Comment ::
+	MultiLineComment
+	SingleLineComment
+	SingleLineHTMLOpenComment
+	SingleLineHTMLCloseComment
+	SingleLineDelimitedComment
+MultiLineComment ::
+	/* FirstCommentLineopt LineTerminator MultiLineCommentCharsopt */ HTMLCloseCommentopt
+FirstCommentLine ::
+	SingleLineDelimitedCommentChars
+SingleLineHTMLOpenComment ::
+	<!‐‐ SingleLineCommentCharsopt
+SingleLineHTMLCloseComment ::
+	LineTerminatorSequence HTMLCloseComment
+SingleLineDelimitedComment ::
+	/* SingleLineDelimitedCommentCharsopt */
+HTMLCloseComment ::
+	WhiteSpaceSequenceopt SingleLineDelimitedCommentSequenceopt ‐‐> SingleLineCommentCharsopt
+SingleLineDelimitedCommentChars ::
+	SingleLineNotAsteriskChar SingleLineDelimitedCommentCharsopt
+	* SingleLinePostAsteriskCommentCharsopt
+SingleLineNotAsteriskChar ::
+	SourceCharacter but not one of *  or LineTerminator
+
+SingleLinePostAsteriskCommentChars ::
+	SingleLineNotForwardSlashOrAsteriskChar SingleLineDelimitedCommentCharsopt
+	* SingleLinePostAsteriskCommentCharsopt
+SingleLineNotForwardSlashOrAsteriskChar ::
+	SourceCharacter but not one of /  or *  or LineTerminator
+
+WhiteSpaceSequence ::
+	WhiteSpace WhiteSpaceSequenceopt
+	SingleLineDelimitedCommentSequence :: 
+	SingleLineDelimitedComment WhiteSpaceSequenceopt SingleLineDelimitedCommentSequenceopt
+
+Term[U] ::
+	[+U] Assertion[U]
+	[+U] Atom[U]
+	[+U] Atom[U] Quantifier
+	[~U] QuantifiableAssertion Quantifier
+	[~U] Assertion
+	[~U] ExtendedAtom Quantifier
+	[~U] ExtendedAtom
+
+Assertion[U] ::
+	^
+	$
+	\ b
+	\ B
+	[+U] ( ? = Disjunction[U] )
+	[+U] ( ? ! Disjunction[U] )
+	[~U] QuantifiableAssertion
+QuantifiableAssertion ::
+	( ? = Disjunction )
+	( ? ! Disjunction )
+
+ExtendedAtom ::
+	.
+	\ AtomEscape
+	CharacterClass
+	( Disjunction )
+	( ? : Disjunction )
+	InvalidBracedQuantifier
+	ExtendedPatternCharacter
+InvalidBracedQuantifier ::
+	{ DecimalDigits }
+	{ DecimalDigits , }
+	{ DecimalDigits , DecimalDigits }
+
+ExtendedPatternCharacter ::
+	SourceCharacter but not one of ^ $ . * + ? ( ) [ | 
+AtomEscape[U] ::
+	[+U] DecimalEscape
+	[+U] CharacterEscape[U]
+	[+U] CharacterClassEscape
+	[~U] DecimalEscape but only if the integer value of DecimalEscape  is <= _NcapturingParens_
+	[~U] CharacterClassEscape
+	[~U] CharacterEscape
+
+CharacterEscape[U] ::
+	ControlEscape
+	c ControlLetter
+	HexEscapeSequence
+	RegExpUnicodeEscapeSequence[?U]
+	[~U] LegacyOctalEscapeSequence
+	IdentityEscape[?U]
+
+IdentityEscape[U] ::
+	[+U] SyntaxCharacter
+	[+U] /
+	[~U] SourceCharacter but not c
+
+NonemptyClassRanges[U] ::
+	ClassAtom[?U]
+	ClassAtom[?U] NonemptyClassRangesNoDash[?U]
+	[+U] ClassAtom[U] ‐ ClassAtom[U] ClassRanges[U]
+	[~U] ClassAtomInRange ‐ ClassAtomInRange ClassRanges
+
+NonemptyClassRangesNoDash[U] ::
+	ClassAtom[?U]
+	ClassAtomNoDash[?U] NonemptyClassRangesNoDash[?U]
+	[+U] ClassAtomNoDash[U] ‐ ClassAtom[U] ClassRanges[U]
+	[~U] ClassAtomNoDashInRange ‐ ClassAtomInRange ClassRanges
+
+ClassAtom[U] ::
+	‐
+	ClassAtomNoDash[?U]
+
+ClassAtomNoDash[U] ::
+	\ ClassEscape[?U]
+	SourceCharacter but not one of ]  or ‐
+
+ClassAtomInRange ::
+	‐
+	ClassAtomNoDashInRange
+ClassAtomNoDashInRange ::
+	\ ClassEscape
+	SourceCharacter but not one of ]  or ‐
+
+ClassEscape[U] ::
+	b
+	[+U] DecimalEscape
+	[+U] CharacterEscape[U]
+	[+U] CharacterClassEscape 
+	[+U] ‐
+	[~U] DecimalEscape but only if the integer value of DecimalEscape  is 0
+	[~U] CharacterClassEscape
+	[~U] c ClassControlLetter
+	[~U] CharacterEscape
+ClassControlLetter ::
+	DecimalDigit
+	
