@@ -1157,5 +1157,5 @@ export const enum Precedence {
  * @returns 返回一个数字。数字越大说明优先级越高。
  */
 export function getPrecedence(token: TokenType) {
-    return precedences[token] || Precedence.any;
+    return precedences[token];
 }

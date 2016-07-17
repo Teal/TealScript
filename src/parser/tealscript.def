@@ -3,18 +3,18 @@
 
 #region 类型
 
-TypeNode: // 类型节点(`number`、`string[]`、...)
+TypeNode: // 类型节点(number、string[]、...)
 UnionOrIntersectionOrPrimaryTypeNode:
-		UnionTypeNode: -> BinaryTypeNode
-			UnionOrIntersectionOrPrimaryTypeNode | IntersectionOrPrimaryTypeNode
+	UnionTypeNode: -> BinaryTypeNode
+		UnionOrIntersectionOrPrimaryTypeNode | IntersectionOrPrimaryTypeNode
 	IntersectionOrPrimaryTypeNode:
 			IntersectionTypeNode: -> BinaryTypeNode
 				IntersectionOrPrimaryTypeNode & PrimaryTypeNode
 		PrimaryTypeNode:
-				GenericTypeNode: // 泛型节点(`Array<T>`)。
+				GenericTypeNode: // 泛型节点(Array<T>)。
 					TypeName @nobr TypeArguments?
 			TypeName:
-					PredefinedTypeNode // 内置类型节点(`number`、`string`、...)
+					PredefinedTypeNode // 内置类型节点(number、string、...)
 						any
 						number
 						boolean
@@ -26,10 +26,10 @@ UnionOrIntersectionOrPrimaryTypeNode:
 						*
 						?
 						this
-					IdentifierTypeNode // 标识符类型节点(`x`)
-					QualifiedNameTypeNode: // 限定名称类型节点(`"abc"`、`true`)
-						TypeName . IdentifierReference
-				ParenthesizedTypeNode: // 括号类型节点(`(number)`)
+					IdentifierTypeNode // 标识符类型节点(x)
+					QualifiedNameTypeNode: // 限定名称类型节点("abc"、true)
+						TypeName . IdentifierOrKeyword
+				ParenthesizedTypeNode: // 括号类型节点((number))
 					( body:TypeNode )
 			ObjectTypeNode:
 					{ TypeBody? }
@@ -41,11 +41,11 @@ UnionOrIntersectionOrPrimaryTypeNode:
 					TupleElementTypeNode:
 							TypeNode
 						TupleElementTypes	, TupleElementTypeNode
-				TypeQueryNode: // 类型查询节点(`typeof x`)。
+				TypeQueryNode: // 类型查询节点(typeof x)。
 					typeof operand:TypeQueryExpression
 FunctionTypeNode:
-		TypeParameterDeclarations? ParameterDeclarations@try => TypeNode
-	ConstructorTypeNode: // 构造函数类型节点(`new ()=>void`)。
+	TypeParameterDeclarations? ParameterDeclarations@try => TypeNode
+	ConstructorTypeNode: // 构造函数类型节点(new ()=>void)。
 		new TypeParameterDeclarations? ParameterDeclarations => TypeNode
 
 ParameterDeclarations: // @name=parameters
@@ -91,14 +91,14 @@ TypeMember:
 	MethodSignature
 
 TypeQueryExpression:
-	IdentifierReference
-	TypeQueryExpression	. IdentifierName
+	IdentifierOrKeyword
+	TypeQueryExpression	. IdentifierOrKeyword
 
 PropertySignature:
 	PropertyName ?? TypeAnnotation?
 
 PropertyName:
-	IdentifierName
+	IdentifierOrKeyword
 	StringLiteral
 	NumericLiteral
 
@@ -160,41 +160,49 @@ MethodSignature:
 
 #region 表达式
 
-Expression(precedence: Precedence) : @abstract // 表达式。
-	let parsed = this.parsePrimaryExpression();
+Expression(precedence: Precedence) @abstract // 表达式。
+	let result = @parsePrimaryExpression();
 	while (getPrecedence(@peek) >= precedence) {
-		parsed = this.parseExpressionRest(parsed, precedence);
+		result = @parseExpressionRest(result, precedence);
 	}
-	return parsed;
+	return result;
 
-PrimaryExpression: // 独立表达式
-	Identifier
-	SimpleLiteral : // 简单字面量(`this`、`null`、`false`、`true`、`super`)。
-		type:null|true|false|this|super
-	NumericLiteral // 数字字面量(`1`)。
+PrimaryExpression // 独立表达式
+	Identifier // 标识符(x)
+		value:<identifier>
+	SimpleLiteral // 简单字面量(null、true、false、this、super)
+		type:this|null|true|false|super
+	NumericLiteral // 数字字面量(1)
 		value:<numericLiteral>
-	StringLiteral // 字符串字面量(`'abc'`、`"abc"`、`\`abc\``)。
+	StringLiteral // 字符串字面量('abc'、"abc"、`abc`)
 		value:<stringLiteral>
-	ArrayLiteral // 数组字面量(`[x, y]`)。
+	ArrayLiteral // 数组字面量([x, y])
 		[ ArrayLiteralElement... ]
-		@ArrayLiteralElement : // 数组字面量元素(`x`)
-			...? value?:Expression=this.parseExpressionWithIn(Precedence.assignment) ,
-	ObjectLiteral // 对象字面量(`{x: y}`)。
+		@ArrayLiteralElement // 数组字面量元素(x)
+			...? value?:Expression=@ExpressionWithIn(Precedence.assignment) ,
+	ObjectLiteral // 对象字面量({x: y})
 		{ ObjectLiteralElement... }
-		@ObjectLiteralElement[Yield] : // 对象字面量元素(`{x: y}`)。
-			key:PropertyName @opt : value:Expression=this.parseExpressionWithIn(Precedence.assignment)
-			@PropertyName // 表示一个属性名称(`xx`、`"xx"`、`[xx]`)。
-				IdentifierName 
+		@ObjectLiteralElement // 对象字面量元素({x: y})
+			key:PropertyName @if : value:Expression=@ExpressionWithIn(Precedence.assignment)
+			@PropertyName // 表示一个属性名称(xx、"xx"、[xx])
+				Identifier 
 				StringLiteral
 				NumericLiteral
-				ComputedPropertyName // 已计算的属性名(`[1]`)。
+				ComputedPropertyName // 已计算的属性名([1])
 					[ Expression[In, body:?Yield] ]  // 其中标准是 AssignmentExpression
+				if(@isKeyword(@peek)) return @parseIdentifier();
+				@error(@peek, "应输入属性名。");
 			MethodDefinition
-	FunctionExpression // 函数表达式(function (`) {}`)。
-		function *? BindingIdentifier[Yield]? ( FormalParameters[Yield] ) { FunctionBody[Yield] }
-	CoverParenthesizedExpressionAndArrowParameterList:
-		ParenthesizedExpression[Yield] : // 括号表达式(`(x)`)。
-			( Expression[In, body:?Yield] )
+	FunctionExpression // 函数表达式(function () {})
+		function *? IdentifierOrReserverdWord? ( FormalParameters[Yield] ) { FunctionBody[Yield] }
+	ParenthesizedExpression[Yield] // 括号表达式((x))
+		( body:Expression=@ExpressionWithIn(Precedence.any) )
+	ArrowFunction[?In, ?Yield]
+		IdentifierOrReserverdWord @nobr => ConciseBody[?In]
+		ArrowParameterList @nobr => ConciseBody
+		@ConciseBody :
+			{ FunctionBody }
+			Expression(Precedence.assignment)
 	ClassExpression
 		class BindingIdentifier ? ClassTail
 		@ClassTail[Yield] :
@@ -208,20 +216,41 @@ PrimaryExpression: // 独立表达式
 					MethodDefinition
 					static MethodDefinition
 					;
-	RegularExpressionLiteral // 正则表达式字面量(`/abc/`)。
-	TemplateLiteral // 模板调用表达式(`x\`abc\``)。
+	RegularExpressionLiteral // 正则表达式字面量(/abc/)。
+	TemplateLiteral // 模板调用表达式(x`abc`)。
 		<templateLiteral>
-	NewTargetExpression : // new.target 表达式(`new.target`)。
-		new . target
-	NewExpression : // new 表达式(`new x()`)。
-		new target:Expression(ExpressionType.newOrMemberExpression) arguments:Arguments?
-	TypeAssertionExpression : // 类型确认表达式(`<T>xx`)。
+	case TokenType.new: 
+		return @NewOrNewTargetExpression();
+		@NewOrNewTargetExpression // new 或 new.target 表达式(new x()、new.target)。
+			const start = @read;
+			if(@peek === TokenType.dot){
+				const result = new NewTargetExpression();
+				result.start = start;
+				result.dotToken = @read;
+				if(@peek === TokenType.identifier && @peekData === "target") {
+				} else {
+					if(@peek === TokenType.identifier){
+						@read
+					}
+					@error(@peek, "应输入“target”");
+				}
+				return result;
+			}
+			NewTargetExpression : // new.target 表达式(new.target)。
+				new . target
+			NewExpression : // new 表达式(new x())。
+				new target:Expression(ExpressionType.newOrMemberExpression) arguments:Arguments?
+	TypeAssertionExpression : // 类型确认表达式(<T>xx)。
 		< TypeNode > UnaryExpression
+	YieldExpression
+		yield @? @nobr *? Expression(Precedence.assignment)
+	AwaitExpression[?In]
+		await @nobr AssignmentExpression[?In, Yield]
 	if (isUnaryOperator(@peek)) {
 		return this.parseUnaryExpression();
 	}
 
-	@UnaryExpression :  // 一元运算表达式(`+x`、`typeof x`、...)
+	@UnaryExpression :  // 一元运算表达式(+x、typeof x、...)
 		operator:delete|void|typeof|+|-|~|!|++|-- operand:Expression(Precedence.unary)
 
 ExpressionRest(parsed: Expression, precedence: Precedence) // 表达式的剩余部分
@@ -229,111 +258,40 @@ ExpressionRest(parsed: Expression, precedence: Precedence) // 表达式的剩余
 		return this.parseBinaryExpression(parsed, precedence);
 	}
 
-	MemberCallExpression(parsed: Expression) // 成员调用表达式(`x.y`)
-		target:Expression=parsed . argument:IdentifierName
+	MemberCallExpression(parsed: Expression) // 成员调用表达式(x.y)
+		target:Expression=parsed . argument:IdentifierOrKeyword
 
-	FunctionCallExpression(parsed: Expression) // 函数调用表达式(`x()`)
+	FunctionCallExpression(parsed: Expression) // 函数调用表达式(x())
 		target:Expression=parsed arguments:ArgumentList
 		
 		@ArgumentList // 函数参数列表
 			( Argument... )
 			
-			@Argument // 函数参数(`x`)
+			@Argument // 函数参数(x)
 				...? value:Expression(Precedence.assignment) ,?
 
-	IndexCallExpression(parsed: Expression) // 索引调用表达式(`x[y]`)
+	IndexCallExpression(parsed: Expression) // 索引调用表达式(x[y])
 		target:Expression=parsed [ argument:Expression=this.parseExpressionWithIn(Precedence.any) ]
 
-	TemplateCallExpression(parsed: Expression) // 模板调用表达式(`x\`abc\``)
+	TemplateCallExpression(parsed: Expression) // 模板调用表达式(x`abc`)
 		target:Expression=parsed argument:TemplateLiteral
 
-	ConditionalExpression(parsed: Expression) // 条件表达式(`x ? y : z`)
+	ConditionalExpression(parsed: Expression) // 条件表达式(x ? y : z)
 		condition:Expression=parsed ? then:Expression=this.parseExpressionWithIn(Precedence.assignment) : Expression[?In, else:?Yield](Precedence.assignment)
 
-	PostfixIncrementExpression(parsed: Expression) // 后缀增量运算表达式(`x++`、`x--`)
+	PostfixIncrementExpression(parsed: Expression) // 后缀增量运算表达式(x++、x--)
 		operand:Expression=parsed @nobr ++
 		operand:Expression=parsed @nobr ‐‐
 
 	return this.parseBinaryExpression(parsed, precedence);
 
-	@BinaryExpression(left: Expression, precedence: number) // 二元运算表达式(`x + y`、`x = y`、...)
+	@BinaryExpression(left: Expression, precedence: number) // 二元运算表达式(x + y、x = y、...)
 		left:Expression=left operatorToken:TokenType right:Expression(precedence)
 
-LeftHandSideExpression
-
-Expression : // 表达式。
-	LeftHandSideExpression @isAssignOperator(=||*=||/=||%=||+=||-=||<<=||>>||>>>=||&=||^=|||= ) AssignmentExpression[?In, ?Yield]
-	LogicalORExpression[?In, ?Yield]
-		LogicalANDExpression[?In, ?Yield]
-			BitwiseORExpression[?In, ?Yield]
-				BitwiseXORExpression[?In, ?Yield]
-					BitwiseANDExpression[?In, ?Yield]
-						EqualityExpression[?In, ?Yield]
-							EqualityExpression[?In, ?Yield] == RelationalExpression[?In, ?Yield]
-							EqualityExpression[?In, ?Yield] != RelationalExpression[?In, ?Yield]
-							EqualityExpression[?In, ?Yield] === RelationalExpression[?In, ?Yield]
-							EqualityExpression[?In, ?Yield] !== RelationalExpression[?In, ?Yield]
-							RelationalExpression[?In, ?Yield]
-								RelationalExpression[?In, ?Yield] < ShiftExpression
-								RelationalExpression[?In, ?Yield] > ShiftExpression
-								RelationalExpression[?In, ?Yield] <= ShiftExpression
-								RelationalExpression[?In, ?Yield] >= ShiftExpression
-								RelationalExpression[?In, ?Yield] instanceof ShiftExpression
-								[+In] RelationalExpression[In, ?Yield] in ShiftExpression
-								ShiftExpression
-									ShiftExpression << AdditiveExpression 
-									ShiftExpression >> AdditiveExpression
-									ShiftExpression >>> AdditiveExpression
-									AdditiveExpression
-										AdditiveExpression + MultiplicativeExpression
-										AdditiveExpression ‐ MultiplicativeExpression
-										MultiplicativeExpression
-											MultiplicativeExpression * ExponentiationExpression
-											MultiplicativeExpression / ExponentiationExpression
-											MultiplicativeExpression % ExponentiationExpression
-											ExponentiationExpression
-												UpdateExpression ** ExponentiationExpression
-												
-						BitwiseANDExpression[?In, ?Yield] & EqualityExpression[?In, ?Yield]
-					BitwiseXORExpression[?In, ?Yield] ^ BitwiseANDExpression[?In, ?Yield]
-				BitwiseORExpression[?In, ?Yield] | BitwiseXORExpression[?In, ?Yield]
-			LogicalANDExpression[?In, ?Yield] && BitwiseORExpression[?In, ?Yield]
-		LogicalORExpression[?In, ?Yield] || LogicalANDExpression[?In, ?Yield]
-	[+Yield] YieldExpression[?In]
-		yield
-		yield @nobr AssignmentExpression[?In, Yield]
-		yield @nobr * AssignmentExpression[?In, Yield]
-	ArrowFunction[?In, ?Yield]
-		ArrowParameters @nobr => ConciseBody[?In]
-		@ArrowParameters[Yield] :
-			BindingIdentifier
-					Identifier // 标识符(`x`)。
-					[~Yield] yield
-			CoverParenthesizedExpressionAndArrowParameterList
-		@ConciseBody[In] :
-			[lookahead ≠ {] AssignmentExpression[?In]
-			{ FunctionBody }
-
-LeftHandSideExpression[Yield] : // 左值表达式。
-	NewOrMemberExpression
-		MemberExpression
-		
-IdentifierReference[Yield] :
-	Identifier
-		IdentifierName but not ReservedWord
-	[~Yield] yield
-
-LabelIdentifier[Yield] :
-	Identifier
-	[~Yield] yield
-
-
-
 CoverInitializedName
-	IdentifierReference Initializer[In, ?Yield]
+	IdentifierOrKeyword Initializer[In, ?Yield]
 	@Initializer :
 		= AssignmentExpression[?In, ?Yield]
-
 
 TemplateLiteral[Yield] :
 	NoSubstitutionTemplate
@@ -409,17 +367,17 @@ Statement[Yield, Return] :
 				default : StatementList[?Yield, ?Return] ?
 	ContinueStatement
 		continue ;
-		continue @nobr LabelIdentifier ;
+		continue @nobr IdentifierOrReserverdWord ;
 	BreakStatement
 		break ;
-		break @nobr LabelIdentifier ;
+		break @nobr IdentifierOrReserverdWord ;
 	[+Return] ReturnStatement
 		return ;
 		return @nobr Expression[In, ?Yield] ;
 	WithStatement[?Yield, ?Return]
 		with ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
 	LabelledStatement[?Yield, ?Return]
-		LabelIdentifier : LabelledItem[?Yield, ?Return]
+		IdentifierOrReserverdWord : LabelledItem[?Yield, ?Return]
 		@LabelledItem[Yield, Return] :
 			Statement[?Yield, ?Return]
 			FunctionDeclaration
@@ -497,7 +455,7 @@ AssignmentPattern[Yield] :
 		@AssignmentPropertyList[Yield] :
 			AssignmentPropertyList , AssignmentProperty
 			AssignmentProperty
-				IdentifierReference Initializer[In, ?Yield] ?
+				IdentifierOrKeyword Initializer[In, ?Yield] ?
 				PropertyName : AssignmentElement
 	ArrayAssignmentPattern
 		[ Elision? AssignmentRestElement ? ]
@@ -612,7 +570,7 @@ ImportsList :
 
 ImportSpecifier :
 	ImportedBinding
-	IdentifierName as ImportedBinding
+	IdentifierOrKeyword as ImportedBinding
 
 ModuleSpecifier :
 	StringLiteral
@@ -636,8 +594,8 @@ ExportsList :
 	ExportsList , ExportSpecifier
 
 ExportSpecifier :
-	IdentifierName
-	IdentifierName as IdentifierName
+	IdentifierOrKeyword
+	IdentifierOrKeyword as IdentifierOrKeyword
 
 #endregion
 
@@ -725,14 +683,14 @@ SingleLineCommentChars :
 SingleLineCommentChar :
 	SourceCharacter but not LineTerminator
 CommonToken :
-	IdentifierName
+	IdentifierOrKeyword
 	Punctuator
 	NumericLiteral
 	StringLiteral
 	Template
-IdentifierName :
+IdentifierOrKeyword :
 	IdentifierStart
-	IdentifierName IdentifierPart
+	IdentifierOrKeyword IdentifierPart
 IdentifierStart :
 	UnicodeIDStart
 	$
@@ -935,16 +893,16 @@ Template :
 	NoSubstitutionTemplate
 	TemplateHead
 NoSubstitutionTemplate :
-	` TemplateCharacters? `
+	 TemplateCharacters? 
 TemplateHead :
-	` TemplateCharacters? ${
+	 TemplateCharacters? ${
 TemplateSubstitutionTail :
 	TemplateMiddle 
 	TemplateTail
 TemplateMiddle :
 	} TemplateCharacters? ${
 TemplateTail :
-	} TemplateCharacters? `
+	} TemplateCharacters? 
 TemplateCharacters :
 	TemplateCharacter TemplateCharacters?
 TemplateCharacter :
@@ -952,7 +910,7 @@ TemplateCharacter :
 	\ EscapeSequence
 	LineContinuation
 	LineTerminatorSequence
-	SourceCharacter but not one of `  or \  or $  or LineTerminator
+	SourceCharacter but not one of   or \  or $  or LineTerminator
 #endregion
 
 A.6 Number Conversions
