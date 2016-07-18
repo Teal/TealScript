@@ -1394,6 +1394,7 @@ Arguments:	  [Modified]
 UnaryExpression:	  [Modified]
 	…
 	< Type > UnaryExpression
+	A.3 Statements
 
 Declaration:	  [Modified]…
 	InterfaceDeclaration
