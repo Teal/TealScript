@@ -254,9 +254,6 @@ PrimaryExpression // 独立表达式
 		operator:delete|void|typeof|+|-|~|!|++|-- operand:Expression(Precedence.unary)
 
 ExpressionRest(parsed: Expression, precedence: Precedence) // 表达式的剩余部分
-	if (isAssignOperator(@peek)) {
-		return this.parseBinaryExpression(parsed, precedence);
-	}
 
 	MemberCallExpression(parsed: Expression) // 成员调用表达式(x.y)
 		target:Expression=parsed . argument:IdentifierOrKeyword
