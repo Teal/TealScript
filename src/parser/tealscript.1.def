@@ -1534,10 +1534,7 @@ Identifier :
 
 PrimaryExpression[Yield] :
 	IdentifierReference[?Yield]
-	FunctionExpression
 	ClassExpression[?Yield] 
-	GeneratorExpression 
-	CoverParenthesizedExpressionAndArrowParameterList[?Yield]
 
 PropertyDefinitionList[Yield] :
 	PropertyDefinition[?Yield]
@@ -1556,18 +1553,6 @@ CoverInitializedName[Yield]  :
 
 Initializer[In, Yield] :
 	= AssignmentExpression[?In, ?Yield]
-
-MemberExpression[Yield] :
-	PrimaryExpression[?Yield]
-	new MemberExpression[?Yield] Arguments[?Yield]
-
-NewExpression[Yield] :
-	MemberExpression[?Yield]
-	new NewExpression[?Yield]
-
-LeftHandSideExpression[Yield] :
-	NewExpression[?Yield]
-	CallExpression[?Yield]
 
 # 语句
 

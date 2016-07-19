@@ -1044,6 +1044,11 @@ const precedences: { [key: number]: Precedence } = {
 
     [TokenType.asteriskAsterisk]: Precedence.exponentiation,
 
+    [TokenType.plusPlus]: Precedence.postfix,
+    [TokenType.minusMinus]: Precedence.postfix,
+
+    [TokenType.openParen]: Precedence.functionCall,
+
     [TokenType.openBracket]: Precedence.member,
     [TokenType.dot]: Precedence.member,
     [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
@@ -1132,24 +1137,19 @@ export const enum Precedence {
     exponentiation,
 
     /**
-     * 单目表达式。
+     * 后缀表达式。
      */
-    unary,
+    postfix,
 
     /**
      * 左值表达式。
      */
-    leftHand,
+    leftHandSide,
 
-    // /**
-    //  * 函数调用表达式。
-    //  */
-    // functionCall,
-
-    // /**
-    //  * new 表达式。
-    //  */
-    // new,
+    /**
+     * 函数调用表达式。
+     */
+    functionCall,
 
     /**
      * 成员表达式。
