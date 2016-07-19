@@ -444,14 +444,14 @@ export const enum TokenType {
     barBar,
 
     /**
+     * 最小的右值运算符。
+     */
+    MIN_RIGHT_HAND_OPERATOR,
+
+    /**
      * 星号星号(**)(仅在 JavaScript 7)。
      */
     asteriskAsterisk,
-
-    /**
-     * 最小的赋值运算符。
-     */
-    MIN_ASSIGN_OPERATOR,
 
     /**
      * 等于(=)。
@@ -519,9 +519,9 @@ export const enum TokenType {
     asteriskAsteriskEquals,
 
     /**
-     * 最大的赋值运算符。
+     * 最大的右值运算符。
      */
-    MAX_ASSIGN_OPERATOR,
+    MAX_RIGHT_HAND_OPERATOR,
 
     /**
      * 问号(?)。
@@ -983,6 +983,13 @@ export function isBindingNameStart(token: TokenType) {
 }
 
 /**
+ * 判断指定的运算符是否是从右往左优先计算。
+ */
+export function isRightHandOperator(token: TokenType) {
+    return token > TokenType.MIN_RIGHT_HAND_OPERATOR && token < TokenType.MAX_RIGHT_HAND_OPERATOR;
+}
+
+/**
  * 存储所有优先级。
  */
 const precedences: { [key: number]: Precedence } = {
@@ -1134,15 +1141,15 @@ export const enum Precedence {
      */
     leftHand,
 
-    /**
-     * 函数调用表达式。
-     */
-    functionCall,
+    // /**
+    //  * 函数调用表达式。
+    //  */
+    // functionCall,
 
-    /**
-     * new 表达式。
-     */
-    new,
+    // /**
+    //  * new 表达式。
+    //  */
+    // new,
 
     /**
      * 成员表达式。

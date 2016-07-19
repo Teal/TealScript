@@ -43,28 +43,202 @@ ConstructorType // 构造函数类型节点(`new () => void`)。
 
 # 表达式
 
-Expression(precedence: Precedence/*最低允许解析的优先级*/, disdisallowIn: boolean/*是否禁止解析 in 表达式*/) @abstract // 表达式。
-	return @ExpressionRest(@UnaryOrPrimaryExpression(), precedence, disallowIn);
+Expression(precedence: Precedence/*最低允许解析的操作符优先级*/, allowIn: boolean/*是否允许解析 in 表达式*/) @abstract // 表达式
+	return @ExpressionRest(@UnaryOrPrimaryExpression(), precedence, allowIn);
 
-UnaryOrPrimaryExpression // 单目或独立表达式
-
-
-ExpressionRest(parsed: Expression, precedence: Precedence, disallowIn: boolean) // 表达式的剩余部分。
+ExpressionRest(parsed: Expression, precedence: Precedence, allowIn: boolean) // 表达式的剩余部分
 	while (getPrecedence(@peek) >= precedence) {
-		parsed = @ConditionalOrBinaryOrCallExpression(parsed, precedence, disallowIn);
+		parsed = @ConditionalOrBinaryOrCallExpression(parsed, allowIn);
 	}
 	return parsed;
 
-ConditionalOrBinaryOrCallExpression(parsed: Expression, precedence: Precedence, disallowIn: boolean) // 条件或双目或调用表达式
-	if (isAssignOperator(@peek)) {
-		return @BinaryExpression(parsed, precedence, disallowIn);
-	}
+UnaryOrPrimaryExpression // 单目或独立表达式
 	switch(@peek) {
-		MemberCallExpression(parsed: Expression) // 成员调用表达式(`x.y`)
-			target:Expression . argument:IdentifierOrKeyword
-		FunctionCallExpression(parsed: Expression) // 函数调用表达式(`x()`)
+		Identifier // 标识符(`x`)
+			value:<identifier>
+		SimpleLiteral // 简单字面量(`null`、`true`、`false`、`this`、`super`)
+			type:this|null|true|false|super
+		case @(:
+			return @ParenthesizedOrArrowExpression();
+			@ParenthesizedOrArrowExpression // 括号或箭头表达式
+				const parameters = tryParseParameters();
+				return parameters ? @ArrowFunctionLiteral(parameters) : @ParenthesizedExpression();
+				@ArrowFunctionLiteral(..., ...) // 箭头函数表达式(`x => xx`)。
+					Modifiers? TypeParameterDeclarations? parameters:ParameterDeclarations|Identifier ReturnType? => body:BlockStatement|Expression=@peek()===@{ ? @BlockStatement() : @Expression(Precedence.assignment, true)
+				@ParenthesizedExpression // 括号表达式((x))
+					( body:Expression=@Expression(Precedence.any, true) )
+		NumericLiteral // 数字字面量(`1`)
+			value:<numericLiteral>
+		case @<stringLiteral>:
+		case @<noSubstitutionTemplateLiteral>:
+			return @StringLiteral();
+			@StringLiteral // 字符串字面量(`'abc'`、`"abc"`、`\`abc\``)
+				value:<stringLiteral>
+		ArrayLiteral // 数组字面量(`[x, y]`)
+			[ ArrayLiteralElement... ]
+			@ArrayLiteralElement // 数组字面量元素(`x`)
+				...? value?:Expression=@Expression(Precedence.assignment, true) ,
+		ObjectLiteral // 对象字面量(`{x: y}`)
+			{ ObjectLiteralElement... }
+			@ObjectLiteralElement // 对象字面量元素(`x: y`)
+				key:PropertyName @if : value:Expression=@Expression(Precedence.assignment, true) @endif
+				//// TODO
+				@PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName // 表示一个属性名称(`xx`、`"xx"`、`0`、`[xx]`)
+					switch(@peek) {
+						case <identifier>:
+							return Identifier();
+						StringLiteral
+						NumericLiteral
+						ComputedPropertyName // 已计算的属性名(`[1]`)
+							[ body:Expression(Precedence.assignment, true) ]
+					}
+					if(@isKeyword(@peek)) {
+						return @Identifier();
+					}
+					@error(@peek, "应输入属性名。");
+					return @ErrorIdentifier();
+		FunctionExpression // 函数表达式(function () {})
+			function *? IdentifierOrReserverdWord? ( FormalParameters[Yield] ) { FunctionBody[Yield] }
 
+		ClassExpression
+			class BindingIdentifier ? ClassTail
+			@ClassTail[Yield] :
+				ClassHeritage ? { ClassBody ? }
+			@ClassHeritage[Yield] :
+				extends LeftHandSideExpression
+			@ClassBody[Yield] :
+				ClassElementList
+					ClassElementList ClassElement
+					ClassElement
+						MethodDefinition
+						static MethodDefinition
+						;
+		RegularExpressionLiteral // 正则表达式字面量(/abc/)
+			value:<stringLiteral> flags?:<stringLiteral>/*标志部分*/
+			const result = new nodes.RegularExpressionLiteral();
+			result.start = @lexer.readAsRegularExpressionLiteral().start;
+			result.value = @lexer.current.data.pattern;
+        	result.flags = @lexer.current.data.flags;
+        	result.end = @lexer.current.end;
+        	return result;
+		case @<templateHead>:
+			return @TemplateLiteral();
+			@TemplateLiteral // 模板字面量(`\`abc\``)
+				<templateHead> spans:TemplateSpan|Expression.../*所有组成部分*/ <templateTail>
+				const result = new nodes.TemplateLiteral();
+				result.spans = new nodes.NodeList<nodes.Expression>();
+				while (true) {
+					result.spans.push(@TemplateSpan());
+					result.spans.push(@Expression());
+					if (@peek !== TokenType.closeBrace) {
+		                @expectToken(TokenType.closeBrace);
+		                break;
+		            }
+		            if (@lexer.readAsTemplateMiddleOrTail().type === TokenType.templateTail) {
+		                result.spans.push(@TemplateSpan());
+		                break;
+		            }
+				}
+				return result;
+				@TemplateSpan // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
+					value:<stringLiteral>
+		case @new: 
+			return @NewOrNewTargetExpression();
+			@NewOrNewTargetExpression // new 或 new.target 表达式
+				const start = @read();
+				if(@peek === @.){
+					const result = new NewTargetExpression();
+					result.start = start;
+					result.dotToken = @read;
+					if(@peek === TokenType.identifier && @peekData === "target") {
+					} else {
+						if(@peek === TokenType.identifier){
+							@read
+						}
+						@error(@peek, "应输入“target”");
+					}
+					return result;
+				}
+				@NewExpression : // new 表达式(new x())。
+					new target:Expression(Precedence.member, false) arguments:Arguments?
+				@NewTargetExpression // new.target 表达式(`new.target`)。
+					new . target
+		TypeAssertionExpression // 类型确认表达式(<T>xx)
+			< TypeNode > UnaryExpression
+		YieldExpression // yield 表达式(`yield xx`)
+			yield *? operand:Expression(Precedence.assignment, false)
+			const result = new nodes.YieldExpression();
+			result.start = @read();
+			if(@sameLine) {
+				if(@peek === TokenType.asterisk) {
+					result.asteriskToken = @read();
+				}
+				if(@sameLine && isExpressionStart(@peek)) {
+					result.operand = Expression(Precedence.assignment, false);
+				}
+			}
+			return result;
+		AwaitExpression // await 表达式(`await xx`)
+			await operand:Expression(Precedence.assignment, false)
+			const result = new nodes.AwaitExpression();
+			result.start = @read();
+			if(@sameLine && isExpressionStart(@peek)) {
+				result.operand = Expression(Precedence.assignment, false);
+			}
+			return result;
 	}
+	if (isUnaryOperator(@peek)) {
+		return @UnaryExpression();
+	}
+	if (isReserverdWord(@peek)) {
+		return @Identifier();
+	}
+	return @ErrorExpression();
+	@UnaryExpression // 一元运算表达式(+x、typeof x、...)
+		operator:delete|void|typeof|+|-|~|!|++|-- operand:Expression(Precedence.unary, false)
+
+ConditionalOrBinaryOrCallExpression(parsed: Expression, allowIn: boolean) // 条件或双目或调用表达式
+	switch(@peek) {
+		MemberCallExpression(...) // 成员调用表达式(x.y)
+			target:Expression/*目标部分*/ . argument:IdentifierOrKeyword/*参数部分*/
+		case =: 
+			break;
+		case (:
+			return @FunctionCallExpression(parsed);
+			@FunctionCallExpression(...) // 函数调用表达式(x())
+				target:Expression arguments:CallArguments
+				@CallArguments // 函数调用参数列表
+					( Argument,... )
+					@CallArgument // 函数调用参数(x)
+						...? value:Expression(Precedence.assignment, true)
+		IndexCallExpression(...) // 索引调用表达式(x[y])
+			target:Expression [ argument:Expression(Precedence.any, true) ]
+		ConditionalExpression(...) // 条件表达式(`x ? y : z`)
+			condition:Expression ? then:Expression(Precedence.assignment, true)/*则部分*/ : else:Expression(Precedence.assignment, allowIn)/*否则部分*/
+		case ++:
+		case --:
+			if (@sameLine) {
+				return @PostfixExpression(parsed);
+			}
+			break;
+			@PostfixExpression(...) // 后缀表达式(`x++`、`x--`)
+				operand:Expression/*操作数*/ operator:++|--
+		case in:
+			if(allowIn === false) {
+				return parsed;
+			}
+			break;
+		case <noSubstitutionTemplateLiteral>:
+			return @TemplateCallExpression(parsed, @StringLiteral());
+		case <templateHead>:
+			return @TemplateCallExpression(parsed, @TemplateLiteral());
+			@TemplateCallExpression(..., ...) // 模板调用表达式(`x\`abc\``)
+				target:Expression argument:TemplateLiteral|StringLiteral
+	}
+	return @BinaryExpression(parsed, allowIn);
+
+	@BinaryExpression(..., allowIn: boolean) // 双目表达式(x + y、x = y、...)
+		left:Expression/*左值部分*/ operator:TokenType/*当前运算的类型。合法的值有：,、*=、/=、%=、+=、‐=、<<=、>>=、>>>=、&=、^=、|=、**=、||、&&、|、^、&、==、!=、===、!==、<、>、<=、>=、instanceof、in、<<、>>、>>>、+、-、*、/、%、**。*/ right:Expression(getPrecedence(@result.operator) + (isRightHandOperator(@result.operator) ? 0 : 1), allowIn)/*右值部分*/
 
 # 语句
 
