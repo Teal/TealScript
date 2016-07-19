@@ -1,24 +1,196 @@
 
 # 类型
 
-TypeNode(precedence: Precedence) @abstract // 类型节点(`number`、`string[]`、...)
-	let result = @UnaryOrPrimaryTypeNode();
-	while(getPrecedence(@peek()) >= precedence) {
-		result = @TypeNodeRest(result, precedence);
+TypeNode() @abstract // 类型节点(`number`、`string[]`、...)
+	let result = @UnaryOrPrimaryTypeNode(allowIn);
+	while (getPrecedence(@peek()) >= precedence) {
+		result = @BinaryOrCallTypeNode(result, allowIn);
 	}
 	return result;
 
+BinaryOrPrimaryTypeNode(precedence: Precedence) // 联合或交错或独立类型节点
+	let result = @PrimaryTypeNode();
+	while (true) {
+		switch (@peek()) {
+			UnionTypeNode // 
+
+		}
+	}
+	@BinaryTypeNode(%) // 双目表达式(x + y、x = y、...)
+		left: TypeNode // 左值部分
+		operator:TokenType // 当前运算的类型。合法的值有：,、*=、/=、%=、+=、‐=、<<=、>>=、>>>=、&=、^=、|=、**=、||、&&、|、^、&、==、!=、===、!==、<、>、<=、>=、instanceof、in、<<、>>、>>>、+、-、*、/、%、** 
+		right: TypeNode(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn)
+
 UnaryOrPrimaryTypeNode // 单目或独立类型节点
-	switch(@peek()) {
-		case (: return @FunctionOrParenthesizedTypeNode;
-		case <: return @FunctionTypeNode(@TypeParameters, @Parameters);
-		ConstructorType
+	if (isPredefinedType(@peek())) {
+		return @PredefinedType();
+		@PredefinedType // 内置类型节点(`number`、`string`、...)。
+			type:: this | any | number | string | boolean | symbol | void | null | never | * | ?
 	}
+	switch (@peek()) {
+		case @<identifier>:
+			return @GenericOrReferenceTypeNode();
+			@GenericOrReferenceTypeNode // 泛型或引用类型名
+				const result = @Identifier();
+				if (@peek === @<) {
+					result = @GenericTypeNode(result);
+				}
+				return result;
+			@GenericTypeNode(%) // 泛型(`value<number>`)
+				target: ReferenceTypeNode
+				typeArguments: TypeArguments
+				@TypeArguments // 泛型表达式参数
+					< TypeNode,... >
+			@ReferenceTypeNode // 引用类型名(`x`)
+				value:: <identifier> // 值部分
+		SimpleLiteral // 简单字面量(`null`、`true`、`false`、`this`、`super`)
+			type:: this | null | true | false | super // 类型
+		case @(:
+			return @FunctionOrParenthesizedTypeNode();
+			@FunctionOrParenthesizedTypeNode // 括号或箭头表达式
+				const parameters = @tryParseParameters();
+				return parameters ? @FunctionTypeNode(undefined, parameters) : @ParenthesizedTypeNode();
+				@ArrowFunctionLiteral(%, %) // 箭头函数表达式(`x => xx`)。
+					?TypeParameterDeclarations
+					parameters?: ParameterDeclarations | Identifier // 参数部分
+					=> 
+					returnType: TypeNode
+				@ParenthesizedTypeNode // 括号表达式(`(x)`)
+					(
+					body: TypeNode(Precedence.any) // 主体部分
+					)
+		TupleTypeNode // 数组字面量(`[x, y]`)
+			[ TupleTypeElement,... ]
+			@TupleTypeElement // 数组字面量元素(`x`)
+				...? 
+				value?: TypeNode(Precedence.any)
+		ObjectTypeNode // 对象字面量(`{x: y}`)
+			{ ObjectLiteralElement,... }
+			@ObjectLiteralElement // 对象字面量元素(`x: y`)
+				key: PropertyName 
+				?: 
+				?value: Expression(Precedence.assignment, true)
+				const result = new nodes.ObjectLiteralElement();
+				result.key = @PropertyName();
+				if(@peek() === @:) {
+					result.colonToken = @read();
+					result.value = @Expression(Precedence.assignment, true)
+				} else if(result.key.constructor !== nodes.Identifier && result.key.constructor !== nodes.MemberCallExpression) {
+					@expectToken(@:);
+				}
+				return result;
+				@PropertyName // 表示一个属性名称(`xx`、`"xx"`、`0`、`[xx]`)
+					= Identifier | NumericLiteral | StringLiteral | ComputedPropertyName
+					switch(@peek()) {
+						case @<identifier>:
+							return Identifier();
+						StringLiteral
+						NumericLiteral
+						ComputedPropertyName // 已计算的属性名(`[1]`)
+							[ 
+							body: Expression(Precedence.assignment, true) 
+							]
+					}
+					if(@isKeyword(@peek())) {
+						return @Identifier();
+					}
+					@error(@peek(), "应输入属性名。");
+					return @ErrorIdentifier(); // TODO
+		case @function:
+			return @FunctionExpression(undefined);
+			@FunctionExpression(%) // 函数表达式(function () {})
+				?Modifiers
+				function
+				?* 
+				name?: IdentifierOrReserverdWord 
+				?TypeParameterDeclaration
+				ParameterDeclarations
+				?ReturnType
+				body: BlockStatement | ArrowExpression = @peek() === @=> ? @ArrowExpression(allowIn) : @BlockStatement()
+		case @new: 
+			return @NewOrNewTargetExpression();
+			@NewOrNewTargetExpression // new 或 new.target 表达式
+				const start = @read();
+				return @peek() === @. ? @NewTargetExpression(start) : @NewExpression(start);
+				@NewExpression(%) : // new 表达式(`new x()`)。
+					new
+					target: Expression(Precedence.member, false) 
+					?arguments: Arguments
+				@NewTargetExpression(newToken: number) // new.target 表达式(`new.target`)。
+					new 
+					.
+					target
+					const result = new nodes.NewTargetExpression();
+					result.start = start;
+					result.dotToken = @readToken(@.);
+					if (@peek() === TokenType.identifier && @lexer.peek().data === "target") {
+						result.end = @lexer.read().end;
+					} else {
+						@error(@lexer.current, "应输入表达式。");
+						result.end = @lexer.current.end;
+					}
+					return result;
+		RegularExpressionLiteral // 正则表达式字面量(/abc/)
+			value:: <stringLiteral> 
+			flags?:: <stringLiteral> // 标志部分
+			const result = new nodes.RegularExpressionLiteral();
+			result.start = @lexer.readAsRegularExpressionLiteral().start;
+			result.value = @lexer.current.data.pattern;
+        	result.flags = @lexer.current.data.flags;
+        	result.end = @lexer.current.end;
+        	return result;
+		case @<templateHead>:
+			return @TemplateLiteral();
+			@TemplateLiteral // 模板字面量(`\`abc\``)
+				spans: TemplateSpan | Expression... // 所有组成部分
+				const result = new nodes.TemplateLiteral();
+				result.spans = new nodes.NodeList<nodes.Expression>();
+				while (true) {
+					result.spans.push(@TemplateSpan());
+					result.spans.push(@Expression());
+					if (@peek() !== @}) {
+		                @expectToken(@});
+		                break;
+		            }
+		            if (@lexer.readAsTemplateMiddleOrTail().type === TokenType.templateTail) {
+		                result.spans.push(@TemplateSpan());
+		                break;
+		            }
+				}
+				return result;
+				@TemplateSpan // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
+					value:: <stringLiteral>
+		TypeAssertionExpression // 类型确认表达式(<T>xx)
+			<
+			type: TypeNode
+			>
+			operand: Expression(Precedence.postfix, false)
+		
+		case @(: return @FunctionOrParenthesizedTypeNode;
+		case @<: return @FunctionTypeNode(@TypeParameters, @Parameters);
+				ConstructorType
 
-TypeNodeRest(parsed: TypeNode, precedence: Precedence) // 类型节点的剩余部分
-	switch(@peek()) {
 
+		ClassExpression // 类表达式(`class xx {}`)。
+			class 
+			name?: IdentifierOrReserverdWord 
+			?TypeParameterDeclarations
+			?ClassTail
+			?ClassBody
+			// todo
+		case @=>:
+			return @ArrowExpression(allowIn);
+			@ArrowExpression(allowIn: boolean): // 箭头表达式
+				=>
+				body: Expression(Precedence.assignment, allowIn)
 	}
+	if (isUnaryOperator(@peek())) {
+		return @UnaryExpression();
+	}
+	if (isReserverdWord(@peek())) {
+		return @GenericExpressionOrIdentifier();
+	}
+	return @ErrorExpression();
 
 FunctionOrParenthesizedTypeNode // 函数或括号类型节点
 	const parameters = @tryParseParameters();
@@ -44,23 +216,36 @@ ConstructorType // 构造函数类型节点(`new () => void`)。
 # 表达式
 
 Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn: boolean/*是否允许解析 in 表达式*/) @abstract // 表达式
-	return @ExpressionRest(@UnaryOrPrimaryExpression(allowIn), precedence, allowIn);
-
-ExpressionRest(parsed: Expression, precedence: Precedence, allowIn: boolean) // 表达式的剩余部分
+	let result = @UnaryOrPrimaryExpression(allowIn);
 	while (getPrecedence(@peek()) >= precedence) {
-		parsed = @ConditionalOrBinaryOrCallExpression(parsed, allowIn);
+		// BUG: 如果ConditionalOrBinaryOrCallExpression 不解析出任何东西，则可能导致死循环 
+		result = @ConditionalOrBinaryOrCallExpression(result, allowIn);
 	}
-	return parsed;
+	return result;
 
 UnaryOrPrimaryExpression(allowIn: boolean) // 单目或独立表达式
 	switch (@peek()) {
-		Identifier // 标识符(`x`)
-			value:: <identifier> // 值部分
+		case @<identifier>:
+			return @GenericExpressionOrIdentifier();
+			@GenericExpressionOrIdentifier // 泛型表达式或标识符
+				const result = @Identifier();
+				if (@peek === @<) {
+					const arguments = tryParseTypeArguments();
+					if(arguments) {
+						result = @GenericExpression(result, arguments);
+					}
+				}
+				return result;
+			@GenericExpression(%, %) // 泛型表达式(`value<number>`)
+				target: Identifier
+				typeArguments: TypeArguments
+			@Identifier // 标识符(`x`)
+				value:: <identifier> // 值部分
 		SimpleLiteral // 简单字面量(`null`、`true`、`false`、`this`、`super`)
 			type:: this | null | true | false | super // 类型
 		case @(:
-			return @ParenthesizedOrArrowExpression();
-			@ParenthesizedOrArrowExpression // 括号或箭头表达式
+			return @ArrowOrParenthesizedExpression();
+			@ArrowOrParenthesizedExpression // 括号或箭头表达式
 				const parameters = @tryParseParameters();
 				return parameters ? @ArrowFunctionLiteral(undefined, undefined, parameters) : @ParenthesizedExpression();
 				@ArrowFunctionLiteral(%, %, %) // 箭头函数表达式(`x => xx`)。
@@ -182,11 +367,16 @@ UnaryOrPrimaryExpression(allowIn: boolean) // 单目或独立表达式
 				return result;
 				@TemplateSpan // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
 					value:: <stringLiteral>
-		TypeAssertionExpression // 类型确认表达式(<T>xx)
-			<
-			type: TypeNode
-			>
-			operand: Expression(Precedence.postfix, false)
+		case @<:
+			return @ArrowFunctionOrTypeAssertionExpression();
+			@ArrowFunctionOrTypeAssertionExpression // 箭头函数或类型确认表达式
+				const typeParameters = @tryParseParameters();
+				// todo
+			@TypeAssertionExpression // 类型确认表达式(<T>xx)
+				<
+				type: TypeNode
+				>
+				operand: Expression(Precedence.postfix, false)
 		YieldExpression // yield 表达式(`yield xx`)
 			yield 
 			?*
@@ -228,7 +418,7 @@ UnaryOrPrimaryExpression(allowIn: boolean) // 单目或独立表达式
 		return @UnaryExpression();
 	}
 	if (isReserverdWord(@peek())) {
-		return @Identifier();
+		return @GenericExpressionOrIdentifier();
 	}
 	return @ErrorExpression();
 	@UnaryExpression // 一元运算表达式(+x、typeof x、...)
