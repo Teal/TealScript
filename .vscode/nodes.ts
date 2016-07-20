@@ -4257,48 +4257,6 @@ export class NamespaceDeclaration extends Node {
 }
 
 /**
- * 表示一个 import 声明(`import xx from '...';`)。
- */
-export class ImportDeclaration extends Statement {
-
-    /**
-     * 获取当前导入的元素列表。
-     */
-    elements: NodeList<NameImportClause | NamespaceImportClause>;
-
-    /**
-     * 获取当前导入声明的 from 位置(可能不存在)。
-     */
-    fromToken: number;
-
-    /**
-     * 获取当前导入项的值部分。
-     */
-    target: StringLiteral;
-
-    /**
-     * 使用指定的节点访问器处理当前节点。
-     * @param vistior 要使用的节点访问器。
-     * @returns 返回访问器的处理结果。
-     */
-    accept(vistior: NodeVisitor) {
-        return vistior.visitImportDeclaration(this);
-    }
-
-    /**
-     * 遍历当前节点的所有直接子节点，并对每一项执行 *callback*。
-     * @param callback 对每个子节点执行的回调函数。
-     * @param scope 设置 *callback* 执行时 this 的值。
-     * @returns 如果遍历是因为 *callback* 返回 false 而中止，则返回 false，否则返回 true。
-     */
-    each(callback: EachCallback, scope?: any) {
-        return this.elements.each(callback, scope) &&
-            callback.call(scope, this.target, "target", this) !== false;
-    }
-
-}
-
-/**
  * 表示一个 import = 指令(import xx = require(`"");`)。
  */
 export class ImportAliasDeclaration extends Statement {

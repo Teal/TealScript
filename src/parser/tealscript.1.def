@@ -1876,9 +1876,6 @@ ImportClause :
 ImportedDefaultBinding :
 	ImportedBinding
 
-NameSpaceImport :
-	* as  ImportedBinding
-
 NamedImports :
 	{  }
 	{  ImportsList }
@@ -1889,7 +1886,7 @@ FromClause :
 
 ImportsList :
 	ImportSpecifier
-	ImportsList ,  ImportSpecifier 	15.2.2
+	ImportsList ,  ImportSpecifier
 
 ImportSpecifier :
 	ImportedBinding
@@ -1902,7 +1899,9 @@ ImportedBinding :
 	BindingIdentifier
 
 ExportDeclaration :
-	export *  FromClause ; export  ExportClause  FromClause ; export  ExportClause  ; export  VariableStatement  export  Declaration   export default HoistableDeclaration[Default] export default ClassDeclaration[Default] export default [lookahead ∉ { function, class }]  AssignmentExpression[In] ;
+	export *  FromClause ; 
+	export  ExportClause  FromClause ; 
+	export  ExportClause  ; export  VariableStatement  export  Declaration   export default HoistableDeclaration[Default] export default ClassDeclaration[Default] export default [lookahead ∉ { function, class }]  AssignmentExpression[In] ;
 
 ExportClause :
 	{  }

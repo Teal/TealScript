@@ -1,7 +1,7 @@
 
 # 类型
 
-TypeNode() @abstract // 类型节点(`number`、`string[]`、...)
+TypeNode @abstract // 类型节点(`number`、`string[]`、...)
 	let result = @UnaryOrPrimaryTypeNode(allowIn);
 	while (getPrecedence(@peek) >= precedence) {
 		result = @BinaryOrCallTypeNode(result, allowIn);
@@ -129,12 +129,12 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 				?Modifiers
 				function
 				?* 
-				name?: Identifier = @readIdentifier();
+				name?: Identifier = @readIdentifier(false);
 				?TypeParameters
 				Parameters
 				?ReturnType
 				body: BlockStatement | ArrowExpression = @peek === @=> ? @ArrowExpression(allowIn) : @BlockStatement()
-				@readIdentifier() // 读取一个标识符
+				@readIdentifier(allowKeyword: boolean) // 读取一个标识符
 					if (@peek === @<identifier>) {
 						return @Identifier();
 					}
@@ -416,7 +416,15 @@ Statement: @abstract // 语句
 
 
 
-
+@isDeclarationStart() // 判断是否紧跟定义开始
+		const savedState = @stashSave();
+		while (@peek === @@) {
+			@read();
+			@Expression(Expression.leftHandSide, false)
+		}
+		const result = @sameLine && isDeclarationStart(@peek);
+		@stashRestore(savedState);
+		return result;
 
 
 			@ClassTail @inline
@@ -471,3 +479,69 @@ Statement: @abstract // 语句
 			@ArrowExpression(allowIn: boolean): // 箭头表达式
 				=>
 				body: Expression(Precedence.assignment, allowIn)
+
+
+# 声明
+
+Declaration() @abstract // 声明
+	decorators: Decorator...
+		@Decorator // 修饰器(`@x`、`@x()`)
+			@
+			body: Expression(Expression.leftHandSide, false)
+	modifiers: Modifiers
+		Modifier // 修饰符(`static`、`private`、...)
+			type: <static>|<abstract>|<public>|<protected>|<private>|<const>
+	name: Identifier
+	typeParameters: TypeParameters
+
+FunctionDeclaration(*, *, *) // 函数声明(`function fn() {...}`、`function * fn(){...}`)
+
+@ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
+	const start = @read;
+	let imports: typeof nodes.ImportDeclaration.imports;
+	let firstImportClause: nodes.SimpleImportClause | nodes.NamespaceImportClause | nodes.NamedImportClause;
+	if (@peek === @identifier || isReserverdWord(@peek)) {
+		const variable = @Identifier();
+		if (@peek === @=) {
+			return @ImportAssignmentDeclaration(variable);
+		} 
+		firstImportClause = @SimpleImportClause(variable);
+	}
+	imports = new nodes.NodeList<nodes.SimpleImportClause | nodes.NamespaceImportClause | nodes.NamedImportClause>;
+	if (firstImportClause) {
+		imports.push(firstImportClause);
+		firstImportClause.commaToken = @readToken(@,);
+	}
+	do {
+
+	}
+
+	@ImportDeclaration(*) // import 声明(`import xx from '...';`)
+		?imports: SimpleImportClause | NamespaceImportClause | NamedImportClause,...
+		?from = imports ? @readToken(@from) : undefined
+		target: StringLiteral // 模块名
+		?;
+		@SimpleImportClause(*) // 命名导入分句
+			?name: Identifier = @readIdentifier(true) // 导入的名称
+			?as = name ? @readToken(@as) : undefined
+			variable: Identifier = @readIdentifier(false) // 导入的变量
+		@NamespaceImportClause // 命名空间导入分句(* as d)
+			*
+			as
+			variable: Identifier = @readIdentifier(false)
+		@NamedImportClause // 命名导入分句(`{a, x as b}`)
+			{ SimpleImportClause,... }
+
+	@ImportAssignmentDeclaration(*) // import 赋值声明
+		variable: Identifier // 别名
+		=
+		value: Expression
+		?;
+
+@ExportDeclaration // export 声明(`export xx from '...';`)
+	elements: NameImportClause | NamespaceImportClause...
+
+
+@ExportAssignmentDeclaration // 导出等于声明(`export = 指令(`export = 1;`)`)
+
+@ExportAssignmentDeclaration // 导出等于声明(`export = 指令(`export = 1;`)`)
