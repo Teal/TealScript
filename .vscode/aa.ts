@@ -1,0 +1,5 @@
+
+@ad
+export class a{
+
+}

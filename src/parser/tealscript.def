@@ -498,50 +498,104 @@ FunctionDeclaration(*, *, *) // 函数声明(`function fn() {...}`、`function *
 
 @ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
 	const start = @read;
-	let imports: typeof nodes.ImportDeclaration.imports;
-	let firstImportClause: nodes.SimpleImportClause | nodes.NamespaceImportClause | nodes.NamedImportClause;
-	if (@peek === @identifier || isReserverdWord(@peek)) {
-		const variable = @Identifier();
-		if (@peek === @=) {
-			return @ImportAssignmentDeclaration(variable);
-		} 
-		firstImportClause = @SimpleImportClause(variable);
+	let imports = @NodeList(@ImportClause, undefined, undefined, @,);
+	if (@peek === @= && imports.length === 1 && imports[0].constructor === nodes.SimpleImportClause && (<nodes.SimpleImportClause>imports[0]).name == null) {
+		return @ImportAssignmentDeclaration(start, (<nodes.SimpleImportClause>imports[0]).variable);
+		@ImportAssignmentDeclaration(*, *) // import 赋值声明
+			import
+			variable: Identifier // 别名
+			=
+			value: Expression(Precedence.assignment, true)
+			?;
 	}
-	imports = new nodes.NodeList<nodes.SimpleImportClause | nodes.NamespaceImportClause | nodes.NamedImportClause>;
-	if (firstImportClause) {
-		imports.push(firstImportClause);
-		firstImportClause.commaToken = @readToken(@,);
-	}
-	do {
-
-	}
-
-	@ImportDeclaration(*) // import 声明(`import xx from '...';`)
-		?imports: SimpleImportClause | NamespaceImportClause | NamedImportClause,...
+	return @ImportDeclaration(start, imports);
+	@ImportDeclaration(*, *) // import 声明(`import xx from '...';`)
+		import
+		?names: ImportClause,...
 		?from = imports ? @readToken(@from) : undefined
-		target: StringLiteral // 模块名
+		target: StringLiteral // 导入模块名
 		?;
-		@SimpleImportClause(*) // 命名导入分句
-			?name: Identifier = @readIdentifier(true) // 导入的名称
-			?as = name ? @readToken(@as) : undefined
-			variable: Identifier = @readIdentifier(false) // 导入的变量
-		@NamespaceImportClause // 命名空间导入分句(* as d)
-			*
-			as
-			variable: Identifier = @readIdentifier(false)
-		@NamedImportClause // 命名导入分句(`{a, x as b}`)
-			{ SimpleImportClause,... }
+		@ImportClause // import 分句
+			= SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause
+			switch (@peek) {
+				case @<identifier>:
+					return @SimpleImportOrExportClause(false);
+				case @*:
+					return @NamespaceImportClause();
+				case @{:
+					return @NamedImportClause();
+				default:
+					return @SimpleImportOrExportClause(false);
+			}
+			@SimpleImportOrExportClause(exportClause: boolean) // 简单导入或导出分句(`a`、`a as b`)
+				?name: Identifier // 导入或导出的名称
+				?as 
+				variable: Identifier // 导入或导出的变量
+				const result = new nodes.SimpleImportOrExportClause();
+				const nameOrVariable = @readIdentifier(true);
+				if (@peek === @as) {
+					result.name = nameOrVariable;
+					result.asToken = @read;
+					result.variable = @readIdentifier(exportClause);
+				} else {
+					if (!exportClause && isKeyword(@current) && !isReserverdWord(@current)) {
+						@error(@current, "Identifier expected. '{0}' is a keyword.", tokenToString(@current));
+					}
+					result.variable = nameOrVariable;
+				}
+				return result;
+			@NamespaceImportClause // 命名空间导入分句(* as d)
+				*
+				as
+				variable: Identifier = @readIdentifier(false)
+			@NamedImportClause // 对象导入分句(`{a, x as b}`)
+				{ SimpleImportClause,... }
+	
+@ExportAssignmentOrExportDeclaration // export 赋值或 export 声明
+	const start = @read;
+	switch (@peek) {
+		case @<function>:
+			return @ExportDeclaration(start, undefined, FunctionDeclaration(undefined, undefined));
+		case @<var>:
+		case @<const>:
+		case @<let>:
+			return @ExportDeclaration(start, undefined, VariableStatement(read));
+		case @=:
+			return @ExportAssignmentDeclaration(start);
+			@ExportAssignmentDeclaration(*) // 导出赋值声明(`export = 1;`)
+				export
+				=
+				value: Expression(Precedence.assignment, true)
+				?;
+		case @{:
+			return @ExportListDeclaration(start);
+			@ExportListDeclaration(*) // 导出列表声明(`export a from ...`)
+				export
+				names: { SimpleImportOrExportClause... } = @NodeList(() => @SimpleImportOrExportClause(true), @{, @}, @,)
+				from
+				target: StringLiteral // 导入模块名
+				?;
+		case @*:
+			return @ExportNamespaceDeclaration(start);
+			@ExportNamespaceDeclaration(*) // 导出列表声明(`export * from ...`)
+				export
+				*
+				from
+				target: StringLiteral // 导入模块名
+				?;
+		case @<default>:
+			return @ExportDeclaration(start, @read);
+		default:
+			return @ExportDeclaration(start, undefined);
+		@ExportDeclaration(*, *) // export 声明(`export function fn() { }`)
+			export
+			?default
+			body: Statement
+	}
 
-	@ImportAssignmentDeclaration(*) // import 赋值声明
-		variable: Identifier // 别名
-		=
-		value: Expression
-		?;
+	
+	
+	
+	
 
-@ExportDeclaration // export 声明(`export xx from '...';`)
-	elements: NameImportClause | NamespaceImportClause...
-
-
-@ExportAssignmentDeclaration // 导出等于声明(`export = 指令(`export = 1;`)`)
-
-@ExportAssignmentDeclaration // 导出等于声明(`export = 指令(`export = 1;`)`)
+	

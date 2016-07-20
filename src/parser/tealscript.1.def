@@ -1901,7 +1901,12 @@ ImportedBinding :
 ExportDeclaration :
 	export *  FromClause ; 
 	export  ExportClause  FromClause ; 
-	export  ExportClause  ; export  VariableStatement  export  Declaration   export default HoistableDeclaration[Default] export default ClassDeclaration[Default] export default [lookahead ∉ { function, class }]  AssignmentExpression[In] ;
+	export  ExportClause  ; 
+	export  VariableStatement  
+	export  Declaration   
+	export default HoistableDeclaration[Default] 
+	export default ClassDeclaration[Default] 
+	export default [lookahead ∉ { function, class }]  AssignmentExpression[In] ;
 
 ExportClause :
 	{  }
