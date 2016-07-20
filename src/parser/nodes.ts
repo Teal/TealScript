@@ -3772,7 +3772,6 @@ export class ClassExpression extends Expression {
     }
 
 }
-
 /**
  * 表示一个类型成员声明(x: 1、x() {}、get x(){}、set x(`value){}`)。
  */
