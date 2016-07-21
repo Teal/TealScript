@@ -1098,7 +1098,7 @@ export interface Token {
     /**
      * 判断当前标记之前是否存在换行符。如果不存在换行符则返回 undefined。
      */
-    hasLineBreakBeforeStart??: boolean;
+    hasLineBreakBeforeStart?: boolean;
 
     /**
      * 获取当前标记相关的数据。如果当前标记不存在数据则返回 undefined。

@@ -1,14 +1,13 @@
 ﻿/**
  * @fileOverview 标记和关键字
  * @author xuld@vip.qq.com
- * @statable
+ * @stable
  */
 
 import {CharCode} from './unicode';
 
 /**
  * 表示一个标记类型。
- * @internal
  */
 export const enum TokenType {
 
@@ -854,13 +853,23 @@ export const enum TokenType {
 }
 
 /**
+ * @gernerated 此常量的值使用 `tpack gen-tokenType` 生成。
+ */
+const stringToTokenMap = {};
+
+/**
  * 将指定的字符串转为对应的标记。
  * @param token 要转换的字符串。
  * @returns 返回等效的标记。如果字符串无效，则返回 undefined。
  */
 export function stringToToken(token: string) {
-    return TokenType[token];
+    return stringToTokenMap[token];
 }
+
+/**
+ * @gernerated 此常量的值使用 `tpack gen-tokenType` 生成。
+ */
+const tokenToStringMap = [];
 
 /**
  * 将指定的标记转为对应的字符串。
@@ -868,7 +877,7 @@ export function stringToToken(token: string) {
  * @returns 返回等效的字符串。如果标记无效，则返回 undefined。
  */
 export function tokenToString(token: TokenType) {
-    return TokenType[token];
+    return tokenToStringMap[token];
 }
 
 /**
@@ -990,73 +999,6 @@ export function isRightHandOperator(token: TokenType) {
 }
 
 /**
- * 存储所有优先级。
- */
-const precedences: { [key: number]: Precedence } = {
-    [TokenType.comma]: Precedence.comma,
-
-    [TokenType.equals]: Precedence.assignment,
-    [TokenType.plusEquals]: Precedence.assignment,
-    [TokenType.minusEquals]: Precedence.assignment,
-    [TokenType.asteriskEquals]: Precedence.assignment,
-    [TokenType.slashEquals]: Precedence.assignment,
-    [TokenType.percentEquals]: Precedence.assignment,
-    [TokenType.lessThanLessThanEquals]: Precedence.assignment,
-    [TokenType.greaterThanGreaterThanEquals]: Precedence.assignment,
-    [TokenType.greaterThanGreaterThanGreaterThanEquals]: Precedence.assignment,
-    [TokenType.ampersandEquals]: Precedence.assignment,
-    [TokenType.barEquals]: Precedence.assignment,
-    [TokenType.caretEquals]: Precedence.assignment,
-    [TokenType.asteriskEquals]: Precedence.assignment,
-    [TokenType.asteriskAsteriskEquals]: Precedence.assignment,
-
-    [TokenType.question]: Precedence.conditional,
-    [TokenType.barBar]: Precedence.logicalOr,
-    [TokenType.ampersandAmpersand]: Precedence.logicalAnd,
-    [TokenType.bar]: Precedence.bitwiseOr,
-    [TokenType.caret]: Precedence.bitwiseXOr,
-    [TokenType.ampersand]: Precedence.bitwiseAnd,
-
-    [TokenType.equalsEquals]: Precedence.equality,
-    [TokenType.exclamationEquals]: Precedence.equality,
-    [TokenType.equalsEqualsEquals]: Precedence.equality,
-    [TokenType.exclamationEqualsEquals]: Precedence.equality,
-
-    [TokenType.lessThan]: Precedence.relational,
-    [TokenType.greaterThan]: Precedence.relational,
-    [TokenType.lessThanEquals]: Precedence.relational,
-    [TokenType.greaterThanEquals]: Precedence.relational,
-    [TokenType.instanceOf]: Precedence.relational,
-    [TokenType.in]: Precedence.relational,
-    [TokenType.is]: Precedence.relational,
-    [TokenType.as]: Precedence.relational,
-
-    [TokenType.lessThanLessThan]: Precedence.shift,
-    [TokenType.greaterThanGreaterThan]: Precedence.shift,
-    [TokenType.greaterThanGreaterThanGreaterThan]: Precedence.shift,
-
-    [TokenType.plus]: Precedence.additive,
-    [TokenType.minus]: Precedence.additive,
-
-    [TokenType.asterisk]: Precedence.multiplicative,
-    [TokenType.slash]: Precedence.multiplicative,
-    [TokenType.percent]: Precedence.multiplicative,
-
-    [TokenType.asteriskAsterisk]: Precedence.exponentiation,
-
-    [TokenType.plusPlus]: Precedence.postfix,
-    [TokenType.minusMinus]: Precedence.postfix,
-
-    [TokenType.openParen]: Precedence.functionCall,
-
-    [TokenType.openBracket]: Precedence.member,
-    [TokenType.dot]: Precedence.member,
-    [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
-    [TokenType.templateHead]: Precedence.member,
-
-};
-
-/**
  * 表示一个优先级。
  */
 export const enum Precedence {
@@ -1157,6 +1099,73 @@ export const enum Precedence {
     member,
 
 }
+
+/**
+ * 存储所有优先级。
+ */
+const precedences: { [key: number]: Precedence } = {
+    [TokenType.comma]: Precedence.comma,
+
+    [TokenType.equals]: Precedence.assignment,
+    [TokenType.plusEquals]: Precedence.assignment,
+    [TokenType.minusEquals]: Precedence.assignment,
+    [TokenType.asteriskEquals]: Precedence.assignment,
+    [TokenType.slashEquals]: Precedence.assignment,
+    [TokenType.percentEquals]: Precedence.assignment,
+    [TokenType.lessThanLessThanEquals]: Precedence.assignment,
+    [TokenType.greaterThanGreaterThanEquals]: Precedence.assignment,
+    [TokenType.greaterThanGreaterThanGreaterThanEquals]: Precedence.assignment,
+    [TokenType.ampersandEquals]: Precedence.assignment,
+    [TokenType.barEquals]: Precedence.assignment,
+    [TokenType.caretEquals]: Precedence.assignment,
+    [TokenType.asteriskEquals]: Precedence.assignment,
+    [TokenType.asteriskAsteriskEquals]: Precedence.assignment,
+
+    [TokenType.question]: Precedence.conditional,
+    [TokenType.barBar]: Precedence.logicalOr,
+    [TokenType.ampersandAmpersand]: Precedence.logicalAnd,
+    [TokenType.bar]: Precedence.bitwiseOr,
+    [TokenType.caret]: Precedence.bitwiseXOr,
+    [TokenType.ampersand]: Precedence.bitwiseAnd,
+
+    [TokenType.equalsEquals]: Precedence.equality,
+    [TokenType.exclamationEquals]: Precedence.equality,
+    [TokenType.equalsEqualsEquals]: Precedence.equality,
+    [TokenType.exclamationEqualsEquals]: Precedence.equality,
+
+    [TokenType.lessThan]: Precedence.relational,
+    [TokenType.greaterThan]: Precedence.relational,
+    [TokenType.lessThanEquals]: Precedence.relational,
+    [TokenType.greaterThanEquals]: Precedence.relational,
+    [TokenType.instanceOf]: Precedence.relational,
+    [TokenType.in]: Precedence.relational,
+    [TokenType.is]: Precedence.relational,
+    [TokenType.as]: Precedence.relational,
+
+    [TokenType.lessThanLessThan]: Precedence.shift,
+    [TokenType.greaterThanGreaterThan]: Precedence.shift,
+    [TokenType.greaterThanGreaterThanGreaterThan]: Precedence.shift,
+
+    [TokenType.plus]: Precedence.additive,
+    [TokenType.minus]: Precedence.additive,
+
+    [TokenType.asterisk]: Precedence.multiplicative,
+    [TokenType.slash]: Precedence.multiplicative,
+    [TokenType.percent]: Precedence.multiplicative,
+
+    [TokenType.asteriskAsterisk]: Precedence.exponentiation,
+
+    [TokenType.plusPlus]: Precedence.postfix,
+    [TokenType.minusMinus]: Precedence.postfix,
+
+    [TokenType.openParen]: Precedence.functionCall,
+
+    [TokenType.openBracket]: Precedence.member,
+    [TokenType.dot]: Precedence.member,
+    [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
+    [TokenType.templateHead]: Precedence.member,
+
+};
 
 /**
  * 获取操作符的优先级。
