@@ -38,9 +38,9 @@ export const enum TokenType {
     MIN_DECLARATION_START,
 
     /**
-     * 最小的修饰符前缀。
+     * 关键字 export(在 JavaScript 3 为保留字)。
      */
-    MIN_MODIFIER,
+    export,
 
     /**
      * 最小的保留字 1。
@@ -48,39 +48,19 @@ export const enum TokenType {
     MIN_RESERVERD_WORD_1,
 
     /**
-     * 关键字 export(仅在 JavaScript 7)。
+     * 关键字 declare(仅在 TypeScript)。
      */
-    export,
+    declare,
+
+    /**
+     * 最小的修饰符前缀。
+     */
+    MIN_MODIFIER,
 
     /**
      * 关键字 async(仅在 JavaScript 7)。
      */
     async,
-
-    /**
-     * 关键字 private(仅在 JavaScript 7)。
-     */
-    private,
-
-    /**
-     * 关键字 protected(仅在 JavaScript 7)。
-     */
-    protected,
-
-    /**
-     * 关键字 public(仅在 JavaScript 7)。
-     */
-    public,
-
-    /**
-     * 关键字 readonly(仅在 TypeScript)。
-     */
-    readonly,
-
-    /**
-     * 关键字 declare(仅在 TypeScript)。
-     */
-    declare,
 
     /**
      * 关键字 static(仅在 JavaScript 7)。
@@ -91,6 +71,36 @@ export const enum TokenType {
      * 关键字 abstract(仅在 JavaScript 7)。
      */
     abstract,
+
+    /**
+     * 关键字 private(仅在 TypeScript)。
+     */
+    private,
+
+    /**
+     * 关键字 protected(仅在 TypeScript)。
+     */
+    protected,
+
+    /**
+     * 关键字 public(仅在 TypeScript)。
+     */
+    public,
+
+    /**
+     * 关键字 readonly(仅在 TypeScript)。
+     */
+    readonly,
+
+    /**
+     * 关键字 get(仅在 JavaScript 7)。
+     */
+    get,
+
+    /**
+     * 关键字 set(仅在 JavaScript 7)。
+     */
+    set,
 
     /**
      * 最大的修饰符前缀。
@@ -112,14 +122,14 @@ export const enum TokenType {
     interface,
 
     /**
-     * 关键字 class(仅在 JavaScript 7)。
-     */
-    class,
-
-    /**
      * 最大的保留字 1。
      */
     MAX_RESERVERD_WORD_1,
+
+    /**
+     * 关键字 class(在 JavaScript 3 为保留字)。
+     */
+    class,
 
     /**
      * 关键字 function。
@@ -750,7 +760,7 @@ export const enum TokenType {
     from,
 
     /**
-     * 关键字 extends(仅在 JavaScript 7)。
+     * 关键字 extends(在 JavaScript 3 为保留字)。
      */
     extends,
 
@@ -768,16 +778,6 @@ export const enum TokenType {
      * 关键字 to(仅在 TealScript)。
      */
     to,
-
-    /**
-     * 关键字 get(仅在 JavaScript 7)。
-     */
-    get,
-
-    /**
-     * 关键字 set(仅在 JavaScript 7)。
-     */
-    set,
 
     /**
      * 关键字 undefined(仅在 TypeScript)。

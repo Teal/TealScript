@@ -1,5 +1,4 @@
-
-@ad
-export class a{
-
+abstract class A {
+    @asd
+    a =1
 }
