@@ -83,10 +83,10 @@
     "isModifier": [
         "abstract",
         "async",
-		"const",
-		"declare",
+        "const",
+        "declare",
         "default",
-        "export",",
+        "export",
         "public",
         "private",
         "protected",

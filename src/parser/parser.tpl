@@ -459,33 +459,50 @@ Statement: @abstract // 语句
 		ThrowStatement[?Yield]
 		TryStatement[?Yield, ?Return]
 		DebuggerStatement
+
+
+
+		case @<export>:
+
+		default:
+			if (isDeclarationStart(@peek)) {
+				return @DeclarationOrExpressionStatement();
+			}
+			
+			@DeclarationOrExpressionStatement // 声明或表达式语句
+				const savedState = @stashSave();
+				const decorators = @Decorators();
+				const modifiers = @Modifiers();
+				switch (@peek) {
+					case @<function>:
+						@stashClear(savedState);
+						return @FunctionDeclaration(decorators, modifiers);
+					case @<class>:
+						@stashClear(savedState);
+						return @ClassDeclaration(decorators, modifiers);
+					case @<interface>:
+						@stashClear(savedState);
+						return @InterfaceDeclaration(decorators, modifiers);
+					case @<enum>:
+						@stashClear(savedState);
+						return @EnumDeclaration(decorators, modifiers);
+					case @<namespace>:
+						@stashClear(savedState);
+						return @NamespaceDeclaration(decorators, modifiers);
+					case @<module>:
+						@stashClear(savedState);
+						return @ModuleDeclaration(decorators, modifiers);
+					case @<extends>:
+						@stashClear(savedState);
+						return @ExtensionDeclaration(decorators, modifiers);
+					default:
+						@stashRestore(savedState);
+						return @ExpressionStatement();
+				}
+
 	}
 
 @tryReadSemicolon(result) // todo
-
-@isDeclarationStart() // 判断是否紧跟定义开始
-		const savedState = @stashSave();
-		while (@peek === @@) {
-			@read();
-			@Expression(Expression.leftHandSide, false)
-		}
-		const result = @sameLine && isDeclarationStart(@peek);
-		@stashRestore(savedState);
-		return result;
-
-
-			@ClassTail @inline
-				ClassHeritage ? { ClassBody ? }
-			@ClassHeritage[Yield] :
-				extends LeftHandSideExpression
-			@ClassBody[Yield] :
-				ClassElementList
-					ClassElementList ClassElement
-					ClassElement
-						MethodDefinition
-						static MethodDefinition
-						;
-
 
 
 				@ObjectLiteralElement // 对象字面量元素(`x: y`)
@@ -532,32 +549,21 @@ Statement: @abstract // 语句
 
 @Declaration @abstract @extends(Statement) // 声明
 
-	@FunctionExpressionOrDeclaration(result: nodes.FunctionExpression | nodes.FunctionDeclaration/* 解析的目标节点 */, allowMissingName: boolean/* 是否允许省略函数名。仅当函数表达式或 export default 时才能省略函数名 */, missingBody: boolean/* 是否不解析函数主体。仅当声明函数或抽象成员时才能省略函数主体 */, asyncToken?: number/* async 标记的位置(可能不存在)*/) // 函数表达式或定义
-		if (asyncToken != undefined) result.asyncToken = asyncToken;
-		result.functionToken = @readToken(@function);
+	@FunctionDeclarationOrExpression(result: nodes.FunctionDeclaration | nodes.FunctionExpression/* 解析的目标节点 */, modifiers: nodes.NodeList<nodes.Modifier>) // 函数表达式或定义
+		@DocComment(result);
+		if (modifiers) result.modifiers = modifiers;
+		result.functionToken = @readToken(@<function>);
 		if (@peek === @*) result.asteriskToken = @read;
-		if (!allowMissingName || @peek !== @( || @peek !== @<) result.name = @Identifier(false);
+		if (isIdentifierName(@peek)) result.name = @Identifier(false);
 		@TypeParameters(result);
 		@Parameters(result);
 		@TypeAnnotation(result);
-		@FunctionBody(result, missingBody);
+		@FunctionBody(result);
 
-		@FunctionExpression(asyncToken?: number) // 函数表达式(`function () {}`)
-			?async
-			function
-			?* 
-			?name: Identifier
-			?TypeParameters
-			Parameters
-			?TypeAnnotation
-			?FunctionBody
-
-			const result = new nodes.FunctionDeclaration();
-			@FunctionExpressionOrDeclaration(result, true, false, asyncToken);
-			return result;
-
-		@FunctionDeclaration(allowMissingName: boolean, missingBody: boolean, asyncToken?: number) // 函数声明(`function fn() {...}`、`function * fn() {...}`)
-			?async
+		@FunctionDeclaration(*, *) // 函数声明(`function fn() {...}`、`function * fn() {...}`)
+			?DocComment
+			?Decorators
+			?Modifiers
 			function
 			?*
 			?name: Identifier
@@ -567,46 +573,54 @@ Statement: @abstract // 语句
 			?FunctionBody
 
 			const result = new nodes.FunctionDeclaration();
-			@FunctionExpressionOrDeclaration(result, allowMissingName, missingBody, asyncToken);
+			if (decorators) result.decorators = decorators;
+			@FunctionDeclarationOrExpression(result, modifiers);
 			return result;
 
-		@FunctionBody(result, missingBody: boolean) // 函数主体(`{...}`、`=> xx`、`;`)
+		@FunctionExpression(*) // 函数表达式(`function () {}`)
+			?DocComment
+			?Modifiers
+			function
+			?* 
+			?name: Identifier
+			?TypeParameters
+			Parameters
+			?TypeAnnotation
+			?FunctionBody
+
+			const result = new nodes.FunctionDeclaration();
+			@FunctionDeclarationOrExpression(result, modifiers, true);
+			return result;
+
+		@FunctionBody(result) // 函数主体(`{...}`、`=> xx`、`;`)
 			?=>
 			?body: BlockStatement | Expression
 			?;
 
-			if (missingBody) {
-				@tryReadSemicolon(result);
-			} else {
-				if (@peek === @=>) {
+			switch (@peek) {
+				case @{:
+					result.body = BlockStatement();
+					break;
+				case @=>:
 					result.arrowToken = @read;
 					result.body = Expression(Precedence.assignment, true);
-				} else {
-					result.body = BlockStatement();
-				}
+					break;
+				default:
+					@tryReadSemicolon(result);
+					break;
 			}
 
-	@ClassExpressionOrDeclaration(result: nodes.ClassExpression | nodes.ClassDeclaration, allowMissingName: boolean, missingBody: boolean) // 类表达式或类定义
+	@ClassDeclarationOrExpression(result: nodes.ClassDeclaration | nodes.ClassExpression) // 类表达式或类定义
+		@DocComment(result);
 		result.classToken = @readToken(@class);
-		if (!allowMissingName || @peek !== @{ && @peek !== @<extends> && @peek !== @<implements> && @peek !== @<) result.name = @Identifier(false);
+		if (isIdentifierName(@peek) && @peek !== @<extends> && @peek !== @<implements>) result.name = @Identifier(false);
 		@TypeParameters(result);
 		@ExtendsClause(result);
 		@ImplementsClause(result);
-		@ClassBody(result, missingBody);
+		@ClassBody(result);
 
-		@ClassExpression // 类表达式(`class xx {}`)
-			class 
-			name?: Identifier
-			?TypeParameters
-			?ExtendsClause
-			?ImplementsClause
-			?ClassBody
-
-			const result = new nodes.ClassExpression();
-			@FunctionExpressionOrDeclaration(result, true, false);
-			return result;
-
-		@ClassDeclaration(*, *, allowMissingName: boolean, missingBody: boolean) // 类定义(`class xx {}`)
+		@ClassDeclaration(*, *) // 类定义(`class xx {}`)
+			??DocComment
 			?Decorators
 			?Modifiers
 			class 
@@ -618,145 +632,166 @@ Statement: @abstract // 语句
 
 			const result = new nodes.ClassDeclaration();
 			if (decorators) result.decorators = decorators;
-			if (abstractToken != undefined) result.abstractToken = abstractToken;
-			@ClassExpressionOrDeclaration(result, allowMissingName, missingBody);
+			if (modifiers) result.modifiers = modifiers;
+			@ClassDeclarationOrExpression(result);
 			return result;
 
-			@Decorators
+		@ClassExpression // 类表达式(`class xx {}`)
+			??DocComment
+			class 
+			name?: Identifier
+			?TypeParameters
+			?ExtendsClause
+			?ImplementsClause
+			?ClassBody
 
-			@ExtendsClause(result) // extends 分句(`extends xx`)
-				extends
-				extends: Expression(Precedence.leftHandSide, false)
-				
-			@ImplementsClause(result) // implements 分句(`implements xx`)
-				implements
-				implements: Expression(Precedence.leftHandSide, false),...
+			const result = new nodes.ClassExpression();
+			@ClassDeclarationOrExpression(result);
+			return result;
 
-			@ClassBody(result, missingBody: boolean) // 类主体(`{...}`)
-				members: { ClassBodyElement... }
+		@ExtendsClause(result) // extends 分句(`extends xx`)
+			extends
+			extends: Expression(Precedence.leftHandSide, false),...
+			
+		@ImplementsClause(result) // implements 分句(`implements xx`)
+			implements
+			implements: Expression(Precedence.leftHandSide, false),...
 
-				if (missingBody) {
-					@tryReadSemicolon(result);
-				} else {
-					result.members = @NodeList(@ClassBodyElement, @{, @});
+		@ClassBody(result) // 类主体(`{...}`、`;`)
+			?members: { ClassBodyElement... }
+			?;
+
+			if (@peek === @{) {
+				result.members = @NodeList(@ClassBodyElement, @{, @});
+			} else {
+				@tryReadSemicolon(result);
+			}
+
+			@ClassBodyElement // 类主体成员
+				= MethodDeclaration | PropertyDeclaration | AccessorDeclaration
+
+				const decorators = @Decorators();
+				const modifiers = @Modifiers();
+				switch (@peek) {
+					case @<identifier>:
+						break;
+					case @[:
+						return @PropertyDeclaration(decorators, modifiers, @BindingName());
+					case @*:
+						return @MethodDeclaration(decorators, modifiers, @read, @Identifier(true));
+				}
+				const name = @Identifier(true);
+				const isGet = name.value === "get";
+				const isSet = name.value === "set";
+				if ((isGet || isSet) && isKeyword(@peek)) {
+					return @AccessorDeclaration(decorators, modifiers, isGet ? name.start : undefined, isSet ? name.start : undefined);
+				}
+				switch (@peek) {
+					case @(:
+					case @<:
+						return @MethodDeclaration(decorators, modifiers, undefined, name);
+					case @*:
+						return @PropertyDeclaration(decorators, modifiers, name);
 				}
 
-				@ClassBodyElement // 类主体成员
-					= MethodDeclaration | PropertyDeclaration | AccessorDeclaration
+				@MethodDeclaration(*, *, *, *) // 方法声明(`x() {...}`)
+					??DocComment
+					?Decorators
+					?Modifiers
+					?*
+					?name: Identifier(true)
+					?TypeParameters
+					Parameters
+					?TypeAnnotation
+					?FunctionBody
 
-					const decorators = @Decorators();
-					let accessibilityToken: number;
-					let accessibility: TokenType;
-					let abstractOrStaticToken: number;
-					let abstractOrStatic: TokenType;
-					let asyncOrReadOnlyToken: number;
-					let asyncOrReadOnly: TokenType;
-					while (isModifier(@peek)) {
-						const savedState = @stashSave();
-						@lexer.read();
-						if (@sameLine && (@peek === @<identifier> || isKeyword(@peek) || @peek === @[)) {
-							@stashClear(savedState);
-							switch (@lexer.read().type) {
-								case @<get>:
-								case @<set>:
-									if (asyncOrReadOnly === @<readonly>) {
-										@error({start: asyncOrReadOnlyToken, end: asyncOrReadOnlyToken + 8/*'readonly'.length*/}, "'{0}' modifier can only appear on a property declaration.", tokenToString(@<readonly>));
-										asyncOrReadOnly = asyncOrReadOnlyToken = undefined;
-									}
-									return @AccessorDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, abstractOrStatic, asyncOrReadOnlyToken, @lexer.current.start, @lexer.current.type);
-								case @<private>:
-								case @<protected>:
-								case @<public>:
-									if (accessibility != undefined) {
-										@error(@lexer.current, @current === accessibility ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@accessibility));
-										continue;
-									}
-									if (abstractOrStatic != undefined || asyncOrReadOnly != undefined) {
-										@error(@lexer.current, "'{0}' modifier must precede '{1}' modifier.", tokenToString(@current), tokenToString(abstractOrStatic != undefined ? abstractOrStatic : asyncOrReadOnly));
-										continue;
-									}
-									accessibilityToken = @lexer.current.start;
-									accessibility = @lexer.current.type;
-									continue;
-								case @<abstract>:
-								case @<static>:
-									if (abstractOrStatic != undefined) {
-										@error(@lexer.current, @current === abstractOrStatic ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@abstractOrStatic));
-										continue;
-									}
-									if (asyncOrReadOnly != undefined) {
-										@error(@lexer.current, "'{0}' modifier must precede '{1}' modifier.", tokenToString(@current), tokenToString(asyncOrReadOnly));
-										continue;
-									}
-									abstractOrStaticToken = @lexer.current.start;
-									abstractOrStatic = @lexer.current.type;
-									continue;
-								case @<async>:
-								case @<readonly>:
-									if (asyncOrReadOnly != undefined) {
-										@error(@lexer.current, @current === asyncOrReadOnly ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@asyncOrReadOnly));
-										continue;
-									}
-									asyncOrReadOnlyToken = @lexer.current.start;
-									asyncOrReadOnly = @lexer.current.type;
-									continue;
-							}
-						}
-						@stashRestore(savedState);
-						break;
-					}
-					const name = @Identifier(true);
-					switch (@peek) {
-						case @(:
-						case @<:
-							if (asyncOrReadOnly === @<readonly>) {
-								@error({start: asyncOrReadOnlyToken, end: asyncOrReadOnlyToken + 8/*'readonly'.length*/}, "'{0}' modifier can only appear on a property declaration.", tokenToString(@<readonly>));
-								asyncOrReadOnly = asyncOrReadOnlyToken = undefined;
-							}
-							return @MethodDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, abstractOrStatic, asyncOrReadOnlyToken, name);
-						default:
-							if (abstractOrStatic === @<abstract>) {
-								@error({start: abstractOrStatic, end: asyncOrReadOnlyToken + 8/*'abstract'.length*/}, "'{0}' modifier can only appear on a class or method declaration.", tokenToString(@<abstract>));
-								abstractOrStatic = abstractOrStaticToken = undefined;
-							}
-							if (asyncOrReadOnly === @<async>) {
-								@error({start: asyncOrReadOnly, end: asyncOrReadOnlyToken + 5/*'async'.length*/}, "'{0}' modifier can only appear on a property declaration.", tokenToString(@<readonly>));
-								asyncOrReadOnly = asyncOrReadOnlyToken = undefined;
-							}
-							return @PropertyDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, asyncOrReadOnlyToken, name);
-					}
+				@PropertyDeclaration(*, *, *) // 属性声明(`x: number`)
+					??DocComment
+					?Decorators
+					?Modifiers
+					name: BindingName
+					?TypeAnnotation
+					?Initializer
 
-					@MethodDeclaration(*, *, *, *, *) // 方法声明
-						?Decorators
-						?accessibility: <public>|<private>|<protected>
-						?abstractOrStatic: <abstract>|<static>
-						?async
-						?*
-						?name: Identifier(true)
-						?TypeParameters
-						Parameters
-						?TypeAnnotation
-						?FunctionBody(result, abstractOrStatic === @<abstract>)
+				@AccessorDeclaration(*, *, *, *, *) // 访问器声明(`get fn() {...}`、`set fn(value) {...}`)
+					??DocComment
+					?Decorators
+					?Modifiers
+					?get
+					?set
+					name: Identifier(true)
+					Parameters
+					?TypeAnnotation
+					?FunctionBody
 
-					@PropertyDeclaration(*, *, *, *, *) // 属性声明
-						?Decorators
-						?accessibility: <public>|<private>|<protected>
-						?static
-						?readonly
-						name: BindingName
-						?TypeAnnotation
-						?Initializer
+	@InterfaceDeclaration(*, *) // 接口声明(`interface T {...}`)
+		??DocComment
+		?Decorators
+		?Modifiers
+		interface
+		name: Identifier(false)
+		?TypeParameters
+		?ExtendsClause
+		body: ObjectTypeNode
 
-					@AccessorDeclaration(*, *, *, *, *) // 访问器声明
-						?Decorators
-						?accessibility: <public>|<private>|<protected>
-						?abstractOrStatic: <abstract>|<static>
-						?async
-						getOrSet: <get>|<set>
-						name: Identifier(true)
-						Parameters
-						?TypeAnnotation
-						?FunctionBody
+	@EnumDeclaration(*, *) // 枚举声明(`enum T {}`)
+		??DocComment
+		?Decorators
+		?Modifiers
+		enum
+		name: Identifier(false)
+		?ExtendsClause
+		body: { EnumMemberDeclaration,... }
+
+		@EnumMemberDeclaration // 枚举成员声明(`xx = 1`)
+			name: PropertyName
+			?Initializer
+
+	@NamespaceOrModuleDeclaration(result: nodes.NamespaceDeclaration | nodes.ModuleDeclaration, decorators: nodes.NodeList<nodes.Decorator>, modifiers: nodes.NodeList<nodes.Modifier>, type: TokenType) // 命名空间或模块声明
+		if (decorators) result.decorators = decorators;
+		if (modifiers) result.modifiers = modifiers;
+		result.start = @readToken(type);
+		result.names = @NodeList(() => @Identifier(false), undefined, undefined, @.);
+		@ExtendsClause(result);
+		@BlockBody(result);
+
+		@NamespaceDeclaration(*, *) // 命名空间声明(`namespace T {}`)
+			??DocComment
+			?Decorators
+			?Modifiers
+			namespace
+			names: Identifier(false)....
+			?ExtendsClause
+			?BlockBody
+
+			const result = new nodes.NamespaceDeclaration();
+			@NamespaceOrModuleDeclaration(result, decorators, modifiers, <namespace>);
+			return result;
+
+		@ModuleDeclaration(*, *) // 模块声明(`module T {}`)
+			??DocComment
+			?Decorators
+			?Modifiers
+			module
+			names: Identifier(false)....
+			?ExtendsClause
+			?BlockBody
+
+			const result = new nodes.ModuleDeclaration();
+			@NamespaceOrModuleDeclaration(result, decorators, modifiers, <module>);
+			return result;
+
+		@BlockBody(result) // 语句块主体(`{...}`)
+			body: { Statement... }
+
+	@ExtensionDeclaration(*, *) 
+		?Decorators
+		?Modifiers
+		extends
+		type: TypeNode(Precedence.any)
+		?ExtendsClause
+		?ImplementsClause
+		?ClassBody
 
 	@Decorators // 修饰器列表
 		decorators: Decorator...  // 修饰器列表
@@ -767,13 +802,22 @@ Statement: @abstract // 语句
 
 	@Modifiers // 修饰符列表
 		modifiers: Modifier...
-		
-		@Modifier // 修饰符(`static`、`private`、...)
-			type: <static>|<abstract>|<public>|<protected>|<private>
-
-			if (isModifier(@peek)) {
-
+		let result: nodes.NodeList<nodes.Modifier>;
+		while (isModifier(@peek)) {
+			const savedToken = @lexer.current;
+			const modifier = @Modifier();
+			if (@sameLine) {
+				if (!result) result = new nodes.NodeList<nodes.Modifier>();
+				result.push(modifier);
+				continue;				
 			}
+			@lexer.current = savedToken;
+			break;
+		}
+		return result;
+
+		@Modifier // 修饰符(`static`、`private`、...)
+			type: <export>|<default>|<declare>|<const>|<static>|<abstract>|<readonly>|<async>|<public>|<protected>|<private>
 
 @ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
 	const start = @read;
@@ -872,6 +916,10 @@ Statement: @abstract // 语句
 			body: Statement
 	}
 
+# 文档
+
+@DocComment(result) // 文档注释
+	
 
 TealScript 语法规范
 ================================================================

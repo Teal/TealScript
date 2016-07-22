@@ -9,11 +9,7 @@ describe('Unicode', function () {
             this.timeout(100000);
             for (var i = 0; i < 65536; i++) {
                 var expected = methods[method].indexOf(i) >= 0;
-                if (/_true$/.test(method)) {
-                    assert.equal(unicode[method.replace(/_true$/, "")](i, true), expected, method.replace(/_true$/, "") + "(" + i + ", true) 应返回 " + expected);
-                } else {
-                    assert.equal(unicode[method](i), expected, method + "(" + i + ") 应返回 " + expected);
-                }
+                assert.equal(unicode[method](i), expected, method + "(" + i + ") 应返回 " + expected);
             }
         });
     }
