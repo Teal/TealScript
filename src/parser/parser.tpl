@@ -1,5 +1,5 @@
 
-# 类型
+# 类型节点
 
 TypeNode @abstract // 类型节点(`number`、`string[]`、...)
 	let result = @UnaryOrPrimaryTypeNode(allowIn);
@@ -104,7 +104,9 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 		case @<identifier>: // x => y、x<T>、x
 			result = @ArrowFunctionOrGenericExpressionOrIdentifier();
 			break;
+
 			@ArrowFunctionOrGenericExpressionOrIdentifier // 箭头或泛型表达式或标识符
+				let result = @Identifier(false);
 				switch (@peek) {
 					case @=>:
 						result = @ArrowFunctionExpression(undefined, undefined, result);
@@ -121,26 +123,24 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 						break;
 				}
 				return result;
+
 				@GenericExpression(*, *) // 泛型表达式(`value<number>`)
 					target: Identifier // 目标部分
 					typeArguments: TypeArguments 
+
 				@Identifier(allowKeyword: boolean) // 标识符(`x`)
 					value: <identifier> // 值部分
 					
-					const result = new nodes.Identifier();
-					if (@peek === @<identifier> || isReserverdWord(@peek)) {
-						if (options.strictMode && @peek !== @<identifier>) {
-							@error(@lexer.peek(), "Identifier expected. '{0}' is a reserved word in strict mode.", tokenToString(@peek));
-						}
+					if (isIdentifierName(@peek)) {
+						const result = new nodes.Identifier();
 						result.start = @read;
 						result.value = @lexer.current.value;
 						result.end = @lexer.current.end;
-					} else {
-						@error(@lexer.peek(), isKeyword(@peek) ? "Identifier expected. '{0}' is a keyword." : "Identifier expected.", tokenToString(@peek));
-						result.start = @lexer.current.end;
-						result.value = "";
+						return result;
 					}
-					return result;
+
+					@error(@lexer.peek(), isKeyword(@peek) ? "Identifier expected. '{0}' is a keyword." : "Identifier expected.", getTokenName(@peek));
+					return @ErrorIdentifier();
 
 		case @<this>:
 		case @<null>:
@@ -149,63 +149,81 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 		case @<super>:
 			result = @SimpleLiteral();
 			break;
+
 			@SimpleLiteral // 简单字面量(`null`、`true`、`false`、`this`、`super`)
 				type: <this>|<null>|<true>|<false>|<super> // 类型
+
 		case @(: // (x) => ...、(x)
 			result = @ArrowFunctionOrParenthesizedExpression();
 			break;
+
 			@ArrowFunctionOrParenthesizedExpression // 括号或箭头表达式
 				const savedState = @stashSave();
 				const parameters = @Parameters();
 				return @peek === @=> || @peek === @: ? @ArrowFunctionLiteral(undefined, undefined, parameters, allowIn) : @ParenthesizedExpression();
-				@ArrowFunctionLiteral(*, *, *, allowIn: boolean) // 箭头函数表达式(`x => xx`)。
-					?Modifiers
-					?TypeParameterDeclarations
-					parameters?: ParameterDeclarations | Identifier // 参数部分
-					ReturnType? 
+
+				@ArrowFunctionExpression(*, *, *, allowIn: boolean) // 箭头函数表达式(`x => xx`)。
+					?modifiers: Modifiers
+					?typeParameters: TypeParameters
+					?parameters: ParameterDeclarations | Identifier // 参数部分
+					?TypeAnnotation
 					=> 
 					body: BlockStatement | Expression = @peek === @{ ? @BlockStatement() : @Expression(Precedence.assignment, allowIn)
+
 				@ParenthesizedExpression // 括号表达式(`(x)`)
 					(
 					body: Expression(Precedence.any, true) // 主体部分
 					)
+
 		case @<numericLiteral>:
 			result = @NumericLiteral();
 			break;
+
 			@NumericLiteral // 数字字面量(`1`)
 				value: <numericLiteral>
+
 		case @<stringLiteral>:
 		case @<noSubstitutionTemplateLiteral>:
 			result = @StringLiteral();
 			break;
+
 			@StringLiteral // 字符串字面量(`'abc'`、`"abc"`、`\`abc\``)
 				value: <stringLiteral>
+
 		case @[:
 			result = @ArrayLiteral();
 			break;
+
 			@ArrayLiteral // 数组字面量(`[x, y]`)
 				elements: [ ArrayLiteralElement,... ] // 所以元素
 				@ArrayLiteralElement // 数组字面量元素(`x`)
 					...?
 					value?: Expression(Precedence.assignment, true)
+
 		case @{:
 			result = @ObjectLiteral();
 			break;
+
 			@ObjectLiteral // 对象字面量(`{x: y}`)
 				elements: { PropertyDefinition,... }
+
 		case @function:
 			result = @FunctionExpression(undefined);
 			break;
+
 		case @new:
 			result = @NewTargetOrNewExpression();
 			break;
+
 			@NewTargetOrNewExpression // new.target 或 new 表达式
-				const start = @read();
+				const start = @readToken(@<new>);
 				return @peek === @. ? @NewTargetExpression(start) : @NewExpression(start);
+
 				@NewTargetExpression(*) // new.target 表达式(`new.target`)
 					new 
 					.
 					target
+
 					const result = new nodes.NewTargetExpression();
 					result.start = start;
 					result.dotToken = @readToken(@.);
@@ -216,33 +234,41 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 						result.end = @lexer.current.end;
 					}
 					return result;
+
 				@NewExpression(*) : // new 表达式(`new x()`)。
 					new
 					target: Expression(Precedence.member, false) 
 					?arguments: Arguments
+
 		case @/:
 		case @/=:	
 			result = @RegularExpressionLiteral();
 			break;
+
 			@RegularExpressionLiteral // 正则表达式字面量(/abc/)
 				value: <stringLiteral> 
 				flags?: <stringLiteral> // 标志部分
+
 				const result = new nodes.RegularExpressionLiteral();
 				result.start = @lexer.readAsRegularExpressionLiteral().start;
 				result.value = @lexer.current.data.pattern;
 	        	result.flags = @lexer.current.data.flags;
 	        	result.end = @lexer.current.end;
 	        	return result;
+
 		case @<templateHead>:
-			return @TemplateLiteral();
+			result = @TemplateLiteral();
+			break;
+
 			@TemplateLiteral // 模板字面量(`\`abc\``)
 				spans: TemplateSpan | Expression... // 所有组成部分
+
 				const result = new nodes.TemplateLiteral();
 				result.spans = new nodes.NodeList<nodes.Expression>();
 				while (true) {
 					result.spans.push(@TemplateSpan());
 					result.spans.push(@Expression());
-					if (@peek() !== @}) {
+					if (@peek !== @}) {
 		                @expectToken(@});
 		                break;
 		            }
@@ -252,51 +278,59 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 		            }
 				}
 				return result;
+
 				@TemplateSpan // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
 					value: <stringLiteral>
+
 		case @<: // <T> (p)=>{}、<T>fn
 			result = @ArrowFunctionOrTypeAssertionExpression();
 			break;
+
 			@ArrowFunctionOrTypeAssertionExpression // 箭头函数或类型确认表达式
 				const savedState = @stashSave();
 				const typeParameters = @TypeParameters();
-				const parameters = @peek === @( ? @Parameters() : @peek === @<identifier> || isReserverdWord(@peek) : @Identifier(false) : undefined;
+				const parameters = @peek === @( ? @Parameters() : isIdentifierName(@peek) : @Identifier(false) : undefined;
 				if (parameters && (@peek === @=> || @peek === @:)) {
 					@stashClear(savedState);
 					return @ArrowFunctionExpression(undefined, typeParameters, parameters, allowIn);
 				}
 				@stashRestore(savedState);
 				return @TypeAssertionExpression();
+
 				@TypeAssertionExpression // 类型确认表达式(<T>xx)
 					<
 					type: TypeNode(Precedence.any)
 					>
 					operand: Expression(Precedence.postfix, false)
+
 		case @<yield>:
 			result = @YieldExpression();
 			break;
+
 			@YieldExpression // yield 表达式(`yield xx`)) {
 				yield 
 				?*
 				operand: Expression(Precedence.assignment, false)
+
 				const result = new nodes.YieldExpression();
 				result.start = @read;
-				if (@sameLine) {
-					if (@peek === @*) {
-						result.asteriskToken = @read;
-					}
-					if (!@tryReadSemicolon(result)) {
-						result.operand = @Expression(Precedence.assignment, false);
-						@tryReadSemicolon(result);
-					}
+				if (@sameLine && @peek === @*) {
+					result.asteriskToken = @read;
+				}
+				if (!@tryReadSemicolon(result)) {
+					result.operand = @Expression(Precedence.assignment, false);
+					@tryReadSemicolon(result);
 				}
 				return result;
+
 		case @<await>:
 			result = @AwaitExpression();
 			break;
+
 			@AwaitExpression // wait 表达式(`await xx`)) {
 				await 
 				operand: Expression(Precedence.assignment, false)
+
 				const result = new nodes.AwaitExpression();
 				result.start = @read;
 				if (!@tryReadSemicolon(result)) {
@@ -304,90 +338,106 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 					@tryReadSemicolon(result);
 				}
 				return result;
+
 		case @<class>:
 			result = @ClassExpression();
 			break;
-				
-			// todo
+			
 		case @<async>:
 			result = @AsyncFunctionExpressionOrIdentifier(allowIn);
 			break;
+
 			@AsyncArrowFunctionOrIdentifier(allowIn: boolean) // 异步函数表达式或标识符
 				const savedState = @stashSave();
 				const modifiers = @Modifiers();
 				const typeParameters = @sameLine && @peek === @< ? @TypeParameters() : undefined;
-				if (@sameLine && (@peek === @( || @peek === @<identifier> || isReserverdWord(@peek))) {
+				if (@sameLine && (@peek === @( ||isIdentifierName(@peek))) {
 					const parameters = @peek === @( ? @Parameters() : @Identifier(false);
 					if (@peek === @=> || @peek === @:) {
-						@stashClear(saved);
+						@stashClear(savedState);
 						return @ArrowFunctionExpression(modifiers, typeParameters, parameters, allowIn);
 					}
 				}
+				@stashRestore(savedState);
+				return @Identifier(false);
+
 		case @=>:
 			result = @ArrowFunctionExpression(undefined, undefined, undefined, allowIn);
 			break;
+
 		default:
 			if (isUnaryOperator(@peek)) {
 				result = @UnaryExpression();
 				break;
-			} 
-			if (isReserverdWord(@peek)) {
-				if (options.strictMode) {
-					@error(@lexer.peek(), "Expression expected. '{0}' is a reserved word in strict mode.", tokenToString(@peek));
-				}
+			}
+			if (isIdentifierName(@peek)) {
 				result = @ArrowFunctionOrGenericExpressionOrIdentifier();
 				break;
 			}
-			@error(@lexer.peek(), @peek == @) || @peek == @] || @peek == @} || @peek == @> ? "Unexpected token '{0}'." : @isKeyword(@peek) ? "Expression expected. '{0}' is a keyword." : "Expression expected.", tokenToString(@peek));
+			@error(@lexer.peek(), @peek === @) || @peek === @] || @peek === @} || @peek === @> ? "Unexpected token '{0}'." : @isKeyword(@peek) ? "Expression expected. '{0}' is a keyword." : "Expression expected.", getTokenName(@peek));
 			return @ErrorIdentifier();
+
 			@UnaryExpression // 一元运算表达式(+x、typeof x、...)
 				operator: <delete>|<void>|<typeof>|<+>|<->|<~>|<!>|<++>|<-->
 				operand: Expression(Precedence.postfix, false)
-			@ErrorIdentifier @extends(Identifier) // 错误的标识符
-				const result = new ErrorIdentifier();
+
+			@ErrorIdentifier // 错误的标识符
+				const result = new nodes.ErrorIdentifier();
 				result.start = @lexer.current.end;
 				return result;
+
 	}
 	while (getPrecedence(@peek) >= precedence) {
 		switch (@peek) {
 			case @.:
 				result = @MemberCallExpression(result);
 				continue;
+
 				@MemberCallExpression(*) // 成员调用表达式(x.y)
 					target: Expression // 目标部分
 					. 
-					argument: IdentifierOrKeyword // 参数部分
+					argument: Identifier(true) // 参数部分
+
 			case @=:
 				result = @BinaryExpression(result, allowIn);
 				continue;
+
 			case @(:
 				result = @FunctionCallExpression(result);
 				continue;
+
 				@FunctionCallExpression(*) // 函数调用表达式(x())
 					target: Expression 
 					arguments: CallArguments
+
 					@CallArguments // 函数调用参数列表
-						( Argument,... )
+						( CallArgument,... )
+
 						@CallArgument // 函数调用参数(x)
 							?...
 							value: Expression(Precedence.assignment, true)
+
 			case @[:
 				result = @IndexCallExpression(result);
 				continue;
+
 				@IndexCallExpression(*) // 索引调用表达式(x[y])
 					target:Expression 
 					[ 
 					argument: Expression(Precedence.any, true)
 					]
+
 			case @?:
 				result = @ConditionalExpression(result);
 				continue;
+
 				@ConditionalExpression(*) // 条件表达式(`x ? y : z`)
-					condition:Expression 
+					condition: Expression 
 					? 
 					then: Expression(Precedence.assignment, true) // 则部分 
 					: 
 					else: Expression(Precedence.assignment, allowIn) // 否则部分
+
 			case @++:
 			case @--:
 				if (@sameLine) {
@@ -395,25 +445,32 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 					continue;
 				}
 				break;
+
 				@PostfixExpression(*) // 后缀表达式(`x++`、`x--`)
 					operand: Expression(Precedence.leftHandSide) // 操作数
 					operator:: ++ | --
+
 			case @<noSubstitutionTemplateLiteral>:
 				return @TemplateCallExpression(parsed, @StringLiteral());
+
 			case @<templateHead>:
 				return @TemplateCallExpression(parsed, @TemplateLiteral());
+
 				@TemplateCallExpression(*, *) // 模板调用表达式(`x\`abc\``)
 					target: Expression 
 					argument: TemplateLiteral | StringLiteral
+
 			case @<in>:
 				if(allowIn === false) {
 					break;
 				}
+
 				// 继续往下执行
 			default:
 				result = @BinaryExpression(result, allowIn);
 				continue;
-				@BinaryExpression(*, *llowIn: boolean) // 双目表达式(x + y、x = y、...)
+
+				@BinaryExpression(*, allowIn: boolean) // 双目表达式(x + y、x = y、...)
 					left: Expression // 左值部分
 					operator: <,>|<*=>|</=>|<%=>|<+=>|<‐=>|<<<=>|<>>=>|<>>>=>|<&=>|<^=>|<|=>|<**=>|<||>|<&&>|<|>|<^>|<&>|<==>|<!=>|<===>|<!==>|<<>|<>>|<<=>|<>=>|<instanceof>|<in>|<<<>|<>>>|<>>>>|<+>|<->|<*>|</>|<%>|<**> // 运算类型
 					right: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
@@ -429,15 +486,20 @@ Statement: @abstract // 语句
 		case this:
 		BlockStatement: // 语句块(`{...}`)
 			{ statements:Statement... }
-		case var: return @VariableStatement();
+		case var: return @VariableStatement(undefined);
 		case let: 
 		case const:
 			if (@isVariableStatement()) {
-				return @parseVariableStatement();
+				return @VariableStatement(undefined);
 			}
 			break;
-			@VariableStatement: // 变量声明语句(`var x`、`let x`、`const x`)
-				type:var|let|const variables:VariableDeclaration,...
+			@VariableStatement(*): // 变量声明语句(`var x`、`let x`、`const x`)
+				?Modifiers
+				type: <var>|<let>|<const> 
+				variables: VariableDeclaration,...
+
+				@VariableDeclaration // 变量声明
+
 		FunctionDeclaration:
 		ClassDeclaration:
 
@@ -461,8 +523,11 @@ Statement: @abstract // 语句
 		DebuggerStatement
 
 
+		case @<import>:
+			return @ImportAssignmentOrImportDeclaration();
 
 		case @<export>:
+			return @ImportAssignmentOrImportDeclaration();
 
 		default:
 			if (isDeclarationStart(@peek)) {
@@ -561,7 +626,7 @@ Statement: @abstract // 语句
 		@FunctionBody(result);
 
 		@FunctionDeclaration(*, *) // 函数声明(`function fn() {...}`、`function * fn() {...}`)
-			?DocComment
+			??DocComment
 			?Decorators
 			?Modifiers
 			function
@@ -819,102 +884,115 @@ Statement: @abstract // 语句
 		@Modifier // 修饰符(`static`、`private`、...)
 			type: <export>|<default>|<declare>|<const>|<static>|<abstract>|<readonly>|<async>|<public>|<protected>|<private>
 
-@ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
-	const start = @read;
-	let imports = @NodeList(@ImportClause, undefined, undefined, @,);
-	if (@peek === @= && imports.length === 1 && imports[0].constructor === nodes.SimpleImportClause && (<nodes.SimpleImportClause>imports[0]).name == null) {
-		return @ImportAssignmentDeclaration(start, (<nodes.SimpleImportClause>imports[0]).variable);
+	@ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
+		const start = @read;
+		const imports = @NodeList(@ImportClause, undefined, undefined, @,);
+		if (@peek === @= && imports.length === 1 && imports[0].constructor === nodes.SimpleImportClause && (<nodes.SimpleImportClause>imports[0]).name == null) {
+			return @ImportAssignmentDeclaration(start, (<nodes.SimpleImportClause>imports[0]).variable);
+		}
+		return @ImportDeclaration(start, imports);
+
 		@ImportAssignmentDeclaration(*, *) // import 赋值声明
 			import
 			variable: Identifier // 别名
 			=
 			value: Expression(Precedence.assignment, true)
 			?;
-	}
-	return @ImportDeclaration(start, imports);
-	@ImportDeclaration(*, *) // import 声明(`import xx from '...';`)
-		import
-		?names: ImportClause,...
-		?from = imports ? @readToken(@from) : undefined
-		target: StringLiteral // 导入模块名
-		?;
-		@ImportClause // import 分句
-			= SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause
-			switch (@peek) {
-				case @<identifier>:
-					return @SimpleImportOrExportClause(false);
-				case @*:
-					return @NamespaceImportClause();
-				case @{:
-					return @NamedImportClause();
-				default:
-					return @SimpleImportOrExportClause(false);
+
+		@ImportDeclaration(*, *) // import 声明(`import xx from '...';`)
+			import
+			?names: ImportClause,...
+			?from = imports ? @readToken(@from) : undefined
+			target: StringLiteral // 导入模块名
+			?;
+
+			const result = new nodes.ImportDeclaration();
+			if (names) {
+				result.names = names;
+				result.from = @readToken(@<from>);
 			}
-			@SimpleImportOrExportClause(exportClause: boolean) // 简单导入或导出分句(`a`、`a as b`)
-				?name: Identifier // 导入或导出的名称
-				?as 
-				variable: Identifier // 导入或导出的变量
-				const result = new nodes.SimpleImportOrExportClause();
-				const nameOrVariable = @Identifier(true);
-				if (@peek === @as) {
-					result.name = nameOrVariable;
-					result.asToken = @read;
-					result.variable = @Identifier(exportClause);
-				} else {
-					if (!exportClause && isKeyword(@current) && !isReserverdWord(@current)) {
-						@error(@current, "Identifier expected. '{0}' is a keyword.", tokenToString(@current));
-					}
-					result.variable = nameOrVariable;
+			result.target = @StringLiteral();
+			return result;
+
+			@ImportClause // import 分句
+				= SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause
+
+				switch (@peek) {
+					case @<identifier>:
+						return @SimpleImportOrExportClause(true);
+					case @*:
+						return @NamespaceImportClause();
+					case @{:
+						return @NamedImportClause();
+					default:
+						return @SimpleImportOrExportClause(true);
 				}
-				return result;
-			@NamespaceImportClause // 命名空间导入分句(* as d)
-				*
-				as
-				variable: Identifier(false)
-			@NamedImportClause // 对象导入分句(`{a, x as b}`)
-				{ SimpleImportClause,... }
-	
-@ExportAssignmentOrExportDeclaration // export 赋值或 export 声明
-	const start = @read;
-	switch (@peek) {
-		case @<function>:
-			return @ExportDeclaration(start, undefined, FunctionDeclaration(undefined, undefined));
-		case @<var>:
-		case @<const>:
-		case @<let>:
-			return @ExportDeclaration(start, undefined, VariableStatement(read));
-		case @=:
-			return @ExportAssignmentDeclaration(start);
-			@ExportAssignmentDeclaration(*) // 导出赋值声明(`export = 1;`)
-				export
-				=
-				value: Expression(Precedence.assignment, true)
-				?;
-		case @{:
-			return @ExportListDeclaration(start);
-			@ExportListDeclaration(*) // 导出列表声明(`export a from ...`)
-				export
-				names: { SimpleImportOrExportClause... } = @NodeList(() => @SimpleImportOrExportClause(true), @{, @}, @,)
-				from
-				target: StringLiteral // 导入模块名
-				?;
-		case @*:
-			return @ExportNamespaceDeclaration(start);
-			@ExportNamespaceDeclaration(*) // 导出列表声明(`export * from ...`)
-				export
-				*
-				from
-				target: StringLiteral // 导入模块名
-				?;
-		case @<default>:
-			return @ExportDeclaration(start, @read);
-		default:
-			return @ExportDeclaration(start, undefined);
-		@ExportDeclaration(*, *) // export 声明(`export function fn() { }`)
-			export
-			?default
-			body: Statement
-	}
+
+				@SimpleImportOrExportClause(importClause: boolean/* 解析 import 分句*/) // 简单导入或导出分句(`a`、`a as b`)
+					?name: Identifier // 导入或导出的名称
+					?as 
+					variable: Identifier // 导入或导出的变量
+
+					const result = new nodes.SimpleImportOrExportClause();
+					const nameOrVariable = @Identifier(true);
+					if (@peek === @as) {
+						result.name = nameOrVariable;
+						result.asToken = @read;
+						result.variable = @Identifier(!importClause);
+					} else {
+						if (importClause && @isIdentifierName(@current)) {
+							@error(@lexer.current, "Identifier expected. '{0}' is a keyword.", getTokenName(@current));
+						}
+						result.variable = nameOrVariable;
+					}
+					return result;
+
+				@NamespaceImportClause // 命名空间导入分句(* as d)
+					*
+					as
+					variable: Identifier(false)
+
+				@NamedImportClause // 对象导入分句(`{a, x as b}`)
+					{ SimpleImportClause,... }
+
+	@ExportAssignmentOrExportDeclaration // export 赋值或 export 声明
+		const savedState = @lexer.current;
+		const start = @read;
+		switch (@peek) {
+			
+			case @=:
+				return @ExportAssignmentDeclaration(start);
+
+				@ExportAssignmentDeclaration(*) // 导出赋值声明(`export = 1;`)
+					export
+					=
+					value: Expression(Precedence.assignment, true)
+					?;
+
+			case @{:
+				return @ExportListDeclaration(start);
+
+				@ExportListDeclaration(*) // 导出列表声明(`export a from ...`)
+					export
+					names: { SimpleImportOrExportClause... } = @NodeList(@SimpleImportOrExportClause), @{, @}, @,)
+					from
+					target: StringLiteral // 导入模块名
+					?;
+
+			case @*:
+				return @ExportNamespaceDeclaration(start);
+
+				@ExportNamespaceDeclaration(*) // 导出列表声明(`export * from ...`)
+					export
+					*
+					from
+					target: StringLiteral // 导入模块名
+					?;
+
+			default:
+				@lexer.current = savedState;
+				return @DeclarationOrExpressionStatement();
+		}
 
 # 文档
 
