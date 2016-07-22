@@ -285,8 +285,9 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 					if (@peek === @*) {
 						result.asteriskToken = @read;
 					}
-					if (@sameLine && isExpressionStart(@peek)) {
+					if (!@tryReadSemicolon(result)) {
 						result.operand = @Expression(Precedence.assignment, false);
+						@tryReadSemicolon(result);
 					}
 				}
 				return result;
@@ -298,8 +299,9 @@ Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, al
 				operand: Expression(Precedence.assignment, false)
 				const result = new nodes.AwaitExpression();
 				result.start = @read;
-				if (@sameLine && isExpressionStart(@peek)) {
+				if (!@tryReadSemicolon(result)) {
 					result.operand = @Expression(Precedence.assignment, false);
+					@tryReadSemicolon(result);
 				}
 				return result;
 		case @<class>:
@@ -530,229 +532,248 @@ Statement: @abstract // 语句
 
 @Declaration @abstract @extends(Statement) // 声明
 
-@FunctionExpressionOrDeclaration(result: nodes.FunctionExpression | nodes.FunctionDeclaration/* 解析的目标节点 */, allowMissingName: boolean/* 是否允许省略函数名。仅当函数表达式或 export default 时才能省略函数名 */, missingBody: boolean/* 是否不解析函数主体。仅当声明函数或抽象成员时才能省略函数主体 */, asyncToken?: number/* async 标记的位置(可能不存在)*/) // 函数表达式或定义
-	if (asyncToken != undefined) result.asyncToken = asyncToken;
-	result.functionToken = @readToken(@function);
-	if (@peek === @*) result.asteriskToken = @read;
-	if (!allowMissingName || @peek !== @( || @peek !== @<) result.name = @Identifier(false);
-	@TypeParameters(result);
-	@Parameters(result);
-	@TypeAnnotation(result);
-	@FunctionBody(result, missingBody);
+	@FunctionExpressionOrDeclaration(result: nodes.FunctionExpression | nodes.FunctionDeclaration/* 解析的目标节点 */, allowMissingName: boolean/* 是否允许省略函数名。仅当函数表达式或 export default 时才能省略函数名 */, missingBody: boolean/* 是否不解析函数主体。仅当声明函数或抽象成员时才能省略函数主体 */, asyncToken?: number/* async 标记的位置(可能不存在)*/) // 函数表达式或定义
+		if (asyncToken != undefined) result.asyncToken = asyncToken;
+		result.functionToken = @readToken(@function);
+		if (@peek === @*) result.asteriskToken = @read;
+		if (!allowMissingName || @peek !== @( || @peek !== @<) result.name = @Identifier(false);
+		@TypeParameters(result);
+		@Parameters(result);
+		@TypeAnnotation(result);
+		@FunctionBody(result, missingBody);
 
-	@FunctionExpression(asyncToken?: number) // 函数表达式(`function () {}`)
-		?async
-		function
-		?* 
-		?name: Identifier
-		?TypeParameters
-		Parameters
-		?TypeAnnotation
-		?FunctionBody
+		@FunctionExpression(asyncToken?: number) // 函数表达式(`function () {}`)
+			?async
+			function
+			?* 
+			?name: Identifier
+			?TypeParameters
+			Parameters
+			?TypeAnnotation
+			?FunctionBody
 
-		const result = new nodes.FunctionDeclaration();
-		@FunctionExpressionOrDeclaration(result, true, false, asyncToken);
-		return result;
+			const result = new nodes.FunctionDeclaration();
+			@FunctionExpressionOrDeclaration(result, true, false, asyncToken);
+			return result;
 
-	@FunctionDeclaration(allowMissingName: boolean, missingBody: boolean, asyncToken?: number) // 函数声明(`function fn() {...}`、`function * fn() {...}`)
-		?async
-		function
-		?*
-		?name: Identifier
-		?TypeParameters
-		Parameters
-		?TypeAnnotation
-		?FunctionBody
+		@FunctionDeclaration(allowMissingName: boolean, missingBody: boolean, asyncToken?: number) // 函数声明(`function fn() {...}`、`function * fn() {...}`)
+			?async
+			function
+			?*
+			?name: Identifier
+			?TypeParameters
+			Parameters
+			?TypeAnnotation
+			?FunctionBody
 
-		const result = new nodes.FunctionDeclaration();
-		@FunctionExpressionOrDeclaration(result, allowMissingName, missingBody, asyncToken);
-		return result;
+			const result = new nodes.FunctionDeclaration();
+			@FunctionExpressionOrDeclaration(result, allowMissingName, missingBody, asyncToken);
+			return result;
 
-	@FunctionBody(result, missingBody: boolean) // 函数主体(`{...}`、`=> xx`、`;`)
-		?=>
-		?body: BlockStatement | Expression
-		?;
+		@FunctionBody(result, missingBody: boolean) // 函数主体(`{...}`、`=> xx`、`;`)
+			?=>
+			?body: BlockStatement | Expression
+			?;
 
-		if (missingBody) {
-			@tryReadSemicolon(result);
-		} else {
-			if (@peek === @=>) {
-				result.arrowToken = @read;
-				result.body = Expression(Precedence.assignment, true);
+			if (missingBody) {
+				@tryReadSemicolon(result);
 			} else {
-				result.body = BlockStatement();
+				if (@peek === @=>) {
+					result.arrowToken = @read;
+					result.body = Expression(Precedence.assignment, true);
+				} else {
+					result.body = BlockStatement();
+				}
 			}
-		}
 
-@ClassExpressionOrDeclaration(result: nodes.ClassExpression | nodes.ClassDeclaration, allowMissingName: boolean, missingBody: boolean) // 类表达式或类定义
-	result.classToken = @readToken(@class);
-	if (!allowMissingName || @peek !== @{ && @peek !== @<extends> && @peek !== @<implements> && @peek !== @<) result.name = @Identifier(false);
-	@TypeParameters(result);
-	@ExtendsClause(result);
-	@ImplementsClause(result);
-	@ClassBody(result, missingBody);
+	@ClassExpressionOrDeclaration(result: nodes.ClassExpression | nodes.ClassDeclaration, allowMissingName: boolean, missingBody: boolean) // 类表达式或类定义
+		result.classToken = @readToken(@class);
+		if (!allowMissingName || @peek !== @{ && @peek !== @<extends> && @peek !== @<implements> && @peek !== @<) result.name = @Identifier(false);
+		@TypeParameters(result);
+		@ExtendsClause(result);
+		@ImplementsClause(result);
+		@ClassBody(result, missingBody);
 
-	@ClassExpression // 类表达式(`class xx {}`)
-		class 
-		name?: Identifier
-		?TypeParameters
-		?ExtendsClause
-		?ImplementsClause
-		?ClassBody
+		@ClassExpression // 类表达式(`class xx {}`)
+			class 
+			name?: Identifier
+			?TypeParameters
+			?ExtendsClause
+			?ImplementsClause
+			?ClassBody
 
-		const result = new nodes.ClassExpression();
-		@FunctionExpressionOrDeclaration(result, true, false);
-		return result;
+			const result = new nodes.ClassExpression();
+			@FunctionExpressionOrDeclaration(result, true, false);
+			return result;
 
-	@ClassDeclaration(*, *, allowMissingName: boolean, missingBody: boolean) // 类定义(`class xx {}`)
-		?Decorators
-		?abstract
-		class 
-		name?: Identifier
-		?TypeParameters
-		?ExtendsClause
-		?ImplementsClause
-		?ClassBody
+		@ClassDeclaration(*, *, allowMissingName: boolean, missingBody: boolean) // 类定义(`class xx {}`)
+			?Decorators
+			?Modifiers
+			class 
+			name?: Identifier
+			?TypeParameters
+			?ExtendsClause
+			?ImplementsClause
+			?ClassBody
 
-		const result = new nodes.ClassDeclaration();
-		if (decorators) result.decorators = decorators;
-		if (abstractToken != undefined) result.abstractToken = abstractToken;
-		@ClassExpressionOrDeclaration(result, allowMissingName, missingBody);
-		return result;
+			const result = new nodes.ClassDeclaration();
+			if (decorators) result.decorators = decorators;
+			if (abstractToken != undefined) result.abstractToken = abstractToken;
+			@ClassExpressionOrDeclaration(result, allowMissingName, missingBody);
+			return result;
 
-	@ExtendsClause(result) // extends 分句(`extends xx`)
-		extends
-		extends: Expression(Precedence.leftHandSide, false)
-		
-	@ImplementsClause(result) // implements 分句(`implements xx`)
-		implements
-		implements: Expression(Precedence.leftHandSide, false),...
+			@Decorators
 
-	@ClassBody(result, missingBody: boolean) // 类主体(`{...}`)
-		members: { ClassBodyElement... }
+			@ExtendsClause(result) // extends 分句(`extends xx`)
+				extends
+				extends: Expression(Precedence.leftHandSide, false)
+				
+			@ImplementsClause(result) // implements 分句(`implements xx`)
+				implements
+				implements: Expression(Precedence.leftHandSide, false),...
 
-		if (missingBody) {
-			@tryReadSemicolon(result);
-		} else {
-			result.members = @NodeList(@ClassBodyElement, @{, @});
-		}
+			@ClassBody(result, missingBody: boolean) // 类主体(`{...}`)
+				members: { ClassBodyElement... }
 
-		@ClassBodyElement // 类主体成员
-			= MethodDeclaration | PropertyDeclaration | AccessorDeclaration
+				if (missingBody) {
+					@tryReadSemicolon(result);
+				} else {
+					result.members = @NodeList(@ClassBodyElement, @{, @});
+				}
 
-			const decorators = @Decorators();
-			let accessibilityToken: number;
-			let accessibility: TokenType;
-			let abstractOrStaticToken: number;
-			let abstractOrStatic: TokenType;
-			let asyncOrReadOnlyToken: number;
-			let asyncOrReadOnly: TokenType;
-			while (isModifier(@peek)) {
-				const savedState = @stashSave();
-				@lexer.read();
-				if (@sameLine && (@peek === @<identifier> || isKeyword(@peek) || @peek === @[)) {
-					@stashClear(savedState);
-					switch (@lexer.read().type) {
-						case @<get>:
-						case @<set>:
+				@ClassBodyElement // 类主体成员
+					= MethodDeclaration | PropertyDeclaration | AccessorDeclaration
+
+					const decorators = @Decorators();
+					let accessibilityToken: number;
+					let accessibility: TokenType;
+					let abstractOrStaticToken: number;
+					let abstractOrStatic: TokenType;
+					let asyncOrReadOnlyToken: number;
+					let asyncOrReadOnly: TokenType;
+					while (isModifier(@peek)) {
+						const savedState = @stashSave();
+						@lexer.read();
+						if (@sameLine && (@peek === @<identifier> || isKeyword(@peek) || @peek === @[)) {
+							@stashClear(savedState);
+							switch (@lexer.read().type) {
+								case @<get>:
+								case @<set>:
+									if (asyncOrReadOnly === @<readonly>) {
+										@error({start: asyncOrReadOnlyToken, end: asyncOrReadOnlyToken + 8/*'readonly'.length*/}, "'{0}' modifier can only appear on a property declaration.", tokenToString(@<readonly>));
+										asyncOrReadOnly = asyncOrReadOnlyToken = undefined;
+									}
+									return @AccessorDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, abstractOrStatic, asyncOrReadOnlyToken, @lexer.current.start, @lexer.current.type);
+								case @<private>:
+								case @<protected>:
+								case @<public>:
+									if (accessibility != undefined) {
+										@error(@lexer.current, @current === accessibility ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@accessibility));
+										continue;
+									}
+									if (abstractOrStatic != undefined || asyncOrReadOnly != undefined) {
+										@error(@lexer.current, "'{0}' modifier must precede '{1}' modifier.", tokenToString(@current), tokenToString(abstractOrStatic != undefined ? abstractOrStatic : asyncOrReadOnly));
+										continue;
+									}
+									accessibilityToken = @lexer.current.start;
+									accessibility = @lexer.current.type;
+									continue;
+								case @<abstract>:
+								case @<static>:
+									if (abstractOrStatic != undefined) {
+										@error(@lexer.current, @current === abstractOrStatic ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@abstractOrStatic));
+										continue;
+									}
+									if (asyncOrReadOnly != undefined) {
+										@error(@lexer.current, "'{0}' modifier must precede '{1}' modifier.", tokenToString(@current), tokenToString(asyncOrReadOnly));
+										continue;
+									}
+									abstractOrStaticToken = @lexer.current.start;
+									abstractOrStatic = @lexer.current.type;
+									continue;
+								case @<async>:
+								case @<readonly>:
+									if (asyncOrReadOnly != undefined) {
+										@error(@lexer.current, @current === asyncOrReadOnly ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@asyncOrReadOnly));
+										continue;
+									}
+									asyncOrReadOnlyToken = @lexer.current.start;
+									asyncOrReadOnly = @lexer.current.type;
+									continue;
+							}
+						}
+						@stashRestore(savedState);
+						break;
+					}
+					const name = @Identifier(true);
+					switch (@peek) {
+						case @(:
+						case @<:
 							if (asyncOrReadOnly === @<readonly>) {
 								@error({start: asyncOrReadOnlyToken, end: asyncOrReadOnlyToken + 8/*'readonly'.length*/}, "'{0}' modifier can only appear on a property declaration.", tokenToString(@<readonly>));
 								asyncOrReadOnly = asyncOrReadOnlyToken = undefined;
 							}
-							return @AccessorDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, abstractOrStatic, asyncOrReadOnlyToken, @lexer.current.start, @lexer.current.type);
-						case @<private>:
-						case @<protected>:
-						case @<public>:
-							if (accessibility != undefined) {
-								@error(@lexer.current, @current === accessibility ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@accessibility));
-								continue;
+							return @MethodDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, abstractOrStatic, asyncOrReadOnlyToken, name);
+						default:
+							if (abstractOrStatic === @<abstract>) {
+								@error({start: abstractOrStatic, end: asyncOrReadOnlyToken + 8/*'abstract'.length*/}, "'{0}' modifier can only appear on a class or method declaration.", tokenToString(@<abstract>));
+								abstractOrStatic = abstractOrStaticToken = undefined;
 							}
-							if (abstractOrStatic != undefined || asyncOrReadOnly != undefined) {
-								@error(@lexer.current, "'{0}' modifier must precede '{1}' modifier.", tokenToString(@current), tokenToString(abstractOrStatic != undefined ? abstractOrStatic : asyncOrReadOnly));
-								continue;
+							if (asyncOrReadOnly === @<async>) {
+								@error({start: asyncOrReadOnly, end: asyncOrReadOnlyToken + 5/*'async'.length*/}, "'{0}' modifier can only appear on a property declaration.", tokenToString(@<readonly>));
+								asyncOrReadOnly = asyncOrReadOnlyToken = undefined;
 							}
-							accessibilityToken = @lexer.current.start;
-							accessibility = @lexer.current.type;
-							continue;
-						case @<abstract>:
-						case @<static>:
-							if (abstractOrStatic != undefined) {
-								@error(@lexer.current, @current === abstractOrStatic ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@abstractOrStatic));
-								continue;
-							}
-							if (asyncOrReadOnly != undefined) {
-								@error(@lexer.current, "'{0}' modifier must precede '{1}' modifier.", tokenToString(@current), tokenToString(asyncOrReadOnly));
-								continue;
-							}
-							abstractOrStaticToken = @lexer.current.start;
-							abstractOrStatic = @lexer.current.type;
-							continue;
-						case @<async>:
-						case @<readonly>:
-							if (asyncOrReadOnly != undefined) {
-								@error(@lexer.current, @current === asyncOrReadOnly ? "Duplicate modifier '{0}'." : "'{0}' modifier cannot be used with '{1}' modifier.",  tokenToString(@current),  tokenToString(@asyncOrReadOnly));
-								continue;
-							}
-							asyncOrReadOnlyToken = @lexer.current.start;
-							asyncOrReadOnly = @lexer.current.type;
-							continue;
+							return @PropertyDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, asyncOrReadOnlyToken, name);
 					}
-				}
-				@stashRestore(savedState);
-				break;
+
+					@MethodDeclaration(*, *, *, *, *) // 方法声明
+						?Decorators
+						?accessibility: <public>|<private>|<protected>
+						?abstractOrStatic: <abstract>|<static>
+						?async
+						?*
+						?name: Identifier(true)
+						?TypeParameters
+						Parameters
+						?TypeAnnotation
+						?FunctionBody(result, abstractOrStatic === @<abstract>)
+
+					@PropertyDeclaration(*, *, *, *, *) // 属性声明
+						?Decorators
+						?accessibility: <public>|<private>|<protected>
+						?static
+						?readonly
+						name: BindingName
+						?TypeAnnotation
+						?Initializer
+
+					@AccessorDeclaration(*, *, *, *, *) // 访问器声明
+						?Decorators
+						?accessibility: <public>|<private>|<protected>
+						?abstractOrStatic: <abstract>|<static>
+						?async
+						getOrSet: <get>|<set>
+						name: Identifier(true)
+						Parameters
+						?TypeAnnotation
+						?FunctionBody
+
+	@Decorators // 修饰器列表
+		decorators: Decorator...  // 修饰器列表
+		
+		@Decorator // 修饰器(`@x`)
+			@
+			body: Expression(Precedence.leftHandSide, false)
+
+	@Modifiers // 修饰符列表
+		modifiers: Modifier...
+		
+		@Modifier // 修饰符(`static`、`private`、...)
+			type: <static>|<abstract>|<public>|<protected>|<private>
+
+			if (isModifier(@peek)) {
+
 			}
-			const name = @Identifier(true);
-			switch (@peek) {
-				case @(:
-				case @<:
-					if (asyncOrReadOnly === @<readonly>) {
-						@error({start: asyncOrReadOnlyToken, end: asyncOrReadOnlyToken + 8/*'readonly'.length*/}, "'{0}' modifier can only appear on a property declaration.", tokenToString(@<readonly>));
-						asyncOrReadOnly = asyncOrReadOnlyToken = undefined;
-					}
-					return @MethodDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, abstractOrStatic, asyncOrReadOnlyToken, name);
-				default:
-					if (abstractOrStatic === @<abstract>) {
-						@error({start: abstractOrStatic, end: asyncOrReadOnlyToken + 8/*'abstract'.length*/}, "'{0}' modifier can only appear on a class or method declaration.", tokenToString(@<abstract>));
-						abstractOrStatic = abstractOrStaticToken = undefined;
-					}
-					if (asyncOrReadOnly === @<async>) {
-						@error({start: asyncOrReadOnly, end: asyncOrReadOnlyToken + 5/*'async'.length*/}, "'{0}' modifier can only appear on a property declaration.", tokenToString(@<readonly>));
-						asyncOrReadOnly = asyncOrReadOnlyToken = undefined;
-					}
-					return @PropertyDeclaration(decorators, accessibilityToken, accessibility, abstractOrStaticToken, asyncOrReadOnlyToken, name);
-			}
-
-			@MethodDeclaration(*, *, *, *, *) // 方法声明
-				?Decorators
-				?accessibility: <public>|<private>|<protected>
-				?abstractOrStatic: <abstract>|<static>
-				?async
-				?*
-				?name: Identifier(true)
-				?TypeParameters
-				Parameters
-				?TypeAnnotation
-				?FunctionBody(result, abstractOrStatic === @<abstract>)
-
-			@PropertyDeclaration(*, *, *, *, *) // 属性声明
-				?Decorators
-				?accessibility: <public>|<private>|<protected>
-				?static
-				?readonly
-				name: BindingName
-				?TypeAnnotation
-				?Initializer
-
-			@AccessorDeclaration(*, *, *, *, *) // 访问器声明
-				?Decorators
-				?accessibility: <public>|<private>|<protected>
-				?abstractOrStatic: <abstract>|<static>
-				?async
-				getOrSet: <get>|<set>
-				name: Identifier(true)
-				Parameters
-				?TypeAnnotation
-				?FunctionBody
 
 @ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
 	const start = @read;

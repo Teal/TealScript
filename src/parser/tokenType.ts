@@ -25,124 +25,6 @@ export const enum TokenType {
 
     // #endregion
 
-    // #region 修饰符(Modifiers)
-
-    /**
-     * 最小的表达式开始。
-     */
-    MIN_EXPRESSION_START,
-
-    /**
-     * 最小的定义开始。
-     */
-    MIN_DECLARATION_START,
-
-    /**
-     * 关键字 export(在 JavaScript 3 为保留字)。
-     */
-    export,
-
-    /**
-     * 最小的保留字 1。
-     */
-    MIN_RESERVERD_WORD_1,
-
-    /**
-     * 关键字 declare(仅在 TypeScript)。
-     */
-    declare,
-
-    /**
-     * 最小的修饰符前缀。
-     */
-    MIN_MODIFIER,
-
-    /**
-     * 关键字 async(仅在 JavaScript 7)。
-     */
-    async,
-
-    /**
-     * 关键字 static(仅在 JavaScript 7)。
-     */
-    static,
-
-    /**
-     * 关键字 abstract(仅在 JavaScript 7)。
-     */
-    abstract,
-
-    /**
-     * 关键字 private(仅在 TypeScript)。
-     */
-    private,
-
-    /**
-     * 关键字 protected(仅在 TypeScript)。
-     */
-    protected,
-
-    /**
-     * 关键字 public(仅在 TypeScript)。
-     */
-    public,
-
-    /**
-     * 关键字 readonly(仅在 TypeScript)。
-     */
-    readonly,
-
-    /**
-     * 关键字 get(仅在 JavaScript 7)。
-     */
-    get,
-
-    /**
-     * 关键字 set(仅在 JavaScript 7)。
-     */
-    set,
-
-    /**
-     * 最大的修饰符前缀。
-     */
-    MAX_MODIFIER,
-
-    // #endregion
-
-    // #region 定义(Declarations)
-
-    /**
-     * 关键字 enum(仅在 JavaScript 7)。
-     */
-    enum,
-
-    /**
-     * 关键字 interface(仅在 JavaScript 7)。
-     */
-    interface,
-
-    /**
-     * 最大的保留字 1。
-     */
-    MAX_RESERVERD_WORD_1,
-
-    /**
-     * 关键字 class(在 JavaScript 3 为保留字)。
-     */
-    class,
-
-    /**
-     * 关键字 function。
-     */
-    function,
-
-    /**
-     * 最大的定义开始。
-     */
-    MAX_DECLARATION_START,
-
-    // #endregion
-
     // #region 字面量(Literal)
 
     /**
@@ -212,6 +94,114 @@ export const enum TokenType {
 
     // #endregion
 
+    // #region 修饰符(Modifiers)
+
+    /**
+     * 最小的定义开头。
+     */
+    MIN_DECLARATION_START,
+
+    /**
+     * 最小的修饰符前缀。
+     */
+    MIN_MODIFIER,
+
+    /**
+     * 关键字 export(在 JavaScript 3 为保留字、在)。
+     */
+    export,
+
+    /**
+     * 最小的标识符 1。
+     */
+    MIN_IDENTIFIER_NAME_1,
+
+    /**
+     * 关键字 declare(仅在 TypeScript)。
+     */
+    declare,
+
+    /**
+     * 关键字 async(仅在 JavaScript 7)。
+     */
+    async,
+
+    /**
+     * 关键字 static(仅在 JavaScript 7)。
+     */
+    static,
+
+    /**
+     * 关键字 abstract(仅在 JavaScript 7)。
+     */
+    abstract,
+
+    /**
+     * 关键字 private(仅在 TypeScript)。
+     */
+    private,
+
+    /**
+     * 关键字 protected(仅在 TypeScript)。
+     */
+    protected,
+
+    /**
+     * 关键字 public(仅在 TypeScript)。
+     */
+    public,
+
+    /**
+     * 关键字 readonly(仅在 TypeScript)。
+     */
+    readonly,
+
+    /**
+     * 最大的修饰符前缀。
+     */
+    MAX_MODIFIER,
+
+    // #endregion
+
+    // #region 定义(Declarations)
+
+    /**
+     * 关键字 enum(仅在 JavaScript 7)。
+     */
+    enum,
+
+    /**
+     * 关键字 interface(仅在 JavaScript 7)。
+     */
+    interface,
+
+    /**
+     * 最小的表达式开头。
+     */
+    MIN_EXPRESSION_START,
+
+    /**
+     * 最大的标识符 1。
+     */
+    MAX_IDENTIFIER_NAME_1,
+
+    /**
+     * 关键字 class(在 JavaScript 3 为保留字)。
+     */
+    class,
+
+    /**
+     * 关键字 function。
+     */
+    function,
+
+    /**
+     * 最大的定义开头。
+     */
+    MAX_DECLARATION_START,
+
+    // #endregion
+
     // #region 单目运算符(Unary Operators)
 
     /**
@@ -255,14 +245,19 @@ export const enum TokenType {
     tilde,
 
     /**
-     * 关键字 yield(仅在 JavaScript 7)。
+     * 关键字 yield(仅在 JavaScript 5)。
      */
     yield,
 
     /**
-     * 关键字 await(仅在 JavaScript 7)。
+     * 关键字 await(仅在 JavaScript 5)。
      */
     await,
+
+    /**
+     * 点点点(...)(仅在 JavaScript 5)。
+     */
+    dotDotDot,
 
     /**
      * 电子邮件符号(@)(仅在 JavaScript 7)。
@@ -324,9 +319,14 @@ export const enum TokenType {
     equalsGreaterThan,
 
     /**
-     * 点点点(...)(仅在 JavaScript 7)。
+     * 最小的右值运算符。
      */
-    dotDotDot,
+    MIN_RIGHT_HAND_OPERATOR,
+
+    /**
+     * 斜杠等于(/=)。
+     */
+    slashEquals,
 
     /**
      * 最大的单目运算符。
@@ -334,13 +334,83 @@ export const enum TokenType {
     MAX_UNARY_OPERATOR,
 
     /**
-     * 最大的表达式开始。
+     * 最大的表达式开头。
      */
     MAX_EXPRESSION_START,
 
     // #endregion
 
     // #region 双目运算符(Binary Operators)
+
+    /**
+     * 星号星号(**)(仅在 JavaScript 7)。
+     */
+    asteriskAsterisk,
+
+    /**
+     * 等于(=)。
+     */
+    equals,
+
+    /**
+     * 加等于(+=)。
+     */
+    plusEquals,
+
+    /**
+     * 减等于(-=)。
+     */
+    minusEquals,
+
+    /**
+     * 星号等于(*=)。
+     */
+    asteriskEquals,
+
+    /**
+     * 百分号等于(%=)。
+     */
+    percentEquals,
+
+    /**
+     * 左移等于(<<=)。
+     */
+    lessThanLessThanEquals,
+
+    /**
+     * 右移等于(>>=)。
+     */
+    greaterThanGreaterThanEquals,
+
+    /**
+     * 无符右移等于(>>>=)。
+     */
+    greaterThanGreaterThanGreaterThanEquals,
+
+    /**
+     * 位与等于(&=)。
+     */
+    ampersandEquals,
+
+    /**
+     * 位或等于(|=)。
+     */
+    barEquals,
+
+    /**
+     * 异或等于(^=)。
+     */
+    caretEquals,
+
+    /**
+     * 星号星号等于(**=)(仅在 JavaScript 7)。
+     */
+    asteriskAsteriskEquals,
+
+    /**
+     * 最大的右值运算符。
+     */
+    MAX_RIGHT_HAND_OPERATOR,
 
     /**
      * 点(.)。
@@ -453,86 +523,6 @@ export const enum TokenType {
     barBar,
 
     /**
-     * 最小的右值运算符。
-     */
-    MIN_RIGHT_HAND_OPERATOR,
-
-    /**
-     * 星号星号(**)(仅在 JavaScript 7)。
-     */
-    asteriskAsterisk,
-
-    /**
-     * 等于(=)。
-     */
-    equals,
-
-    /**
-     * 加等于(+=)。
-     */
-    plusEquals,
-
-    /**
-     * 减等于(-=)。
-     */
-    minusEquals,
-
-    /**
-     * 星号等于(*=)。
-     */
-    asteriskEquals,
-
-    /**
-     * 斜杠等于(/=)。
-     */
-    slashEquals,
-
-    /**
-     * 百分号等于(%=)。
-     */
-    percentEquals,
-
-    /**
-     * 左移等于(<<=)。
-     */
-    lessThanLessThanEquals,
-
-    /**
-     * 右移等于(>>=)。
-     */
-    greaterThanGreaterThanEquals,
-
-    /**
-     * 无符右移等于(>>>=)。
-     */
-    greaterThanGreaterThanGreaterThanEquals,
-
-    /**
-     * 位与等于(&=)。
-     */
-    ampersandEquals,
-
-    /**
-     * 位或等于(|=)。
-     */
-    barEquals,
-
-    /**
-     * 异或等于(^=)。
-     */
-    caretEquals,
-
-    /**
-     * 星号星号等于(**=)(仅在 JavaScript 7)。
-     */
-    asteriskAsteriskEquals,
-
-    /**
-     * 最大的右值运算符。
-     */
-    MAX_RIGHT_HAND_OPERATOR,
-
-    /**
      * 问号(?)。
      */
     question,
@@ -601,7 +591,7 @@ export const enum TokenType {
     // #region 语句头(Statement Headers)
 
     /**
-     * 最小的语句开始。
+     * 最小的语句开头。
      */
     MIN_STATEMENT_START,
 
@@ -671,9 +661,9 @@ export const enum TokenType {
     var,
 
     /**
-     * 最小的保留字 2。
+     * 最小的标识符 2。
      */
-    MIN_RESERVERD_WORD_2,
+    MIN_IDENTIFIER_NAME_2,
 
     /**
      * 关键字 const(仅在 JavaScript 7)。
@@ -711,12 +701,12 @@ export const enum TokenType {
     module,
 
     /**
-     * 最大的保留字 2。
+     * 最大的标识符 2。
      */
-    MAX_RESERVERD_WORD_2,
+    MAX_IDENTIFIER_NAME_2,
 
     /**
-     * 最大的语句开始。
+     * 最大的语句开头。
      */
     MAX_STATEMENT_START,
 
@@ -750,9 +740,9 @@ export const enum TokenType {
     finally,
 
     /**
-     * 最小的保留字 3。
+     * 最小的标识符 3。
      */
-    MIN_RESERVERD_WORD_3,
+    MIN_IDENTIFIER_NAME_3,
 
     /**
      * 关键字 from(仅在 JavaScript 7)。
@@ -778,6 +768,16 @@ export const enum TokenType {
      * 关键字 to(仅在 TealScript)。
      */
     to,
+
+    /**
+     * 关键字 get(仅在 JavaScript 7)。
+     */
+    get,
+
+    /**
+     * 关键字 set(仅在 JavaScript 7)。
+     */
+    set,
 
     /**
      * 关键字 undefined(仅在 TypeScript)。
@@ -834,9 +834,9 @@ export const enum TokenType {
     never,
 
     /**
-     * 最大的保留字 3。
+     * 最大的标识符 3。
      */
-    MAX_RESERVERD_WORD_3,
+    MAX_IDENTIFIER_NAME_3,
 
     /**
      * 最大的内置类型。
@@ -855,119 +855,85 @@ export const enum TokenType {
 /**
  * @gernerated 此常量的值使用 `tpack gen-tokenType` 生成。
  */
-const stringToTokenMap = {};
+const tokenNames = [];
 
 /**
- * 将指定的字符串转为对应的标记。
- * @param token 要转换的字符串。
- * @returns 返回等效的标记。如果字符串无效，则返回 undefined。
+ * 获取指定标记的名字。
+ * @param token 要获取的标记。
+ * @returns 返回标记名字。如果标记无效，则返回 undefined。
  */
-export function stringToToken(token: string) {
-    return stringToTokenMap[token];
+export function getTokenName(token: TokenType) {
+    return tokenNames[token];
+}
+
+/**
+ * 获取指定名字对应的标记类型。
+ * @param token 要转换的字符串。
+ * @returns 返回等效的标记。如果标记无效，则返回 undefined。
+ * @remark 如需要获取关键字标记类型，建议使用更高效的 {@link getKeyword}。
+ */
+export function getTokenType(value: string) {
+    for (let i = 0; i < tokenNames.length; i++) {
+        if (tokenNames[i] === value) {
+            return <TokenType>i;
+        }
+    }
 }
 
 /**
  * @gernerated 此常量的值使用 `tpack gen-tokenType` 生成。
  */
-const tokenToStringMap = [];
+const keywords: { [key: string]: TokenType } = {};
 
 /**
- * 将指定的标记转为对应的字符串。
- * @param token 要转换的标记。
- * @returns 返回等效的字符串。如果标记无效，则返回 undefined。
+ * 获取指定标识符对应的关键字标记。
+ * @param value 要转换的字符串。
+ * @returns 返回等效的标记。如果字符串不是关键字，则返回 undefined。
  */
-export function tokenToString(token: TokenType) {
-    return tokenToStringMap[token];
-}
-
-/**
- * 判断指定的标记是否是表达式开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isSimpleLiteral(token: TokenType) {
-    return token > TokenType.MIN_SIMPLE_LITERAL && token < TokenType.MAX_SIMPLE_LITERAL;
-}
-
-/**
- * 判断指定的标记是否是单目运算符。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isUnaryOperator(token: TokenType) {
-    return token > TokenType.MIN_UNARY_OPERATOR && token < TokenType.MAX_UNARY_OPERATOR;
-}
-
-/**
- * 判断指定的标记是否是双目运算符。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isBinaryOperator(token: TokenType) {
-    return token > TokenType.MIN_BINARY_OPERATOR && token < TokenType.MAX_BINARY_OPERATOR;
-}
-
-/**
- * 判断指定的标记是否是修饰符。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isModifier(token: TokenType) {
-    return token > TokenType.MIN_MODIFIER && token < TokenType.MAX_MODIFIER || token === TokenType.const;
-}
-
-/**
- * 判断指定的标记是否是定义开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isDeclarationStart(token: TokenType) {
-    return token > TokenType.MIN_DECLARATION_START && token < TokenType.MAX_DECLARATION_START;
-}
-
-/**
- * 判断指定的标记是否是语句开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isStatementStart(token: TokenType) {
-    return token > TokenType.MIN_STATEMENT_START && token < TokenType.MAX_STATEMENT_START;
-}
-
-/**
- * 判断指定的标记是否是表达式开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isExpressionStart(token: TokenType) {
-    return token > TokenType.MIN_EXPRESSION_START && token < TokenType.MAX_EXPRESSION_START;
+export function getKeyword(value: string) {
+    return keywords[value];
 }
 
 /**
  * 判断指定的标记是否是关键字。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
+ * @remark
+ * 关键字是指在语言中有特定意义的名称。
+ * 关键字可作为属性名使用，
+ * 但不能作为变量名使用(部分除外)。
  */
 export function isKeyword(token: TokenType) {
-    const ch = tokenToString(token).charCodeAt(0);
+    const ch = (tokenNames[token] || "").charCodeAt(0);
     return ch >= CharCode.a && ch <= CharCode.z;
 }
 
 /**
- * 判断指定的标记是否是保留字。
+ * 判断指定的标记是否可作为标志名。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
+ * @remark 为了兼容历史代码，部分关键字允许被作为变量名使用。
  */
-export function isReservedWord(token: TokenType) {
-    return token > TokenType.MIN_RESERVERD_WORD_1 && token < TokenType.MAX_RESERVERD_WORD_1 ||
-        token > TokenType.MIN_RESERVERD_WORD_2 && token < TokenType.MAX_RESERVERD_WORD_2 ||
-        token > TokenType.MIN_RESERVERD_WORD_3 && token < TokenType.MAX_RESERVERD_WORD_3 ||
+export function isIdentifierName(token: TokenType) {
+    return token === TokenType.identifier ||
+        token > TokenType.MIN_IDENTIFIER_NAME_1 && token < TokenType.MAX_IDENTIFIER_NAME_1 ||
+        token > TokenType.MIN_IDENTIFIER_NAME_2 && token < TokenType.MAX_IDENTIFIER_NAME_2 ||
+        token > TokenType.MIN_IDENTIFIER_NAME_3 && token < TokenType.MAX_IDENTIFIER_NAME_3 ||
         token === TokenType.super || token === TokenType.yield || token === TokenType.await ||
         token === TokenType.as || token === TokenType.is;
 }
 
 /**
- * 判断指定的标记是否是内置类型。
+ * 判断指定的标记是否是严格模式下的标识符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isReservedWord(token: TokenType) {
+    return token > TokenType.MIN_RESERVED_WORD && token < TokenType.MAX_RESERVED_WORD;
+}
+
+/**
+ * 判断指定的标记是否可作为内置类型。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
  */
@@ -976,23 +942,72 @@ export function isPredefinedType(token: TokenType) {
 }
 
 /**
- * 判断指定的标记是否是绑定名称开始。
+ * 判断指定的标记是否可作为简单字面量。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
  */
-export function isBindingNameStart(token: TokenType) {
-    switch (token) {
-        case TokenType.identifier:
-        case TokenType.openBracket:
-        case TokenType.openBrace:
-            return true;
-        default:
-            return isReservedWord(token);
-    }
+export function isSimpleLiteral(token: TokenType) {
+    return token > TokenType.MIN_SIMPLE_LITERAL && token < TokenType.MAX_SIMPLE_LITERAL;
+}
+
+/**
+ * 判断指定的标记是否可作为单目运算符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isUnaryOperator(token: TokenType) {
+    return token > TokenType.MIN_UNARY_OPERATOR && token < TokenType.MAX_UNARY_OPERATOR;
+}
+
+/**
+ * 判断指定的标记是否可作为双目运算符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isBinaryOperator(token: TokenType) {
+    return token > TokenType.MIN_BINARY_OPERATOR && token < TokenType.MAX_BINARY_OPERATOR;
+}
+
+/**
+ * 判断指定的标记是否可作为表达式开头。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isExpressionStart(token: TokenType) {
+    return token > TokenType.MIN_EXPRESSION_START && token < TokenType.MAX_EXPRESSION_START;
+}
+
+/**
+ * 判断指定的标记是否可作为语句开头。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isStatementStart(token: TokenType) {
+    return token > TokenType.MIN_STATEMENT_START && token < TokenType.MAX_STATEMENT_START;
+}
+
+/**
+ * 判断指定的标记是否可作为修饰符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isModifier(token: TokenType) {
+    return token > TokenType.MIN_MODIFIER && token < TokenType.MAX_MODIFIER || token === TokenType.const;
+}
+
+/**
+ * 判断指定的标记是否可作为定义开头。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isDeclarationStart(token: TokenType) {
+    return token > TokenType.MIN_DECLARATION_START && token < TokenType.MAX_DECLARATION_START;
 }
 
 /**
  * 判断指定的运算符是否是从右往左优先计算。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
  */
 export function isRightHandOperator(token: TokenType) {
     return token > TokenType.MIN_RIGHT_HAND_OPERATOR && token < TokenType.MAX_RIGHT_HAND_OPERATOR;
@@ -1103,7 +1118,7 @@ export const enum Precedence {
 /**
  * 存储所有优先级。
  */
-const precedences: { [key: number]: Precedence } = {
+export const precedences: { [key: number]: Precedence } = {
     [TokenType.comma]: Precedence.comma,
 
     [TokenType.equals]: Precedence.assignment,
