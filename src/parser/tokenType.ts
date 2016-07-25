@@ -211,11 +211,6 @@ export const enum TokenType {
     export,
 
     /**
-     * 关键字 default。
-     */
-    default,
-
-    /**
      * 关键字 const(JavaScript 5 新增)。
      */
     const,
@@ -713,6 +708,11 @@ export const enum TokenType {
      * 关键字 case。
      */
     case,
+
+    /**
+     * 关键字 default。
+     */
+    default,
 
     /**
      * 关键字 catch。
