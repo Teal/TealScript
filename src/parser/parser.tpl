@@ -1,3 +1,130 @@
+// TealScript 语法解析器
+// 此文件可用于生成 parser.ts、nodes.ts、nodeVisitor.ts
+
+/// 生成函数。
+/// @param source 源文件内容。
+/// @param tokenTypes 所有标记类型。
+/// @param parser 输入 parser.ts 源文件。
+/// @param parser 输入 nodes.ts 源文件。
+/// @param parser 输入 nodeVisitor.ts 源文件。
+/// @returns {{parser, nodes, nodeVisitor}}
+function main (source, tokenTypes, parser, nodes, nodeVisitor) {
+	var defs = {};
+
+	var stack = [{ indent: -1 }];
+	var lines = source.split(/\r\n?|\n/);
+	for(var i = 0; i < lines.length; i++) {
+		var line = lines[i].trim();
+		if (!line) continue;
+
+		// 定义头。
+		if (/^@/.test(line)) {
+			var def = { indent: getIndent(line), params: [], parts: [], codes: [], name: "" }
+
+			line = line.replace(/\/\/\s*(.*)/, function(_, name) {
+				def.name = name;
+				return "";
+			}).replace(/@(\w+)\s*\(([^)]*?)\)/, function (_, prop, value){
+				def[prop] = value;
+				return "";
+			}).replace(/\(([^)]*?)\)/, function (_, params){
+				def.params = params.split(/,\s*/).map(function(p){
+					var info = {};
+					p = p.replace(/\/\*(.*)\*\/, function(_, comment){
+						info.comment = comment;
+					}).replace(/:(.*)/, function(_, type){
+						info.type = type;
+					});
+					info.name = p.trim();
+					return info;
+				});
+				return "";
+			});
+			def.name = line.trim();
+
+			continue;
+		}
+
+		// 没有继续缩进则跳出当前定义。
+		var def = stack[stack.length - 1];
+		if (getIndent(line) <= def.indent) {
+			stack.pop();
+			def = stack[stack.length - 1];
+		}
+
+		if (isCode(line)) {
+			def.parts.push(formatPart(removeIndent(line, def.indent + 1)));
+		} else {
+			def.codes.push(formatCode(line.trim()));
+		}
+
+	}
+
+	function getIndent(line) {
+		return /^\s*/.exec(line)[0].length;
+	}
+
+	function removeIndent(line, count) {
+		return line.substring(count);
+	}
+
+	function split2(line, sepeator) {
+		var p = line.indexOf(sepeator);
+		return p >= 0 ? [line.substring(0, p), line.substring(p + sepeator.length)] : [line, ""];
+	}
+
+	function isCode(line) {
+		return /[\{:;\}\?]$/.test(line) && !/^\?[:;\{\?]$/.test(line);
+	}
+
+	function formatCode(line) {
+		return line.replace(/@peek/g, "this.lexer.peek().type")
+			.replace(/@read/g, "this.lexer.read().start")
+			.replace(/'(.+)'/g, function (_, t){
+				if (!/^a-z/.test(t)) t = tokenTypes[t];
+				return "TokenType." + t;
+			})
+			.replace(/@([A-Z])/g, "this.parse$1")
+			.replace(/@/g, "this.");
+	}
+
+	function formatPart(line) {
+		var info = {};
+		line = line.replace(/=(.*)/, function (_, value){
+			info.value = value;
+		}).replace(/:(.*)/, function (_, type){
+			info.type = type;
+		});
+		info.name = line;
+		return info;
+	}
+
+}
+
+
+
+// decorators: Decorator...
+// 		@Decorator // 修饰器(`@x`、`@x()`)
+// 			@
+// 			body: Expression(Expression.leftHandSide, false)
+// 	modifiers: Modifiers
+// 		Modifier // 修饰符(`static`、`private`、...)
+// 			type: <static>|<abstract>|<public>|<protected>|<private>|<const>
+// 	name: Identifier
+// 	typeParameters: TypeParameters
+// ErrorExpression
+
+
+// (a: /a/ )=>7
+	// @followsTypeArguments() // 判断是否紧跟类型参数
+	// 	@read; // <
+	// 	const followsTypeNode = @followsTypeNode();
+	// 	if (@peek === '>' || @peek === ',') {
+	// 		return true;
+	// 	}
+	// 	return followsTypeNode;
+
+//------------------------------------------------------------------
 
 @TypeNode // 类型节点
 	let result = @UnaryOrPrimaryTypeNode(allowIn);
@@ -41,7 +168,7 @@
 
 				const result = new nodes.TypeParameterDeclaration();
 				result.name = @Identifier(false);
-				if (@peek === #extends#) {
+				if (@peek === 'extends') {
 					result.extendsToken = @read;
 					result.extends = @TypeNode(Precedence.any)
 				}
@@ -51,7 +178,7 @@
 			parameters: ( ParameterDeclaration... )
 
 			@ParameterDeclaration // 参数声明(`x`、`x?: number`)
-				?accessibility: #public#|#private#|#protected#
+				?accessibility: 'public'|'private'|'protected'
 				?...
 				name: BindingName
 				??
@@ -63,13 +190,13 @@
 					case @identifier:
 						result.name = @Identifier(false);
 						break;
-					case #.#..:
+					case '...':
 						result.dotDotDotToken = @read;
 						result.name = @Identifier(false);
 						break;
-					case #public#:
-					case #private#:
-					case #protected#:
+					case 'public':
+					case 'private':
+					case 'protected':
 						result.name = @Identifier(false);
 						if (@isBindingName()) {
 							result.accessibilityToken = @lexer.current.start;
@@ -81,7 +208,7 @@
 						result.name = @BindingName();
 						break;
 				}
-				if (@peek === #?#) result.questionToken = @read;
+				if (@peek === '?') result.questionToken = @read;
 				@TypeAnnotation(result);
 				@Initializer(result);
 				return result;
@@ -116,13 +243,13 @@
 
 			@PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName // 属性名称(`xx`、`"xx"`、`0`、`[xx]`)
 				switch (@peek) {
-					case #identifier#:
+					case 'identifier':
 						return @Identifier(false);
-					case #stringLiteral#:
+					case 'stringLiteral':
 						return @StringLiteral();
-					case #numericLiteral#:
+					case 'numericLiteral':
 						return @NumericLiteral();
-					case #[#:
+					case '[':
 						return @ComputedPropertyName();
 						@ComputedPropertyName // 已计算的属性名(`[1]`)
 							[ 
@@ -136,23 +263,31 @@
 						return @ErrorExpression(); // TODO
 				}
 
-@Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn: boolean/*是否允许解析 in 表达式*/) @abstract // 表达式
+	@followsTypeArguments() // 判断是否紧跟类型参数
+		@read; // <
+		const followsTypeNode = @followsTypeNode();
+		if (@peek === '>' || @peek === ',') {
+			return true;
+		}
+		return followsTypeNode;
+
+@Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn: boolean/*是否允许解析 in 表达式*/) // 表达式
 	let result: nodes.Expression;
 	switch (@peek) {
-		case #identifier#: // x => y、x<T>、x
-			result = @ArrowFunctionOrGenericExpressionOrIdentifier();
+		case 'identifier': // x => y、x<T>、x
+			result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
 			break;
 
-			@ArrowFunctionOrGenericExpressionOrIdentifier // 箭头或泛型表达式或标识符
+			@ArrowFunctionOrGenericExpressionOrIdentifier(allowIn: boolean) // 箭头函数或泛型表达式或标识符
 				let result = @Identifier(false);
 				switch (@peek) {
-					case #=>#:
-						result = @ArrowFunctionExpression(undefined, undefined, result);
+					case '=>':
+						result = @ArrowFunctionExpression(undefined, undefined, result, allowIn);
 						break;
-					case #<#:
+					case '<':
 						const savedState = @stashSave();
 						const arguments = @TypeArguments();
-						if (@current === #>#) {
+						if (@current === '>' && (!isUnaryOperator(@peek) || isBinaryOperator(@peek))) {
 							@stashClear(savedState);
 							result = @GenericExpression(result, arguments);
 						} else {
@@ -163,7 +298,7 @@
 				return result;
 
 				@GenericExpression(*, *) // 泛型表达式(`value<number>`)
-					target: Identifier // 目标部分
+					expression: Identifier // 目标部分
 					typeArguments: TypeArguments 
 
 				@Identifier(allowKeyword: boolean) // 标识符(`x`)
@@ -180,82 +315,106 @@
 					@error(@lexer.peek(), isKeyword(@peek) ? "Identifier expected. '{0}' is a keyword." : "Identifier expected.", getTokenName(@peek));
 					return @ErrorIdentifier();
 
-		case #this#:
-		case #null#:
-		case #true#:
-		case #false#:
-		case #super#:
+		case 'this':
+		case 'null':
+		case 'true':
+		case 'false':
+		case 'super':
 			result = @SimpleLiteral();
 			break;
 
 			@SimpleLiteral // 简单字面量(`null`、`true`、`false`、`this`、`super`)
-				type: #this#|#null#|#true#|#false#|#super# // 类型
+				type: 'this'|'null'|'true'|'false'|'super' // 类型
 
-		case #(#: // (x) => ...、(x)
-			result = @ArrowFunctionOrParenthesizedExpression();
+		case '(': // (x) => ...、(x)
+			result = @ArrowFunctionOrParenthesizedExpression(allowIn);
 			break;
 
-			@ArrowFunctionOrParenthesizedExpression // 括号或箭头表达式
+			@ArrowFunctionOrParenthesizedExpression(allowIn: boolean) // 箭头或括号表达式
 				const savedState = @stashSave();
 				const parameters = @Parameters();
-				return @peek === #=># || @peek === #:# ? @ArrowFunctionLiteral(undefined, undefined, parameters, allowIn) : @ParenthesizedExpression();
+				if (@peek === '=>' || @peek === ':' || @peek === '{') {
+					@stashClear(savedState);
+					return @ArrowFunctionExpression(undefined, undefined, parameters, allowIn);
+				}
+				@stashRestore(savedState);
+				return @ParenthesizedExpression();
 
-				@ArrowFunctionExpression(*, *, *, allowIn: boolean) // 箭头函数表达式(`x => xx`)。
+				@ArrowFunctionExpression(*, *, *, allowIn: boolean) // 箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。
 					?modifiers: Modifiers
 					?typeParameters: TypeParameters
-					?parameters: ParameterDeclarations | Identifier // 参数部分
+					?parameters: NodeList<ParameterDeclaration> | Identifier // 参数部分
 					?TypeAnnotation
 					=> 
-					body: BlockStatement | Expression = @peek === #{# ? @BlockStatement() : @Expression(Precedence.assignment, allowIn)
+					body: BlockStatement | Expression = @peek === '{' ? @BlockStatement() : @Expression(Precedence.assignment, allowIn)
 
 				@ParenthesizedExpression // 括号表达式(`(x)`)
 					(
 					body: Expression(Precedence.any, true) // 主体部分
 					)
 
-		case #numericLiteral#:
+		case 'numericLiteral':
 			result = @NumericLiteral();
 			break;
 
 			@NumericLiteral // 数字字面量(`1`)
 				value: <numericLiteral>
 
-		case #stringLiteral#:
-		case #noSubstitutionTemplateLiteral#:
+		case 'stringLiteral':
+		case 'noSubstitutionTemplateLiteral':
 			result = @StringLiteral();
 			break;
 
 			@StringLiteral // 字符串字面量(`'abc'`、`"abc"`、`\`abc\``)
 				value: <stringLiteral>
 
-		case #[#:
+		case '[':
 			result = @ArrayLiteral();
 			break;
 
 			@ArrayLiteral // 数组字面量(`[x, y]`)
-				elements: [ ArrayLiteralElement,... ] // 所以元素
+				elements: [ ArrayLiteralElement,... ] // 元素列表
+
 				@ArrayLiteralElement // 数组字面量元素(`x`)
 					...?
 					value?: Expression(Precedence.assignment, true)
 
-		case #{#:
+		case '{':
 			result = @ObjectLiteral();
 			break;
 
 			@ObjectLiteral // 对象字面量(`{x: y}`)
-				elements: { PropertyDefinition,... }
+				elements: { ObjectLiteralElement,... }
 
-		case #function#:
+				@ObjectLiteralElement // 对象字面量元素(`x: y`)
+					key: PropertyName 
+					?: 
+					?value: Expression(Precedence.assignment, true)
+
+					const result = new nodes.ObjectLiteralElement();
+					result.key = @PropertyName();
+					if (@peek === ':') {
+						result.colonToken = @read;
+						result.value = @Expression(Precedence.assignment, true);
+					} else if(result.key.constructor !== nodes.Identifier && result.key.constructor !== nodes.MemberCallExpression) {
+						@expectToken(':');
+					}
+					return result;
+
+		case 'function':
 			result = @FunctionExpression(undefined);
 			break;
 
-		case #new#:
+		case 'new':
 			result = @NewTargetOrNewExpression();
 			break;
 
 			@NewTargetOrNewExpression // new.target 或 new 表达式
-				const start = @expectToken(#new#);
-				return @peek === #.# ? @NewTargetExpression(start) : @NewExpression(start);
+				const newToken = @expectToken('new');
+				if (@peek === '.') {
+					return @NewTargetExpression(newToken);
+				}
+				return @NewExpression(newToken);
 
 				@NewTargetExpression(*) // new.target 表达式(`new.target`)
 					new 
@@ -263,23 +422,22 @@
 					target
 
 					const result = new nodes.NewTargetExpression();
-					result.start = start;
-					result.dotToken = @expectToken(#.#);
-					if (@peek === #identifier# && @lexer.peek().data === "target") {
-						result.end = @lexer.read().end;
-					} else {
-						@error(@lexer.current, "Expression expected.");
-						result.end = @lexer.current.end;
-					}
-					return result;
+					result.newToken = newToken;
+					result.dotToken = @expectToken('.');
+					if (@peek === 'identifier' && @lexer.peek().data === "target") {
+						result.targetToken = @read;
+						return result;
+					} 
+					@error(@lexer.current, "'target' expected.");
+					return @ErrorExpression(newToken);
 
-				@NewExpression(*) : // new 表达式(`new x()`)。
+				@NewExpression(*) // new 表达式(`new x()`)。
 					new
-					target: Expression(Precedence.member, false) 
+					expression: Expression(Precedence.member, false) 
 					?arguments: Arguments
 
-		case #/#:
-		case #/=#:	
+		case '/':
+		case '/=':	
 			result = @RegularExpressionLiteral();
 			break;
 
@@ -288,13 +446,14 @@
 				flags?: <stringLiteral> // 标志部分
 
 				const result = new nodes.RegularExpressionLiteral();
-				result.start = @lexer.readAsRegularExpressionLiteral().start;
-				result.value = @lexer.current.data.pattern;
-	        	result.flags = @lexer.current.data.flags;
-	        	result.end = @lexer.current.end;
+				const token = @lexer.readAsRegularExpressionLiteral();
+				result.start = token.start;
+				result.value = token.data.pattern;
+	        	result.flags = token.data.flags;
+	        	result.end = token.end;
 	        	return result;
 
-		case #templateHead#:
+		case 'templateHead':
 			result = @TemplateLiteral();
 			break;
 
@@ -306,11 +465,11 @@
 				while (true) {
 					result.spans.push(@TemplateSpan());
 					result.spans.push(@Expression());
-					if (@peek !== #}#) {
-		                @expectToken(#}#);
+					if (@peek !== '}') {
+		                @expectToken('}');
 		                break;
 		            }
-		            if (@lexer.readAsTemplateMiddleOrTail().type === #templateTail#) {
+		            if (@lexer.readAsTemplateMiddleOrTail().type === 'templateTail') {
 		                result.spans.push(@TemplateSpan());
 		                break;
 		            }
@@ -320,15 +479,15 @@
 				@TemplateSpan // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
 					value: <stringLiteral>
 
-		case #<#: // <T> (p)=>{}、<T>fn
+		case '<': // <T> (p)=>{}、<T>fn
 			result = @ArrowFunctionOrTypeAssertionExpression();
 			break;
 
 			@ArrowFunctionOrTypeAssertionExpression // 箭头函数或类型确认表达式
 				const savedState = @stashSave();
 				const typeParameters = @TypeParameters();
-				const parameters = @peek === #(# ? @Parameters() : isIdentifierName(@peek) : @Identifier(false) : undefined;
-				if (parameters && (@peek === #=># || @peek === #:#)) {
+				const parameters = @peek === '(' ? @Parameters() : isIdentifierName(@peek) : @Identifier(false) : undefined;
+				if (parameters && (@peek === '=>' || @peek === ':' || @peek === '{')) {
 					@stashClear(savedState);
 					return @ArrowFunctionExpression(undefined, typeParameters, parameters, allowIn);
 				}
@@ -341,57 +500,38 @@
 					>
 					operand: Expression(Precedence.postfix, false)
 
-		case #yield#:
+		case 'yield':
 			result = @YieldExpression();
 			break;
 
-			@YieldExpression // yield 表达式(`yield xx`)) {
+			@YieldExpression // yield 表达式(`yield xx`)
 				yield 
-				?*
-				operand: Expression(Precedence.assignment, false)
+				[nobr]?*
+				[nobr]?expression: Expression(Precedence.assignment, false)
 
-				const result = new nodes.YieldExpression();
-				result.start = @read;
-				if (@sameLine && @peek === #*#) {
-					result.asteriskToken = @read;
-				}
-				if (!@tryReadSemicolon(result)) {
-					result.operand = @Expression(Precedence.assignment, false);
-					@tryReadSemicolon(result);
-				}
-				return result;
-
-		case #await#:
+		case 'await':
 			result = @AwaitExpression();
 			break;
 
-			@AwaitExpression // wait 表达式(`await xx`)) {
+			@AwaitExpression // await 表达式(`await xx`)
 				await 
-				operand: Expression(Precedence.assignment, false)
+				[nobr]expression: Expression(Precedence.assignment, false)
 
-				const result = new nodes.AwaitExpression();
-				result.start = @read;
-				if (!@tryReadSemicolon(result)) {
-					result.operand = @Expression(Precedence.assignment, false);
-					@tryReadSemicolon(result);
-				}
-				return result;
-
-		case #class#:
+		case 'class':
 			result = @ClassExpression();
 			break;
 			
-		case #async#:
+		case 'async':
 			result = @AsyncFunctionExpressionOrIdentifier(allowIn);
 			break;
 
 			@AsyncArrowFunctionOrIdentifier(allowIn: boolean) // 异步函数表达式或标识符
 				const savedState = @stashSave();
 				const modifiers = @Modifiers();
-				const typeParameters = @sameLine && @peek === #<# ? @TypeParameters() : undefined;
-				if (@sameLine && (@peek === #(# ||isIdentifierName(@peek))) {
-					const parameters = @peek === #(# ? @Parameters() : @Identifier(false);
-					if (@peek === #=># || @peek === #:#) {
+				const typeParameters = @sameLine && @peek === '<' ? @TypeParameters() : undefined;
+				if (@sameLine && (@peek === '(' || isIdentifierName(@peek))) {
+					const parameters = @peek === '(' ? @Parameters() : @Identifier(false);
+					if (@peek === '=>' || @peek === ':' || @peek === '{') {
 						@stashClear(savedState);
 						return @ArrowFunctionExpression(modifiers, typeParameters, parameters, allowIn);
 					}
@@ -399,7 +539,7 @@
 				@stashRestore(savedState);
 				return @Identifier(false);
 
-		case #=>#:
+		case '=>':
 			result = @ArrowFunctionExpression(undefined, undefined, undefined, allowIn);
 			break;
 
@@ -409,43 +549,44 @@
 				break;
 			}
 			if (isIdentifierName(@peek)) {
-				result = @ArrowFunctionOrGenericExpressionOrIdentifier();
+				result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
 				break;
 			}
-			@error(@lexer.peek(), @peek === #)# || @peek === #]# || @peek === #}# || @peek === #># ? "Unexpected token '{0}'." : @isKeyword(@peek) ? "Expression expected. '{0}' is a keyword." : "Expression expected.", getTokenName(@peek));
-			return @ErrorIdentifier();
+			@error(@lexer.peek(), @isKeyword(@peek) ? "Expression expected; '{0}' is a keyword." : @peek === 'endOfFile' : "Expression expected; Unexpected end of script.", "Expression expected; Unexpected token '{0}'.", getTokenName(@peek));
+			return @ErrorExpression(isStatementStart(@peek) ? @lexer.current.end : @read);
 
 			@UnaryExpression // 一元运算表达式(+x、typeof x、...)
-				operator: #delete#|#void#|#typeof#|#+#|#-#|#~#|#!#|#++#|#--#
+				operator: 'delete'|'void'|'typeof'|'+'|'-'|'~'|'!'|'++'|'--'
 				operand: Expression(Precedence.postfix, false)
 
-			@ErrorIdentifier // 错误的标识符
+			@ErrorExpression(start: number) // 错误的表达式
 				const result = new nodes.ErrorIdentifier();
-				result.start = @lexer.current.end;
+				result.start = start;
+				result.end = @lexer.current.end;
 				return result;
 
 	}
 	while (getPrecedence(@peek) >= precedence) {
 		switch (@peek) {
-			case #.#:
+			case '.':
 				result = @MemberCallExpression(result);
 				continue;
 
 				@MemberCallExpression(*) // 成员调用表达式(x.y)
-					target: Expression // 目标部分
+					expression: Expression // 目标部分
 					. 
 					argument: Identifier(true) // 参数部分
 
-			case #=#:
+			case '=':
 				result = @BinaryExpression(result, allowIn);
 				continue;
 
-			case #(#:
+			case '(':
 				result = @FunctionCallExpression(result);
 				continue;
 
 				@FunctionCallExpression(*) // 函数调用表达式(x())
-					target: Expression 
+					expression: Expression 
 					arguments: CallArguments
 
 					@CallArguments // 函数调用参数列表
@@ -455,17 +596,17 @@
 							?...
 							value: Expression(Precedence.assignment, true)
 
-			case #[#:
+			case '[':
 				result = @IndexCallExpression(result);
 				continue;
 
 				@IndexCallExpression(*) // 索引调用表达式(x[y])
-					target:Expression 
+					expression:Expression 
 					[ 
 					argument: Expression(Precedence.any, true)
 					]
 
-			case #?#:
+			case '?':
 				result = @ConditionalExpression(result);
 				continue;
 
@@ -476,8 +617,8 @@
 					: 
 					else: Expression(Precedence.assignment, allowIn) // 否则部分
 
-			case #++#:
-			case #--#:
+			case '++':
+			case '--':
 				if (@sameLine) {
 					result = @PostfixExpression(result);
 					continue;
@@ -485,20 +626,20 @@
 				break;
 
 				@PostfixExpression(*) // 后缀表达式(`x++`、`x--`)
-					operand: Expression(Precedence.leftHandSide) // 操作数
-					operator: #++#|#--#
+					expression: Expression(Precedence.leftHandSide) // 操作数
+					operator: '++'|'--'
 
-			case #noSubstitutionTemplateLiteral#:
+			case 'noSubstitutionTemplateLiteral':
 				return @TemplateCallExpression(parsed, @StringLiteral());
 
-			case #templateHead#:
+			case 'templateHead':
 				return @TemplateCallExpression(parsed, @TemplateLiteral());
 
 				@TemplateCallExpression(*, *) // 模板调用表达式(`x\`abc\``)
-					target: Expression 
+					expression: Expression 
 					argument: TemplateLiteral | StringLiteral
 
-			case #in#:
+			case 'in':
 				if(allowIn === false) {
 					break;
 				}
@@ -509,9 +650,9 @@
 				continue;
 
 				@BinaryExpression(*, allowIn: boolean) // 双目表达式(x + y、x = y、...)
-					left: Expression // 左值部分
-					operator: #,#|#*=#|#/=#|#%=#|#+=#|#‐=#|#<<=#|##>=>|##>>=>|#&=#|#^=#|#|=#|#**=#|#||#|#&&#|#|#|#^#|#&#|#==#|#!=#|#===#|#!==#|#<#|##>|#<=#|##=>|#instanceof#|#in#|#<<#|##>>|##>>>|#+#|#-#|#*#|#/#|#%#|#**# // 运算类型
-					right: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
+					leftExpression: Expression // 左值部分
+					operator: ','|'*='|'/='|'%='|'+='|'‐='|'<<='|''>=>|''>>=>|'&='|'^='|'|='|'**='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|''>|'<='|''=>|'instanceof'|'in'|'<<'|''>>|''>>>|'+'|'-'|'*'|'/'|'%'|'**' // 运算类型
+					rightExpression: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
 		}
 		break;
 	}
@@ -523,7 +664,7 @@
 			return @LabeledOrExpressionStatement(@Identifier(false));
 
 			@LabeledOrExpressionStatement(parsed: nodes.Expression) // 表达式或标签语句
-				return parsed.constructor === nodes.Identifier && @peek === #:# ?
+				return parsed.constructor === nodes.Identifier && @peek === ':' ?
 					@LabeledStatement(<nodes.Identifier>parsed) :
 					@ExpressionStatement(parsed);
 
@@ -536,19 +677,19 @@
 		        @ExpressionStatement(*) // 表达式语句(`x();`)
 		        	expression: Expression // 表达式部分
 
-		case #{#:
+		case '{':
 			return @BlockStatement();
 
 			@BlockStatement: // 语句块(`{...}`)
 				statements: { Statement... }
 
-		case #var#:
-		case #const#:
+		case 'var':
+		case 'const':
 			return @VariableStatement(undefined);
 
 			@VariableStatement(*): // 变量声明语句(`var x`、`let x`、`const x`)
 				?Modifiers
-				type: #var#|#let#|#const# 
+				type: 'var'|'let'|'const' 
 				variables: VariableDeclaration,...
 
 				@VariableDeclaration // 变量声明(`x = 1`、`[x] = [1]`、`{a: x} = {a: 1}`)
@@ -556,7 +697,7 @@
 					?TypeAnnotation
 					?Initializer
 
-		case #let#: 
+		case 'let': 
 			return @VariableOrExpressionStatement(true);
 
 			@VariableOrExpressionStatement(allowIn: boolean) // 变量声明或表达式语句
@@ -568,10 +709,10 @@
 					@VariableStatement(undefined) :
 					@ExpressionStatement(@Expression(Precedence.any, allowIn));
 
-		case #function#:
+		case 'function':
 			return @FunctionDeclaration(undefined, undefined);
 
-		case #if#:
+		case 'if':
 			return @IfStatement();
 
 			@IfStatement // if 语句(`if (x) ...`)
@@ -582,10 +723,10 @@
 				?else: Statement = @EmabledStatement()
 
 				const result = new nodes.IfStatement();
-		        result.start = @expectToken(#if#);
+		        result.start = @expectToken('if');
 		        @Condition(result);
 		        result.then = @EmbeddedStatement();
-		        if (@peek === #else#) {
+		        if (@peek === 'else') {
 		            result.elseToken = @read;
 		            result.else = @EmbeddedStatement();
 		        }
@@ -596,67 +737,67 @@
 			    	condition: Expression(Precedence.any, true)
 			    	?)
 
-			    	if (@peek === #(#) {
+			    	if (@peek === '(') {
 			            result.openParanToken = @lexer.read().type;
 			            result.condition = @allowInAnd(@Expression);
-			            result.closeParanToken = @expectToken(#)#);
+			            result.closeParanToken = @expectToken(')');
 			        } else {
 			            if (!@options.disallowMissingParenthese) {
-			                @expectToken(#(#);
+			                @expectToken('(');
 			            }
 			            result.condition = @allowInAnd(@Expression);
 			        }
 
-        case #for#
+        case 'for'
             return @ForStatement();
 
             @ForOrForInOrForOfOrForToStatement // 
             	const start = @read;
-		        const openParan = @peek === #(# ? @read : undefined;
+		        const openParan = @peek === '(' ? @read : undefined;
 		        if (openParan == undefined && !@options.disallowMissingParenthese) {
-		            @expectToken(#(#);
+		            @expectToken('(');
 		        }
-		        const initializer = @peek === #;# ? undefined : @VariableOrExpressionStatement(false);
+		        const initializer = @peek === ';' ? undefined : @VariableOrExpressionStatement(false);
 		        let type = @peek;
 		        switch (type) {
-		            case #;#:
-		            case #in#:
+		            case ';':
+		            case 'in':
 		                break;
-		            case #of#:
-		                if (@options.disallowForOf) type = #;#;
+		            case 'of':
+		                if (@options.disallowForOf) type = ';';
 		                break;
-		            case #to#:
-		                if (@options.disallowForTo) type = #;#;
+		            case 'to':
+		                if (@options.disallowForTo) type = ';';
 		                break;
 		            default:
-		                type = #;#;
+		                type = ';';
 		                break;
 		        }
 
 		        let result: nodes.ForStatement | nodes.ForInStatement | nodes.ForOfStatement | nodes.ForToStatement;
 		        switch (type) {
-		            case #;#:
+		            case ';':
 		                result = new nodes.ForStatement();
-		                (<nodes.ForStatement>result).firstSemicolonToken = @expectToken(#;#);
-		                if (@peek !== #;#) {
+		                (<nodes.ForStatement>result).firstSemicolonToken = @expectToken(';');
+		                if (@peek !== ';') {
 		                    result.condition = @allowInAnd(@Expression);
 		                }
-		                (<nodes.ForStatement>result).secondSemicolonToken = @expectToken(#;#);
-		                if (openParan != undefined ? @peek !== #)# : isExpressionStart(@peek)) {
+		                (<nodes.ForStatement>result).secondSemicolonToken = @expectToken(';');
+		                if (openParan != undefined ? @peek !== ')' : isExpressionStart(@peek)) {
 		                    (<nodes.ForStatement>result).iterator = @allowInAnd(@Expression);
 		                }
 		                break;
-		            case #in#:
+		            case 'in':
 		                result = new nodes.ForInStatement();
 		                (<nodes.ForInStatement>result).inToken = @read;
 		                result.condition = @allowInAnd(@Expression);
 		                break;
-		            case #of#:
+		            case 'of':
 		                result = new nodes.ForOfStatement();
 		                (<nodes.ForOfStatement>result).ofToken = @read;
 		                result.condition = @options.disallowForOfCommaExpression ? @allowInAnd(@AssignmentExpressionOrHigher) : @allowInAnd(@Expression);
 		                break;
-		            case #to#:
+		            case 'to':
 		                result = new nodes.ForToStatement();
 		                (<nodes.ForToStatement>result).toToken = @read;
 		                result.condition = @allowInAnd(@Expression);
@@ -669,7 +810,7 @@
 		        }
 		        if (openParan != undefined) {
 		            result.openParanToken = openParan;
-		            result.closeParanToken = @expectToken(#)#);
+		            result.closeParanToken = @expectToken(')');
 		        }
 		        result.body = @EmbeddedStatement();
 		        return result;
@@ -711,7 +852,7 @@
 		        	?)
 		        	statement: Statement
 
-        case #while#
+        case 'while'
             return @WhileStatement();
 
             @WhileStatement // while 语句(`while(x) ...`)
@@ -719,24 +860,24 @@
             	Condition
             	statement: Statement
 
-        case #switch#
+        case 'switch'
             return @SwitchStatement();
 
             @SwitchStatement // switch 语句(`switch(x) {...}`)
 
             	const result = new nodes.SwitchStatement();
 		        result.start = @read;
-		        if (!@options.disallowMissingSwitchCondition || @peek !== #openBrace#) {
+		        if (!@options.disallowMissingSwitchCondition || @peek !== 'openBrace') {
 		            @Condition(result);
 		        }
 		        result.cases = new nodes.NodeList<nodes.CaseClause>();
-		        result.cases.start = @expectToken(#openBrace#);
+		        result.cases.start = @expectToken('openBrace');
 		        while (true) {
 		            switch (@peek) {
-		                case #case#:
-		                case #default#:
+		                case 'case':
+		                case 'default':
 		                    break;
-		                case #closeBrace#:
+		                case 'closeBrace':
 		                    result.cases.end = @lexer.read().end;
 		                    return result;
 		                default:
@@ -747,21 +888,21 @@
 
 		            const caseCaluse = new nodes.CaseClause();
 		            caseCaluse.start = @read;
-		            if (@lexer.current.type === #case#) {
-		                if (!@options.disallowCaseElse && @peek === #else#) {
+		            if (@lexer.current.type === 'case') {
+		                if (!@options.disallowCaseElse && @peek === 'else') {
 		                    caseCaluse.elseToken = @read;
 		                } else {
 		                    caseCaluse.label = @allowInAnd(@Expression);
 		                }
 		            }
-		            caseCaluse.colonToken = @expectToken(#colon#);
+		            caseCaluse.colonToken = @expectToken('colon');
 		            caseCaluse.statements = new nodes.NodeList<nodes.Statement>();
 		            while (true) {
 		                switch (@peek) {
-		                    case #case#:
-		                    case #default#:
-		                    case #closeBrace#:
-		                    case #endOfFile#:
+		                    case 'case':
+		                    case 'default':
+		                    case 'closeBrace':
+		                    case 'endOfFile':
 		                        break;
 		                    default:
 		                        caseCaluse.statements.push(@Statement());
@@ -778,7 +919,7 @@
 		        	:
 		        	statements: Statement...
 
-        case #do#
+        case 'do'
             return @DoWhileStatement();
 
             @DoWhileStatement // do..while 语句(`do ... while(x);`)
@@ -788,7 +929,7 @@
             	Condition
             	?;
 
-        case #break#
+        case 'break'
             return @BreakStatement();
 
             @BreakStatement // break 语句(`break xx;`)
@@ -797,10 +938,10 @@
 		        ?;
 
 		        const result = new ndoes.ContinueStatement();
-		        @BreakOrContinueStatement(result, #continue#);
+		        @BreakOrContinueStatement(result, 'continue');
 		        return result;
             
-        case #continue#
+        case 'continue'
             return @ContinueStatement();
 
             @ContinueStatement // continue 语句(`continue xx;`)
@@ -809,7 +950,7 @@
 		        ?;
 
 		        const result = new ndoes.ContinueStatement();
-		        @BreakOrContinueStatement(result, #continue#);
+		        @BreakOrContinueStatement(result, 'continue');
 		        return result;
 
 		    @BreakOrContinueStatement(result: nodes.ContinueStatement, token: TokenType) // break 或 continue语句
@@ -819,7 +960,7 @@
 		    		@tryReadSemicolon(result);
 		    	}
 		    	
-        case #return#
+        case 'return'
             return @ReturnStatement();
 
             @ReturnStatement // return 语句(`return x;`)
@@ -827,14 +968,14 @@
             	?expression: Expression
 
             	const result = new nodes.ReturnStatement();
-		        result.start = @expectToken(#return#);
+		        result.start = @expectToken('return');
 		        if (@options.useStandardSemicolonInsertion ? !@hasSemicolon() : isExpressionStart(@peek)) {
 		            result.value = @allowInAnd(@Expression);
 		        }
 		        result.end = @tryReadSemicolon();
 		        return result;
 
-        case #throw#
+        case 'throw'
             return @ThrowStatement();
 
             ThrowStatement // throw 语句(`throw x;`)
@@ -851,7 +992,7 @@
 			    result.end = @tryReadSemicolon();
 			    return result;
 
-        case #try#
+        case 'try'
             return @TryStatement();
 
             @TryStatement // try 语句(`try {...} catch(e) {...}`)
@@ -863,8 +1004,8 @@
                 const result = new nodes.TryStatement();
 		        result.start = @read;
 		        result.try = @TryClauseBody();
-		        if (@peek === #catch#) result.catch = @CatchClause();
-		        if (@peek === #finally#) result.catch = @FinallyClause();
+		        if (@peek === 'catch') result.catch = @CatchClause();
+		        if (@peek === 'finally') result.catch = @FinallyClause();
 		        if (@options.disallowSimpleTryBlock && !result.catch && !result.finally) {
 		            @error(@lexer.peek(), "应输入“catch”或“finally”");
 		        }
@@ -879,14 +1020,14 @@
 
 		        	const result = new nodes.CatchClause();
 		        	result.start = @read
-		        	if (@peek === #(#) {
+		        	if (@peek === '(') {
 		        		result.openParanToken = @read;
 		        		result.variable = @BindingName();
-		        		result.closeParanToken = @readToken(#)#);
+		        		result.closeParanToken = @readToken(')');
 		        	} else if (!@options.disallowMissingParenthese && isBindingName(@peek)) {
 		                result.catch.variable = @BindingName();
 		            } else if (@options.disallowMissingCatchVaribale) {
-		                @expectToken(#(#);
+		                @expectToken('(');
 		            }
 		            result.body = @TryClauseBody();
 		            return result;
@@ -899,33 +1040,33 @@
 		        	if (!@options.disallowMissingTryBlock) {
 			            return @EmbeddedStatement();
 			        }
-			        if (@peek === #openBrace#) {
+			        if (@peek === 'openBrace') {
 			            return @BlockStatement();
 			        }
 			        const result = new nodes.BlockStatement();
 			        result.statements = new nodes.NodeList<nodes.Statement>();
-			        result.statements.start = @expectToken(#openBrace#);
+			        result.statements.start = @expectToken('openBrace');
 			        const statement = @Statement();
 			        result.statements.push(statement);
 			        result.statements.end = statement.end;
 			        return result;
 
-        case #debugger#
+        case 'debugger'
             return @DebuggerStatement();
 
             @DebuggerStatement // debugger 语句(`debugger;`)
             	debugger
             	?;
 
-		case #;#:
+		case ';':
 			return @EmptyStatement();
 
 			@EmptyStatement // 空语句(`;`)
 				;
 
-        case #endOfFile#
+        case 'endOfFile'
             return @ErrorStatement();
-        case #with#
+        case 'with'
             return @WithStatement();
 
             @WithStatement // with 语句(`with(x) ...`)
@@ -933,15 +1074,15 @@
             	expression: Expression
             	const result = new nodes.WithStatement();
 		        result.start = @read;
-		        if (@peek === #(#) {
+		        if (@peek === '(') {
 		            result.openParanToken = @read;
 		            result.value = !@options.disallowWithVaribale && @isVariableStatement() ?
 		                @allowInAnd(@VariableStatement) :
 		                @allowInAnd(@Expression);
-		            result.closeParanToken = @expectToken(#)#);
+		            result.closeParanToken = @expectToken(')');
 		        } else {
 		            if (@options.disallowMissingParenthese) {
-		                @expectToken(#(#);
+		                @expectToken('(');
 		            }
 		            result.value = !@options.disallowWithVaribale && @isVariableStatement() ?
 		                @allowInAnd(@VariableStatement) :
@@ -949,13 +1090,13 @@
 		        }
 		        result.body = @EmbeddedStatement();
 		        return result;
-		case #class#:
+		case 'class':
 			return @ClassDeclaration(undefined, undefined);
 
-		case #import#:
+		case 'import':
 			return @ImportAssignmentOrImportDeclaration();
 
-		case #export#:
+		case 'export':
 			return @ExportAssignmentOrExportDeclaration();
 
 		default:
@@ -969,19 +1110,7 @@
 	@tryReadSemicolon(result) // todo
 
 
-				@ObjectLiteralElement // 对象字面量元素(`x: y`)
-					key: PropertyName 
-					?: 
-					?value: Expression(Precedence.assignment, true)
-					const result = new nodes.ObjectLiteralElement();
-					result.key = @PropertyName();
-					if(@peek === #:#) {
-						result.colonToken = @read();
-						result.value = @Expression(Precedence.assignment, true);
-					} else if(result.key.constructor !== nodes.Identifier && result.key.constructor !== nodes.MemberCallExpression) {
-						@expectToken(#:#);
-					}
-					return result;
+				
 					
 			@ArrowExpression(allowIn: boolean): // 箭头表达式
 				=>
@@ -992,8 +1121,8 @@
 	@FunctionDeclarationOrExpression(result: nodes.FunctionDeclaration | nodes.FunctionExpression/* 解析的目标节点 */, modifiers: nodes.NodeList<nodes.Modifier>) // 函数声明或表达式
 		@DocComment(result);
 		if (modifiers) result.modifiers = modifiers;
-		result.functionToken = @expectToken(#function#);
-		if (@peek === #*#) result.asteriskToken = @read;
+		result.functionToken = @expectToken('function');
+		if (@peek === '*') result.asteriskToken = @read;
 		if (isIdentifierName(@peek)) result.name = @Identifier(false);
 		@TypeParameters(result);
 		@Parameters(result);
@@ -1038,10 +1167,10 @@
 			?;
 
 			switch (@peek) {
-				case #{#:
+				case '{':
 					result.body = @BlockStatement();
 					break;
-				case #=>#:
+				case '=>':
 					result.arrowToken = @read;
 					result.body = @Expression(Precedence.assignment, true);
 					break;
@@ -1052,8 +1181,8 @@
 
 	@ClassDeclarationOrExpression(result: nodes.ClassDeclaration | nodes.ClassExpression) // 类声明或类表达式
 		@DocComment(result);
-		result.classToken = @expectToken(#class#);
-		if (isIdentifierName(@peek) && @peek !== #extends# && @peek !== #implements#) result.name = @Identifier(false);
+		result.classToken = @expectToken('class');
+		if (isIdentifierName(@peek) && @peek !== 'extends' && @peek !== 'implements') result.name = @Identifier(false);
 		@TypeParameters(result);
 		@ExtendsClause(result);
 		@ImplementsClause(result);
@@ -1101,8 +1230,8 @@
 			?members: { ClassElement... }
 			?;
 
-			if (@peek === #{#) {
-				result.members = @NodeList(@ClassElement, #{#, #}#);
+			if (@peek === '{') {
+				result.members = @NodeList(@ClassElement, '{', '}');
 			} else {
 				@tryReadSemicolon(result);
 			}
@@ -1111,24 +1240,24 @@
 				const decorators = @Decorators();
 				const modifiers = @Modifiers();
 				switch (@peek) {
-					case #identifier#:
+					case 'identifier':
 						break;
-					case #get#:
-					case #set#:
+					case 'get':
+					case 'set':
 						const savedToken = @lexer.current;
 						@lexer.read();
-						if (isKeyword(@peek) || @peek === #[#) {
-							return @AccessorDeclaration(decorators, modifiers, savedToken.type === #get# ? savedToken.start : undefined, savedToken.type === #set# ? savedToken.start : undefined : undefined);
+						if (isKeyword(@peek) || @peek === '[') {
+							return @AccessorDeclaration(decorators, modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined : undefined);
 						}
 						@lexer.current = savedToken;
 						break;
-					case #*#:
+					case '*':
 						return @MethodDeclaration(decorators, modifiers, @read, @PropertyName());
 				}
 				const name = @PropertyName();
 				switch (@peek) {
-					case #(#:
-					case #<#:
+					case '(':
+					case '<':
 						return @MethodDeclaration(decorators, modifiers, undefined, name);
 					default:
 						return @PropertyDeclaration(decorators, modifiers, name);
@@ -1192,7 +1321,7 @@
 		if (decorators) result.decorators = decorators;
 		if (modifiers) result.modifiers = modifiers;
 		result.start = @expectToken(type);
-		result.names = @NodeList(() => @Identifier(false), undefined, undefined, #.#);
+		result.names = @NodeList(() => @Identifier(false), undefined, undefined, '.');
 		@ExtendsClause(result);
 		@BlockBody(result);
 
@@ -1237,25 +1366,25 @@
 		const decorators = @Decorators();
 		const modifiers = @Modifiers();
 		switch (@peek) {
-			case #function#:
+			case 'function':
 				@stashClear(savedState);
 				return @FunctionDeclaration(decorators, modifiers);
-			case #class#:
+			case 'class':
 				@stashClear(savedState);
 				return @ClassDeclaration(decorators, modifiers);
-			case #interface#:
+			case 'interface':
 				@stashClear(savedState);
 				return @InterfaceDeclaration(decorators, modifiers);
-			case #enum#:
+			case 'enum':
 				@stashClear(savedState);
 				return @EnumDeclaration(decorators, modifiers);
-			case #namespace#:
+			case 'namespace':
 				@stashClear(savedState);
 				return @NamespaceDeclaration(decorators, modifiers);
-			case #module#:
+			case 'module':
 				@stashClear(savedState);
 				return @ModuleDeclaration(decorators, modifiers);
-			case #extends#:
+			case 'extends':
 				@stashClear(savedState);
 				return @ExtensionDeclaration(decorators, modifiers);
 			default:
@@ -1267,7 +1396,7 @@
 		decorators: Decorator...  // 修饰器列表
 		
 		@Decorator // 修饰器(`@x`)
-			#@#
+			@
 			body: Expression(Precedence.leftHandSide, false)
 
 	@Modifiers // 修饰符列表
@@ -1278,15 +1407,15 @@
 			const savedToken = @lexer.current;
 			const modifier = @Modifier();
 			switch (modifier.type) {
-				case #export#:
+				case 'export':
 					if (!result) result = new nodes.NodeList<nodes.Modifier>();
 					result.push(modifier);
-					if (@peek === #default#) {
+					if (@peek === 'default') {
 						result.push(@Modifier());
 					}
 					continue;
-				case #const#:
-					if (@peek === #enum#) {
+				case 'const':
+					if (@peek === 'enum') {
 						if (!result) result = new nodes.NodeList<nodes.Modifier>();
 						result.push(modifier);
 						continue;
@@ -1306,12 +1435,12 @@
 		return result;
 
 		@Modifier // 修饰符(`static`、`private`、...)
-			type: #export#|#default#|#declare#|#const#|#static#|#abstract#|#readonly#|#async#|#public#|#protected#|#private#
+			type: 'export'|'default'|'declare'|'const'|'static'|'abstract'|'readonly'|'async'|'public'|'protected'|'private'
 
 	@ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
 		const start = @read;
-		const imports = @NodeList(@ImportClause, undefined, undefined, #,#);
-		if (@peek === #=# && imports.length === 1 && imports[0].constructor === nodes.SimpleImportClause && (<nodes.SimpleImportClause>imports[0]).name == null) {
+		const imports = @NodeList(@ImportClause, undefined, undefined, ',');
+		if (@peek === '=' && imports.length === 1 && imports[0].constructor === nodes.SimpleImportClause && (<nodes.SimpleImportClause>imports[0]).name == null) {
 			return @ImportAssignmentDeclaration(start, (<nodes.SimpleImportClause>imports[0]).variable);
 		}
 		return @ImportDeclaration(start, imports);
@@ -1327,24 +1456,24 @@
 			import
 			?names: ImportClause,...
 			?from = imports ? @expectToken(@from) : undefined
-			target: StringLiteral // 导入模块名
+			expression: StringLiteral // 导入模块名
 			?;
 
 			const result = new nodes.ImportDeclaration();
 			if (names) {
 				result.names = names;
-				result.from = @expectToken(#from#);
+				result.from = @expectToken('from');
 			}
 			result.target = @StringLiteral();
 			return result;
 
 			@ImportClause @alias(SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause) // import 分句(`x`、`{x}`、...)
 				switch (@peek) {
-					case #identifier#:
+					case 'identifier':
 						return @SimpleImportOrExportClause(true);
-					case #*#:
+					case '*':
 						return @NamespaceImportClause();
-					case #{#:
+					case '{':
 						return @NamedImportClause();
 					default:
 						return @SimpleImportOrExportClause(true);
@@ -1381,52 +1510,52 @@
 		const savedState = @lexer.current;
 		const start = @read;
 		switch (@peek) {
-			case #function#:
+			case 'function':
 				@lexer.current = savedState;
 				return @FunctionDeclaration(undefined, @Modifiers());
-			case #class#:
+			case 'class':
 				@lexer.current = savedState;
 				return @ClassDeclaration(undefined, @Modifiers());
-			case #interface#:
+			case 'interface':
 				@lexer.current = savedState;
 				return @InterfaceDeclaration(undefined, @Modifiers());
-			case #enum#:
+			case 'enum':
 				@lexer.current = savedState;
 				return @EnumDeclaration(undefined, @Modifiers());
-			case #namespace#:
+			case 'namespace':
 				@lexer.current = savedState;
 				return @NamespaceDeclaration(undefined, @Modifiers());
-			case #module#:
+			case 'module':
 				@lexer.current = savedState;
 				return @ModuleDeclaration(undefined, @Modifiers());
 
-			case #var#:
-			case #let#:
-			case #const#:
+			case 'var':
+			case 'let':
+			case 'const':
 				@lexer.current = savedState;
 				return @VariableStatement(@Modifiers());
 
-			case #*#:
+			case '*':
 				return @ExportNamespaceDeclaration(start);
 
 				@ExportNamespaceDeclaration(*) // 导出列表声明(`export * from ...`)
 					export
 					*
 					from
-					target: StringLiteral // 导入模块名
+					expression: StringLiteral // 导入模块名
 					?;
 
-			case #{#:
+			case '{':
 				return @ExportListDeclaration(start);
 
 				@ExportListDeclaration(*) // 导出列表声明(`export a from ...`)
 					export
-					names: { SimpleImportOrExportClause... } = @NodeList(@SimpleImportOrExportClause, #{#, #}#, #,#)
+					names: { SimpleImportOrExportClause... } = @NodeList(@SimpleImportOrExportClause, '{', '}', ',')
 					from
-					target: StringLiteral // 导入模块名
+					expression: StringLiteral // 导入模块名
 					?;
 
-			case #=#:
+			case '=':
 				return @ExportAssignmentDeclaration(start);
 
 				@ExportAssignmentDeclaration(*) // 导出赋值声明(`export = 1;`)
@@ -2511,7 +2640,7 @@ uriCharacter :::
 	uriEscaped
 
 uriReserved ::: [one of]
-	;  /  ?  :  # # &  =  +  $  ,
+	;  /  ?  :  ' ' &  =  +  $  ,
 
 uriUnescaped :::
 	uriAlpha DecimalDigit uriMark

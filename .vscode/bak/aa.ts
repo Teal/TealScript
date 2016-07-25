@@ -1,4 +1,1 @@
-abstract class A {
-    @asd
-    a =1
-}
+a+ 
