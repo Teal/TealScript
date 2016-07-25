@@ -245,11 +245,11 @@
 			@ObjectLiteral // 对象字面量(`{x: y}`)
 				elements: { PropertyDefinition,... }
 
-		case @function:
+		case #function#:
 			result = @FunctionExpression(undefined);
 			break;
 
-		case @new:
+		case #new#:
 			result = @NewTargetOrNewExpression();
 			break;
 
@@ -279,7 +279,7 @@
 					?arguments: Arguments
 
 		case #/#:
-		case #/#=:	
+		case #/=#:	
 			result = @RegularExpressionLiteral();
 			break;
 
@@ -476,8 +476,8 @@
 					: 
 					else: Expression(Precedence.assignment, allowIn) // 否则部分
 
-			case #+#+:
-			case #-#-:
+			case #++#:
+			case #--#:
 				if (@sameLine) {
 					result = @PostfixExpression(result);
 					continue;
@@ -486,7 +486,7 @@
 
 				@PostfixExpression(*) // 后缀表达式(`x++`、`x--`)
 					operand: Expression(Precedence.leftHandSide) // 操作数
-					operator:: ++ | --
+					operator: #++#|#--#
 
 			case #noSubstitutionTemplateLiteral#:
 				return @TemplateCallExpression(parsed, @StringLiteral());
@@ -513,6 +513,7 @@
 					operator: #,#|#*=#|#/=#|#%=#|#+=#|#‐=#|#<<=#|##>=>|##>>=>|#&=#|#^=#|#|=#|#**=#|#||#|#&&#|#|#|#^#|#&#|#==#|#!=#|#===#|#!==#|#<#|##>|#<=#|##=>|#instanceof#|#in#|#<<#|##>>|##>>>|#+#|#-#|#*#|#/#|#%#|#**# // 运算类型
 					right: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
 		}
+		break;
 	}
 	return result;
 
@@ -595,13 +596,13 @@
 			    	condition: Expression(Precedence.any, true)
 			    	?)
 
-			    	if (@peek === #openParen#) {
+			    	if (@peek === #(#) {
 			            result.openParanToken = @lexer.read().type;
 			            result.condition = @allowInAnd(@Expression);
 			            result.closeParanToken = @expectToken(#)#);
 			        } else {
 			            if (!@options.disallowMissingParenthese) {
-			                @expectToken(#openParen#);
+			                @expectToken(#(#);
 			            }
 			            result.condition = @allowInAnd(@Expression);
 			        }
@@ -771,6 +772,12 @@
 		            result.cases.push(caseCaluse);
 		        }
 
+		        @CaseClause // case 分支(`case ...: ...`)
+		        	case
+		        	label: Expression(Precedence.any, true)
+		        	:
+		        	statements: Statement...
+
         case #do#
             return @DoWhileStatement();
 
@@ -836,8 +843,8 @@
 
             	const result = new nodes.ThrowStatement();
 			    result.start = @read;
-			    if (@options.useStandardSemicolonInsertion ? !@hasSemicolon() : isExpressionStart(@peek)) {
-			        result.value = @allowInAnd(@Expression);
+			    if (!this.tryReadSemicolon(result)) {
+			        result.expression = @Expression(Precedence.any, true);
 			    } else if (@options.disallowRethrow) {
 			        @error({ start: @lexer.current.end, end: @lexer.current.end }, "应输入表达式。");
 			    }
@@ -856,29 +863,37 @@
                 const result = new nodes.TryStatement();
 		        result.start = @read;
 		        result.try = @TryClauseBody();
-		        if (@peek === #catch#) {
-		            result.catch = new nodes.CatchClause();
-		            result.catch.start = @read;
-		            if (@peek === #openParen#) {
-		                result.catch.openParanToken = @read;
-		                result.catch.variable = @BindingName();
-		                result.catch.openParanToken = @expectToken(#)#);
-		            } else if (!@options.disallowMissingParenthese && @isBindingName()) {
-		                result.catch.variable = @BindingName();
-		            } else if (@options.disallowMissingCatchVaribale) {
-		                @expectToken(#openParen#);
-		            }
-		            result.catch.body = @TryClauseBody();
-		        }
-		        if (@peek === #finally#) {
-		            result.finally = new nodes.FinallyClause();
-		            result.finally.start = @read;
-		            result.finally.body = @TryClauseBody();
-		        }
+		        if (@peek === #catch#) result.catch = @CatchClause();
+		        if (@peek === #finally#) result.catch = @FinallyClause();
 		        if (@options.disallowSimpleTryBlock && !result.catch && !result.finally) {
 		            @error(@lexer.peek(), "应输入“catch”或“finally”");
 		        }
 		        return result;
+
+		        @CatchClause // catch 分句(`catch(e) {...}`)
+		        	catch
+		        	?(
+		        	variable: BindingName
+		        	?)
+		        	statement: Statement
+
+		        	const result = new nodes.CatchClause();
+		        	result.start = @read
+		        	if (@peek === #(#) {
+		        		result.openParanToken = @read;
+		        		result.variable = @BindingName();
+		        		result.closeParanToken = @readToken(#)#);
+		        	} else if (!@options.disallowMissingParenthese && isBindingName(@peek)) {
+		                result.catch.variable = @BindingName();
+		            } else if (@options.disallowMissingCatchVaribale) {
+		                @expectToken(#(#);
+		            }
+		            result.body = @TryClauseBody();
+		            return result;
+
+		        @FinallyClause // finally 分句(`finally {...}`)
+		        	finally
+		        	statement: Statement = @TryClauseBody()
 
 		        @TryClauseBody // try 语句的语句块
 		        	if (!@options.disallowMissingTryBlock) {
@@ -894,17 +909,6 @@
 			        result.statements.push(statement);
 			        result.statements.end = statement.end;
 			        return result;
-
-		        @CatchClause // catch 分句(`catch(e) {...}`)
-		        	catch
-		        	?(
-		        	variable: BindingName
-		        	?)
-		        	statement: Statement
-
-		        @FinallyClause // catch 分句(`finally {...}`)
-		        	finally
-		        	statement: Statement
 
         case #debugger#
             return @DebuggerStatement();
@@ -929,7 +933,7 @@
             	expression: Expression
             	const result = new nodes.WithStatement();
 		        result.start = @read;
-		        if (@peek === #openParen#) {
+		        if (@peek === #(#) {
 		            result.openParanToken = @read;
 		            result.value = !@options.disallowWithVaribale && @isVariableStatement() ?
 		                @allowInAnd(@VariableStatement) :
@@ -937,7 +941,7 @@
 		            result.closeParanToken = @expectToken(#)#);
 		        } else {
 		            if (@options.disallowMissingParenthese) {
-		                @expectToken(#openParen#);
+		                @expectToken(#(#);
 		            }
 		            result.value = !@options.disallowWithVaribale && @isVariableStatement() ?
 		                @allowInAnd(@VariableStatement) :
