@@ -986,3 +986,27 @@ class TypeResolver extends NodeVisitor {
     // #endregion
 
 }
+
+
+                if (type !== #;#) {
+                    switch (initializer.constructor) {
+                        case nodes.VariableStatement:
+                            if (!@options.useCompatibleForInAndForOf) {
+                                const variables = (<nodes.VariableStatement>initializer).variables;
+                                if (type !== #to# && variables[0].initializer) @error(variables[0].initializer, type === #in# ? "在 for..in 语句变量不能有初始值。" : "在 for..of 语句变量不能有初始值。");
+                                if (variables.length > 1) {
+                                    @error(variables[1].name, type === #in# ? "在 for..in 语句中只能定义一个变量。" :
+                                        type === #of# ? "在 for..of 语句中只能定义一个变量。" :
+                                            "在 for..to 语句中只能定义一个变量。");
+                                }
+                            }
+                            break;
+                        case nodes.Identifier:
+                            break;
+                        default:
+                            @error(initializer, type === #in# ? "在 for..in 语句的左边只能是标识符。" :
+                                type === #of# ? "在 for..of 语句的左边只能是标识符。" :
+                                    "在 for..to 语句的左边只能是标识符。");
+                            break;
+                    }
+                }
