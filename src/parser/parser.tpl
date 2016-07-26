@@ -155,7 +155,7 @@
 														return @ComputedPropertyName();
 														@ComputedPropertyName // 已计算的属性名(`[1]`)
 															[ 
-															body: Expression(Precedence.assignment, true) 
+															body: Expression(Precedence.assignment) 
 															]
 													default:
 														return @Identifier(true);
@@ -165,7 +165,7 @@
 									type: TypeNode(Precedence.any)
 								@Initializer(result) // 初始值
 									=
-									initializer: Expression(Precedence.assignment, true)
+									initializer: Expression(Precedence.assignment)
 					@ParenthesizedTypeNode // 括号类型节点(`(number)`)
 						(
 						body: TypeNode(Precedence.any) // 主体部分
@@ -269,7 +269,7 @@
 				break;
 				@TypeQueryNode @extends(TypeNode) // 类型查询节点(`typeof x`)
 					typeof
-					operand: Expression(Precedence.postfix, false)
+					operand: Expression(Precedence.postfix)
 			case '=>':
 				return @FunctionTypeNode(undefined, undefined);
 			case 'numericLiteral':
@@ -279,7 +279,7 @@
 				result = @LiteralTypeNode();
 				break;
 				@LiteralTypeNode // 字面量类型节点(`"abc"`、`true`)
-					body: Expression(Precedence.primary, false)
+					body: Expression(Precedence.primary)
 			default:
 				result = @GenericTypeOrTypeReferenceNode();
 				break;
@@ -318,14 +318,14 @@
 	}
 	return result;
 
-@Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn: boolean/*是否允许解析 in 表达式*/) // 表达式
+@Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn = true/*是否解析 in 表达式。*/) // 表达式
 	let result: @Expression;
 	switch (@peek) {
 		case 'identifier':
 			result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
 			break;
 			@ArrowFunctionOrGenericExpressionOrIdentifier(allowIn) // 箭头函数(`x => y`)或泛型表达式(`x<T>`)或标识符(`x`)
-				let result = @Identifier(false);
+				let result = @Identifier();
 				switch (@peek) {
 					case '=>':
 						result = @ArrowFunctionExpression(undefined, undefined, result, allowIn);
@@ -347,7 +347,7 @@
 							typeArguments: TypeArguments // 类型参数部分
 				}
 				return result;
-				@Identifier(allowKeyword: boolean/*是否允许解析关键字*/) // 标识符(`x`)
+				@Identifier(allowKeyword = false/*是否允许解析关键字*/) // 标识符(`x`)
 					value: <identifier> // 值部分
 					if (isIdentifierName(@peek) || (allowKeyword && isKeyword(@peek))) {
 						const result = new @Identifier();
@@ -393,7 +393,7 @@
 				return @ParenthesizedExpression();
 				@ParenthesizedExpression // 括号表达式(`(x)`)
 					(
-					body: Expression(Precedence.any, true) // 主体部分
+					body: Expression(Precedence.any) // 主体部分
 					)
 
 		case 'numericLiteral':
@@ -414,7 +414,7 @@
 				elements: [ ArrayLiteralElement , ...isExpressionStart ] // 元素列表
 				@ArrayLiteralElement // 数组字面量元素(`x`)
 					?...
-					?value: Expression(Precedence.assignment, true)
+					?value: Expression(Precedence.assignment)
 		case '{':
 			result = @ObjectLiteral();
 			break;
@@ -465,16 +465,16 @@
 								key: PropertyName
 								?:
 								?=
-								?value: Expression(Precedence.assignment, true)
+								?value: Expression(Precedence.assignment)
 								const result = new @ObjectPropertyDeclaration();
 								@DocComment(result);
 								result.key = key;
 								if (@peek === ':') {
 									result.colonToken = @expectToken(':');
-									result.value = @Expression(Precedence.assignment, true);
+									result.value = @Expression(Precedence.assignment);
 								} else if (@peek === '=') {
 									result.equalToken = @expectToken('=');
-									result.value = @Expression(Precedence.assignment, true);
+									result.value = @Expression(Precedence.assignment);
 								} else if(key.constructor !== @Identifier && key.constructor !== @MemberCallExpression) {
 									@unexpectToken(':');
 								}
@@ -507,7 +507,7 @@
 					return @ErrorIdentifier(newToken);
 				@NewExpression(*) // new 表达式(`new x()`、`new x`)
 					new
-					target: Expression(Precedence.member, false) 
+					target: Expression(Precedence.member) 
 					?arguments: Arguments
 		case '/':
 		case '/=':	
@@ -551,7 +551,7 @@
 			@ArrowFunctionOrTypeAssertionExpression(allowIn) // 箭头函数(`<T>() => {}`)或类型确认表达式(`<T>fn`)
 				const savedState = @stashSave();
 				const typeParameters = @TypeParameters();
-				const parameters = @peek === '(' ? @Parameters() : isIdentifierName(@peek) : @Identifier(false) : undefined;
+				const parameters = @peek === '(' ? @Parameters() : isIdentifierName(@peek) : @Identifier() : undefined;
 				if (parameters && @sameLine && (@peek === '=>' || @peek === ':' || @peek === '{')) {
 					@stashClear(savedState);
 					return @ArrowFunctionExpression(undefined, typeParameters, parameters, allowIn);
@@ -562,7 +562,7 @@
 					<
 					type: TypeNode(Precedence.any)
 					>
-					operand: Expression(Precedence.postfix, false)
+					operand: Expression(Precedence.postfix)
 		case 'yield':
 			result = @YieldExpression(allowIn);
 			break;
@@ -587,14 +587,14 @@
 				const modifiers = @Modifiers();
 				const typeParameters = @sameLine && @peek === '<' ? @TypeParameters() : undefined;
 				if (@sameLine && (@peek === '(' || isIdentifierName(@peek))) {
-					const parameters = @peek === '(' ? @Parameters() : @Identifier(false);
+					const parameters = @peek === '(' ? @Parameters() : @Identifier();
 					if (@sameLine && (@peek === '=>' || @peek === ':' || @peek === '{')) {
 						@stashClear(savedState);
 						return @ArrowFunctionExpression(modifiers, typeParameters, parameters, allowIn);
 					}
 				}
 				@stashRestore(savedState);
-				return @Identifier(false);
+				return @Identifier();
 		case '=>':
 			result = @ArrowFunctionExpression(undefined, undefined, undefined, allowIn);
 			break;
@@ -604,7 +604,7 @@
 				break;
 				@UnaryExpression // 一元运算表达式(`+x`、`typeof x`、...)
 					operator: 'delete'|'void'|'typeof'|'+'|'-'|'~'|'!'|'++'|'--'|'...'
-					operand: Expression(Precedence.postfix, false)
+					operand: Expression(Precedence.postfix)
 			}
 			if (isIdentifierName(@peek)) {
 				result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
@@ -645,14 +645,14 @@
 					@Arguments = ( Argument , ...isExpressionStart ) // 函数调用参数列表
 						@Argument // 函数调用参数(`x`)
 							?...
-							value: Expression(Precedence.assignment, true)
+							value: Expression(Precedence.assignment)
 			case '[':
 				result = @IndexCallExpression(result);
 				break;
 				@IndexCallExpression(*) // 索引调用表达式(`x[y]`)
 					target: Expression 
 					[ 
-					argument: Expression(Precedence.any, true)
+					argument: Expression(Precedence.any)
 					]
 			case '?':
 				result = @ConditionalExpression(result, allowIn);
@@ -660,7 +660,7 @@
 				@ConditionalExpression(*, allowIn) // 条件表达式(`x ? y : z`)
 					condition: Expression 
 					? 
-					then: Expression(Precedence.assignment, true) // 则部分 
+					then: Expression(Precedence.assignment) // 则部分 
 					: 
 					else: Expression(Precedence.assignment, allowIn) // 否则部分
 			case '++':
@@ -701,7 +701,7 @@
 @Statement // 语句
 	switch (@peek) {
 		case <identifier>: 
-			return @LabeledOrExpressionStatement(@Identifier(false));
+			return @LabeledOrExpressionStatement(@Identifier());
 
 			@LabeledOrExpressionStatement(parsed: nodes.Expression) // 表达式或标签语句
 				return parsed.constructor === nodes.Identifier && @peek === ':' ?
@@ -774,7 +774,7 @@
 
 			    @Condition(result) // 条件表达式
 			    	?(
-			    	condition: Expression(Precedence.any, true)
+			    	condition: Expression(Precedence.any)
 			    	?)
 
 			    	if (@peek === '(') {
@@ -955,7 +955,7 @@
 
 		        @CaseClause // case 分支(`case ...: ...`)
 		        	case
-		        	label: Expression(Precedence.any, true)
+		        	label: Expression(Precedence.any)
 		        	:
 		        	statements: Statement...
 
@@ -996,7 +996,7 @@
 		    @BreakOrContinueStatement(result: nodes.ContinueStatement, token: TokenType) // break 或 continue语句
 		    	result.start = @expectToken(token);
 		    	if (!@tryReadSemicolon(result)) {
-		    		result.label = @Identifier(false);
+		    		result.label = @Identifier();
 		    		@tryReadSemicolon(result);
 		    	}
 		    	
@@ -1025,7 +1025,7 @@
             	const result = new @ThrowStatement();
 			    result.start = @read;
 			    if (!this.tryReadSemicolon(result)) {
-			        result.expression = @Expression(Precedence.any, true);
+			        result.expression = @Expression(Precedence.any);
 			    } else if (@options.disallowRethrow) {
 			        @error({ start: @lexer.current.end, end: @lexer.current.end }, "应输入表达式。");
 			    }
@@ -1143,7 +1143,7 @@
 			if (isDeclarationStart(@peek)) {
 				return @DeclarationOrExpressionStatement();
 			}
-			return @ExpressionStatement(@Expression(Precedence.any, true));
+			return @ExpressionStatement(@Expression(Precedence.any));
 			
 	}
 
@@ -1163,7 +1163,7 @@
 		if (modifiers) result.modifiers = modifiers;
 		result.functionToken = @expectToken('function');
 		if (@peek === '*') result.asteriskToken = @read;
-		if (isIdentifierName(@peek)) result.name = @Identifier(false);
+		if (isIdentifierName(@peek)) result.name = @Identifier();
 		@TypeParameters(result);
 		@Parameters(result);
 		@TypeAnnotation(result);
@@ -1212,7 +1212,7 @@
 					break;
 				case '=>':
 					result.arrowToken = @read;
-					result.body = @Expression(Precedence.assignment, true);
+					result.body = @Expression(Precedence.assignment);
 					break;
 				default:
 					@tryReadSemicolon(result);
@@ -1222,7 +1222,7 @@
 	@ClassDeclarationOrExpression(result: nodes.ClassDeclaration | nodes.ClassExpression) // 类声明或类表达式
 		@DocComment(result);
 		result.classToken = @expectToken('class');
-		if (isIdentifierName(@peek) && @peek !== 'extends' && @peek !== 'implements') result.name = @Identifier(false);
+		if (isIdentifierName(@peek) && @peek !== 'extends' && @peek !== 'implements') result.name = @Identifier();
 		@TypeParameters(result);
 		@ExtendsClause(result);
 		@ImplementsClause(result);
@@ -1260,11 +1260,11 @@
 
 		@ExtendsClause(result) // extends 分句(`extends xx`)
 			extends
-			extends: Expression(Precedence.leftHandSide, false),...
+			extends: Expression(Precedence.leftHandSide),...
 			
 		@ImplementsClause(result) // implements 分句(`implements xx`)
 			implements
-			implements: Expression(Precedence.leftHandSide, false),...
+			implements: Expression(Precedence.leftHandSide),...
 
 		@ClassBody(result) // 类主体(`{...}`、`;`)
 			?members: { ClassElement... }
@@ -1361,7 +1361,7 @@
 		if (decorators) result.decorators = decorators;
 		if (modifiers) result.modifiers = modifiers;
 		result.start = @expectToken(type);
-		result.names = @NodeList(() => @Identifier(false), undefined, undefined, '.');
+		result.names = @NodeList(() => @Identifier(), undefined, undefined, '.');
 		@ExtendsClause(result);
 		@BlockBody(result);
 
@@ -1437,7 +1437,7 @@
 		
 		@Decorator // 修饰器(`@x`)
 			@
-			body: Expression(Precedence.leftHandSide, false)
+			body: Expression(Precedence.leftHandSide)
 
 	@Modifiers // 修饰符列表
 		modifiers: Modifier...
@@ -1489,7 +1489,7 @@
 			import
 			variable: Identifier // 别名
 			=
-			value: Expression(Precedence.assignment, true)
+			value: Expression(Precedence.assignment)
 			?;
 
 		@ImportDeclaration(*, *) // import 声明(`import x from '...';`)
@@ -1601,7 +1601,7 @@
 				@ExportAssignmentDeclaration(*) // 导出赋值声明(`export = 1;`)
 					export
 					=
-					value: Expression(Precedence.assignment, true)
+					value: Expression(Precedence.assignment)
 					?;
 					
 			default:
