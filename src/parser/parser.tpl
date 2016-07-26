@@ -52,7 +52,7 @@
 							// }
 //------------------------------------------------------------------
 
-@TypeNode(precedence: Precedence) // 类型节点
+@TypeNode(precedence = Precedence.any) // 类型节点
 	let result: @TypeNode;
 	if (isPredefinedType(@peek)) {
 		result = @PredefinedTypeNode();
@@ -107,17 +107,17 @@
 						?typeParameters: TypeParameters
 						?parameters: Parameters
 						=> 
-						returnType: TypeNode(Precedence.any)
+						returnType: TypeNode()
 						@TypeParameters = ( TypeParameterDeclaration , ...isIdentifierName ) // 类型参数列表(`<T>`)
 							@TypeParameterDeclaration // 类型参数声明(`T`、`T extends R`)
 								name: Identifier(false)
 								?extends
-								?extends: TypeNode(Precedence.any)
+								?extends: TypeNode()
 								const result = new TypeParameterDeclaration();
 								result.name = Identifier(false);
 								if (@peek === 'extends') {
 									result.extendsToken = @expectToken('extends');
-									result.extends = TypeNode(Precedence.any)
+									result.extends = TypeNode()
 								}
 								return result;
 						@Parameters = ( ParameterDeclaration , ...isParameterStart ) // 参数列表(`(x, y)`)
@@ -162,13 +162,13 @@
 												}
 								@TypeAnnotation(result) // 类型注解(`: number`)
 									:
-									type: TypeNode(Precedence.any)
+									type: TypeNode()
 								@Initializer(result) // 初始值
 									=
 									initializer: Expression(Precedence.assignment)
 					@ParenthesizedTypeNode // 括号类型节点(`(number)`)
 						(
-						body: TypeNode(Precedence.any) // 主体部分
+						body: TypeNode() // 主体部分
 						)
 			case '[':
 				result = @TupleTypeNode();
@@ -261,7 +261,7 @@
 					?TypeParameters
 					Parameters 
 					=>
-					return: TypeNode(Precedence.any)
+					return: TypeNode()
 			case '<':
 				return @FunctionTypeNode(@TypeParameters(), @Parameters());
 			case 'typeof':
@@ -271,7 +271,7 @@
 					typeof
 					operand: Expression(Precedence.postfix)
 			case '=>':
-				return @FunctionTypeNode(undefined, undefined);
+				return @FunctionTypeNode();
 			case 'numericLiteral':
 			case 'stringLiteral':
 			case 'true':
@@ -318,7 +318,7 @@
 	}
 	return result;
 
-@Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn = true/*是否解析 in 表达式。*/) // 表达式
+@Expression(precedence = Precedence.any/*允许解析的最低操作符优先级*/, allowIn = true/*是否解析 in 表达式。*/) // 表达式
 	let result: @Expression;
 	switch (@peek) {
 		case 'identifier':
@@ -393,7 +393,7 @@
 				return @ParenthesizedExpression();
 				@ParenthesizedExpression // 括号表达式(`(x)`)
 					(
-					body: Expression(Precedence.any) // 主体部分
+					body: Expression() // 主体部分
 					)
 
 		case 'numericLiteral':
@@ -481,7 +481,7 @@
 								return result;
 					}
 		case 'function':
-			result = @FunctionExpression(undefined);
+			result = @FunctionExpression();
 			break;
 		case 'new':
 			result = @NewTargetOrNewExpression();
@@ -560,7 +560,7 @@
 				return @TypeAssertionExpression();
 				@TypeAssertionExpression() // 类型确认表达式(<T>xx)
 					<
-					type: TypeNode(Precedence.any)
+					type: TypeNode()
 					>
 					operand: Expression(Precedence.postfix)
 		case 'yield':
@@ -652,7 +652,7 @@
 				@IndexCallExpression(*) // 索引调用表达式(`x[y]`)
 					target: Expression 
 					[ 
-					argument: Expression(Precedence.any)
+					argument: Expression()
 					]
 			case '?':
 				result = @ConditionalExpression(result, allowIn);
@@ -700,7 +700,7 @@
 
 @Statement // 语句
 	switch (@peek) {
-		case <identifier>: 
+		case 'identifier': 
 			return @LabeledOrExpressionStatement(@Identifier());
 
 			@LabeledOrExpressionStatement(parsed: nodes.Expression) // 表达式或标签语句
@@ -719,75 +719,66 @@
 
 		case '{':
 			return @BlockStatement();
-
-			@BlockStatement: // 语句块(`{...}`)
-				statements: { Statement... }
-
+			@BlockStatement // 语句块(`{...}`)
+				statements: { Statement ...isStatementStart }
 		case 'var':
 		case 'const':
-			return @VariableStatement(undefined);
-
+			return @VariableStatement();
 			@VariableStatement(*): // 变量声明语句(`var x`、`let x`、`const x`)
 				?Modifiers
 				type: 'var'|'let'|'const' 
-				variables: VariableDeclaration,...
-
+				variables: VariableDeclaration , ...isBindingNameStart
 				@VariableDeclaration // 变量声明(`x = 1`、`[x] = [1]`、`{a: x} = {a: 1}`)
 					mame: BindingName
 					?TypeAnnotation
 					?Initializer
-
 		case 'let': 
 			return @VariableOrExpressionStatement(true);
-
-			@VariableOrExpressionStatement(allowIn: boolean) // 变量声明或表达式语句
+			@VariableOrExpressionStatement(allowIn = true) // 变量声明(`let x`)或表达式语句(`let(x)`)
 				const savedToken = @lexer.current;
-				@lexer.read();
-				const isBindingName = @isBindingName(@peek);
-				@lexer.current = savedToken;
-				return isBindingName ?
-					@VariableStatement(undefined) :
-					@ExpressionStatement(@Expression(Precedence.any, allowIn));
-
+				switch (@peek) {
+					case 'let':
+					case 'var':
+					case 'const':
+						@lexer.read();
+						const isBindingName = isBindingNameStart(@peek);
+						@lexer.current = savedToken;
+						if (isBindingName) {
+							return @VariableStatement();
+						}
+						break;
+				}
+				return @ExpressionStatement(@Expression(Precedence.any, allowIn));
 		case 'function':
-			return @FunctionDeclaration(undefined, undefined);
-
+			return @FunctionDeclaration();
 		case 'if':
 			return @IfStatement();
-
 			@IfStatement // if 语句(`if (x) ...`)
 				if 
 				Condition
-				then: Statement = @EmabledStatement()
+				then: Statement
 				?else 
-				?else: Statement = @EmabledStatement()
-
+				?else: Statement
 				const result = new @IfStatement();
 		        result.start = @expectToken('if');
 		        @Condition(result);
 		        result.then = @EmbeddedStatement();
 		        if (@peek === 'else') {
-		            result.elseToken = @read;
+		            result.elseToken = @expectToken('else');
 		            result.else = @EmbeddedStatement();
 		        }
 		        return result;
-
 			    @Condition(result) // 条件表达式
 			    	?(
-			    	condition: Expression(Precedence.any)
+			    	condition: Expression()
 			    	?)
-
-			    	if (@peek === '(') {
-			            result.openParanToken = @lexer.read().type;
-			            result.condition = @allowInAnd(@Expression);
-			            result.closeParanToken = @expectToken(')');
-			        } else {
-			            if (!@options.disallowMissingParenthese) {
-			                @expectToken('(');
-			            }
-			            result.condition = @allowInAnd(@Expression);
-			        }
-
+					const hasParan = @peek === '(';
+					if (hasParan) result.openParanToken = @expectToken('(');
+					else if (@options.allowMissingParenthese === false) @unexpectToken('(');
+					result.condition = @Expression();
+					if (hasParan) result.closeParanToken = @readToken(')');
+				@EmbeddedStatement // 内嵌语句
+					return @Statement();
         case 'for'
             return @ForStatement();
 
@@ -955,7 +946,7 @@
 
 		        @CaseClause // case 分支(`case ...: ...`)
 		        	case
-		        	label: Expression(Precedence.any)
+		        	label: Expression()
 		        	:
 		        	statements: Statement...
 
@@ -971,50 +962,40 @@
 
         case 'break'
             return @BreakStatement();
-
             @BreakStatement // break 语句(`break xx;`)
 		        break
 		        ?label: Identifier(false)
 		        ?;
-
 		        const result = new ndoes.ContinueStatement();
 		        @BreakOrContinueStatement(result, 'continue');
 		        return result;
-            
         case 'continue'
             return @ContinueStatement();
-
             @ContinueStatement // continue 语句(`continue xx;`)
 		        continue
 		        ?label: Identifier(false)
 		        ?;
-
 		        const result = new ndoes.ContinueStatement();
 		        @BreakOrContinueStatement(result, 'continue');
 		        return result;
-
-		    @BreakOrContinueStatement(result: nodes.ContinueStatement, token: TokenType) // break 或 continue语句
+		    @BreakOrContinueStatement(result: @ContinueStatement, token: TokenType) // break(`break xx;`)或 continue(`continue xx;`)语句
 		    	result.start = @expectToken(token);
 		    	if (!@tryReadSemicolon(result)) {
 		    		result.label = @Identifier();
 		    		@tryReadSemicolon(result);
 		    	}
-		    	
         case 'return'
             return @ReturnStatement();
-
             @ReturnStatement // return 语句(`return x;`)
             	return
-            	?expression: Expression
-
+            	?value: Expression
             	const result = new @ReturnStatement();
 		        result.start = @expectToken('return');
-		        if (@options.useStandardSemicolonInsertion ? !@hasSemicolon() : isExpressionStart(@peek)) {
-		            result.value = @allowInAnd(@Expression);
+		        if (!@tryReadSemicolon(result)) {
+		            result.value = @Expression();
+		    		@tryReadSemicolon(result);
 		        }
-		        result.end = @tryReadSemicolon();
 		        return result;
-
         case 'throw'
             return @ThrowStatement();
 
@@ -1025,7 +1006,7 @@
             	const result = new @ThrowStatement();
 			    result.start = @read;
 			    if (!this.tryReadSemicolon(result)) {
-			        result.expression = @Expression(Precedence.any);
+			        result.expression = @Expression();
 			    } else if (@options.disallowRethrow) {
 			        @error({ start: @lexer.current.end, end: @lexer.current.end }, "应输入表达式。");
 			    }
@@ -1100,38 +1081,28 @@
 
 		case ';':
 			return @EmptyStatement();
-
 			@EmptyStatement // 空语句(`;`)
 				;
-
         case 'endOfFile'
             return @ErrorStatement();
         case 'with'
             return @WithStatement();
-
-            @WithStatement // with 语句(`with(x) ...`)
+            @WithStatement // with 语句(`with (x) ...`)
             	with
-            	expression: Expression
+				?(
+            	value: VariableStatement | Expression
+				?)
+				body: Statement
             	const result = new @WithStatement();
-		        result.start = @read;
-		        if (@peek === '(') {
-		            result.openParanToken = @read;
-		            result.value = !@options.disallowWithVaribale && @isVariableStatement() ?
-		                @allowInAnd(@VariableStatement) :
-		                @allowInAnd(@Expression);
-		            result.closeParanToken = @expectToken(')');
-		        } else {
-		            if (@options.disallowMissingParenthese) {
-		                @expectToken('(');
-		            }
-		            result.value = !@options.disallowWithVaribale && @isVariableStatement() ?
-		                @allowInAnd(@VariableStatement) :
-		                @allowInAnd(@Expression);
-		        }
+		        result.start = @expectToken('with');
+				const hasParan = @peek === '(';
+				if (hasParan) result.openParanToken = @expectToken('(');
+				result.value = @options.allowWithVaribale !== false ? @VariableOrExpressionStatement() : @Expression();
+				if (hasParan) result.closeParanToken = @readToken(')');
 		        result.body = @EmbeddedStatement();
 		        return result;
 		case 'class':
-			return @ClassDeclaration(undefined, undefined);
+			return @ClassDeclaration();
 
 		case 'import':
 			return @ImportAssignmentOrImportDeclaration();
@@ -1143,11 +1114,9 @@
 			if (isDeclarationStart(@peek)) {
 				return @DeclarationOrExpressionStatement();
 			}
-			return @ExpressionStatement(@Expression(Precedence.any));
+			return @ExpressionStatement(@Expression());
 			
 	}
-
-	@tryReadSemicolon(result) // todo
 
 
 				
@@ -1218,7 +1187,7 @@
 					@tryReadSemicolon(result);
 					break;
 			}
-
+			
 	@ClassDeclarationOrExpression(result: nodes.ClassDeclaration | nodes.ClassExpression) // 类声明或类表达式
 		@DocComment(result);
 		result.classToken = @expectToken('class');
@@ -1287,7 +1256,7 @@
 						const savedToken = @lexer.current;
 						@lexer.read();
 						if (isKeyword(@peek) || @peek === '[') {
-							return @AccessorDeclaration(decorators, modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined : undefined);
+							return @AccessorDeclaration(decorators, modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
 						}
 						@lexer.current = savedToken;
 						break;
@@ -1396,7 +1365,7 @@
 		?Decorators
 		?Modifiers
 		extends
-		type: TypeNode(Precedence.any)
+		type: TypeNode()
 		?ExtendsClause
 		?ImplementsClause
 		?ClassBody

@@ -183,6 +183,20 @@ export class Parser {
         return result;
     }
 
+    /**
+     * 尝试读取或自动插入一个分号。
+     * @return 返回分号或自动插入点的结束位置。
+     */
+    private tryReadSemicolon() {
+        if (this.lexer.peek().type === TokenType.semicolon) {
+            return this.lexer.read().end;
+        }
+        if (!this.hasSemicolon()) {
+            this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "语句后缺少“;”。");
+        }
+        return this.lexer.current.end;
+    }
+
     // #endregion
 
     // #region 解析类型节点
@@ -3093,20 +3107,6 @@ export class Parser {
                 if (this.options.useStandardSemicolonInsertion) return this.lexer.peek().hasLineBreakBeforeStart;
                 return true;
         }
-    }
-
-    /**
-     * 尝试读取或自动插入一个分号。
-     * @return 返回分号或自动插入点的结束位置。
-     */
-    private tryReadSemicolon() {
-        if (this.lexer.peek().type === TokenType.semicolon) {
-            return this.lexer.read().end;
-        }
-        if (!this.hasSemicolon()) {
-            this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "语句后缺少“;”。");
-        }
-        return this.lexer.current.end;
     }
 
     /**

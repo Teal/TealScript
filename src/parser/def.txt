@@ -360,16 +360,8 @@ TemplateCharacter ::
 ----------------------------------------------------------------
 
 Statement[Yield, Return] :
-	BlockStatement[?Yield, ?Return]
-	VariableStatement[?Yield]
-	EmptyStatement
 	ExpressionStatement[?Yield]
-	IfStatement[?Yield, ?Return]
 	BreakableStatement[?Yield, ?Return]
-	ContinueStatement[?Yield]
-	BreakStatement[?Yield]
-	[+Return] ReturnStatement[?Yield]
-	WithStatement[?Yield, ?Return]
 	LabelledStatement[?Yield, ?Return]
 	ThrowStatement[?Yield]
 	TryStatement[?Yield, ?Return]
@@ -388,12 +380,6 @@ BreakableStatement[Yield, Return] :
 	IterationStatement[?Yield, ?Return]
 	SwitchStatement[?Yield, ?Return]
 
-BlockStatement[Yield, Return] :
-	Block[?Yield, ?Return]
-
-Block[Yield, Return] :
-	{ StatementList[?Yield, ?Return][opt] }
-
 StatementList[Yield, Return] :
 	StatementListItem[?Yield, ?Return]
 	StatementList[?Yield, ?Return] StatementListItem[?Yield, ?Return]
@@ -402,81 +388,8 @@ StatementListItem[Yield, Return] :
 	Statement[?Yield, ?Return]
 	Declaration[?Yield]
 
-LexicalDeclaration[In, Yield] :
-	LetOrConst BindingList[?In, ?Yield] ;
-
-LetOrConst : [one of]
-	let const
-
-BindingList[In, Yield] :
-	LexicalBinding[?In, ?Yield]
-	BindingList[?In, ?Yield] , LexicalBinding[?In, ?Yield]
-
-LexicalBinding[In, Yield]  :
-	BindingIdentifier[?Yield]  Initializer[?In, ?Yield][opt]
-	BindingPattern[?Yield]   Initializer[?In, ?Yield]
-
-VariableStatement[Yield] :
-	var VariableDeclarationList[In, ?Yield] ;
-
-VariableDeclarationList[In, Yield] :
-	VariableDeclaration[?In, ?Yield]
-	VariableDeclarationList[?In, ?Yield] , VariableDeclaration[?In, ?Yield]
-
-VariableDeclaration[In, Yield] :
-	BindingIdentifier[?Yield] Initializer[?In, ?Yield][opt]
-	BindingPattern[?Yield]  Initializer[?In, ?Yield]
-
-BindingPattern[Yield] :
-	ObjectBindingPattern[?Yield]
-	ArrayBindingPattern[?Yield]
-
-ObjectBindingPattern[Yield] :
-	{ }
-	{ BindingPropertyList[?Yield] }
-	{ BindingPropertyList[?Yield] , }
-
-ArrayBindingPattern[Yield] :
-	[ Elision[opt] BindingRestElement[?Yield][opt] ]
-	[ BindingElementList[?Yield] ]
-	[ BindingElementList[?Yield] , Elision[opt] BindingRestElement[?Yield][opt] ]
-
-BindingPropertyList[Yield] :
-	BindingProperty[?Yield]
-	BindingPropertyList[?Yield] , BindingProperty[?Yield]
-
-BindingElementList[Yield] :
-	BindingElisionElement[?Yield]
-	BindingElementList[?Yield] , BindingElisionElement[?Yield]
-
-BindingElisionElement[Yield] :
-	Elision[opt]  BindingElement[?Yield]
-
-BindingProperty[Yield] :
-	SingleNameBinding[?Yield]
-
-PropertyName[?Yield] :
-	BindingElement[?Yield]
-
-BindingElement[Yield] :
-	SingleNameBinding[?Yield]
-	BindingPattern[?Yield] Initializer[In, ?Yield][opt]
-
-SingleNameBinding[Yield]  :
-	BindingIdentifier[?Yield] Initializer[In, ?Yield][opt]
-
-BindingRestElement[Yield] :
-	... BindingIdentifier[?Yield]
-
-EmptyStatement :
-	;
-
 ExpressionStatement[Yield] :
 	[lookahead ∉ {{, function,  class,  let [ }] Expression[In, ?Yield] ;
-
-IfStatement[Yield, Return] :
-	if ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]  else Statement[?Yield, ?Return]
-	if ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
 
 IterationStatement[Yield, Return] :
 	do Statement[?Yield, ?Return] while ( Expression[In, ?Yield] ) ; while ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
@@ -496,21 +409,6 @@ ForDeclaration[Yield] :
 ForBinding[Yield] :
 	BindingIdentifier[?Yield]
 	BindingPattern[?Yield]
-
-ContinueStatement[Yield]  :
-	continue ;
-	continue [no LineTerminator here] LabelIdentifier[?Yield] ;
-
-BreakStatement[Yield]  :
-	break ;
-	break [no LineTerminator here]  LabelIdentifier[?Yield] ;
-
-ReturnStatement[Yield] :
-	return ;
-	return [no LineTerminator here] Expression[In, ?Yield] ;
-
-WithStatement[Yield, Return] :
-	with ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
 
 SwitchStatement[Yield, Return] :
 	switch ( Expression[In, ?Yield] ) CaseBlock[?Yield, ?Return]
