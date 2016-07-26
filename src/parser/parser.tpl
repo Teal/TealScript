@@ -127,15 +127,343 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 //------------------------------------------------------------------
 
 @TypeNode // 类型节fier(); // TODO
-				}
+	let result: nodes.TypeNode;
 
-	@followsTypeArguments() // 判断是否紧跟类型参数
-		@read; // <
-		const followsTypeNode = @followsTypeNode();
-		if (@peek === '>' || @peek === ',') {
-			return true;
+	if (isPredefinedType(@peek)) {
+		result = @PredefinedTypeNode();
+
+		@PredefinedTypeNode // 内置类型节点(`number`、`string`、...)
+			type: 'this'|'any'|'number'|'string'|'boolean'|'symbol'|'void'|'null'|'never'|'*'|'?' // 类型
+
+	} else {
+		switch (@peek) {
+			case 'identifier':
+				result = @GenericOrReferenceTypeNode();
+				break;
+
+				@GenericOrReferenceTypeNode() // 泛型类型节点(`x<T>`)或引用类型节点(`x`)
+					let result = @ReferenceTypeNode(false);
+					if (@peek === '<') {
+						result = @GenericTypeNode(result);
+					}
+					return result;
+
+					@GenericTypeNode(*) // 泛型类型节点(`Array<number>`)
+						target: ReferenceTypeNode // 目标部分
+						typeArguments: TypeArguments // 类型参数部分
+
+					@ReferenceTypeNode(allowKeyword: boolean/*是否允许解析关键字*/) // 引用类型节点(`x`)
+						value: <identifier> // 值部分
+						
+						if (isIdentifierName(@peek)) {
+							const result = new @ReferenceTypeNode();
+							result.start = @read;
+							result.value = @lexer.current.value;
+							result.end = @lexer.current.end;
+							return result;
+						}
+						@error(@lexer.peek(), isKeyword(@peek) ? "Type expected; Keyword '{0}' cannot be used as an identifier." : @peek === 'endOfFile' ? "Type expected; Unexpected end of script." : "Type expected. Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
+						return @ErrorTypeNode(@lexer.current.end);
+
+						@ErrorTypeNode(start: number/*标记的开始位置*/) // 错误的类型节点
+							const result = new @ErrorTypeNode();
+							result.start = start;
+							result.end = @lexer.current.end;
+							return result;
+
+			case '(':
+				result = @FunctionOrParenthesizedTypeNode();
+				break;
+
+				@FunctionOrParenthesizedTypeNode() // 函数(`()=> void`)或括号类型节点(`(x)`)
+					const savedState = @stashSave();
+					const parameters = @Parameters();
+					if (@peek === '=>') {
+						@stashClear(savedState);
+						return @FunctionTypeNode(undefined, parameters);
+					}
+					@stashRestore(savedState);
+					return @ParenthesizedTypeNode();
+
+					@FunctionTypeNode(*, *) // 函数类型节点(`(x: number) => void`)。
+						?typeParameters: TypeParameters
+						?parameters: NodeList<ParameterDeclaration> | Identifier
+						=> 
+						returnType: TypeNode(Precedence.any)
+
+					@ParenthesizedTypeNode // 括号类型节点(`(number)`)
+						(
+						body: TypeNode(Precedence.any) // 主体部分
+						)
+
+			case '[':
+				result = @TupleTypeNode();
+				break;
+
+				@TupleTypeNode // 元祖类型节点(`[string, number]`)
+					elements: [ TupleTypeElement,... ] // 元素列表
+
+					@TupleTypeElement // 元祖类型节点元素(`x`)
+						...?
+						value?: TypeNode(Precedence.assignment)
+
+			case '{':
+				result = @ObjectTypeNode();
+				break;
+
+				@ObjectTypeNode // 对象字面量(`{x: y}`)
+					elements: { ObjectTypeElement,... }
+
+					@ObjectTypeElement @alias(ObjectMethodDeclaration | ObjectPropertyDeclaration | ObjectAccessorDeclaration) // 对象字面量元素(`x： y`、`x() {...}`)
+						const modifiers = @Modifiers();
+						switch (@peek) {
+							case 'identifier':
+								break;
+							case 'get':
+							case 'set':
+								const savedToken = @lexer.current;
+								@lexer.read();
+								if (isKeyword(@peek) || @peek === '[') {
+									return @ObjectAccessorDeclaration(modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
+								}
+								@lexer.current = savedToken;
+								break;
+							case '*':
+								return @ObjectMethodDeclaration(modifiers, @read, @PropertyName());
+						}
+						const name = @PropertyName();
+						switch (@peek) {
+							case '(':
+							case '<':
+								return @ObjectMethodDeclaration(modifiers, undefined, name);
+							default:
+								return @ObjectPropertyDeclaration(modifiers, name);
+						}
+
+					@PropertySignature(*, *, *) // 属性声明(`x: number`)
+						??DocComment
+						key: PropertyName
+						?: 
+						?value: TypeNode(Precedence.assignment)
+
+						const result = new @ObjectPropertyDeclaration();
+						@DocComment(result);
+						result.key = key;
+						if (@peek === ':') {
+							result.colonToken = @read;
+							result.value = @Expression(Precedence.assignment, true);
+						} else if(result.key.constructor !== nodes.Identifier && result.key.constructor !== nodes.MemberCallExpression) {
+							@expectToken(':');
+						}
+						return result;
+
+					@CallSignature // 调用声明(`(): number`)
+						?TypeParameters
+						Parameters
+						?TypeAnnotation
+
+					@ConstructSignature // 构造函数声明(`new x(): number`)
+						??DocComment
+						new
+						name: PropertyName
+						?TypeParameters
+						Parameters
+						?TypeAnnotation
+
+					@IndexSignature(*, *, *) // 索引器声明(`get x() {...}`、`set x(value) {...}`)
+						??DocComment
+						[
+						name: Identifier(false)
+						?TypeAnnotation
+						]
+						?TypeAnnotation
+
+					@MethodSignature(*, *, *, *) // 方法声明(`x(): number`)
+						??DocComment
+						name: PropertyName
+						?TypeParameters
+						Parameters
+						?TypeAnnotation
+
+					@AccessorSignature(*, *, *) // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+						??DocComment
+						?get
+						?set
+						name: PropertyName
+						Parameters
+						?TypeAnnotation
+
+						@ObjectTypeElement // 对象字面量元素(`x: y`)
+							key: PropertyName 
+							?: 
+							?value: TypeNode(Precedence.assignment)
+
+							const result = new @ObjectTypeElement();
+							result.key = @PropertyName();
+							if (@peek === ':') {
+								result.colonToken = @read;
+								result.value = @Expression(Precedence.assignment, true);
+							} else if(result.key.constructor !== nodes.Identifier && result.key.constructor !== nodes.MemberCallExpression) {
+								@expectToken(':');
+							}
+							return result;
+
+			case 'new':
+				return @ConstructorTypeNode();
+
+				@ConstructorTypeNode // 构造函数类型节点(`new () => void`)
+					new 
+					?TypeParameters
+					Parameters => 
+					return: TypeNode(Precedence.any)
+
+			case '<':
+				result = @FunctionTypeNode(@TypeParameters(), @Parameters());
+				break;
+
+			case '=>':
+				result = @FunctionTypeNode(undefined, undefined);
+				break;
+
+			case 'typeof':
+				result = @TypeQueryNode();
+				break;
+
+				@TypeQueryNode // 类型查询节点(`typeof x`)
+					typeof
+					operand: TypeQuery(Precedence.postfix)
+
+			case 'numericLiteral':
+			case 'stringLiteral':
+			case 'true':
+			case 'false':
+				result = @ExpressionTypeNode();
+				break;
+
+				@ExpressionTypeNode // 表达式类型节点(`"abc"`、`true`)
+					body: Expression
+
+			default:
+				return @GenericOrReferenceTypeNode();
+
 		}
-		return followsTypeNode;
+	}
+	while (getPrecedence(@peek) >= precedence) {
+		switch (@peek) {
+			case '.':
+				result = @QualifiedNameTypeNode(result);
+				break;
+
+				@QualifiedNameTypeNode(*) // 限定名称类型节点(`"abc"`、`true`)
+					target: TypeNode // 目标部分
+					. 
+					argument: Identifier(true) = @MemberCallArgument() // 参数部分
+
+			case '&':
+			case '|':
+			case 'is':
+				result = @BinaryTypeNode(result);
+				break;
+
+			default:
+				return result;
+
+				@BinaryTypeNode(*) // 双目表达式(x + y、x = y、...)
+					left: Expression // 左值部分
+					operator: '&'|'|'|'is' // 运算类型
+					right: TypeNode(getPrecedence(result.operator) + 1) // 右值部分
+		}
+	}
+	return result;
+
+	@Parameters(result) // 参数列表
+		parameters: ( ParameterDeclaration... )
+
+		@ParameterDeclaration // 参数声明(`x`、`x?: number`)
+			?accessibility: 'public'|'private'|'protected'
+			?...
+			name: BindingName
+			??
+			?TypeAnnotation
+			?Initializer
+
+			const result = new nodes.ParameterDeclaration();
+			switch (@peek) {
+				case @identifier:
+					result.name = @Identifier(false);
+					break;
+				case '...':
+					result.dotDotDotToken = @read;
+					result.name = @Identifier(false);
+					break;
+				case 'public':
+				case 'private':
+				case 'protected':
+					result.name = @Identifier(false);
+					if (@isBindingName()) {
+						result.accessibilityToken = @lexer.current.start;
+						result.accessibility = @lexer.current.type;
+						result.name = @BindingName();
+					}
+					break;
+				default:
+					result.name = @BindingName();
+					break;
+			}
+			if (@peek === '?') result.questionToken = @read;
+			@TypeAnnotation(result);
+			@Initializer(result);
+			return result;
+
+		@TypeAnnotation(result) // 类型注解
+			:
+			typeNode: TypeNode(Precedence.any)
+
+		@Initializer(result) // 初始值
+			=
+			initializer: Expression(Precedence.assignment, true)
+
+		@BindingName = Identifier | ArrayBindingPattern | ObjectBindingPattern// 绑定名称(`xx`, `[xx]`, `{x: x}`)
+
+			@ArrayBindingPattern // 数组绑定模式项(`[xx]`)
+				elements: ArrayBindingElement,...
+
+				@ArrayBindingElement // 数组绑定模式项(`x`)
+					?...
+					?value: BindingName
+					?Initializer
+
+			@ObjectBindingPattern // 对象绑定模式项(`{x: x}`)
+				elements: ObjectBindingElement,...
+
+				@ObjectBindingElement // 对象绑定模式项(`x`)
+					?...
+					key: PropertyName,
+					?:
+					value: BindingName
+					?Initializer
+
+		@PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName // 属性名称(`xx`、`"xx"`、`0`、`[xx]`)
+			switch (@peek) {
+				case 'identifier':
+					return @Identifier(false);
+				case 'stringLiteral':
+					return @StringLiteral();
+				case 'numericLiteral':
+					return @NumericLiteral();
+				case '[':
+					return @ComputedPropertyName();
+					@ComputedPropertyName // 已计算的属性名(`[1]`)
+						[ 
+						body: Expression(Precedence.assignment, true) 
+						]
+				default:
+					if (@isKeyword(@peek)) {
+						return @Identifier();
+					}
+					@error(@peek, "应输入属性名。");
+					return @ErrorExpression(); // TODO
+			}
 
 @Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn: boolean/*是否允许解析 in 表达式*/) // 表达式
 	let result: nodes.Expression;
@@ -164,7 +492,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				return result;
 
 				@GenericExpression(*, *) // 泛型表达式(`x<number>`)
-					expression: Identifier // 表达式部分
+					target: Identifier // 目标部分
 					typeArguments: TypeArguments // 类型参数部分
 
 				@Identifier(allowKeyword: boolean/*是否允许解析关键字*/) // 标识符(`x`)
@@ -178,7 +506,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 						return result;
 					}
 					@error(@lexer.peek(), isKeyword(@peek) ? "Identifier expected; Keyword '{0}' cannot be used as an identifier." : @peek === 'endOfFile' ? "Identifier expected; Unexpected end of script." : "Identifier expected. Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
-					return @ErrorIdentifier();
+					return @ErrorIdentifier(@lexer.current.end);
 
 		case 'this':
 		case 'null':
@@ -251,13 +579,52 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			@ObjectLiteral // 对象字面量(`{x: y}`)
 				elements: { ObjectLiteralElement,... }
 
-				@ObjectLiteralElement // 对象字面量元素(`x: y`)
-					key: PropertyName 
+				@ObjectLiteralElement @alias(ObjectMethodDeclaration | ObjectPropertyDeclaration | ObjectAccessorDeclaration) // 对象字面量元素(`x： y`、`x() {...}`)
+					const modifiers = @Modifiers();
+					switch (@peek) {
+						case 'identifier':
+							break;
+						case 'get':
+						case 'set':
+							const savedToken = @lexer.current;
+							@lexer.read();
+							if (isKeyword(@peek) || @peek === '[') {
+								return @ObjectAccessorDeclaration(modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
+							}
+							@lexer.current = savedToken;
+							break;
+						case '*':
+							return @ObjectMethodDeclaration(modifiers, @read, @PropertyName());
+					}
+					const name = @PropertyName();
+					switch (@peek) {
+						case '(':
+						case '<':
+							return @ObjectMethodDeclaration(modifiers, undefined, name);
+						default:
+							return @ObjectPropertyDeclaration(modifiers, name);
+					}
+
+				@ObjectMethodDeclaration(*, *, *, *) // 方法声明(`x() {...}`)
+					??DocComment
+					?Modifiers
+					?*
+					?name: PropertyName
+					?TypeParameters
+					Parameters
+					?TypeAnnotation
+					?FunctionBody
+
+				@ObjectPropertyDeclaration(*, *, *) // 属性声明(`x: y`)
+					??DocComment
+					?Modifiers
+					key: PropertyName
 					?: 
 					?value: Expression(Precedence.assignment, true)
 
-					const result = new @ObjectLiteralElement();
-					result.key = @PropertyName();
+					const result = new @ObjectPropertyDeclaration();
+					@DocComment(result);
+					result.key = key;
 					if (@peek === ':') {
 						result.colonToken = @read;
 						result.value = @Expression(Precedence.assignment, true);
@@ -265,6 +632,16 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 						@expectToken(':');
 					}
 					return result;
+
+				@ObjectAccessorDeclaration(*, *, *) // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+					??DocComment
+					?Modifiers
+					?get
+					?set
+					name: PropertyName
+					Parameters
+					?TypeAnnotation
+					?FunctionBody
 
 		case 'function':
 			result = @FunctionExpression(undefined);
@@ -298,7 +675,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
 				@NewExpression(*) // new 表达式(`new x()`、`new x`)
 					new
-					expression: Expression(Precedence.member, false) 
+					target: Expression(Precedence.member, false) 
 					?arguments: Arguments
 
 		case '/':
@@ -372,7 +749,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			@YieldExpression(allowIn) // yield 表达式(`yield xx`)
 				yield 
 				[nobr]?*
-				[nobr]?expression: Expression(Precedence.assignment, allowIn)
+				[nobr]?operand: Expression(Precedence.assignment, allowIn)
 
 		case 'await':
 			result = @AwaitExpression(allowIn);
@@ -380,7 +757,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
 			@AwaitExpression(allowIn) // await 表达式(`await xx`)
 				await 
-				[nobr]expression: Expression(Precedence.assignment, allowIn)
+				[nobr]operand: Expression(Precedence.assignment, allowIn)
 
 		case 'class':
 			result = @ClassExpression();
@@ -417,7 +794,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
 				break;
 			}
-			@error(@lexer.peek(), @isKeyword(@peek) ? "Expression expected; '{0}' is a keyword." : @peek === 'endOfFile' : "Expression expected; Unexpected end of script.", "Expression expected; Unexpected token '{0}'.", getTokenName(@peek));
+			@error(@lexer.peek(), @isKeyword(@peek) ? "Expression expected; '{0}' is a keyword." : @peek === 'endOfFile' : "Expression expected; Unexpected end of script.", "Expression expected; Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
 			return @ErrorIdentifier(isStatementStart(@peek) ? @lexer.current.end : @read);
 
 			@UnaryExpression // 一元运算表达式(+x、typeof x、...)
@@ -435,10 +812,10 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 		switch (@peek) {
 			case '.':
 				result = @MemberCallExpression(result);
-				continue;
+				break;
 
 				@MemberCallExpression(*) // 成员调用表达式(x.y)
-					expression: Expression // 目标部分
+					target: Expression // 目标部分
 					. 
 					argument: Identifier(true) = @MemberCallArgument() // 参数部分
 
@@ -456,14 +833,14 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
 			case '=':
 				result = @BinaryExpression(result, allowIn);
-				continue;
+				break;
 
 			case '(':
 				result = @FunctionCallExpression(result);
-				continue;
+				break;
 
 				@FunctionCallExpression(*) // 函数调用表达式(x())
-					expression: Expression 
+					target: Expression 
 					arguments: Arguments
 
 					@Arguments // 函数调用参数列表
@@ -475,7 +852,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
 			case '[':
 				result = @IndexCallExpression(result);
-				continue;
+				break;
 
 				@IndexCallExpression(*) // 索引调用表达式(x[y])
 					target: Expression 
@@ -485,7 +862,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
 			case '?':
 				result = @ConditionalExpression(result, allowIn);
-				continue;
+				break;
 
 				@ConditionalExpression(*, allowIn) // 条件表达式(`x ? y : z`)
 					condition: Expression 
@@ -496,10 +873,10 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
 			case '++':
 			case '--':
-				if (@sameLine) {
-					result = @PostfixExpression(result);
-					continue;
+				if (!@sameLine) {
+					return result;
 				}
+				result = @PostfixExpression(result);
 				break;
 
 				@PostfixExpression(*) // 后缀表达式(`x++`、`x--`)
@@ -507,31 +884,32 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 					operator: '++'|'--'
 
 			case 'noSubstitutionTemplateLiteral':
-				return @TemplateCallExpression(parsed, @StringLiteral());
+				result = @TemplateCallExpression(parsed, @StringLiteral());
+				break;
 
 			case 'templateHead':
-				return @TemplateCallExpression(parsed, @TemplateLiteral());
+				result = @TemplateCallExpression(parsed, @TemplateLiteral());
+				break;
 
 				@TemplateCallExpression(*, *) // 模板调用表达式(`x\`abc\``)
-					expression: Expression 
+					target: Expression 
 					argument: TemplateLiteral | StringLiteral
 
 			case 'in':
 				if(allowIn === false) {
-					break;
+					return result;
 				}
 
 				// 继续往下执行
 			default:
 				result = @BinaryExpression(result, allowIn);
-				continue;
+				break;
 
 				@BinaryExpression(*, allowIn: boolean) // 双目表达式(x + y、x = y、...)
 					left: Expression // 左值部分
-					operator: ','|'*='|'/='|'%='|'+='|'‐='|'<<='|''>=>|''>>=>|'&='|'^='|'|='|'**='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|''>|'<='|''=>|'instanceof'|'in'|'<<'|''>>|''>>>|'+'|'-'|'*'|'/'|'%'|'**' // 运算类型
+					operator: ','|'*='|'/='|'%='|'+='|'‐='|'<<='|'>>='|'>>>='|'&='|'^='|'|='|'**='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|'>'|'<='|'>='|'instanceof'|'in'|'<<'|'>>'|'>>>'|'+'|'-'|'*'|'/'|'%'|'**' // 运算类型
 					right: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
 		}
-		break;
 	}
 	return result;
 
@@ -1178,7 +1556,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 		name: Identifier(false)
 		?TypeParameters
 		?ExtendsClause
-		members: ObjectTypeNode
+		members: { ObjectTypeElement,... }
 
 	@EnumDeclaration(*, *) // 枚举声明(`enum T {}`)
 		??DocComment
@@ -1369,7 +1747,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 						result.variable = @Identifier(!importClause);
 					} else {
 						if (importClause && !isIdentifierName(@current)) {
-							@error(@lexer.current, "Identifier expected. '{0}' is a keyword.", getTokenName(@current));
+							@error(@lexer.current, "Identifier expected; Keyword '{0}' cannot be used as an identifier.", getTokenName(@current));
 						}
 						result.variable = nameOrVariable;
 					}
