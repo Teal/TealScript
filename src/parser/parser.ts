@@ -4,9 +4,9 @@
  */
 
 import {CharCode} from './unicode';
-import {TokenType, tokenToString, isKeyword, isReservedWord, isExpressionStart, isDeclarationStart, isModifier, isBindingNameStart, isPredefinedType} from './tokenType';
+import {TokenType, getTokenName, isKeyword, isReservedWord, isExpressionStart, isDeclarationStart, isModifier, isBindingNameStart, isPredefinedType} from './tokenType';
 import {TextRange} from './location';
-import {Lexer, LexerOptions} from './lexer';
+import {Lexer, LexerOptions, Token} from './lexer';
 import * as nodes from './nodes';
 
 /**
@@ -80,42 +80,52 @@ export class Parser {
         return this.parseTypeNode();
     }
 
+    // #endregion
+
+    // #region 工具函数
+
     /**
      * 报告一个语法错误。
      * @param range 发生错误的位置。
      * @param message 错误的信息。
      * @param args 格式化错误的参数。
      */
-    error(range: TextRange, message: string, ...args: any[]) {
+    private error(range: TextRange, message: string, ...args: any[]) {
         // error(ErrorType.syntaxError, this.lexer.fileName, range.start, range.end, message, ...args);
-    }
-
-    // #endregion
-
-    // #region 解析节点底层
-
-    /**
-     * 尝试读取指定类型的标记。如果下一个标记不是指定的类型则不读取。
-     * @param token 要读取的标记类型。
-     * @returns 如果已读取则返回读取的标记位置，否则返回 undefined。
-     */
-    private tryReadToken(token: TokenType) {
-        if (this.lexer.peek().type === token) {
-            return this.lexer.read().start;
-        }
     }
 
     /**
      * 读取指定类型的标记，如果下一个标记不是指定的类型则报告错误。
      * @param token 要读取的标记类型。
-     * @returns 如果已读取则返回读取的标记位置，否则返回当前的结束位置。
+     * @returns 如果标记类型匹配则返回读取的标记位置，否则返回当前的结束位置。
      */
     private readToken(token: TokenType) {
         if (this.lexer.peek().type === token) {
             return this.lexer.read().start;
         }
-        this.error(this.lexer.peek(), token !== TokenType.identifier ? "应输入“{0}”。" : isKeyword(token) ? "应输入标识符；“{0}”是关键字。" : "应输入标识符。", tokenToString(token));
+        this.error(this.lexer.peek(), "'{0}' expected; Unexpected token '{1}'.", getTokenName(token), getTokenName(this.lexer.peek().type));
         return this.lexer.current.end;
+    }
+
+    /**
+     * 尝试读取或自动插入一个分号。
+     * @param result 存放结果的对象。
+     * @return 如果已读取或自动插入一个分号则返回 true，否则返回 false。
+     */
+    private tryReadSemicolon(result: { semicolonToken?: number }) {
+        switch (this.lexer.peek().type) {
+            case TokenType.semicolon:
+                result.semicolonToken = this.lexer.read().start;
+                return true;
+            case TokenType.closeBrace:
+            case TokenType.endOfFile:
+                if (this.options.allowMissingSemicolon !== false) {
+                    return true;
+                }
+                break;
+        }
+        this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "Missing ';' after statement.");
+        return false;
     }
 
     /**
@@ -123,83 +133,60 @@ export class Parser {
      * @param parseElement 解析每个元素的函数。如果解析失败函数返回 undefined。
      * @param openToken 列表的开始标记。
      * @param closeToken 列表的结束标记。
-     * @param delimiter 分隔符类型。合法的值有 unknown、comma、semicolon。
-     * @param continueParse 用于判断出现错误后是否继续解析列表项的函数。
      */
-    private parseNodeList<T extends nodes.Node & { commaToken?: number, semicolonToken?: number }>(parseElement: () => T, openToken?: TokenType, closeToken?: TokenType, delimiter?: TokenType, continueParse?: (token: TokenType) => boolean) {
-        let result = openToken ? new nodes.NodeList<T>() : undefined;
+    private parseNodeList<T extends nodes.Node>(parseElement: () => T, openToken?: TokenType, closeToken?: TokenType) {
+        let result = new nodes.NodeList<T>();
         if (openToken) result.start = this.readToken(openToken);
         while (this.lexer.peek().type !== TokenType.endOfFile &&
             (!closeToken || this.lexer.peek().type !== closeToken)) {
             const element = <T>parseElement.call(this);
-            if (!element) break;
-            if (!result) result = new nodes.NodeList<T>();
+            if (!element) return result;
             result.push(element);
-            if (delimiter) {
-                if (this.lexer.peek().type === TokenType.comma) {
-                    element.commaToken = this.readToken(TokenType.comma);
-                    continue;
-                }
-                if (delimiter === TokenType.semicolon && this.lexer.peek().type === TokenType.semicolon) {
-                    element.semicolonToken = this.readToken(TokenType.semicolon);
-                    continue;
-                }
-            }
-            if (continueParse && continueParse.call(this, this.lexer.peek().type)) {
-                continue;
-            }
-            break;
         }
         if (closeToken) result.end = this.readToken(closeToken);
         return result;
     }
 
     /**
-     * 在不影响现有状态的情况下尝试解析。
-     * @param parser 解析的函数。
-     * @return 返回尝试解析的结果。如果尝试解析失败则返回 undefined。
+     * 解析一个以逗号隔开的列表。
+     * @param parseElement 解析每个元素的函数。如果解析失败函数返回 undefined。
+     * @param openToken 列表的开始标记。
+     * @param closeToken 列表的结束标记。
+     * @param allowEmptyList 是否允许空列表。
+     * @param continueParse 用于判断出现错误后是否继续解析列表项的函数。
      */
-    private tryParse<T>(parser: (errors: IArguments[]) => T) {
-
-        // 保存状态。
-        const orignalToken = this.lexer.current;
-        const orignalError = this.error;
-        const cachedErrors = [];
-        this.error = function () { cachedErrors.push(arguments); };
-
-        // 解析节点。        
-        const result = parser.call(this, cachedErrors);
-
-        // 恢复状态。        
-        this.error = orignalError;
-        if (result) {
-            for (const e of cachedErrors) {
-                this.error.apply(this, e);
+    private parseDelimitedList<T extends nodes.Node & { commaToken?: number }>(parseElement: () => T, openToken?: TokenType, closeToken?: TokenType, allowEmptyList: boolean, continueParse?: (token: TokenType) => boolean) {
+        let result = new nodes.NodeList<T>();
+        if (openToken) result.start = this.readToken(openToken);
+        if (!allowEmptyList || this.lexer.peek().type !== closeToken && this.lexer.peek().type !== TokenType.endOfFile) {
+            while (true) {
+                const element = <T>parseElement.call(this);
+                result.push(element);
+                switch (this.lexer.peek().type) {
+                    case TokenType.comma:
+                        element.commaToken = this.readToken(TokenType.comma);
+                        continue;
+                    case closeToken:
+                    case TokenType.endOfFile:
+                        break;
+                    default:
+                        // 未读到分隔符和结束标记：分析是缺少,还是缺少结束标记。
+                        if (continueParse && continueParse.call(this, this.lexer.peek().type)) {
+                            this.readToken(TokenType.comma);
+                            continue;
+                        }
+                        break;
+                }
+                break;
             }
-        } else {
-            this.lexer.current = orignalToken;
         }
-
+        if (closeToken) result.end = this.readToken(closeToken);
         return result;
-    }
-
-    /**
-     * 尝试读取或自动插入一个分号。
-     * @return 返回分号或自动插入点的结束位置。
-     */
-    private tryReadSemicolon() {
-        if (this.lexer.peek().type === TokenType.semicolon) {
-            return this.lexer.read().end;
-        }
-        if (!this.hasSemicolon()) {
-            this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "语句后缺少“;”。");
-        }
-        return this.lexer.current.end;
     }
 
     // #endregion
 
-    // #region 解析类型节点
+    // #region 类型节点
 
     /**
      * 解析一个类型节点(`number`、`string[]`、...)。
@@ -1538,7 +1525,7 @@ export class Parser {
         const result = new nodes.ConditionalExpression();
         result.condition = leftOperand;
         result.questionToken = questionToken;
-        result.whenTrue = this.doOutsideOfContext(this.disallowInAndDecoratorContext, this.parseAssignmentExpressionOrHigher);
+        result.whenTrue = this.doOutsideOfContext(this.allowInAndDecoratorContext, this.parseAssignmentExpressionOrHigher);
         result.colonToken = this.readTokenToken(TokenType.colon, /*reportAtCurrentPosition*/ false,
             nodes.Diagnostics._0_expected, tokenToString(TokenType.colon));
         result.whenFalse = this.parseAssignmentExpressionOrHigher();
@@ -1591,7 +1578,7 @@ export class Parser {
                 break;
             }
 
-            if (this.lexer.peek().type === TokenType.in && this.inDisallowInContext()) {
+            if (this.lexer.peek().type === TokenType.in && this.inallowInContext()) {
                 break;
             }
 
@@ -1618,7 +1605,7 @@ export class Parser {
     }
 
     private isBinaryOperator() {
-        if (this.inDisallowInContext() && this.lexer.peek().type === TokenType.in) {
+        if (this.inallowInContext() && this.lexer.peek().type === TokenType.in) {
             return false;
         }
 
@@ -2397,7 +2384,7 @@ export class Parser {
     }
 
     private parseArgumentExpression(): nodes.Expression {
-        return this.doOutsideOfContext(this.disallowInAndDecoratorContext, this.parseArgumentOrArrayLiteralElement);
+        return this.doOutsideOfContext(this.allowInAndDecoratorContext, this.parseArgumentOrArrayLiteralElement);
     }
 
     private parseArrayLiteralExpression(): nodes.ArrayLiteralExpression {
@@ -2436,7 +2423,7 @@ export class Parser {
         const tokenIsIdentifier = this.isIdentifier();
         const propertyName = this.parsePropertyName();
 
-        // nodes.Disallowing of optional property assignments happens in the grammar checker.
+        // nodes.allowing of optional property assignments happens in the grammar checker.
         const questionToken = this.tryReadTokenToken(TokenType.question);
         if (asteriskToken || this.lexer.peek().type === TokenType.openParen || this.lexer.peek().type === TokenType.lessThan) {
             return this.parseMethodDeclaration(fullStart, decorators, modifiers, asteriskToken, propertyName, questionToken);
@@ -2757,7 +2744,7 @@ export class Parser {
         console.assert(this.lexer.peek().type == TokenType.switch);
         const result = new nodes.SwitchStatement();
         result.start = this.lexer.read().start;
-        if (!this.options.disallowMissingSwitchCondition || this.lexer.peek().type !== TokenType.openBrace) {
+        if (!this.options.allowMissingSwitchCondition || this.lexer.peek().type !== TokenType.openBrace) {
             this.parseCondition(result);
         }
         result.cases = new nodes.NodeList<nodes.CaseClause>();
@@ -2779,7 +2766,7 @@ export class Parser {
             const caseCaluse = new nodes.CaseClause();
             caseCaluse.start = this.lexer.read().start;
             if (this.lexer.current.type === TokenType.case) {
-                if (!this.options.disallowCaseElse && this.lexer.peek().type === TokenType.else) {
+                if (!this.options.allowCaseElse && this.lexer.peek().type === TokenType.else) {
                     caseCaluse.elseToken = this.lexer.read().start;
                 } else {
                     caseCaluse.label = this.allowInAnd(this.parseExpression);
@@ -2812,14 +2799,14 @@ export class Parser {
         const start = this.lexer.read().start;
         const openParan = this.lexer.peek().type === TokenType.openParen ?
             this.lexer.read().start : undefined;
-        if (openParan == undefined && !this.options.disallowMissingParenthese) {
+        if (openParan == undefined && !this.options.allowMissingParenthese) {
             this.expectToken(TokenType.openParen);
         }
 
-        const disallowIn = this.disallowIn;
-        this.disallowIn = true;
+        const allowIn = this.allowIn;
+        this.allowIn = true;
         const initializer = this.lexer.peek().type === TokenType.semicolon ? undefined : this.isVariableStatement() ? this.parseVariableStatement() : this.allowInAnd(this.parseExpression);
-        this.disallowIn = disallowIn;
+        this.allowIn = allowIn;
 
         let type = this.lexer.peek().type;
         switch (type) {
@@ -2827,12 +2814,12 @@ export class Parser {
             case TokenType.in:
                 break;
             case TokenType.of:
-                if (!this.options.disallowForOf) {
+                if (!this.options.allowForOf) {
                     type = TokenType.semicolon;
                 }
                 break;
             case TokenType.to:
-                if (!this.options.disallowForTo) {
+                if (!this.options.allowForTo) {
                     type = TokenType.semicolon;
                 }
                 break;
@@ -2885,7 +2872,7 @@ export class Parser {
             case TokenType.of:
                 result = new nodes.ForOfStatement();
                 (<nodes.ForOfStatement>result).ofToken = this.lexer.read().start;
-                result.condition = this.options.disallowForOfCommaExpression ? this.allowInAnd(this.parseAssignmentExpressionOrHigher) : this.allowInAnd(this.parseExpression);
+                result.condition = this.options.allowForOfCommaExpression ? this.allowInAnd(this.parseAssignmentExpressionOrHigher) : this.allowInAnd(this.parseExpression);
                 break;
             case TokenType.to:
                 result = new nodes.ForToStatement();
@@ -2987,7 +2974,7 @@ export class Parser {
         result.start = this.lexer.read().start;
         if (this.options.useStandardSemicolonInsertion ? !this.hasSemicolon() : isExpressionStart(this.lexer.peek().type)) {
             result.value = this.allowInAnd(this.parseExpression);
-        } else if (this.options.disallowRethrow) {
+        } else if (this.options.allowRethrow) {
             this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "应输入表达式。");
         }
         result.end = this.tryReadSemicolon();
@@ -3009,9 +2996,9 @@ export class Parser {
                 result.catch.openParanToken = this.lexer.read().start;
                 result.catch.variable = this.parseBindingName();
                 result.catch.openParanToken = this.readToken(TokenType.closeParen);
-            } else if (!this.options.disallowMissingParenthese && this.isBindingName()) {
+            } else if (!this.options.allowMissingParenthese && this.isBindingName()) {
                 result.catch.variable = this.parseBindingName();
-            } else if (this.options.disallowMissingCatchVaribale) {
+            } else if (this.options.allowMissingCatchVaribale) {
                 this.expectToken(TokenType.openParen);
             }
             result.catch.body = this.parseTryClauseBody();
@@ -3021,7 +3008,7 @@ export class Parser {
             result.finally.start = this.lexer.read().start;
             result.finally.body = this.parseTryClauseBody();
         }
-        if (this.options.disallowSimpleTryBlock && !result.catch && !result.finally) {
+        if (this.options.allowSimpleTryBlock && !result.catch && !result.finally) {
             this.error(this.lexer.peek(), "应输入“catch”或“finally”");
         }
         return result;
@@ -3031,7 +3018,7 @@ export class Parser {
      * 解析一个 try 语句的语句块。
      */
     private parseTryClauseBody() {
-        if (!this.options.disallowMissingTryBlock) {
+        if (!this.options.allowMissingTryBlock) {
             return this.parseEmbeddedStatement();
         }
         if (this.lexer.peek().type === TokenType.openBrace) {
@@ -3066,15 +3053,15 @@ export class Parser {
         result.start = this.lexer.read().start;
         if (this.lexer.peek().type === TokenType.openParen) {
             result.openParanToken = this.lexer.read().start;
-            result.value = !this.options.disallowWithVaribale && this.isVariableStatement() ?
+            result.value = !this.options.allowWithVaribale && this.isVariableStatement() ?
                 this.allowInAnd(this.parseVariableStatement) :
                 this.allowInAnd(this.parseExpression);
             result.closeParanToken = this.readToken(TokenType.closeParen);
         } else {
-            if (this.options.disallowMissingParenthese) {
+            if (this.options.allowMissingParenthese) {
                 this.expectToken(TokenType.openParen);
             }
-            result.value = !this.options.disallowWithVaribale && this.isVariableStatement() ?
+            result.value = !this.options.allowWithVaribale && this.isVariableStatement() ?
                 this.allowInAnd(this.parseVariableStatement) :
                 this.allowInAnd(this.parseExpression);
         }
@@ -3090,23 +3077,6 @@ export class Parser {
         const result = new nodes.EmptyStatement();
         result.start = result.end = this.lexer.peek().start;
         return result;
-    }
-
-    /**
-     * 判断是否可以自动插入一个分号。
-     */
-    private hasSemicolon() {
-        switch (this.lexer.peek().type) {
-            case TokenType.semicolon:
-                return true;
-            case TokenType.closeBrace:
-            case TokenType.endOfFile:
-                return !this.options.disallowMissingSemicolon;
-            default:
-                if (this.options.disallowMissingSemicolon) return false;
-                if (this.options.useStandardSemicolonInsertion) return this.lexer.peek().hasLineBreakBeforeStart;
-                return true;
-        }
     }
 
     /**
@@ -3130,7 +3100,7 @@ export class Parser {
             result.condition = this.allowInAnd(this.parseExpression);
             result.closeParanToken = this.readToken(TokenType.closeParen);
         } else {
-            if (!this.options.disallowMissingParenthese) {
+            if (!this.options.allowMissingParenthese) {
                 this.expectToken(TokenType.openParen);
             }
             result.condition = this.allowInAnd(this.parseExpression);
@@ -3489,10 +3459,10 @@ export class Parser {
         //        nodes.AccessibilityModifier_opt   nodes.PropertyName   nodes.TypeAnnotation_opt   nodes.Initializer_opt[nodes.In];
         //        nodes.AccessibilityModifier_opt  static_opt  nodes.PropertyName   nodes.TypeAnnotation_opt   nodes.Initializer_opt[nodes.In, ?nodes.Yield];
         //
-        // nodes.The checker may still error in the static case to explicitly disallow the yield expression.
+        // nodes.The checker may still error in the static case to explicitly allow the yield expression.
         property.initializer = modifiers && modifiers.flags & nodes.NodeFlags.Static
             ? this.allowInAnd(this.parseNonParameterInitializer)
-            : this.doOutsideOfContext(nodes.NodeFlags.YieldContext | nodes.NodeFlags.DisallowInContext, this.parseNonParameterInitializer);
+            : this.doOutsideOfContext(nodes.NodeFlags.YieldContext | nodes.NodeFlags.allowInContext, this.parseNonParameterInitializer);
 
         this.tryReadSemicolon();
         return this.finishNode(property);
@@ -4207,7 +4177,7 @@ export class Parser {
 
     // #region 未整理
 
-    private disallowInAndDecoratorContext = NodeFlags.DisallowInContext | NodeFlags.DecoratorContext;
+    private allowInAndDecoratorContext = NodeFlags.allowInContext | NodeFlags.DecoratorContext;
 
     // capture constructors in 'this.initializeState' to avoid null checks
     private NodeConstructor: new (kind: TokenType, pos: number, end: number) => nodes.Node;
@@ -4232,8 +4202,8 @@ export class Parser {
     // nodes.When adding more parser context flags, consider which is the more common case that the
     // flag will be in.  nodes.This should be the 'false' state for that flag.  nodes.The reason for this is
     // that we don't store data in our nodes unless the value is in the *non-default* state.  nodes.So,
-    // for example, more often than code 'allows-in' (or doesn't 'disallow-in').  nodes.We opt for
-    // 'disallow-in' set to 'false'.  nodes.Otherwise, if we had 'allowsIn' set to 'true', then almost
+    // for example, more often than code 'allows-in' (or doesn't 'allow-in').  nodes.We opt for
+    // 'allow-in' set to 'false'.  nodes.Otherwise, if we had 'allowsIn' set to 'true', then almost
     // all nodes would need extra state on them to store this info.
     //
     // nodes.Note:  'allowIn' and 'allowYield' track 1:1 with the [in] and [yield] concepts in the nodes.ES6
@@ -4453,8 +4423,8 @@ export class Parser {
         }
     }
 
-    private setDisallowInContext(val: boolean) {
-        this.setContextFlag(val, nodes.NodeFlags.DisallowInContext);
+    private setallowInContext(val: boolean) {
+        this.setContextFlag(val, nodes.NodeFlags.allowInContext);
     }
 
     private setYieldContext(val: boolean) {
@@ -4512,11 +4482,11 @@ export class Parser {
     }
 
     private allowInAnd<T>(func: () => T): T {
-        return this.doOutsideOfContext(nodes.NodeFlags.DisallowInContext, func);
+        return this.doOutsideOfContext(nodes.NodeFlags.allowInContext, func);
     }
 
-    private disallowInAnd<T>(func: () => T): T {
-        return this.doInsideOfContext(nodes.NodeFlags.DisallowInContext, func);
+    private allowInAnd<T>(func: () => T): T {
+        return this.doInsideOfContext(nodes.NodeFlags.allowInContext, func);
     }
 
     private doInYieldContext<T>(func: () => T): T {
@@ -4547,8 +4517,8 @@ export class Parser {
         return this.inContext(nodes.NodeFlags.YieldContext);
     }
 
-    private inDisallowInContext() {
-        return this.inContext(nodes.NodeFlags.DisallowInContext);
+    private inallowInContext() {
+        return this.inContext(nodes.NodeFlags.allowInContext);
     }
 
     private inDecoratorContext() {
@@ -5541,6 +5511,8 @@ export class Parser {
         return result;
     }
 
+    // #endregion
+
     /**
      * 解析一个源文件。
      */
@@ -5580,8 +5552,6 @@ export class Parser {
         return result;
     }
 
-    // #endregion
-
 }
 
 /**
@@ -5590,9 +5560,9 @@ export class Parser {
 export interface ParserOptions extends LexerOptions {
 
     /**
-     * 禁止省略语句末尾的分号。
+     * 允许省略语句末尾的分号。
      */
-    disallowMissingSemicolon?: boolean,
+    allowMissingSemicolon?: boolean,
 
     /**
      * 使用智能分号插入策略。使用该策略可以减少省略分号引发的语法错误。
@@ -5600,19 +5570,19 @@ export interface ParserOptions extends LexerOptions {
     useStandardSemicolonInsertion?: boolean,
 
     /**
-     * 禁止省略条件表达式的括号。
+     * 允许省略条件表达式的括号。
      */
-    disallowMissingParenthese?: boolean,
+    allowMissingParenthese?: boolean,
 
     /**
-     * 禁止省略 switch (true) 中的 (true)。
+     * 允许省略 switch (true) 中的 (true)。
      */
-    disallowMissingSwitchCondition?: boolean,
+    allowMissingSwitchCondition?: boolean,
 
     /**
-     * 禁止使用 case else 语法代替 default。
+     * 允许使用 case else 语法代替 default。
      */
-    disallowCaseElse?: boolean,
+    allowCaseElse?: boolean,
 
     /**
      * 使用 for..in 兼容变量定义。
@@ -5620,44 +5590,44 @@ export interface ParserOptions extends LexerOptions {
     useCompatibleForInAndForOf?: boolean,
 
     /**
-     * 禁止使用 for..of 语法。
+     * 允许使用 for..of 语法。
      */
-    disallowForOf?: boolean,
+    allowForOf?: boolean,
 
     /**
-     * 禁止使用 for..of 逗号语法。
+     * 允许使用 for..of 逗号语法。
      */
-    disallowForOfCommaExpression?: boolean,
+    allowForOfCommaExpression?: boolean,
 
     /**
-     * 禁止使用 for..to 语法。
+     * 允许使用 for..to 语法。
      */
-    disallowForTo?: boolean,
+    allowForTo?: boolean,
 
     /**
-     * 禁止使用 throw 空参数语法。
+     * 允许使用 throw 空参数语法。
      */
-    disallowRethrow?: boolean,
+    allowRethrow?: boolean,
 
     /**
-     * 禁止使用 with 语句定义语法。
+     * 允许使用 with 语句定义语法。
      */
-    disallowWithVaribale?: boolean,
+    allowWithVaribale?: boolean,
 
     /**
-     * 禁止省略 try 语句块的 {}。
+     * 允许省略 try 语句块的 {}。
      */
-    disallowMissingTryBlock?: boolean,
+    allowMissingTryBlock?: boolean,
 
     /**
-     * 禁止省略 catch 分句的变量名。
+     * 允许省略 catch 分句的变量名。
      */
-    disallowMissingCatchVaribale?: boolean,
+    allowMissingCatchVaribale?: boolean,
 
     /**
-     * 禁止不含 catch 和 finally 分句的 try 语句。
+     * 允许不含 catch 和 finally 分句的 try 语句。
      */
-    disallowSimpleTryBlock?: boolean,
+    allowSimpleTryBlock?: boolean,
 
 }
 

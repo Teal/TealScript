@@ -661,6 +661,56 @@ export const enum TokenType {
     never,
 
     /**
+     * 关键字 char(TealScript 1 新增)。
+     */
+    char,
+
+    /**
+     * 关键字 byte(TealScript 1 新增)。
+     */
+    byte,
+
+    /**
+     * 关键字 int(TealScript 1 新增)。
+     */
+    int,
+
+    /**
+     * 关键字 long(TealScript 1 新增)。
+     */
+    long,
+
+    /**
+     * 关键字 short(TealScript 1 新增)。
+     */
+    short,
+
+    /**
+     * 关键字 uint(TealScript 1 新增)。
+     */
+    uint,
+
+    /**
+     * 关键字 ulong(TealScript 1 新增)。
+     */
+    ulong,
+
+    /**
+     * 关键字 ushort(TealScript 1 新增)。
+     */
+    ushort,
+
+    /**
+     * 关键字 float(TealScript 1 新增)。
+     */
+    float,
+
+    /**
+     * 关键字 double(TealScript 1 新增)。
+     */
+    double,
+
+    /**
      * 最大的内置类型。
      */
     MAX_PREDEFINED_TYPE,
@@ -912,28 +962,90 @@ export function isReservedWord(token: TokenType) {
 }
 
 /**
- * 判断指定的标记是否是绑定名称开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isBindingNameStart(token: TokenType) {
-    switch (token) {
-        case TokenType.identifier:
-        case TokenType.openBracket:
-        case TokenType.openBrace:
-            return true;
-        default:
-            return isIdentifierName(token);
-    }
-}
-
-/**
  * 判断指定的标记是否可作为内置类型。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
  */
 export function isPredefinedType(token: TokenType) {
-    return token > TokenType.MIN_PREDEFINED_TYPE && token < TokenType.MAX_PREDEFINED_TYPE || token == TokenType.null || token == TokenType.undefined;
+    return token > TokenType.MIN_PREDEFINED_TYPE && token < TokenType.MAX_PREDEFINED_TYPE || token === TokenType.null || token === TokenType.undefined || token === TokenType.asterisk || token === TokenType.question;
+}
+
+/**
+ * 判断指定的标记是否可作为类型节点开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isTypeNodeStart(token: TokenType) {
+    return isIdentifierName(token) ||
+        token === TokenType.openParen ||
+        token === TokenType.openBracket ||
+        token === TokenType.openBrace ||
+        token === TokenType.new ||
+        token === TokenType.lessThan ||
+        token === TokenType.typeof ||
+        token === TokenType.numericLiteral ||
+        token === TokenType.stringLiteral ||
+        token === TokenType.true ||
+        token === TokenType.false;
+}
+
+/**
+ * 判断指定的标记是否可作为数组绑定元素开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isArrayBindingElementStart(token: TokenType) {
+    return isBindingNameStart(token) || token === TokenType.dotDotDot;
+}
+
+/**
+ * 判断指定的标记是否是绑定名称开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isBindingNameStart(token: TokenType) {
+    return isIdentifierName(token) ||
+        token === TokenType.openBracket ||
+        token === TokenType.openBrace;
+}
+
+/**
+ * 判断指定的标记是否可作为对象绑定元素开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isObjectBindingElementStart(token: TokenType) {
+    return isPropertyNameStart(token) || token === TokenType.dotDotDot;
+}
+
+/**
+ * 判断指定的标记是否可作为属性名开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isPropertyNameStart(token: TokenType) {
+    return isKeyword(token) ||
+        token === TokenType.numericLiteral ||
+        token === TokenType.stringLiteral ||
+        token === TokenType.openBracket;
+}
+
+/**
+ * 判断指定的标记是否可作为参数开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isArgumentStart(token: TokenType) {
+    return isExpressionStart(token) || token === TokenType.dotDotDot;
+}
+
+/**
+ * 判断指定的标记是否可作为参数开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isCaseLabelStart(token: TokenType) {
+    return isExpressionStart(token) || token === TokenType.else;
 }
 
 /**

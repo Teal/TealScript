@@ -1,4 +1,392 @@
 	
+语句
+----------------------------------------------------------------
+
+Declaration[Yield] :
+	FunctionDeclaration[?Yield,?Default] 
+	GeneratorDeclaration[?Yield, ?Default]
+	ClassDeclaration[?Yield]
+
+声明
+----------------------------------------------------------------
+
+源文件
+----------------------------------------------------------------
+
+Script :
+	ScriptBody[opt]
+
+ScriptBody :
+	StatementList
+
+Module :
+	ModuleBody[opt]
+
+ModuleBody :
+	ModuleItemList
+
+ModuleItemList :
+	ModuleItem
+	ModuleItemList  ModuleItem
+
+ModuleItem :
+	ImportDeclaration
+	ExportDeclaration
+	StatementListItem
+
+ImportDeclaration :
+	import  ImportClause FromClause ;
+	import  ModuleSpecifier ;
+
+ImportClause :
+	ImportedDefaultBinding
+	NameSpaceImport
+	NamedImports
+	ImportedDefaultBinding , NameSpaceImport
+	ImportedDefaultBinding , NamedImports
+
+ImportedDefaultBinding :
+	ImportedBinding
+
+NameSpaceImport :
+	* as  ImportedBinding
+
+NamedImports :
+	{  }
+	{  ImportsList }
+	{  ImportsList , }
+
+FromClause :
+	from ModuleSpecifier
+
+ImportsList :
+	ImportSpecifier
+	ImportsList ,  ImportSpecifier
+
+ImportSpecifier :
+	ImportedBinding
+	IdentifierName as  ImportedBinding
+
+ModuleSpecifier :
+	StringLiteral
+
+ImportedBinding :
+	BindingIdentifier
+
+ExportDeclaration :
+	export *  FromClause ; 
+	export  ExportClause  FromClause ; 
+	export  ExportClause  ; 
+	export  VariableStatement  
+	export  Declaration   
+	export default HoistableDeclaration[Default] 
+	export default ClassDeclaration[Default] 
+	export default [lookahead ∉ { function, class }]  AssignmentExpression[In] ;
+
+ExportClause :
+	{  }
+	{  ExportsList }
+	{  ExportsList , }
+
+ExportsList :
+	ExportSpecifier
+	ExportsList ,  ExportSpecifier
+
+ExportSpecifier :
+	IdentifierName
+	IdentifierName as  IdentifierName
+
+类型
+----------------------------------------------------------------
+
+TypeAliasDeclaration:
+	type BindingIdentifier TypeParameters[opt] = Type ;
+
+声明
+----------------------------------------------------------------
+
+ArrowFormalParameters:	  [Modified]
+	CallSignature
+
+Declaration:	  [Modified]…
+	InterfaceDeclaration
+	TypeAliasDeclaration EnumDeclaration
+
+VariableDeclaration:	  [Modified]
+	SimpleVariableDeclaration
+	DestructuringVariableDeclaration
+
+SimpleVariableDeclaration:
+	BindingIdentifier TypeAnnotation[opt] Initializer[opt]
+
+DestructuringVariableDeclaration:
+	BindingPattern TypeAnnotation[opt] Initializer
+
+LexicalBinding:	  
+	[Modified]SimpleLexicalBinding
+	DestructuringLexicalBinding
+
+SimpleLexicalBinding:
+	BindingIdentifier TypeAnnotation[opt] Initializer[opt]
+
+DestructuringLexicalBinding:
+	BindingPattern TypeAnnotation[opt] Initializer[opt]
+
+ClassOrInterfaceTypeList:
+	ClassOrInterfaceType
+	ClassOrInterfaceTypeList , ClassOrInterfaceType
+
+ClassOrInterfaceType:
+	TypeReference
+
+SetAccessorIndexMemberDeclaration:
+	IndexSignature ;
+
+NamespaceDeclaration:
+	namespace IdentifierPath { NamespaceBody }
+
+IdentifierPath:
+	BindingIdentifier
+	IdentifierPath . BindingIdentifier
+
+NamespaceBody:
+	NamespaceElements[opt]
+
+NamespaceElements:
+	NamespaceElement
+	NamespaceElements NamespaceElement
+
+NamespaceElement:
+	Statement
+	LexicalDeclaration
+	FunctionDeclaration
+	GeneratorDeclaration
+	ClassDeclaration
+	InterfaceDeclaration
+	TypeAliasDeclaration
+	EnumDeclaration
+	NamespaceDeclaration
+	AmbientDeclaration
+	ImportAliasDeclaration
+	ExportNamespaceElement
+
+ExportNamespaceElement:
+	export VariableStatement
+	export LexicalDeclaration
+	export FunctionDeclaration
+	export GeneratorDeclaration
+	export ClassDeclaration
+	export InterfaceDeclaration
+	export TypeAliasDeclaration
+	export EnumDeclaration
+	export NamespaceDeclaration
+	export AmbientDeclaration
+	export ImportAliasDeclaration
+
+ImportAliasDeclaration:
+	import BindingIdentifier = EntityName ;
+
+EntityName:
+	NamespaceName
+	NamespaceName . IdentifierReference
+
+SourceFile:
+	ImplementationSourceFile
+	DeclarationSourceFile
+
+ImplementationSourceFile:
+	ImplementationScript
+	ImplementationModule
+
+DeclarationSourceFile:
+	DeclarationScript
+	DeclarationModule
+
+ImplementationScript:
+	ImplementationScriptElements[opt]
+
+ImplementationScriptElements:
+	ImplementationScriptElement
+	ImplementationScriptElements ImplementationScriptElement
+
+ImplementationScriptElement:
+	ImplementationElement
+	AmbientModuleDeclaration
+
+ImplementationElement:
+	Statement
+	LexicalDeclaration
+	FunctionDeclaration
+	GeneratorDeclaration
+	ClassDeclaration
+	InterfaceDeclaration
+	TypeAliasDeclaration
+	EnumDeclaration
+	NamespaceDeclaration
+	AmbientDeclaration
+	ImportAliasDeclaration
+
+DeclarationScript:
+	DeclarationScriptElements[opt]
+
+DeclarationScriptElements:
+	DeclarationScriptElement
+	DeclarationScriptElements DeclarationScriptElement
+
+DeclarationScriptElement:
+	DeclarationElement
+	AmbientModuleDeclaration
+
+DeclarationElement:
+	InterfaceDeclaration
+	TypeAliasDeclaration
+	NamespaceDeclaration AmbientDeclaration
+	ImportAliasDeclaration
+
+ImplementationModule:
+	ImplementationModuleElements[opt]
+
+ImplementationModuleElements:
+	ImplementationModuleElement
+	ImplementationModuleElements ImplementationModuleElement
+
+ImplementationModuleElement:
+	ImplementationElement
+	ImportDeclaration
+	ImportAliasDeclaration
+	ImportRequireDeclaration
+	ExportImplementationElement
+	ExportDefaultImplementationElement
+	ExportListDeclaration ExportAssignment
+
+DeclarationModule:
+	DeclarationModuleElements[opt]
+
+DeclarationModuleElements:
+	DeclarationModuleElement
+	DeclarationModuleElements DeclarationModuleElement
+
+DeclarationModuleElement:
+	DeclarationElement
+	ImportDeclaration
+	ImportAliasDeclaration
+	ExportDeclarationElement
+	ExportDefaultDeclarationElement
+	ExportListDeclaration ExportAssignment
+
+ImportRequireDeclaration:
+	import BindingIdentifier = require ( StringLiteral ) ;
+
+ExportImplementationElement:
+	export VariableStatement
+	export LexicalDeclaration
+	export FunctionDeclaration
+	export GeneratorDeclaration
+	export ClassDeclaration
+	export InterfaceDeclaration
+	export TypeAliasDeclaration
+	export EnumDeclaration
+	export NamespaceDeclaration
+	export AmbientDeclaration
+	export ImportAliasDeclaration
+
+ExportDeclarationElement:
+	export InterfaceDeclaration
+	export TypeAliasDeclaration
+	export AmbientDeclaration
+	export ImportAliasDeclaration
+
+ExportDefaultImplementationElement:
+	export default FunctionDeclaration
+	export default GeneratorDeclaration
+	export default ClassDeclaration
+	export default AssignmentExpression ;
+
+ExportDefaultDeclarationElement:
+	export default AmbientFunctionDeclaration
+	export default AmbientClassDeclaration
+	export default IdentifierReference ;
+
+ExportListDeclaration:
+	export * FromClause ;
+	export ExportClause FromClause ;
+	export ExportClause ;
+
+ExportAssignment:
+	export = IdentifierReference ;
+
+AmbientDeclaration:
+	declare AmbientVariableDeclaration
+	declare AmbientFunctionDeclaration
+	declare AmbientClassDeclaration
+	declare AmbientEnumDeclaration
+	declare AmbientNamespaceDeclaration
+
+AmbientVariableDeclaration:
+	var AmbientBindingList ;
+	let AmbientBindingList ;
+	const AmbientBindingList ;
+
+AmbientBindingList:
+	AmbientBinding
+	AmbientBindingList , AmbientBinding
+
+AmbientBinding:
+	BindingIdentifier TypeAnnotation[opt]
+
+AmbientFunctionDeclaration:
+	function BindingIdentifier CallSignature ;
+
+AmbientClassDeclaration:
+	class BindingIdentifier TypeParameters[opt] ClassHeritage { AmbientClassBody }
+
+AmbientClassBody:
+	AmbientClassBodyElements[opt]
+
+AmbientClassBodyElements:
+	AmbientClassBodyElement
+	AmbientClassBodyElements AmbientClassBodyElement
+
+AmbientClassBodyElement:
+	AmbientConstructorDeclaration
+	AmbientPropertyMemberDeclaration IndexSignature
+
+AmbientConstructorDeclaration:	 
+	constructor ( ParameterList[opt] ) ;
+
+AmbientPropertyMemberDeclaration:
+	AccessibilityModifier[opt] static[opt] PropertyName TypeAnnotation[opt] ;
+	AccessibilityModifier[opt] static[opt] PropertyName CallSignature ;
+
+AmbientEnumDeclaration:
+	EnumDeclaration
+
+AmbientNamespaceDeclaration:
+	namespace IdentifierPath { AmbientNamespaceBody }
+
+AmbientNamespaceBody:
+	AmbientNamespaceElements[opt]
+
+AmbientNamespaceElements:
+	AmbientNamespaceElement
+	AmbientNamespaceElements AmbientNamespaceElement
+
+AmbientNamespaceElement:
+	export[opt] AmbientVariableDeclaration
+	export[opt] AmbientLexicalDeclaration
+	export[opt] AmbientFunctionDeclaration
+	export[opt] AmbientClassDeclaration
+	export[opt] InterfaceDeclaration
+	export[opt] AmbientEnumDeclaration
+	export[opt] AmbientNamespaceDeclaration
+	export[opt] ImportAliasDeclaration
+
+AmbientModuleDeclaration:
+	declare module StringLiteral {  DeclarationModule }
+
+TealScript 新增
+================================================================
+
 TealScript 语法规范
 ================================================================
 
@@ -356,270 +744,6 @@ TemplateCharacter ::
 	LineTerminatorSequence
 	SourceCharacter [but not] [one of] ` [or] \ [or] $ [or] LineTerminator
 
-语句
-----------------------------------------------------------------
-
-Statement[Yield, Return] :
-	ExpressionStatement[?Yield]
-	BreakableStatement[?Yield, ?Return]
-	LabelledStatement[?Yield, ?Return]
-	ThrowStatement[?Yield]
-	TryStatement[?Yield, ?Return]
-	DebuggerStatement
-
-Declaration[Yield] :
-	HoistableDeclaration[?Yield]
-	ClassDeclaration[?Yield]
-	LexicalDeclaration[In, ?Yield]
-
-HoistableDeclaration[Yield, Default] :
-	FunctionDeclaration[?Yield,?Default] 
-	GeneratorDeclaration[?Yield, ?Default]
-
-BreakableStatement[Yield, Return] :
-	IterationStatement[?Yield, ?Return]
-	SwitchStatement[?Yield, ?Return]
-
-StatementList[Yield, Return] :
-	StatementListItem[?Yield, ?Return]
-	StatementList[?Yield, ?Return] StatementListItem[?Yield, ?Return]
-
-StatementListItem[Yield, Return] :
-	Statement[?Yield, ?Return]
-	Declaration[?Yield]
-
-ExpressionStatement[Yield] :
-	[lookahead ∉ {{, function,  class,  let [ }] Expression[In, ?Yield] ;
-
-IterationStatement[Yield, Return] :
-	do Statement[?Yield, ?Return] while ( Expression[In, ?Yield] ) ; while ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
-	for ( [lookahead ∉ {let [ }] Expression[?Yield][opt] ; Expression[In, ?Yield][opt] ; Expression[In, ?Yield][opt] ) Statement[?Yield, ?Return]
-	for ( var VariableDeclarationList[?Yield]; Expression[In, ?Yield][opt] ; Expression[In, ?Yield][opt] ) Statement[?Yield, ?Return]
-	for ( LexicalDeclaration[?Yield]  Expression[In, ?Yield][opt] ; Expression[In, ?Yield][opt] ) Statement[?Yield, ?Return]
-	for ( [lookahead ∉ {let [ }] LeftHandSideExpression[?Yield] in Expression[In, ?Yield] ) Statement[?Yield, ?Return] 
-	for ( var ForBinding[?Yield] in Expression[In, ?Yield] ) Statement[?Yield, ?Return]
-	for ( ForDeclaration[?Yield]  in Expression[In, ?Yield] ) Statement[?Yield, ?Return]
-	for ( [lookahead ≠ let] LeftHandSideExpression[?Yield] of AssignmentExpression[In, ?Yield] ) Statement[?Yield, ?Return]
-	for ( var ForBinding[?Yield] of AssignmentExpression[In, ?Yield] ) Statement[?Yield, ?Return]
-	for ( ForDeclaration[?Yield]  of AssignmentExpression[In, ?Yield] ) Statement[?Yield, ?Return]
-
-ForDeclaration[Yield] :
-	LetOrConst  ForBinding[?Yield]
-
-ForBinding[Yield] :
-	BindingIdentifier[?Yield]
-	BindingPattern[?Yield]
-
-SwitchStatement[Yield, Return] :
-	switch ( Expression[In, ?Yield] ) CaseBlock[?Yield, ?Return]
-
-CaseBlock[Yield, Return] :
-	{ CaseClauses[?Yield, ?Return][opt] }
-	{ CaseClauses[?Yield, ?Return][opt] DefaultClause[?Yield, ?Return]  CaseClauses[?Yield, ?Return][opt] }
-
-CaseClauses[Yield, Return] :
-	CaseClause[?Yield, ?Return]
-	CaseClauses[?Yield, ?Return] CaseClause[?Yield, ?Return]
-
-CaseClause[Yield, Return] :
-	case Expression[In, ?Yield] : StatementList[?Yield, ?Return][opt]
-
-DefaultClause[Yield, Return] :
-	default : StatementList[?Yield, ?Return][opt]
-
-LabelledStatement[Yield, Return] :
-	LabelIdentifier[?Yield] : LabelledItem[?Yield, ?Return]
-
-LabelledItem[Yield, Return] :
-	Statement[?Yield, ?Return]
-	FunctionDeclaration[?Yield]
-
-ThrowStatement[Yield] :
-	throw [no LineTerminator here] Expression[In, ?Yield] ;
-
-TryStatement[Yield, Return] :
-	try Block[?Yield, ?Return] Catch[?Yield, ?Return] 
-	try Block[?Yield, ?Return] Finally[?Yield, ?Return] 
-	try Block[?Yield, ?Return] Catch[?Yield, ?Return]  Finally[?Yield, ?Return]
-
-Catch[Yield, Return] :
-	catch ( CatchParameter[?Yield] ) Block[?Yield, ?Return]
-
-Finally[Yield, Return] :
-	finally Block[?Yield, ?Return]
-
-CatchParameter[Yield] :
-	BindingIdentifier[?Yield]
-	BindingPattern[?Yield]
-
-DebuggerStatement :
-	debugger ;
-
-声明
-----------------------------------------------------------------
-
-FunctionDeclaration[Yield, Default]  :
-	function BindingIdentifier[?Yield] ( FormalParameters ) { FunctionBody }
-	[+Default] function ( FormalParameters ) { FunctionBody }
-
-StrictFormalParameters[Yield] :
-	FormalParameters[?Yield]
-
-FormalParameters[Yield] :
-	[empty]
-	FormalParameterList[?Yield]
-
-FormalParameterList[Yield]  :
-	FunctionRestParameter[?Yield]
-	FormalsList[?Yield]
-	FormalsList[?Yield], FunctionRestParameter[?Yield]
-
-FormalsList[Yield] :
-	FormalParameter[?Yield]
-	FormalsList[?Yield] , FormalParameter[?Yield]
-
-FunctionRestParameter[Yield] :
-	BindingRestElement[?Yield]
-
-FormalParameter[Yield] :
-	BindingElement[?Yield]
-
-FunctionBody[Yield] :
-	FunctionStatementList[?Yield]
-
-FunctionStatementList[Yield] :
-	StatementList[?Yield, Return][opt]
-
-MethodDefinition[Yield] :
-	PropertyName[?Yield] ( StrictFormalParameters )  { FunctionBody }  
-	GeneratorMethod[?Yield]
-	get PropertyName[?Yield] ( )  { FunctionBody }  
-	set PropertyName[?Yield] ( PropertySetParameterList ) { FunctionBody }
-
-PropertySetParameterList :
-	FormalParameter
-
-GeneratorMethod[Yield]  :
-	* PropertyName[?Yield] ( StrictFormalParameters[Yield] )  { GeneratorBody }
-
-GeneratorDeclaration[Yield, Default] :
-	function * BindingIdentifier[?Yield] ( FormalParameters[Yield] ) { GeneratorBody }
-	[+Default] function * ( FormalParameters[Yield] ) { GeneratorBody }
-
-GeneratorExpression :
-	function * BindingIdentifier[Yield][opt] ( FormalParameters[Yield] ) { GeneratorBody }
-
-GeneratorBody  :
-	FunctionBody[Yield]
-
-ClassDeclaration[Yield, Default] :
-	class BindingIdentifier[?Yield]  ClassTail[?Yield]
-	[+Default] class ClassTail[?Yield]
-
-ClassTail[Yield] :
-	ClassHeritage[?Yield][opt]  { ClassBody[?Yield][opt] }
-
-ClassHeritage[Yield] :
-	extends LeftHandSideExpression[?Yield]
-
-ClassBody[Yield] :
-	ClassElementList[?Yield]
-
-ClassElementList[Yield] :
-	ClassElement[?Yield]
-	ClassElementList[?Yield]  ClassElement[?Yield]
-
-ClassElement[Yield] :
-	MethodDefinition[?Yield]  
-	static MethodDefinition[?Yield]
-	;
-
-源文件
-----------------------------------------------------------------
-
-Script :
-	ScriptBody[opt]
-
-ScriptBody :
-	StatementList
-
-Module :
-	ModuleBody[opt]
-
-ModuleBody :
-	ModuleItemList
-
-ModuleItemList :
-	ModuleItem
-	ModuleItemList  ModuleItem
-
-ModuleItem :
-	ImportDeclaration
-	ExportDeclaration
-	StatementListItem
-
-ImportDeclaration :
-	import  ImportClause FromClause ;
-	import  ModuleSpecifier ;
-
-ImportClause :
-	ImportedDefaultBinding
-	NameSpaceImport
-	NamedImports
-	ImportedDefaultBinding , NameSpaceImport
-	ImportedDefaultBinding , NamedImports
-
-ImportedDefaultBinding :
-	ImportedBinding
-
-NameSpaceImport :
-	* as  ImportedBinding
-
-NamedImports :
-	{  }
-	{  ImportsList }
-	{  ImportsList , }
-
-FromClause :
-	from ModuleSpecifier
-
-ImportsList :
-	ImportSpecifier
-	ImportsList ,  ImportSpecifier
-
-ImportSpecifier :
-	ImportedBinding
-	IdentifierName as  ImportedBinding
-
-ModuleSpecifier :
-	StringLiteral
-
-ImportedBinding :
-	BindingIdentifier
-
-ExportDeclaration :
-	export *  FromClause ; 
-	export  ExportClause  FromClause ; 
-	export  ExportClause  ; 
-	export  VariableStatement  
-	export  Declaration   
-	export default HoistableDeclaration[Default] 
-	export default ClassDeclaration[Default] 
-	export default [lookahead ∉ { function, class }]  AssignmentExpression[In] ;
-
-ExportClause :
-	{  }
-	{  ExportsList }
-	{  ExportsList , }
-
-ExportsList :
-	ExportSpecifier
-	ExportsList ,  ExportSpecifier
-
-ExportSpecifier :
-	IdentifierName
-	IdentifierName as  IdentifierName
-
 数字
 ----------------------------------------------------------------
 
@@ -838,380 +962,3 @@ ClassEscape[U] ::
 
 TypeScript 新增
 ================================================================
-
-类型
-----------------------------------------------------------------
-
-TypeAliasDeclaration:
-	type BindingIdentifier TypeParameters[opt] = Type ;
-
-声明
-----------------------------------------------------------------
-
-PropertyName :
-	AssignmentExpression
-	PropertyName CallSignature { FunctionBody }
-	GetAccessor 
-	SetAccessor
-
-GetAccessor:
-	get PropertyName ( ) TypeAnnotation[opt] { FunctionBody }
-
-SetAccessor:
-	set PropertyName ( BindingIdentifierOrPattern TypeAnnotation[opt] ) { FunctionBody }
-
-ArrowFormalParameters:	  [Modified]
-	CallSignature
-
-Arguments:	  [Modified]
-	TypeArguments[opt] ( ArgumentList[opt] )
-
-Declaration:	  [Modified]…
-	InterfaceDeclaration
-	TypeAliasDeclaration EnumDeclaration
-
-VariableDeclaration:	  [Modified]
-	SimpleVariableDeclaration
-	DestructuringVariableDeclaration
-
-SimpleVariableDeclaration:
-	BindingIdentifier TypeAnnotation[opt] Initializer[opt]
-
-DestructuringVariableDeclaration:
-	BindingPattern TypeAnnotation[opt] Initializer
-
-LexicalBinding:	  
-	[Modified]SimpleLexicalBinding
-	DestructuringLexicalBinding
-
-SimpleLexicalBinding:
-	BindingIdentifier TypeAnnotation[opt] Initializer[opt]
-
-DestructuringLexicalBinding:
-	BindingPattern TypeAnnotation[opt] Initializer[opt]
-
-FunctionDeclaration:
-	[Modified]function BindingIdentifier[opt] CallSignature { FunctionBody } function BindingIdentifier[opt] CallSignature ;
-
-InterfaceDeclaration:
-	interface BindingIdentifier TypeParameters[opt] InterfaceExtendsClause[opt] ObjectType
-
-InterfaceExtendsClause:
-	extends ClassOrInterfaceTypeList
-
-ClassOrInterfaceTypeList:
-	ClassOrInterfaceType
-	ClassOrInterfaceTypeList , ClassOrInterfaceType
-
-ClassOrInterfaceType:
-	TypeReference
-
-ClassDeclaration:
-	[Modified]class BindingIdentifier[opt] TypeParameters[opt] ClassHeritage { ClassBody }
-
-ClassHeritage:	  [Modified]
-	ClassExtendsClause[opt] ImplementsClause[opt]
-
-ClassExtendsClause:
-	extends  ClassType
-
-ClassType:
-	TypeReference
-
-ImplementsClause:
-	implements ClassOrInterfaceTypeList
-
-ClassElement:	  [Modified]
-	ConstructorDeclaration
-	PropertyMemberDeclaration IndexMemberDeclaration
-
-ConstructorDeclaration:
-	AccessibilityModifier[opt] constructor ( ParameterList[opt] ) { FunctionBody } AccessibilityModifier[opt] constructor ( ParameterList[opt] ) ;
-
-PropertyMemberDeclaration:
-	MemberVariableDeclaration
-	MemberFunctionDeclaration MemberAccessorDeclaration
-
-MemberVariableDeclaration:
-	AccessibilityModifier[opt] static[opt] PropertyName TypeAnnotation[opt] Initializer[opt] ;
-
-MemberFunctionDeclaration:
-	AccessibilityModifier[opt] static[opt] PropertyName CallSignature { FunctionBody }
-	AccessibilityModifier[opt] static[opt] PropertyName CallSignature ;
-
-MemberAccessorDeclaration:
-	AccessibilityModifier[opt] static[opt] GetAccessor AccessibilityModifier[opt] static[opt]
-
-SetAccessorIndexMemberDeclaration:
-	IndexSignature ;
-
-EnumDeclaration:
-	const[opt] enum BindingIdentifier { EnumBody[opt] }
-
-EnumBody:
-	EnumMemberList ,[opt]
-
-EnumMemberList:
-	EnumMember
-	EnumMemberList , EnumMember
-
-EnumMember:
-	PropertyName
-	PropertyName = EnumValue
-
-EnumValue:
-	AssignmentExpression
-
-NamespaceDeclaration:
-	namespace IdentifierPath { NamespaceBody }
-
-IdentifierPath:
-	BindingIdentifier
-	IdentifierPath . BindingIdentifier
-
-NamespaceBody:
-	NamespaceElements[opt]
-
-NamespaceElements:
-	NamespaceElement
-	NamespaceElements NamespaceElement
-
-NamespaceElement:
-	Statement
-	LexicalDeclaration
-	FunctionDeclaration
-	GeneratorDeclaration
-	ClassDeclaration
-	InterfaceDeclaration
-	TypeAliasDeclaration
-	EnumDeclaration
-	NamespaceDeclaration
-	AmbientDeclaration
-	ImportAliasDeclaration
-	ExportNamespaceElement
-
-ExportNamespaceElement:
-	export VariableStatement
-	export LexicalDeclaration
-	export FunctionDeclaration
-	export GeneratorDeclaration
-	export ClassDeclaration
-	export InterfaceDeclaration
-	export TypeAliasDeclaration
-	export EnumDeclaration
-	export NamespaceDeclaration
-	export AmbientDeclaration
-	export ImportAliasDeclaration
-
-ImportAliasDeclaration:
-	import BindingIdentifier = EntityName ;
-
-EntityName:
-	NamespaceName
-	NamespaceName . IdentifierReference
-
-SourceFile:
-	ImplementationSourceFile
-	DeclarationSourceFile
-
-ImplementationSourceFile:
-	ImplementationScript
-	ImplementationModule
-
-DeclarationSourceFile:
-	DeclarationScript
-	DeclarationModule
-
-ImplementationScript:
-	ImplementationScriptElements[opt]
-
-ImplementationScriptElements:
-	ImplementationScriptElement
-	ImplementationScriptElements ImplementationScriptElement
-
-ImplementationScriptElement:
-	ImplementationElement
-	AmbientModuleDeclaration
-
-ImplementationElement:
-	Statement
-	LexicalDeclaration
-	FunctionDeclaration
-	GeneratorDeclaration
-	ClassDeclaration
-	InterfaceDeclaration
-	TypeAliasDeclaration
-	EnumDeclaration
-	NamespaceDeclaration
-	AmbientDeclaration
-	ImportAliasDeclaration
-
-DeclarationScript:
-	DeclarationScriptElements[opt]
-
-DeclarationScriptElements:
-	DeclarationScriptElement
-	DeclarationScriptElements DeclarationScriptElement
-
-DeclarationScriptElement:
-	DeclarationElement
-	AmbientModuleDeclaration
-
-DeclarationElement:
-	InterfaceDeclaration
-	TypeAliasDeclaration
-	NamespaceDeclaration AmbientDeclaration
-	ImportAliasDeclaration
-
-ImplementationModule:
-	ImplementationModuleElements[opt]
-
-ImplementationModuleElements:
-	ImplementationModuleElement
-	ImplementationModuleElements ImplementationModuleElement
-
-ImplementationModuleElement:
-	ImplementationElement
-	ImportDeclaration
-	ImportAliasDeclaration
-	ImportRequireDeclaration
-	ExportImplementationElement
-	ExportDefaultImplementationElement
-	ExportListDeclaration ExportAssignment
-
-DeclarationModule:
-	DeclarationModuleElements[opt]
-
-DeclarationModuleElements:
-	DeclarationModuleElement
-	DeclarationModuleElements DeclarationModuleElement
-
-DeclarationModuleElement:
-	DeclarationElement
-	ImportDeclaration
-	ImportAliasDeclaration
-	ExportDeclarationElement
-	ExportDefaultDeclarationElement
-	ExportListDeclaration ExportAssignment
-
-ImportRequireDeclaration:
-	import BindingIdentifier = require ( StringLiteral ) ;
-
-ExportImplementationElement:
-	export VariableStatement
-	export LexicalDeclaration
-	export FunctionDeclaration
-	export GeneratorDeclaration
-	export ClassDeclaration
-	export InterfaceDeclaration
-	export TypeAliasDeclaration
-	export EnumDeclaration
-	export NamespaceDeclaration
-	export AmbientDeclaration
-	export ImportAliasDeclaration
-
-ExportDeclarationElement:
-	export InterfaceDeclaration
-	export TypeAliasDeclaration
-	export AmbientDeclaration
-	export ImportAliasDeclaration
-
-ExportDefaultImplementationElement:
-	export default FunctionDeclaration
-	export default GeneratorDeclaration
-	export default ClassDeclaration
-	export default AssignmentExpression ;
-
-ExportDefaultDeclarationElement:
-	export default AmbientFunctionDeclaration
-	export default AmbientClassDeclaration
-	export default IdentifierReference ;
-
-ExportListDeclaration:
-	export * FromClause ;
-	export ExportClause FromClause ;
-	export ExportClause ;
-
-ExportAssignment:
-	export = IdentifierReference ;
-
-AmbientDeclaration:
-	declare AmbientVariableDeclaration
-	declare AmbientFunctionDeclaration
-	declare AmbientClassDeclaration
-	declare AmbientEnumDeclaration
-	declare AmbientNamespaceDeclaration
-
-AmbientVariableDeclaration:
-	var AmbientBindingList ;
-	let AmbientBindingList ;
-	const AmbientBindingList ;
-
-AmbientBindingList:
-	AmbientBinding
-	AmbientBindingList , AmbientBinding
-
-AmbientBinding:
-	BindingIdentifier TypeAnnotation[opt]
-
-AmbientFunctionDeclaration:
-	function BindingIdentifier CallSignature ;
-
-AmbientClassDeclaration:
-	class BindingIdentifier TypeParameters[opt] ClassHeritage { AmbientClassBody }
-
-AmbientClassBody:
-	AmbientClassBodyElements[opt]
-
-AmbientClassBodyElements:
-	AmbientClassBodyElement
-	AmbientClassBodyElements AmbientClassBodyElement
-
-AmbientClassBodyElement:
-	AmbientConstructorDeclaration
-	AmbientPropertyMemberDeclaration IndexSignature
-
-AmbientConstructorDeclaration:	 
-	constructor ( ParameterList[opt] ) ;
-
-AmbientPropertyMemberDeclaration:
-	AccessibilityModifier[opt] static[opt] PropertyName TypeAnnotation[opt] ;
-	AccessibilityModifier[opt] static[opt] PropertyName CallSignature ;
-
-AmbientEnumDeclaration:
-	EnumDeclaration
-
-AmbientNamespaceDeclaration:
-	namespace IdentifierPath { AmbientNamespaceBody }
-
-AmbientNamespaceBody:
-	AmbientNamespaceElements[opt]
-
-AmbientNamespaceElements:
-	AmbientNamespaceElement
-	AmbientNamespaceElements AmbientNamespaceElement
-
-AmbientNamespaceElement:
-	export[opt] AmbientVariableDeclaration
-	export[opt] AmbientLexicalDeclaration
-	export[opt] AmbientFunctionDeclaration
-	export[opt] AmbientClassDeclaration
-	export[opt] InterfaceDeclaration
-	export[opt] AmbientEnumDeclaration
-	export[opt] AmbientNamespaceDeclaration
-	export[opt] ImportAliasDeclaration
-
-AmbientModuleDeclaration:
-	declare module StringLiteral {  DeclarationModule }
-
-TealScript 新增
-================================================================
-
-IterationStatement[Yield, Return] :
-	for ( [lookahead ∉ {let [ }] LeftHandSideExpression[?Yield] to Expression[In, ?Yield] ) Statement[?Yield, ?Return] 
-	for ( var ForBinding[?Yield] to Expression[In, ?Yield] ) Statement[?Yield, ?Return]
-	for ( ForDeclaration[?Yield]  to Expression[In, ?Yield] ) Statement[?Yield, ?Return]
-
-WithStatement[Yield, Return] :
-	with ( var ForBinding[?Yield] ) Statement[?Yield, ?Return]
-	with ( var ForDeclaration[?Yield] ) Statement[?Yield, ?Return]
