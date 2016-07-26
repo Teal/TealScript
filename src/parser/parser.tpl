@@ -319,12 +319,11 @@
 	return result;
 
 @Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn: boolean/*是否允许解析 in 表达式*/) // 表达式
-	let result: nodes.Expression;
+	let result: @Expression;
 	switch (@peek) {
 		case 'identifier':
 			result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
 			break;
-
 			@ArrowFunctionOrGenericExpressionOrIdentifier(allowIn) // 箭头函数(`x => y`)或泛型表达式(`x<T>`)或标识符(`x`)
 				let result = @Identifier(false);
 				switch (@peek) {
@@ -334,25 +333,22 @@
 					case '<':
 						if (@sameLine) {
 							const savedState = @stashSave();
-							const arguments = @TypeArguments();
+							const typeArguments = @TypeArguments();
 							if (@current === '>' && (isBinaryOperator(@peek) || !isUnaryOperator(@peek))) {
 								@stashClear(savedState);
-								result = @GenericExpression(result, arguments);
+								result = @GenericExpression(result, typeArguments);
 							} else {
 								@stashRestore(savedState);
 							}
 						}
 						break;
+						@GenericExpression(*, *) // 泛型表达式(`x<number>`)
+							target: Identifier // 目标部分
+							typeArguments: TypeArguments // 类型参数部分
 				}
 				return result;
-
-				@GenericExpression(*, *) // 泛型表达式(`x<number>`)
-					target: Identifier // 目标部分
-					typeArguments: TypeArguments // 类型参数部分
-
 				@Identifier(allowKeyword: boolean/*是否允许解析关键字*/) // 标识符(`x`)
 					value: <identifier> // 值部分
-					
 					if (isIdentifierName(@peek) || (allowKeyword && isKeyword(@peek))) {
 						const result = new @Identifier();
 						result.start = @read;
@@ -360,9 +356,13 @@
 						result.end = @lexer.current.end;
 						return result;
 					}
-					@error(@lexer.peek(), isKeyword(@peek) ? "Identifier expected; Keyword '{0}' cannot be used as an identifier." : @peek === 'endOfFile' ? "Identifier expected; Unexpected end of script." : "Identifier expected. Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
-					return @ErrorIdentifier(@lexer.current.end);
-
+					@error(@lexer.peek(), isKeyword(@peek) ? "Identifier expected; Keyword '{0}' cannot be used as an identifier." : @peek === 'endOfFile' ? "Identifier expected; Unexpected end of script." : "Identifier expected; Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
+					return @ErrorIdentifier();
+					@ErrorIdentifier(start=@lexer.current.end/*标记的开始位置*/) // 错误的标识符占位符
+						const result = new @ErrorIdentifier();
+						result.start = start;
+						result.end = @lexer.current.end;
+						return result;
 		case 'this':
 		case 'null':
 		case 'true':
@@ -370,32 +370,27 @@
 		case 'super':
 			result = @SimpleLiteral();
 			break;
-
 			@SimpleLiteral // 简单字面量(`null`、`true`、`false`、`this`、`super`)
 				type: 'this'|'null'|'true'|'false'|'super' // 类型
-
 		case '(':
 			result = @ArrowFunctionOrParenthesizedExpression(allowIn);
 			break;
-
 			@ArrowFunctionOrParenthesizedExpression(allowIn) // 箭头(`()=>...`)或括号表达式(`(x)`)
 				const savedState = @stashSave();
 				const parameters = @Parameters();
-				if (@peek === '=>' || @peek === ':' || @peek === '{') {
+				if (@sameLine && (@peek === '=>' || @peek === ':' || @peek === '{')) {
 					@stashClear(savedState);
 					return @ArrowFunctionExpression(undefined, undefined, parameters, allowIn);
+					@ArrowFunctionExpression(*, *, *, allowIn) // 箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。
+						?modifiers: Modifiers
+						?typeParameters: TypeParameters
+						?parameters: NodeList<ParameterDeclaration> | Identifier // 参数部分
+						?TypeAnnotation
+						=> 
+						body: BlockStatement | Expression = @peek === '{' ? @BlockStatement() : @Expression(Precedence.assignment, allowIn)
 				}
 				@stashRestore(savedState);
 				return @ParenthesizedExpression();
-
-				@ArrowFunctionExpression(*, *, *, allowIn) // 箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。
-					?modifiers: Modifiers
-					?typeParameters: TypeParameters
-					?parameters: NodeList<ParameterDeclaration> | Identifier // 参数部分
-					?TypeAnnotation
-					=> 
-					body: BlockStatement | Expression = @peek === '{' ? @BlockStatement() : @Expression(Precedence.assignment, allowIn)
-
 				@ParenthesizedExpression // 括号表达式(`(x)`)
 					(
 					body: Expression(Precedence.any, true) // 主体部分
@@ -404,47 +399,46 @@
 		case 'numericLiteral':
 			result = @NumericLiteral();
 			break;
-
 			@NumericLiteral // 数字字面量(`1`)
 				value: <numericLiteral>
-
 		case 'stringLiteral':
 		case 'noSubstitutionTemplateLiteral':
 			result = @StringLiteral();
 			break;
-
 			@StringLiteral // 字符串字面量(`'abc'`、`"abc"`、`\`abc\``)
 				value: <stringLiteral>
-
 		case '[':
 			result = @ArrayLiteral();
 			break;
-
 			@ArrayLiteral // 数组字面量(`[x, y]`)
-				elements: [ ArrayLiteralElement,... ] // 元素列表
-
+				elements: [ ArrayLiteralElement , ...isExpressionStart ] // 元素列表
 				@ArrayLiteralElement // 数组字面量元素(`x`)
-					...?
-					value?: Expression(Precedence.assignment, true)
-
+					?...
+					?value: Expression(Precedence.assignment, true)
 		case '{':
 			result = @ObjectLiteral();
 			break;
-
 			@ObjectLiteral // 对象字面量(`{x: y}`)
-				elements: { ObjectLiteralElement,... }
-
-				@ObjectLiteralElement @alias(ObjectMethodDeclaration | ObjectPropertyDeclaration | ObjectAccessorDeclaration) // 对象字面量元素(`x： y`、`x() {...}`)
+				elements: { ObjectLiteralElement ;, ...()=>true }
+				@ObjectLiteralElement = ObjectPropertyDeclaration | ObjectMethodDeclaration | ObjectAccessorDeclaration // 对象字面量元素(`x: y`、`x() {...}`)
 					const modifiers = @Modifiers();
 					switch (@peek) {
-						case 'identifier':
-							break;
+						//+ case 'identifier':
+						//+ 	break;
 						case 'get':
 						case 'set':
 							const savedToken = @lexer.current;
 							@lexer.read();
 							if (isKeyword(@peek) || @peek === '[') {
 								return @ObjectAccessorDeclaration(modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
+								@ObjectAccessorDeclaration(*, *, *) @doc // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+									?Modifiers
+									?get
+									?set
+									name: PropertyName
+									Parameters
+									?TypeAnnotation
+									?FunctionBody
 							}
 							@lexer.current = savedToken;
 							break;
@@ -456,68 +450,52 @@
 						case '(':
 						case '<':
 							return @ObjectMethodDeclaration(modifiers, undefined, name);
+							@ObjectMethodDeclaration(*, *, *) @doc // 方法声明(`x() {...}`)
+								?Modifiers
+								?*
+								?name: PropertyName
+								?TypeParameters
+								Parameters
+								?TypeAnnotation
+								?FunctionBody
 						default:
 							return @ObjectPropertyDeclaration(modifiers, name);
+							@ObjectPropertyDeclaration(*, *, *) @doc // 属性声明(`x: y`)
+								?Modifiers
+								key: PropertyName
+								?:
+								?=
+								?value: Expression(Precedence.assignment, true)
+								const result = new @ObjectPropertyDeclaration();
+								@DocComment(result);
+								result.key = key;
+								if (@peek === ':') {
+									result.colonToken = @expectToken(':');
+									result.value = @Expression(Precedence.assignment, true);
+								} else if (@peek === '=') {
+									result.equalToken = @expectToken('=');
+									result.value = @Expression(Precedence.assignment, true);
+								} else if(key.constructor !== @Identifier && key.constructor !== @MemberCallExpression) {
+									@unexpectToken(':');
+								}
+								return result;
 					}
-
-				@ObjectMethodDeclaration(*, *, *, *) // 方法声明(`x() {...}`)
-					??DocComment
-					?Modifiers
-					?*
-					?name: PropertyName
-					?TypeParameters
-					Parameters
-					?TypeAnnotation
-					?FunctionBody
-
-				@ObjectPropertyDeclaration(*, *, *) // 属性声明(`x: y`)
-					??DocComment
-					?Modifiers
-					key: PropertyName
-					?: 
-					?value: Expression(Precedence.assignment, true)
-
-					const result = new @ObjectPropertyDeclaration();
-					@DocComment(result);
-					result.key = key;
-					if (@peek === ':') {
-						result.colonToken = @read;
-						result.value = @Expression(Precedence.assignment, true);
-					} else if(result.key.constructor !== nodes.Identifier && result.key.constructor !== nodes.MemberCallExpression) {
-						@expectToken(':');
-					}
-					return result;
-
-				@ObjectAccessorDeclaration(*, *, *) // 访问器声明(`get x() {...}`、`set x(value) {...}`)
-					??DocComment
-					?Modifiers
-					?get
-					?set
-					name: PropertyName
-					Parameters
-					?TypeAnnotation
-					?FunctionBody
-
 		case 'function':
 			result = @FunctionExpression(undefined);
 			break;
-
 		case 'new':
 			result = @NewTargetOrNewExpression();
 			break;
-
 			@NewTargetOrNewExpression // new.target(`new.target`) 或 new 表达式(`new x()`)
 				const newToken = @expectToken('new');
 				if (@peek === '.') {
 					return @NewTargetExpression(newToken);
 				}
 				return @NewExpression(newToken);
-
 				@NewTargetExpression(*) // new.target 表达式(`new.target`)
 					new 
 					.
 					target
-
 					const result = new @NewTargetExpression();
 					result.newToken = newToken;
 					result.dotToken = @expectToken('.');
@@ -527,21 +505,17 @@
 					}
 					@error(@lexer.peek(), @peek === 'endOfFile' ? "'target' expected; Unexpected end of script." : "'target' expected; Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
 					return @ErrorIdentifier(newToken);
-
 				@NewExpression(*) // new 表达式(`new x()`、`new x`)
 					new
 					target: Expression(Precedence.member, false) 
 					?arguments: Arguments
-
 		case '/':
 		case '/=':	
 			result = @RegularExpressionLiteral();
 			break;
-
 			@RegularExpressionLiteral // 正则表达式字面量(/abc/)
 				value: <stringLiteral> 
 				flags?: <stringLiteral> // 标志部分
-
 				const result = new @RegularExpressionLiteral();
 				const token = @lexer.readAsRegularExpressionLiteral();
 				result.start = token.start;
@@ -549,14 +523,11 @@
 	        	result.flags = token.data.flags;
 	        	result.end = token.end;
 	        	return result;
-
 		case 'templateHead':
 			result = @TemplateLiteral();
 			break;
-
 			@TemplateLiteral // 模板字面量(`\`abc\``)
-				spans: TemplateSpan | Expression... // 所有组成部分
-
+				spans: TemplateSpan|Expression ... // 组成部分列表
 				const result = new @TemplateLiteral();
 				result.spans = new @NodeList<nodes.Expression>();
 				while (true) {
@@ -572,78 +543,68 @@
 		            }
 				}
 				return result;
-
 				@TemplateSpan // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
 					value: <stringLiteral>
-
 		case '<':
 			result = @ArrowFunctionOrTypeAssertionExpression(allowIn);
 			break;
-
 			@ArrowFunctionOrTypeAssertionExpression(allowIn) // 箭头函数(`<T>() => {}`)或类型确认表达式(`<T>fn`)
 				const savedState = @stashSave();
 				const typeParameters = @TypeParameters();
 				const parameters = @peek === '(' ? @Parameters() : isIdentifierName(@peek) : @Identifier(false) : undefined;
-				if (parameters && (@peek === '=>' || @peek === ':' || @peek === '{')) {
+				if (parameters && @sameLine && (@peek === '=>' || @peek === ':' || @peek === '{')) {
 					@stashClear(savedState);
 					return @ArrowFunctionExpression(undefined, typeParameters, parameters, allowIn);
 				}
 				@stashRestore(savedState);
 				return @TypeAssertionExpression();
-
 				@TypeAssertionExpression() // 类型确认表达式(<T>xx)
 					<
 					type: TypeNode(Precedence.any)
 					>
 					operand: Expression(Precedence.postfix, false)
-
 		case 'yield':
 			result = @YieldExpression(allowIn);
 			break;
-
 			@YieldExpression(allowIn) // yield 表达式(`yield xx`)
 				yield 
 				[nobr]?*
 				[nobr]?operand: Expression(Precedence.assignment, allowIn)
-
 		case 'await':
 			result = @AwaitExpression(allowIn);
 			break;
-
 			@AwaitExpression(allowIn) // await 表达式(`await xx`)
 				await 
 				[nobr]operand: Expression(Precedence.assignment, allowIn)
-
 		case 'class':
 			result = @ClassExpression();
 			break;
-			
 		case 'async':
 			result = @AsyncFunctionExpressionOrIdentifier(allowIn);
 			break;
-
 			@AsyncArrowFunctionOrIdentifier(allowIn) // 异步函数表达式或标识符
 				const savedState = @stashSave();
 				const modifiers = @Modifiers();
 				const typeParameters = @sameLine && @peek === '<' ? @TypeParameters() : undefined;
 				if (@sameLine && (@peek === '(' || isIdentifierName(@peek))) {
 					const parameters = @peek === '(' ? @Parameters() : @Identifier(false);
-					if (@peek === '=>' || @peek === ':' || @peek === '{') {
+					if (@sameLine && (@peek === '=>' || @peek === ':' || @peek === '{')) {
 						@stashClear(savedState);
 						return @ArrowFunctionExpression(modifiers, typeParameters, parameters, allowIn);
 					}
 				}
 				@stashRestore(savedState);
 				return @Identifier(false);
-
 		case '=>':
 			result = @ArrowFunctionExpression(undefined, undefined, undefined, allowIn);
 			break;
-
 		default:
 			if (isUnaryOperator(@peek)) {
 				result = @UnaryExpression();
 				break;
+				@UnaryExpression // 一元运算表达式(`+x`、`typeof x`、...)
+					operator: 'delete'|'void'|'typeof'|'+'|'-'|'~'|'!'|'++'|'--'|'...'
+					operand: Expression(Precedence.postfix, false)
 			}
 			if (isIdentifierName(@peek)) {
 				result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
@@ -651,81 +612,57 @@
 			}
 			@error(@lexer.peek(), @isKeyword(@peek) ? "Expression expected; '{0}' is a keyword." : @peek === 'endOfFile' : "Expression expected; Unexpected end of script.", "Expression expected; Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
 			return @ErrorIdentifier(isStatementStart(@peek) ? @lexer.current.end : @read);
-
-			@UnaryExpression // 一元运算表达式(+x、typeof x、...)
-				operator: 'delete'|'void'|'typeof'|'+'|'-'|'~'|'!'|'++'|'--'
-				operand: Expression(Precedence.postfix, false)
-
-			@ErrorIdentifier(start: number/*标记的开始位置*/) // 错误的表达式
-				const result = new @ErrorIdentifier();
-				result.start = start;
-				result.end = @lexer.current.end;
-				return result;
-
 	}
 	while (getPrecedence(@peek) >= precedence) {
 		switch (@peek) {
 			case '.':
 				result = @MemberCallExpression(result);
 				break;
-
 				@MemberCallExpression(*) // 成员调用表达式(x.y)
 					target: Expression // 目标部分
 					. 
-					argument: Identifier(true) = @MemberCallArgument() // 参数部分
-
-				@MemberCallArgument // 成员调用参数
-					if (!@sameLine && isStatementStart(@peek)) {
-						const savedState = @stashSave();
-						@Statement();
-						const isStatementStart = !savedState.errors.length;
-						@stashRestore(savedState);
-						if (isStatementStart) {
-							return @ErrorIdentifier(@lexer.current.end);
+					argument: Identifier = @MemberCallArgument() // 参数部分
+					@MemberCallArgument // 成员调用参数
+						if (!@sameLine && isStatementStart(@peek)) {
+							const savedState = @stashSave();
+							@Statement();
+							const isStatementStart = !savedState.errors.length;
+							@stashRestore(savedState);
+							if (isStatementStart) {
+								return @ErrorIdentifier();
+							}
 						}
-					}
-					return @Identifier(true);
-
-			case '=':
-				result = @BinaryExpression(result, allowIn);
-				break;
-
+						return @Identifier(true);
+			//+ case '=':
+			//+ 	result = @BinaryExpression(result, allowIn);
+			//+ 	break;
 			case '(':
 				result = @FunctionCallExpression(result);
 				break;
-
-				@FunctionCallExpression(*) // 函数调用表达式(x())
+				@FunctionCallExpression(*) // 函数调用表达式(`x()`)
 					target: Expression 
 					arguments: Arguments
-
-					@Arguments // 函数调用参数列表
-						( Argument,... )
-
-						@Argument // 函数调用参数(x)
+					@Arguments = ( Argument , ...isExpressionStart ) // 函数调用参数列表
+						@Argument // 函数调用参数(`x`)
 							?...
 							value: Expression(Precedence.assignment, true)
-
 			case '[':
 				result = @IndexCallExpression(result);
 				break;
-
-				@IndexCallExpression(*) // 索引调用表达式(x[y])
+				@IndexCallExpression(*) // 索引调用表达式(`x[y]`)
 					target: Expression 
 					[ 
 					argument: Expression(Precedence.any, true)
 					]
-
 			case '?':
 				result = @ConditionalExpression(result, allowIn);
 				break;
-
 				@ConditionalExpression(*, allowIn) // 条件表达式(`x ? y : z`)
 					condition: Expression 
 					? 
 					then: Expression(Precedence.assignment, true) // 则部分 
 					: 
 					else: Expression(Precedence.assignment, allowIn) // 否则部分
-
 			case '++':
 			case '--':
 				if (!@sameLine) {
@@ -733,36 +670,29 @@
 				}
 				result = @PostfixExpression(result);
 				break;
-
 				@PostfixExpression(*) // 后缀表达式(`x++`、`x--`)
 					operand: Expression(Precedence.leftHandSide) // 操作数
 					operator: '++'|'--'
-
 			case 'noSubstitutionTemplateLiteral':
 				result = @TemplateCallExpression(parsed, @StringLiteral());
 				break;
-
 			case 'templateHead':
 				result = @TemplateCallExpression(parsed, @TemplateLiteral());
 				break;
-
 				@TemplateCallExpression(*, *) // 模板调用表达式(`x\`abc\``)
 					target: Expression 
 					argument: TemplateLiteral | StringLiteral
-
 			case 'in':
-				if(allowIn === false) {
+				if (allowIn !== false) {
 					return result;
 				}
-
 				// 继续往下执行
 			default:
 				result = @BinaryExpression(result, allowIn);
 				break;
-
 				@BinaryExpression(*, allowIn: boolean) // 双目表达式(x + y、x = y、...)
 					left: Expression // 左值部分
-					operator: ','|'*='|'/='|'%='|'+='|'‐='|'<<='|'>>='|'>>>='|'&='|'^='|'|='|'**='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|'>'|'<='|'>='|'instanceof'|'in'|'<<'|'>>'|'>>>'|'+'|'-'|'*'|'/'|'%'|'**' // 运算类型
+					operator: ','|'*='|'/='|'%='|'+='|'‐='|'<<='|'>>='|'>>>='|'&='|'^='|'|='|'**='|'='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|'>'|'<='|'>='|'instanceof'|'in'|'<<'|'>>'|'>>>'|'+'|'-'|'*'|'/'|'%'|'**' // 运算类型
 					right: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
 		}
 	}
