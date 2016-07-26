@@ -1109,6 +1109,11 @@ export const enum Precedence {
      */
     member,
 
+    /**
+     * 独立表达式。
+     */
+    primary,
+
 }
 
 /**

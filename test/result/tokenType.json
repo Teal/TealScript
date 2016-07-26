@@ -1,4 +1,10 @@
 {
+    "isPredefinedType": [
+        "any","number","boolean","string","symbol","void","never","this","null","undefined","char","byte","int","long","short","uint","ulong","ushort","float","double","*","?"
+    ],
+    "isTypeNodeStart": [
+        "any","number","boolean","string","symbol","void","never","this","null","undefined","char","byte","int","long","short","uint","ulong","ushort","float","double","*","?", "identifier", "(", "[", "{", "<", "=>", "typeof", "numericLiteral", "stringLiteral", "true", "false"
+    ],
     "isSimpleLiteral": [
         "null",
         "true",
