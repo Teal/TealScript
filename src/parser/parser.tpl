@@ -112,7 +112,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 // 			type: <static>|<abstract>|<public>|<protected>|<private>|<const>
 // 	name: Identifier
 // 	typeParameters: TypeParameters
-// ErrorExpression
+// ErrorIdentifier
 
 
 // (a: /a/ )=>7
@@ -126,141 +126,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
 //------------------------------------------------------------------
 
-@TypeNode // 类型节点
-	let result = @UnaryOrPrimaryTypeNode(allowIn);
-	while (getPrecedence(@peek) >= precedence) {
-		result = @BinaryOrCallTypeNode(result, allowIn);
-	}
-	return result;
-
-	BinaryOrPrimaryTypeNode(precedence: Precedence) // 联合或交错或独立类型节) {
-				UnionTypeNode // 
-
-			}
-		}
-		@BinaryTypeNode(%) // 双目表达式(x + y、x = y、...)
-			left: TypeNode // 左值部分
-			operator:TokenType // 当前运算的类型。合法的值有：,、*=、/=、%=、+=、‐=、<<=、>>=、>>>=、&=、^=、|=、**=、||、&&、|、^、&、==、!=、===、!==、<、>、<=、>=、instanceof、in、<<、>>、>>>、+、-、*、/、%、** 
-			right: TypeNode(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn)
-
-	UnaryOrPrimaryTypeNode // 单目或独立类型节*
-		
-	*FunctionOrParenthesizedTypeNode // 函数或括号类型节点
-		const parameters = @tryParseParameters();
-		if (parameters) {
-			return @FunctionTypeNode(undefined, parameters);
-		}
-		return @ParenthesizedTypeNode();
-
-	FunctionTypeNode(., .) // 函数类型节点(`()=>void`)
-		TypeParameters[opt] Parameters[opt] => TypeNode
-
-	ConstructorType // 构造函数类型节点(`new () => void`)。
-		new TypeParameters[opt] Parameters => return:TypeNode
-
-		@TypeParameters(result) // 类型参数列表
-			typeParameters: < TypeParameterDeclaration,... >
-			
-			@TypeParameterDeclaration // 类型参数声明(`T`、`T extends R`)
-				name: Identifier
-				?extends 
-				?extends: TypeNode
-
-				const result = new nodes.TypeParameterDeclaration();
-				result.name = @Identifier(false);
-				if (@peek === 'extends') {
-					result.extendsToken = @read;
-					result.extends = @TypeNode(Precedence.any)
-				}
-				return result;
-
-		@Parameters(result) // 参数列表
-			parameters: ( ParameterDeclaration... )
-
-			@ParameterDeclaration // 参数声明(`x`、`x?: number`)
-				?accessibility: 'public'|'private'|'protected'
-				?...
-				name: BindingName
-				??
-				?TypeAnnotation
-				?Initializer
-
-				const result = new nodes.ParameterDeclaration();
-				switch (@peek) {
-					case @identifier:
-						result.name = @Identifier(false);
-						break;
-					case '...':
-						result.dotDotDotToken = @read;
-						result.name = @Identifier(false);
-						break;
-					case 'public':
-					case 'private':
-					case 'protected':
-						result.name = @Identifier(false);
-						if (@isBindingName()) {
-							result.accessibilityToken = @lexer.current.start;
-							result.accessibility = @lexer.current.type;
-							result.name = @BindingName();
-						}
-						break;
-					default:
-						result.name = @BindingName();
-						break;
-				}
-				if (@peek === '?') result.questionToken = @read;
-				@TypeAnnotation(result);
-				@Initializer(result);
-				return result;
-
-			@TypeAnnotation(result) // 类型注解
-				:
-				typeNode: TypeNode(Precedence.any)
-
-			@Initializer(result) // 初始值
-				=
-				initializer: Expression(Precedence.assignment, true)
-
-			@BindingName = Identifier | ArrayBindingPattern | ObjectBindingPattern// 绑定名称(`xx`, `[xx]`, `{x: x}`)
-
-				@ArrayBindingPattern // 数组绑定模式项(`[xx]`)
-					elements: ArrayBindingElement,...
-
-					@ArrayBindingElement // 数组绑定模式项(`x`)
-						?...
-						?value: BindingName
-						?Initializer
-
-				@ObjectBindingPattern // 对象绑定模式项(`{x: x}`)
-					elements: ObjectBindingElement,...
-
-					@ObjectBindingElement // 对象绑定模式项(`x`)
-						?...
-						key: PropertyName,
-						?:
-						value: BindingName
-						?Initializer
-
-			@PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName // 属性名称(`xx`、`"xx"`、`0`、`[xx]`)
-				switch (@peek) {
-					case 'identifier':
-						return @Identifier(false);
-					case 'stringLiteral':
-						return @StringLiteral();
-					case 'numericLiteral':
-						return @NumericLiteral();
-					case '[':
-						return @ComputedPropertyName();
-						@ComputedPropertyName // 已计算的属性名(`[1]`)
-							[ 
-							body: Expression(Precedence.assignment, true) 
-							]
-					default:
-						if (@isKeyword(@peek)) {
-							return @Identifier();
-						}
-						@error(@peek, "应输入属性名。");
-						return @ErrorExpression(); // TODO
+@TypeNode // 类型节fier(); // TODO
 				}
 
 	@followsTypeArguments() // 判断是否紧跟类型参数
@@ -274,11 +140,11 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 @Expression(precedence: Precedence/*允许解析的最低操作符优先级*/, allowIn: boolean/*是否允许解析 in 表达式*/) // 表达式
 	let result: nodes.Expression;
 	switch (@peek) {
-		case 'identifier': // x => y、x<T>、x
+		case 'identifier':
 			result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
 			break;
 
-			@ArrowFunctionOrGenericExpressionOrIdentifier(allowIn: boolean) // 箭头函数或泛型表达式或标识符
+			@ArrowFunctionOrGenericExpressionOrIdentifier(allowIn) // 箭头函数(`x => y`)或泛型表达式(`x<T>`)或标识符(`x`)
 				let result = @Identifier(false);
 				switch (@peek) {
 					case '=>':
@@ -287,7 +153,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 					case '<':
 						const savedState = @stashSave();
 						const arguments = @TypeArguments();
-						if (@current === '>' && (!isUnaryOperator(@peek) || isBinaryOperator(@peek))) {
+						if (@current === '>' && (isBinaryOperator(@peek) || !isUnaryOperator(@peek))) {
 							@stashClear(savedState);
 							result = @GenericExpression(result, arguments);
 						} else {
@@ -297,22 +163,21 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				}
 				return result;
 
-				@GenericExpression(*, *) // 泛型表达式(`value<number>`)
-					expression: Identifier // 目标部分
-					typeArguments: TypeArguments 
+				@GenericExpression(*, *) // 泛型表达式(`x<number>`)
+					expression: Identifier // 表达式部分
+					typeArguments: TypeArguments // 类型参数部分
 
-				@Identifier(allowKeyword: boolean) // 标识符(`x`)
+				@Identifier(allowKeyword: boolean/*是否允许解析关键字*/) // 标识符(`x`)
 					value: <identifier> // 值部分
 					
 					if (isIdentifierName(@peek)) {
-						const result = new nodes.Identifier();
+						const result = new @Identifier();
 						result.start = @read;
 						result.value = @lexer.current.value;
 						result.end = @lexer.current.end;
 						return result;
 					}
-
-					@error(@lexer.peek(), isKeyword(@peek) ? "Identifier expected. '{0}' is a keyword." : "Identifier expected.", getTokenName(@peek));
+					@error(@lexer.peek(), isKeyword(@peek) ? "Identifier expected; Keyword '{0}' cannot be used as an identifier." : @peek === 'endOfFile' ? "Identifier expected; Unexpected end of script." : "Identifier expected. Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
 					return @ErrorIdentifier();
 
 		case 'this':
@@ -326,11 +191,11 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			@SimpleLiteral // 简单字面量(`null`、`true`、`false`、`this`、`super`)
 				type: 'this'|'null'|'true'|'false'|'super' // 类型
 
-		case '(': // (x) => ...、(x)
+		case '(':
 			result = @ArrowFunctionOrParenthesizedExpression(allowIn);
 			break;
 
-			@ArrowFunctionOrParenthesizedExpression(allowIn: boolean) // 箭头或括号表达式
+			@ArrowFunctionOrParenthesizedExpression(allowIn) // 箭头(`()=>...`)或括号表达式(`(x)`)
 				const savedState = @stashSave();
 				const parameters = @Parameters();
 				if (@peek === '=>' || @peek === ':' || @peek === '{') {
@@ -340,7 +205,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				@stashRestore(savedState);
 				return @ParenthesizedExpression();
 
-				@ArrowFunctionExpression(*, *, *, allowIn: boolean) // 箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。
+				@ArrowFunctionExpression(*, *, *, allowIn) // 箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。
 					?modifiers: Modifiers
 					?typeParameters: TypeParameters
 					?parameters: NodeList<ParameterDeclaration> | Identifier // 参数部分
@@ -391,7 +256,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 					?: 
 					?value: Expression(Precedence.assignment, true)
 
-					const result = new nodes.ObjectLiteralElement();
+					const result = new @ObjectLiteralElement();
 					result.key = @PropertyName();
 					if (@peek === ':') {
 						result.colonToken = @read;
@@ -409,7 +274,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			result = @NewTargetOrNewExpression();
 			break;
 
-			@NewTargetOrNewExpression // new.target 或 new 表达式
+			@NewTargetOrNewExpression // new.target(`new.target`) 或 new 表达式(`new x()`)
 				const newToken = @expectToken('new');
 				if (@peek === '.') {
 					return @NewTargetExpression(newToken);
@@ -421,17 +286,17 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 					.
 					target
 
-					const result = new nodes.NewTargetExpression();
+					const result = new @NewTargetExpression();
 					result.newToken = newToken;
 					result.dotToken = @expectToken('.');
 					if (@peek === 'identifier' && @lexer.peek().data === "target") {
 						result.targetToken = @read;
 						return result;
-					} 
-					@error(@lexer.current, "'target' expected.");
-					return @ErrorExpression(newToken);
+					}
+					@error(@lexer.peek(), @peek === 'endOfFile' ? "'target' expected; Unexpected end of script." : "'target' expected; Unexpected token '{0}'.", @lexer.source.substring(@lexer.peek().start, @lexer.peek().end));
+					return @ErrorIdentifier(newToken);
 
-				@NewExpression(*) // new 表达式(`new x()`)。
+				@NewExpression(*) // new 表达式(`new x()`、`new x`)
 					new
 					expression: Expression(Precedence.member, false) 
 					?arguments: Arguments
@@ -445,7 +310,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				value: <stringLiteral> 
 				flags?: <stringLiteral> // 标志部分
 
-				const result = new nodes.RegularExpressionLiteral();
+				const result = new @RegularExpressionLiteral();
 				const token = @lexer.readAsRegularExpressionLiteral();
 				result.start = token.start;
 				result.value = token.data.pattern;
@@ -460,8 +325,8 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			@TemplateLiteral // 模板字面量(`\`abc\``)
 				spans: TemplateSpan | Expression... // 所有组成部分
 
-				const result = new nodes.TemplateLiteral();
-				result.spans = new nodes.NodeList<nodes.Expression>();
+				const result = new @TemplateLiteral();
+				result.spans = new @NodeList<nodes.Expression>();
 				while (true) {
 					result.spans.push(@TemplateSpan());
 					result.spans.push(@Expression());
@@ -479,11 +344,11 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				@TemplateSpan // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
 					value: <stringLiteral>
 
-		case '<': // <T> (p)=>{}、<T>fn
-			result = @ArrowFunctionOrTypeAssertionExpression();
+		case '<':
+			result = @ArrowFunctionOrTypeAssertionExpression(allowIn);
 			break;
 
-			@ArrowFunctionOrTypeAssertionExpression // 箭头函数或类型确认表达式
+			@ArrowFunctionOrTypeAssertionExpression(allowIn) // 箭头函数(`<T>() => {}`)或类型确认表达式(`<T>fn`)
 				const savedState = @stashSave();
 				const typeParameters = @TypeParameters();
 				const parameters = @peek === '(' ? @Parameters() : isIdentifierName(@peek) : @Identifier(false) : undefined;
@@ -494,28 +359,28 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				@stashRestore(savedState);
 				return @TypeAssertionExpression();
 
-				@TypeAssertionExpression // 类型确认表达式(<T>xx)
+				@TypeAssertionExpression() // 类型确认表达式(<T>xx)
 					<
 					type: TypeNode(Precedence.any)
 					>
 					operand: Expression(Precedence.postfix, false)
 
 		case 'yield':
-			result = @YieldExpression();
+			result = @YieldExpression(allowIn);
 			break;
 
-			@YieldExpression // yield 表达式(`yield xx`)
+			@YieldExpression(allowIn) // yield 表达式(`yield xx`)
 				yield 
 				[nobr]?*
-				[nobr]?expression: Expression(Precedence.assignment, false)
+				[nobr]?expression: Expression(Precedence.assignment, allowIn)
 
 		case 'await':
-			result = @AwaitExpression();
+			result = @AwaitExpression(allowIn);
 			break;
 
-			@AwaitExpression // await 表达式(`await xx`)
+			@AwaitExpression(allowIn) // await 表达式(`await xx`)
 				await 
-				[nobr]expression: Expression(Precedence.assignment, false)
+				[nobr]expression: Expression(Precedence.assignment, allowIn)
 
 		case 'class':
 			result = @ClassExpression();
@@ -525,7 +390,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			result = @AsyncFunctionExpressionOrIdentifier(allowIn);
 			break;
 
-			@AsyncArrowFunctionOrIdentifier(allowIn: boolean) // 异步函数表达式或标识符
+			@AsyncArrowFunctionOrIdentifier(allowIn) // 异步函数表达式或标识符
 				const savedState = @stashSave();
 				const modifiers = @Modifiers();
 				const typeParameters = @sameLine && @peek === '<' ? @TypeParameters() : undefined;
@@ -553,14 +418,14 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				break;
 			}
 			@error(@lexer.peek(), @isKeyword(@peek) ? "Expression expected; '{0}' is a keyword." : @peek === 'endOfFile' : "Expression expected; Unexpected end of script.", "Expression expected; Unexpected token '{0}'.", getTokenName(@peek));
-			return @ErrorExpression(isStatementStart(@peek) ? @lexer.current.end : @read);
+			return @ErrorIdentifier(isStatementStart(@peek) ? @lexer.current.end : @read);
 
 			@UnaryExpression // 一元运算表达式(+x、typeof x、...)
 				operator: 'delete'|'void'|'typeof'|'+'|'-'|'~'|'!'|'++'|'--'
 				operand: Expression(Precedence.postfix, false)
 
-			@ErrorExpression(start: number) // 错误的表达式
-				const result = new nodes.ErrorIdentifier();
+			@ErrorIdentifier(start: number/*标记的开始位置*/) // 错误的表达式
+				const result = new @ErrorIdentifier();
 				result.start = start;
 				result.end = @lexer.current.end;
 				return result;
@@ -575,7 +440,19 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				@MemberCallExpression(*) // 成员调用表达式(x.y)
 					expression: Expression // 目标部分
 					. 
-					argument: Identifier(true) // 参数部分
+					argument: Identifier(true) = @MemberCallArgument() // 参数部分
+
+				@MemberCallArgument // 成员调用参数
+					if (!@sameLine && isStatementStart(@peek)) {
+						const savedState = @stashSave();
+						@Statement();
+						const isStatementStart = !savedState.errors.length;
+						@stashRestore(savedState);
+						if (isStatementStart) {
+							return @ErrorIdentifier(@lexer.current.end);
+						}
+					}
+					return @Identifier(true);
 
 			case '=':
 				result = @BinaryExpression(result, allowIn);
@@ -587,12 +464,12 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
 				@FunctionCallExpression(*) // 函数调用表达式(x())
 					expression: Expression 
-					arguments: CallArguments
+					arguments: Arguments
 
-					@CallArguments // 函数调用参数列表
-						( CallArgument,... )
+					@Arguments // 函数调用参数列表
+						( Argument,... )
 
-						@CallArgument // 函数调用参数(x)
+						@Argument // 函数调用参数(x)
 							?...
 							value: Expression(Precedence.assignment, true)
 
@@ -601,16 +478,16 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				continue;
 
 				@IndexCallExpression(*) // 索引调用表达式(x[y])
-					expression:Expression 
+					target: Expression 
 					[ 
 					argument: Expression(Precedence.any, true)
 					]
 
 			case '?':
-				result = @ConditionalExpression(result);
+				result = @ConditionalExpression(result, allowIn);
 				continue;
 
-				@ConditionalExpression(*) // 条件表达式(`x ? y : z`)
+				@ConditionalExpression(*, allowIn) // 条件表达式(`x ? y : z`)
 					condition: Expression 
 					? 
 					then: Expression(Precedence.assignment, true) // 则部分 
@@ -626,7 +503,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				break;
 
 				@PostfixExpression(*) // 后缀表达式(`x++`、`x--`)
-					expression: Expression(Precedence.leftHandSide) // 操作数
+					operand: Expression(Precedence.leftHandSide) // 操作数
 					operator: '++'|'--'
 
 			case 'noSubstitutionTemplateLiteral':
@@ -650,9 +527,9 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				continue;
 
 				@BinaryExpression(*, allowIn: boolean) // 双目表达式(x + y、x = y、...)
-					leftExpression: Expression // 左值部分
+					left: Expression // 左值部分
 					operator: ','|'*='|'/='|'%='|'+='|'‐='|'<<='|''>=>|''>>=>|'&='|'^='|'|='|'**='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|''>|'<='|''=>|'instanceof'|'in'|'<<'|''>>|''>>>|'+'|'-'|'*'|'/'|'%'|'**' // 运算类型
-					rightExpression: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
+					right: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
 		}
 		break;
 	}
@@ -722,7 +599,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 				?else 
 				?else: Statement = @EmabledStatement()
 
-				const result = new nodes.IfStatement();
+				const result = new @IfStatement();
 		        result.start = @expectToken('if');
 		        @Condition(result);
 		        result.then = @EmbeddedStatement();
@@ -777,7 +654,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 		        let result: nodes.ForStatement | nodes.ForInStatement | nodes.ForOfStatement | nodes.ForToStatement;
 		        switch (type) {
 		            case ';':
-		                result = new nodes.ForStatement();
+		                result = new @ForStatement();
 		                (<nodes.ForStatement>result).firstSemicolonToken = @expectToken(';');
 		                if (@peek !== ';') {
 		                    result.condition = @allowInAnd(@Expression);
@@ -788,17 +665,17 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 		                }
 		                break;
 		            case 'in':
-		                result = new nodes.ForInStatement();
+		                result = new @ForInStatement();
 		                (<nodes.ForInStatement>result).inToken = @read;
 		                result.condition = @allowInAnd(@Expression);
 		                break;
 		            case 'of':
-		                result = new nodes.ForOfStatement();
+		                result = new @ForOfStatement();
 		                (<nodes.ForOfStatement>result).ofToken = @read;
 		                result.condition = @options.disallowForOfCommaExpression ? @allowInAnd(@AssignmentExpressionOrHigher) : @allowInAnd(@Expression);
 		                break;
 		            case 'to':
-		                result = new nodes.ForToStatement();
+		                result = new @ForToStatement();
 		                (<nodes.ForToStatement>result).toToken = @read;
 		                result.condition = @allowInAnd(@Expression);
 		                break;
@@ -865,12 +742,12 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 
             @SwitchStatement // switch 语句(`switch(x) {...}`)
 
-            	const result = new nodes.SwitchStatement();
+            	const result = new @SwitchStatement();
 		        result.start = @read;
 		        if (!@options.disallowMissingSwitchCondition || @peek !== 'openBrace') {
 		            @Condition(result);
 		        }
-		        result.cases = new nodes.NodeList<nodes.CaseClause>();
+		        result.cases = new @NodeList<nodes.CaseClause>();
 		        result.cases.start = @expectToken('openBrace');
 		        while (true) {
 		            switch (@peek) {
@@ -886,7 +763,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 		                    return result;
 		            }
 
-		            const caseCaluse = new nodes.CaseClause();
+		            const caseCaluse = new @CaseClause();
 		            caseCaluse.start = @read;
 		            if (@lexer.current.type === 'case') {
 		                if (!@options.disallowCaseElse && @peek === 'else') {
@@ -896,7 +773,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 		                }
 		            }
 		            caseCaluse.colonToken = @expectToken('colon');
-		            caseCaluse.statements = new nodes.NodeList<nodes.Statement>();
+		            caseCaluse.statements = new @NodeList<nodes.Statement>();
 		            while (true) {
 		                switch (@peek) {
 		                    case 'case':
@@ -967,7 +844,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
             	return
             	?expression: Expression
 
-            	const result = new nodes.ReturnStatement();
+            	const result = new @ReturnStatement();
 		        result.start = @expectToken('return');
 		        if (@options.useStandardSemicolonInsertion ? !@hasSemicolon() : isExpressionStart(@peek)) {
 		            result.value = @allowInAnd(@Expression);
@@ -982,7 +859,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
             	throw
             	?expression: Expression
 
-            	const result = new nodes.ThrowStatement();
+            	const result = new @ThrowStatement();
 			    result.start = @read;
 			    if (!this.tryReadSemicolon(result)) {
 			        result.expression = @Expression(Precedence.any, true);
@@ -1001,7 +878,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
             	catch: CatchClause
             	finally: FinallyClause
 
-                const result = new nodes.TryStatement();
+                const result = new @TryStatement();
 		        result.start = @read;
 		        result.try = @TryClauseBody();
 		        if (@peek === 'catch') result.catch = @CatchClause();
@@ -1018,7 +895,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 		        	?)
 		        	statement: Statement
 
-		        	const result = new nodes.CatchClause();
+		        	const result = new @CatchClause();
 		        	result.start = @read
 		        	if (@peek === '(') {
 		        		result.openParanToken = @read;
@@ -1043,8 +920,8 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			        if (@peek === 'openBrace') {
 			            return @BlockStatement();
 			        }
-			        const result = new nodes.BlockStatement();
-			        result.statements = new nodes.NodeList<nodes.Statement>();
+			        const result = new @BlockStatement();
+			        result.statements = new @NodeList<nodes.Statement>();
 			        result.statements.start = @expectToken('openBrace');
 			        const statement = @Statement();
 			        result.statements.push(statement);
@@ -1072,7 +949,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
             @WithStatement // with 语句(`with(x) ...`)
             	with
             	expression: Expression
-            	const result = new nodes.WithStatement();
+            	const result = new @WithStatement();
 		        result.start = @read;
 		        if (@peek === '(') {
 		            result.openParanToken = @read;
@@ -1141,7 +1018,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			?TypeAnnotation
 			?FunctionBody
 
-			const result = new nodes.FunctionDeclaration();
+			const result = new @FunctionDeclaration();
 			if (decorators) result.decorators = decorators;
 			@FunctionDeclarationOrExpression(result, modifiers);
 			return result;
@@ -1157,7 +1034,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			?TypeAnnotation
 			?FunctionBody
 
-			const result = new nodes.FunctionDeclaration();
+			const result = new @FunctionDeclaration();
 			@FunctionDeclarationOrExpression(result, modifiers);
 			return result;
 
@@ -1199,7 +1076,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			?ImplementsClause
 			?ClassBody
 
-			const result = new nodes.ClassDeclaration();
+			const result = new @ClassDeclaration();
 			if (decorators) result.decorators = decorators;
 			if (modifiers) result.modifiers = modifiers;
 			@ClassDeclarationOrExpression(result);
@@ -1214,7 +1091,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			?ImplementsClause
 			?ClassBody
 
-			const result = new nodes.ClassExpression();
+			const result = new @ClassExpression();
 			@ClassDeclarationOrExpression(result);
 			return result;
 
@@ -1333,7 +1210,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			names: Identifier(false)....
 			?BlockBody
 
-			const result = new nodes.NamespaceDeclaration();
+			const result = new @NamespaceDeclaration();
 			@NamespaceOrModuleDeclaration(result, decorators, modifiers, <namespace>);
 			return result;
 
@@ -1345,7 +1222,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			names: Identifier(false)....
 			?BlockBody
 
-			const result = new nodes.ModuleDeclaration();
+			const result = new @ModuleDeclaration();
 			@NamespaceOrModuleDeclaration(result, decorators, modifiers, <module>);
 			return result;
 
@@ -1408,7 +1285,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			const modifier = @Modifier();
 			switch (modifier.type) {
 				case 'export':
-					if (!result) result = new nodes.NodeList<nodes.Modifier>();
+					if (!result) result = new @NodeList<nodes.Modifier>();
 					result.push(modifier);
 					if (@peek === 'default') {
 						result.push(@Modifier());
@@ -1416,14 +1293,14 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 					continue;
 				case 'const':
 					if (@peek === 'enum') {
-						if (!result) result = new nodes.NodeList<nodes.Modifier>();
+						if (!result) result = new @NodeList<nodes.Modifier>();
 						result.push(modifier);
 						continue;
 					}
 					break;
 				default:
 					if (@sameLine) {
-						if (!result) result = new nodes.NodeList<nodes.Modifier>();
+						if (!result) result = new @NodeList<nodes.Modifier>();
 						result.push(modifier);
 						continue;
 					}
@@ -1459,7 +1336,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 			expression: StringLiteral // 导入模块名
 			?;
 
-			const result = new nodes.ImportDeclaration();
+			const result = new @ImportDeclaration();
 			if (names) {
 				result.names = names;
 				result.from = @expectToken('from');
@@ -1484,7 +1361,7 @@ function main (source, tokenTypes, parser, nodes, nodeVisitor) {
 					?as 
 					variable: Identifier // 导入或导出的变量
 
-					const result = new nodes.SimpleImportOrExportClause();
+					const result = new @SimpleImportOrExportClause();
 					const nameOrVariable = @Identifier(true);
 					if (@peek === @as) {
 						result.name = nameOrVariable;
