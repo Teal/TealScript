@@ -1,7 +1,6 @@
 ﻿/**
  * @fileOverview 标记
  * @author xuld@vip.qq.com
- * @stable
  */
 
 import {CharCode} from './unicode';

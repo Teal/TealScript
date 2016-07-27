@@ -1,7 +1,6 @@
 ﻿/**
  * @fileOverview 位置
  * @author xuld@vip.qq.com
- * @stable
  */
 
 /**
