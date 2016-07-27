@@ -28,10 +28,10 @@
 					@GenericTypeNode(*) // 泛型类型节点(`Array<number>`)
 						target: TypeReferenceNode // 目标部分
 						typeArguments: TypeArguments // 类型参数部分
-						@TypeArguments = < ... TypeArgument , isTypeNodeStart ... > // 类型参数列表(`<number>`)
+						@TypeArguments list < TypeArgument , ...isTypeNodeStart > // 类型参数列表(`<number>`)
 							@TypeArgument // 类型参数(`number`)
 								value: TypeNode(Precedence.assignment) // 值
-					@TypeReferenceNode() extends TypeNode // 类型引用节点(`x`)
+					@TypeReferenceNode extends TypeNode // 类型引用节点(`x`)
 						value: 'identifier' // 值部分
 						if (isIdentifierName(@peek)) {
 							const result = new @TypeReferenceNode();
@@ -50,7 +50,7 @@
 			case '(':
 				result = @FunctionOrParenthesizedTypeNode();
 				break;
-				@FunctionOrParenthesizedTypeNode() // 函数(`()=> void`)或括号类型节点(`(x)`)
+				@FunctionOrParenthesizedTypeNode // 函数(`()=> void`)或括号类型节点(`(x)`)
 					const savedState = @stashSave();
 					const parameters = @Parameters();
 					if (@peek === '=>') {
@@ -62,9 +62,9 @@
 					@FunctionTypeNode(*, *) // 函数类型节点(`(x: number) => void`)。
 						?typeParameters: TypeParameters
 						?parameters: Parameters
-						=> 
+						'=>'
 						returnType: TypeNode()
-						@TypeParameters = < ... TypeParameterDeclaration , isIdentifierName ... > // 类型参数列表(`<T>`)
+						@TypeParameters list < TypeParameterDeclaration , ...isIdentifierName > // 类型参数列表(`<T>`)
 							@TypeParameterDeclaration // 类型参数声明(`T`、`T extends R`)
 								name: Identifier
 								?extends
@@ -76,30 +76,37 @@
 									result.extends = @TypeNode();
 								}
 								return result;
-						@Parameters = ( ... ParameterDeclaration , isBindingElementStart ... ) // 参数列表(`(x, y)`)
+						@Parameters list ( ?ParameterDeclaration , ...isBindingElementStart ) // 参数列表(`(x, y)`)
 							@ParameterDeclaration // 参数声明(`x`、`x?: number`)
 								?modifiers: Modifiers
-								?...
+								?'...'
 								name: BindingName
-								??
+								?'?'
 								?TypeAnnotation
 								?Initializer
-								@BindingName = Identifier | ArrayBindingPattern | ObjectBindingPattern // 绑定名称(`x`, `[x]`, `{x: x}`)
+								@BindingName alias Identifier | ArrayBindingPattern | ObjectBindingPattern // 绑定名称(`x`, `[x]`, `{x: x}`)
 									@ArrayBindingPattern  // 数组绑定模式项(`[x]`)
-										elements: [ ArrayBindingElement , isArrayBindingElementStart ... ]
+										elements: [ ?ArrayBindingElement , ...isArrayBindingElementStart ]
 										@ArrayBindingElement // 数组绑定模式项(`x`)
-											?...
+											?'...'
 											?value: BindingName
 											?Initializer
+											const result = new @ArrayBindingElement();
+											if (@peek !== ',' && @peek !== ']') {
+												if (@peek === '...') result.dotDotDotToken = @readToken('...');
+												result.value = @BindingName();
+												@Initializer(result);
+											}
+											return result;
 									@ObjectBindingPattern // 对象绑定模式项(`{x: x}`)
-										elements: { ObjectBindingElement , isObjectBindingElementStart ... }
+										elements: { ?ObjectBindingElement , ...isObjectBindingElementStart }
 										@ObjectBindingElement // 对象绑定模式项(`x`)
-											?...
+											?'...'
 											key: PropertyName,
-											?:
+											?':'
 											value: BindingName
 											?Initializer
-											@PropertyName = Identifier | NumericLiteral | StringLiteral | ComputedPropertyName // 属性名称(`xx`、`"xx"`、`0`、`[xx]`)
+											@PropertyName alias Identifier | NumericLiteral | StringLiteral | ComputedPropertyName // 属性名称(`xx`、`"xx"`、`0`、`[xx]`)
 												switch (@peek) {
 													//+ case 'identifier':
 													//+ 	return @Identifier(true);
@@ -117,20 +124,20 @@
 														return @Identifier(true);
 												}
 								@TypeAnnotation(result) // 类型注解(`: number`)
-									:
-									type: TypeNode()
+									?':'
+									?type: TypeNode
 								@Initializer(result, allowIn) // 初始值
-									=
-									initializer: Expression(Precedence.assignment, allowIn)
+									?'='
+									?initializer: Expression(Precedence.assignment, allowIn)
 					@ParenthesizedTypeNode // 括号类型节点(`(number)`)
-						(
+						'('
 						body: TypeNode() // 主体部分
-						)
+						')'
 			case '[':
 				result = @TupleTypeNode();
 				break;
 				@TupleTypeNode // 元祖类型节点(`[string, number]`)
-					elements: [ ... TupleTypeElement , isTypeNodeStart ... ] // 所有元素
+					elements: [ ?TupleTypeElement , ...isTypeNodeStart ] // 所有元素
 					@TupleTypeElement // 元祖类型节点元素(`x`)
 						value: TypeNode(Precedence.assignment)
 			case '{':
@@ -138,7 +145,7 @@
 				break;
 				@ObjectTypeNode // 对象类型节点(`{x: number}`)
 					elements: { TypeMemberSignature ... }
-					@TypeMemberSignature = PropertySignature | CallSignature | ConstructSignature | IndexSignature | MethodSignature | AccessorSignature // 类型成员签名(`x： y`、`x() {...}`)
+					@TypeMemberSignature alias PropertySignature | CallSignature | ConstructSignature | IndexSignature | MethodSignature | AccessorSignature // 类型成员签名(`x： y`、`x() {...}`)
 						switch (@peek) {
 							//+ case 'identifier':
 							//+ 	break;
@@ -180,7 +187,7 @@
 						}
 						@PropertySignature(*, *) doc // 属性签名(`x: number`)
 							name: PropertyName
-							??
+							?'?'
 							?TypeAnnotation
 							ObjectMemberTail
 						@CallSignature doc // 函数签名(`(): number`)
@@ -189,36 +196,36 @@
 							?TypeAnnotation
 							ObjectMemberTail
 						@ConstructSignature doc // 构造函数签名(`new x(): number`)
-							new
+							'new'
 							?TypeParameters
 							Parameters
 							?TypeAnnotation
 							ObjectMemberTail
 						@IndexSignature doc // 索引器声明(`get x() {...}`、`set x(value) {...}`)
-							[
-							argument: Identifier(false)
+							'['
+							argument: Identifier
 							?TypeAnnotation
-							]
+							']'
 							?TypeAnnotation
 							ObjectMemberTail
 						@MethodSignature(*, *) doc // 方法签名(`x(): number`)
 							name: PropertyName
-							??
+							?'?'
 							?TypeParameters
 							Parameters
 							?TypeAnnotation
 							ObjectMemberTail
 						@AccessorSignature(*, *) doc // 访问器签名(`get x(): number`、`set x(value): void`)
-							?get
-							?set
+							?'get'
+							?'set'
 							name: PropertyName
-							??
+							?'?'
 							Parameters
 							?TypeAnnotation
 							ObjectMemberTail
 						@ObjectMemberTail(result) // 对象成员尾部
-							?,
-							?;
+							?','
+							?';'
 							if (@peek === ';') {
 								result.semicolonToken = @readToken(';');
 							} else if (@peek === ',') {
@@ -229,18 +236,18 @@
 			case 'new':
 				return @ConstructorTypeNode();
 				@ConstructorTypeNode // 构造函数类型节点(`new () => void`)
-					new 
+					'new' 
 					?TypeParameters
 					Parameters 
-					=>
-					return: TypeNode()
+					'=>'
+					return: TypeNode
 			case '<':
 				return @FunctionTypeNode(@TypeParameters(), @Parameters());
 			case 'typeof':
 				result = @TypeQueryNode();
 				break;
 				@TypeQueryNode extends TypeNode // 类型查询节点(`typeof x`)
-					typeof
+					'typeof'
 					operand: Expression(Precedence.postfix)
 			case '=>':
 				return @FunctionTypeNode();
@@ -251,7 +258,7 @@
 				result = @LiteralTypeNode();
 				break;
 				@LiteralTypeNode // 字面量类型节点(`"abc"`、`true`)
-					body: Expression(Precedence.primary)
+					value: Expression(Precedence.primary)
 			default:
 				result = @GenericTypeOrTypeReferenceNode();
 				break;
@@ -264,7 +271,7 @@
 				continue;
 				@QualifiedNameTypeNode(*) // 限定名称类型节点(`"abc"`、`true`)
 					target: TypeNode // 目标部分
-					. 
+					'.'
 					argument: Identifier(true) = @MemberCallArgument() // 参数部分
 			case '[':
 				if (@sameLine) {
@@ -273,8 +280,8 @@
 				continue;
 				@ArrayTypeNode(*) // 数组类型节点(`T[]`)
 					target: TypeNode
-					[
-					]
+					'['
+					']'
 			case '&':
 			case '|':
 			case 'is':
@@ -295,7 +302,7 @@
 		case 'identifier':
 			result = @ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
 			break;
-			@ArrowFunctionOrGenericExpressionOrIdentifier(allowIn) // 箭头函数(`x => y`)或泛型表达式(`x<T>`)或标识符(`x`)
+			@ArrowFunctionOrGenericExpressionOrIdentifier(allowIn: boolean) // 箭头函数(`x => y`)或泛型表达式(`x<T>`)或标识符(`x`)
 				let result = @Identifier();
 				switch (@peek) {
 					case '=>':
@@ -318,7 +325,7 @@
 							typeArguments: TypeArguments // 类型参数部分
 				}
 				return result;
-				@Identifier(allowKeyword = false/*是否允许解析关键字*/) // 标识符(`x`)
+				@Identifier(allowKeyword = false/*是否允许解析关键字*/) extends Expression // 标识符(`x`)
 					value: 'identifier' // 值部分
 					if (isIdentifierName(@peek) || (allowKeyword && isKeyword(@peek))) {
 						const result = new @Identifier();
@@ -363,9 +370,9 @@
 				@stashRestore(savedState);
 				return @ParenthesizedExpression();
 				@ParenthesizedExpression // 括号表达式(`(x)`)
-					(
-					body: Expression() // 主体部分
-					)
+					'('
+					body: Expression // 主体部分
+					')'
 		case 'numericLiteral':
 			result = @NumericLiteral();
 			break;
@@ -381,16 +388,22 @@
 			result = @ArrayLiteral();
 			break;
 			@ArrayLiteral // 数组字面量(`[x, y]`)
-				elements: [ ArrayLiteralElement , ... isExpressionStart ] // 元素列表
+				elements: [ ?ArrayLiteralElement , ...isExpressionStart ] // 元素列表
 				@ArrayLiteralElement // 数组字面量元素(`x`)
-					?...
+					?'...'
 					?value: Expression(Precedence.assignment)
+					const result = new @ArrayLiteralElement();
+					if (@peek !== ',' && @peek !== ']') {
+						if (@peek === '...') result.dotDotDotToken = @readToken('...');
+						result.value = @Expression(Precedence.assignment);
+					}
+					return result;
 		case '{':
 			result = @ObjectLiteral();
 			break;
 			@ObjectLiteral // 对象字面量(`{x: y}`)
-				elements: { ... ObjectLiteralElement ... }
-				@ObjectLiteralElement = ObjectPropertyDeclaration | ObjectMethodDeclaration | ObjectAccessorDeclaration // 对象字面量元素(`x: y`、`x() {...}`)
+				elements: { ?ObjectLiteralElement ... }
+				@ObjectLiteralElement alias ObjectPropertyDeclaration | ObjectMethodDeclaration | ObjectAccessorDeclaration // 对象字面量元素(`x: y`、`x() {...}`)
 					const modifiers = @Modifiers();
 					switch (@peek) {
 						//+ case 'identifier':
@@ -403,8 +416,8 @@
 								return @ObjectAccessorDeclaration(modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
 								@ObjectAccessorDeclaration(*, *, *) doc // 访问器声明(`get x() {...}`、`set x(value) {...}`)
 									?Modifiers
-									?get
-									?set
+									?'get'
+									?'set'
 									name: PropertyName
 									Parameters
 									?TypeAnnotation
@@ -423,7 +436,7 @@
 							return @ObjectMethodDeclaration(modifiers, undefined, name);
 							@ObjectMethodDeclaration(*, *, *) doc // 方法声明(`x() {...}`)
 								?Modifiers
-								?*
+								?'*'
 								?name: PropertyName
 								?TypeParameters
 								Parameters
@@ -435,8 +448,8 @@
 							@ObjectPropertyDeclaration(*, *, *) doc // 属性声明(`x: y`)
 								?Modifiers
 								key: PropertyName
-								?:
-								?=
+								?':'
+								?'='
 								?value: Expression(Precedence.assignment)
 								ObjectMemberTail
 								const result = new @ObjectPropertyDeclaration();
@@ -467,8 +480,8 @@
 				}
 				return @NewExpression(newToken);
 				@NewTargetExpression(*) // new.target 表达式(`new.target`)
-					new 
-					.
+					'new' 
+					'.'
 					target
 					const result = new @NewTargetExpression();
 					result.newToken = newToken;
@@ -480,7 +493,7 @@
 					@error(@lexer.peek(), "'target' expected; Unexpected token '{0}'.", getTokenName(@peek));
 					return @ErrorIdentifier(newToken);
 				@NewExpression(*) // new 表达式(`new x()`、`new x`)
-					new
+					'new'
 					target: Expression(Precedence.member) 
 					?arguments: Arguments
 		case '/':
@@ -488,8 +501,8 @@
 			result = @RegularExpressionLiteral();
 			break;
 			@RegularExpressionLiteral // 正则表达式字面量(/abc/)
-				value: <stringLiteral> 
-				flags?: <stringLiteral> // 标志部分
+				value: 'stringLiteral'
+				?flags: 'stringLiteral' // 标志部分
 				const result = new @RegularExpressionLiteral();
 				const token = @lexer.readAsRegularExpressionLiteral();
 				result.start = token.start;
@@ -518,7 +531,7 @@
 				}
 				return result;
 				@TemplateSpan // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
-					value: <stringLiteral>
+					value: 'stringLiteral'
 		case '<':
 			result = @ArrowFunctionOrTypeAssertionExpression(allowIn);
 			break;
@@ -533,16 +546,16 @@
 				@stashRestore(savedState);
 				return @TypeAssertionExpression();
 				@TypeAssertionExpression() // 类型确认表达式(<T>xx)
-					<
-					type: TypeNode()
-					>
+					'<'
+					type: TypeNode
+					'>'
 					operand: Expression(Precedence.postfix)
 		case 'yield':
 			result = @YieldExpression(allowIn);
 			break;
 			@YieldExpression(allowIn) // yield 表达式(`yield xx`)
-				yield 
-				?*
+				'yield' 
+				?'*'
 				?operand: Expression(Precedence.assignment, allowIn)
 				const result = new @YieldExpression();
 				result.yieldToken = @readToken('yield');
@@ -560,8 +573,8 @@
 				}
 				@lexer.current = savedToken;
 				return @Identifier();
-				@AwaitExpression(awaitToken, allowIn) // await 表达式(`await xx`)
-					await 
+				@AwaitExpression(*, allowIn) // await 表达式(`await xx`)
+					'await'
 					operand: Expression(Precedence.assignment, allowIn)
 		case 'class':
 			result = @ClassExpression();
@@ -607,7 +620,7 @@
 				continue;
 				@MemberCallExpression(*) // 成员调用表达式(x.y)
 					target: Expression // 目标部分
-					. 
+					'.'
 					argument: Identifier = @MemberCallArgument() // 参数部分
 					@MemberCallArgument // 成员调用参数
 						if (!@sameLine && isStatementStart(@peek)) {
@@ -628,7 +641,7 @@
 				@FunctionCallExpression(*) // 函数调用表达式(`x()`)
 					target: Expression 
 					arguments: Arguments
-					@Arguments = ( Argument , ... isArgumentStart ) // 函数调用参数列表
+					@Arguments list ( Argument , ...isArgumentStart ) // 函数调用参数列表
 						@Argument // 函数调用参数(`x`)
 							?...
 							value: Expression(Precedence.assignment)
@@ -637,9 +650,9 @@
 				continue;
 				@IndexCallExpression(*) // 索引调用表达式(`x[y]`)
 					target: Expression 
-					[ 
-					argument: Expression()
-					]
+					'[' 
+					argument: Expression
+					']'
 			case '?':
 				result = @ConditionalExpression(result, allowIn);
 				continue;
@@ -698,7 +711,7 @@
 				return @ExpressionStatement(parsed);
 		        @LabelledStatement(*) doc // 标签语句(`x: ...`)
 		        	label: Identifier
-		        	:
+		        	':'
 		        	statement: Statement // 主体部分
 		        @ExpressionStatement(expression?: @Expression) // 表达式语句(`x();`)
 		        	expression: Expression // 表达式部分
@@ -708,14 +721,14 @@
 		case '{':
 			return @BlockStatement();
 			@BlockStatement // 语句块(`{...}`)
-				statements: { Statement ... }
+				statements: { ?Statement ... }
 		case 'var':
 		case 'const':
 			return @VariableStatement();
 			@VariableStatement(*, allowIn): // 变量声明语句(`var x`、`let x`、`const x`)
 				?Modifiers
 				type: 'var'|'let'|'const' 
-				variables: ... VariableDeclaration , ... isBindingNameStart = @DelimitedList(allowIn === false ? @VariableDeclarationWithoutIn : @VariableDeclaration, undefined, undefined, isBindingNameStart)
+				variables: VariableDeclaration , ...isBindingNameStart = @DelimitedList(allowIn === false ? @VariableDeclarationWithoutIn : @VariableDeclaration, undefined, undefined, isBindingNameStart)
 				@VariableDeclarationWithoutIn() // 变量声明（不带 in）
 					return @VariableDeclaration(false);
 				@VariableDeclaration(allowIn) // 变量声明(`x = 1`、`[x] = [1]`、`{a: x} = {a: 1}`)
@@ -744,10 +757,10 @@
 		case 'if':
 			return @IfStatement();
 			@IfStatement // if 语句(`if (x) ...`)
-				if 
+				'if' 
 				Condition
 				then: Statement
-				?else 
+				?'else'
 				?else: Statement
 				const result = new @IfStatement();
 		        result.ifToken = @readToken('if');
@@ -759,9 +772,9 @@
 		        }
 		        return result;
 			    @Condition(result) // 条件表达式
-			    	?(
+			    	?'('
 			    	condition: Expression()
-			    	?)
+			    	?')'
 					const hasParan = @peek === '(';
 					if (hasParan || @options.allowMissingParenthese === false) result.openParanToken = @readToken('(');
 					result.condition = @Expression();
@@ -788,14 +801,14 @@
 		                return @ForStatement(forToken, openParan, initializer);
 		        }
 		        @ForStatement(*,*,*) // for 语句(`for(var i = 0; i < 9; i++) ...`)
-		        	for
-		        	?(
+		        	'for'
+		        	?'('
 		        	?initializer: VariableStatement | ExpressionStatement
 		        	firstSemicolon: ';' // 条件部分中首个分号
 		        	?condition: Expression
 		        	secondSemicolon: ';' // 条件部分中第二个分号
 					?iterator: Expression
-		        	?)
+		        	?')'
 		        	statement: Statement = @EmbeddedStatement()
 					const result = new @ForStatement();
 					result.forToken = forToken;
@@ -809,12 +822,12 @@
 		        	result.body = @EmbeddedStatement();
 					return result;
 		        @ForInStatement(*,*,*) // for..in 语句(`for(var x in y) ...`)
-		        	for
-		        	?(
+		        	'for'
+		        	?'('
 		        	initializer: VariableStatement | ExpressionStatement
-		        	in
+		        	'in'
 		        	condition: Expression
-		        	?)
+		        	?')'
 		        	statement: Statement
 					const result = new @ForInStatement();
 					result.forToken = forToken;
@@ -826,12 +839,12 @@
 		        	result.body = @EmbeddedStatement();
 					return result;
 		        @ForOfStatement(*,*,*) // for..of 语句(`for(var x of y) ...`)
-		        	for
-		        	?(
+		        	'for'
+		        	?'('
 		        	initializer: VariableStatement | ExpressionStatement
-		        	of
+		        	'of'
 		        	condition: Expression
-		        	?)
+		        	?')'
 		        	statement: Statement
 					const result = new @ForInStatement();
 					result.forToken = forToken;
@@ -843,12 +856,12 @@
 		        	result.body = @EmbeddedStatement();
 					return result;
 		        @ForToStatement(*,*,*) // for..to 语句(`for(var x = 0 to 10) ...`)
-		        	for
-		        	?(
+		        	'for'
+		        	?'('
 		        	initializer: VariableStatement | ExpressionStatement
-		        	to
+		        	'to'
 		        	expression: Expression
-		        	?)
+		        	?')'
 		        	statement: Statement
 					const result = new @ForInStatement();
 					result.forToken = forToken;
@@ -862,15 +875,15 @@
         case 'while'
             return @WhileStatement();
             @WhileStatement // while 语句(`while(x) ...`)
-            	while
+            	'while'
             	Condition
             	statement: Statement = @EmbeddedStatement()
         case 'switch'
             return @SwitchStatement();
             @SwitchStatement // switch 语句(`switch(x) {...}`)
-            	switch
+            	'switch'
             	?Condition
-            	cases: { ... CaseOrDefaultClause ... }
+            	cases: { ?CaseOrDefaultClause ... }
             	const result = new @SwitchStatement();
 		        result.switchToken = @readToken('switch');
 		        if (@options.allowMissingSwitchCondition === false || @peek !== '{') {
@@ -889,12 +902,12 @@
 		                	return;
 		        	}
 					@CaseClause // case 分支(`case x: ...`)
-			        	case
-			        	labels: CaseClauseLabel , ... isCaseLabelStart // 标签列表
-			        	:
+			        	'case'
+			        	labels: CaseClauseLabel , ...isCaseLabelStart // 标签列表
+			        	':'
 			        	statements: Statement ... = @NodeList(@CaseStatement)
 			        	@CaseClauseLabel // case 分支标签(`case x: ...`)
-			        		?else
+			        		?'else'
 			        		?label: Expression(Precedence.assignment)
 							const result = new @CaseClauseLabel();
 							if (@options.allowCaseElse !== false && @peek === 'else') {
@@ -904,8 +917,8 @@
 							}
 							return result;
 			        @DefaultClause // default 分支(`default: ...`)
-			        	default
-			        	:
+			        	'default'
+			        	':'
 			        	statements: Statement ... = @NodeList(@CaseStatement)
 			        	@CaseStatement // case 段语句
 			        		switch (@peek) {
@@ -921,26 +934,26 @@
         case 'do'
             return @DoWhileStatement();
             @DoWhileStatement // do..while 语句(`do ... while(x);`)
-            	do
+            	'do'
             	statement: Statement = @EmbeddedStatement()
-            	while
+            	'while'
             	Condition
-            	?;
+            	?';'
         case 'break'
             return @BreakStatement();
             @BreakStatement // break 语句(`break xx;`)
-		        break
+		        'break'
 		        ?label: Identifier(false)
-		        ?;
+		        ?';'
 		        const result = new @ContinueStatement();
 		        @BreakOrContinueStatement(result, 'continue');
 		        return result;
         case 'continue'
             return @ContinueStatement();
             @ContinueStatement // continue 语句(`continue xx;`)
-		        continue
+		        'continue'
 		        ?label: Identifier(false)
-		        ?;
+		        ?';'
 		        const result = new @ContinueStatement();
 		        @BreakOrContinueStatement(result, 'continue');
 		        return result;
@@ -953,8 +966,9 @@
         case 'return'
             return @ReturnStatement();
             @ReturnStatement // return 语句(`return x;`)
-            	return
+            	'return'
             	?value: Expression
+		        ?';'
             	const result = new @ReturnStatement();
             	result.returnToken = @readToken('return');
             	if (!@tryReadSemicolon(result)) {
@@ -965,8 +979,9 @@
         case 'throw'
             return @ThrowStatement();
             ThrowStatement // throw 语句(`throw x;`)
-            	throw
+            	'throw'
             	?value: Expression
+		        ?';'
             	const result = new @ThrowStatement();
 			    result.throwToken = @readToken('throw');
 			    if (@options.allowRethrow === false || !@tryReadSemicolon(result)) {
@@ -977,7 +992,7 @@
         case 'try'
             return @TryStatement();
             @TryStatement // try 语句(`try {...} catch(e) {...}`)
-            	try
+            	'try'
             	try: Statement
             	catch: CatchClause
             	finally: FinallyClause
@@ -991,10 +1006,10 @@
 		        }
 		        return result;
 		        @CatchClause // catch 分句(`catch(e) {...}`)
-		        	catch
-		        	?(
+		        	'catch'
+		        	?'('
 		        	?variable: BindingName
-		        	?)
+		        	?')'
 		        	statement: Statement
 		        	const result = new @CatchClause();
 		        	result.catchToken = @readToken('catch');
@@ -1014,26 +1029,26 @@
 		            result.body = @EmbeddedStatement();
 		            return result;
 		        @FinallyClause // finally 分句(`finally {...}`)
-		        	finally
+		        	'finally'
 		        	statement: Statement = @EmbeddedStatement()
         case 'debugger'
             return @DebuggerStatement();
             @DebuggerStatement // debugger 语句(`debugger;`)
-            	debugger
-            	?;
+            	'debugger'
+            	?';'
 		case ';':
 			return @EmptyStatement();
 			@EmptyStatement // 空语句(`;`)
-				;
+				';'
         case 'endOfFile'
             return @ErrorStatement();
         case 'with'
             return @WithStatement();
             @WithStatement // with 语句(`with (x) ...`)
-            	with
-				?(
+            	'with'
+				?'('
             	value: VariableStatement | Expression
-				?)
+				?')'
 				body: Statement
             	const result = new @WithStatement();
 		        result.start = @readToken('with');
@@ -1072,8 +1087,8 @@
 		@FunctionDeclaration(*, *) doc // 函数声明(`function fn() {...}`、`function *fn() {...}`)
 			?Decorators
 			?Modifiers
-			function
-			?*
+			'function'
+			?'*'
 			?name: Identifier
 			?TypeParameters
 			Parameters
@@ -1085,8 +1100,8 @@
 			return result;
 		@FunctionExpression(*) doc // 函数表达式(`function () {}`)
 			?Modifiers
-			function
-			?* 
+			'function'
+			?'*'
 			?name: Identifier
 			?TypeParameters
 			Parameters
@@ -1096,9 +1111,9 @@
 			@FunctionDeclarationOrExpression(result, modifiers);
 			return result;
 		@FunctionBody(result) // 函数主体(`{...}`、`=> xx`、`;`)
-			?=>
+			?'=>'
 			?body: BlockStatement | Expression
-			?;
+			?';'
 			switch (@peek) {
 				case '{':
 					result.body = @BlockStatement();
@@ -1111,7 +1126,7 @@
 					@tryReadSemicolon(result);
 					break;
 			}
-	@ClassDeclarationOrExpression(result: nodes.ClassDeclaration | nodes.ClassExpression) // 类声明或类表达式
+	@ClassDeclarationOrExpression(result: @ClassDeclaration | @ClassExpression) // 类声明或类表达式
 		@DocComment(result);
 		result.classToken = @readToken('class');
 		if (isIdentifierName(@peek) && @peek !== 'extends' && @peek !== 'implements') result.name = @Identifier();
@@ -1122,7 +1137,7 @@
 		@ClassDeclaration(*, *) doc // 类声明(`class xx {}`)
 			?Decorators
 			?Modifiers
-			class 
+			'class' 
 			name?: Identifier
 			?TypeParameters
 			?ExtendsClause
@@ -1134,7 +1149,7 @@
 			@ClassDeclarationOrExpression(result);
 			return result;
 		@ClassExpression doc // 类表达式(`class xx {}`)
-			class 
+			'class' 
 			name?: Identifier
 			?TypeParameters
 			?ExtendsClause
@@ -1144,22 +1159,22 @@
 			@ClassDeclarationOrExpression(result);
 			return result;
 		@ExtendsClause(result) // extends 分句(`extends xx`)
-			extends
-			extends: ClassHeritageNode , ... isExpressionStart
+			?'extends'
+			?extends: ClassHeritageNode , ... isExpressionStart
 		@ImplementsClause(result) // implements 分句(`implements xx`)
-			implements
-			implements: ClassHeritageNode , ... isExpressionStart
-		@ClassHeritageNode // extends 或 implements 分句项
-			value: Expression(Precedence.leftHandSide)
+			?'implements'
+			?implements: ClassHeritageNode , ... isExpressionStart
+			@ClassHeritageNode // extends 或 implements 分句项
+				value: Expression(Precedence.leftHandSide)
 		@ClassBody(result) // 类主体(`{...}`、`;`)
 			?members: { ClassElement ... }
-			?;
+			?';'
 			if (@peek === '{') {
 				result.members = @NodeList(@ClassElement, '{', '}');
 			} else {
 				@tryReadSemicolon(result);
 			}
-			@ClassElement = MethodDeclaration | PropertyDeclaration | AccessorDeclaration // 类成员
+			@ClassElement alias MethodDeclaration | PropertyDeclaration | AccessorDeclaration // 类成员
 				const decorators = @Decorators();
 				const modifiers = @Modifiers();
 				switch (@peek) {
@@ -1174,8 +1189,8 @@
 							@AccessorDeclaration(*, *, *, *) doc // 访问器声明(`get x() {...}`、`set x(value) {...}`)
 								?Decorators
 								?Modifiers
-								?get
-								?set
+								?'get'
+								?'set'
 								name: PropertyName
 								Parameters
 								?TypeAnnotation
@@ -1212,7 +1227,7 @@
 	@InterfaceDeclaration(*, *) doc // 接口声明(`interface T {...}`)
 		?Decorators
 		?Modifiers
-		interface
+		'interface'
 		name: Identifier(false)
 		?TypeParameters
 		?ExtendsClause
@@ -1220,10 +1235,10 @@
 	@EnumDeclaration(*, *) doc // 枚举声明(`enum T {}`)
 		?Decorators
 		?Modifiers
-		enum
+		'enum'
 		name: Identifier(false)
 		?ExtendsClause
-		members: { EnumMemberDeclaration , ... isPropertyNameStart }
+		members: { ?EnumMemberDeclaration , ...isPropertyNameStart }
 		@EnumMemberDeclaration // 枚举成员声明(`x`、`x = 1`)
 			name: PropertyName
 			?Initializer
@@ -1245,27 +1260,28 @@
 		@NamespaceDeclaration(*, *) doc // 命名空间声明(`namespace T {}`)
 			?Decorators
 			?Modifiers
-			namespace
+			'namespace'
 			name: Identifier | MemberCallExpression
-			?BlockBody
+			BlockBody
 			const result = new @NamespaceDeclaration();
 			@NamespaceOrModuleDeclaration(result, decorators, modifiers, 'namespace');
 			return result;
 		@ModuleDeclaration(*, *) doc // 模块声明(`module T {}`)
 			?Decorators
 			?Modifiers
-			module
+			'module'
 			name: Identifier | MemberCallExpression | StringLiteral
-			?BlockBody
+			BlockBody
 			const result = new @ModuleDeclaration();
 			@NamespaceOrModuleDeclaration(result, decorators, modifiers, 'module');
 			return result;
 		@BlockBody(result) // 语句块主体(`{...}`)
 			statements: { Statement ... }
+			result.statements = @NodeList(@Statement, '{', '}');
 	@ExtensionDeclaration(*, *) doc // 扩展声明(`extends T {}`)
 		?Decorators
 		?Modifiers
-		extends
+		'extends'
 		type: TypeNode
 		?ExtendsClause
 		?ImplementsClause
@@ -1304,16 +1320,16 @@
 		decorators: Decorator ...  // 修饰器列表
 		let result: @NodeList<@Decorator>;
 		while (@peek === '@') {
-			if (!result) result = new @NodeList()<nodes.Modifier>();
+			if (!result) result = new @NodeList<@Modifier>();
 			result.push(@Decorator());
 		}
 		return result;
 		@Decorator // 修饰器(`@x`)
-			@
+			'@'
 			body: Expression(Precedence.leftHandSide)
 	@Modifiers // 修饰符列表
 		modifiers: Modifier ...
-		let result: nodes.NodeList<nodes.Modifier>;
+		let result: @NodeList<@Modifier>;
 		while (isModifier(@peek)) {
 			const savedToken = @lexer.current;
 			const modifier = @Modifier();
@@ -1347,12 +1363,12 @@
 		@Modifier // 修饰符(`static`、`private`、...)
 			type: 'export'|'default'|'declare'|'const'|'static'|'abstract'|'readonly'|'async'|'public'|'protected'|'private'
 	@TypeAliasDeclaration // 类型别名声明(`type A = number;`)
-		type
+		'type'
 		name: Identifier
 		?TypeParameters
-		=
+		'='
 		TypeNode
-		?;
+		?';'
 	@ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
 		const importToken = @read;
 		const imports = @DelimitedList(@ImportClause, undefined, undefined, isBindingNameStart);
@@ -1361,25 +1377,25 @@
 		}
 		return @ImportDeclaration(importToken, imports);
 		@ImportAssignmentDeclaration(*, *) // import 赋值声明
-			import
+			'import'
 			variable: Identifier // 别名
-			=
+			'='
 			value: Expression(Precedence.assignment)
-			?;
+			?';'
 		@ImportDeclaration(*, *) // import 声明(`import x from '...';`)
-			import
-			?names: ... ImportClause , ...
-			?from = imports ? @readToken(@from) : undefined
-			expression: StringLiteral // 导入模块名
-			?;
+			'import'
+			?variables: ... ImportClause , ...
+			?'from' = imports ? @readToken(@from) : undefined
+			from: StringLiteral // 导入模块名
+			?';'
 			const result = new @ImportDeclaration();
-			if (names) {
-				result.names = names;
-				result.from = @readToken('from');
+			if (variables) {
+				result.variables = variables;
+				result.fromToken = @readToken('from');
 			}
-			result.target = @StringLiteral();
+			result.from = @StringLiteral();
 			return result;
-			@ImportClause = SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause // import 分句(`x`、`{x}`、...)
+			@ImportClause alias SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause // import 分句(`x`、`{x}`、...)
 				switch (@peek) {
 					//+ case 'identifier':
 					//+		return @SimpleImportOrExportClause(true);
@@ -1448,34 +1464,34 @@
 			case '*':
 				return @ExportNamespaceDeclaration(exportToekn);
 				@ExportNamespaceDeclaration(*) // 导出列表声明(`export * from ...`)
-					export
-					*
-					from
-					expression: StringLiteral // 导入模块名
-					?;
+					'export'
+					'*'
+					'from'
+					from: StringLiteral // 导入模块名
+					?';'
 			case '{':
 				return @ExportListDeclaration(exportToekn);
 				@ExportListDeclaration(*) // 导出列表声明(`export a from ...`)
-					export
-					names: { SimpleImportOrExportClause ... } = @DelimitedList(@SimpleImportOrExportClause, '{', '}', false)
-					from
-					expression: StringLiteral // 导入模块名
-					?;
+					'export'
+					variables: { SimpleImportOrExportClause ... }
+					'from'
+					from: StringLiteral // 导入模块名
+					?';'
 			case '=':
 				return @ExportAssignmentDeclaration(start);
 				@ExportAssignmentDeclaration(*) // 导出赋值声明(`export = 1;`)
-					export
-					=
+					'export'
+					'='
 					value: Expression(Precedence.assignment)
-					?;
+					?';'
 			default:
 				// @lexer.current = savedState;
 				// @error(@peek, "Declaration or statement expected. Unexpected token '{0}'.", getTokenName(@peek));
 				return @ExportDefaultDeclaration(@Modifiers());
 				@ExportDefaultDeclaration(*)  // export default 声明(`export default x = 1;`)
-					?modifiers: Modifiers
+					?Modifiers
 					expression: Expression(Precedence.assignment)
-					?;
+					?';'
 		}
 
 @DocComment(result) // 文档注释

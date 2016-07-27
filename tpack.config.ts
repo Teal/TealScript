@@ -398,213 +398,403 @@ tpack.task("gen-nodes", function () {
  */
 function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
 
-    const productions = readSource();
+    // #region 解析源
 
-    // 查找跟产生式。
     const rootProductions = [];
-    for (const name in productions) {
-        const production = productions[name];
-        if (production.indent == 0) {
-            rootProductions.push(name);
+    const productions = {};
+    const comments = {};
+    const types = {};
+    const listItems = [];
+    const stack = [];
+    const lines = source.split(/\r\n?|\n/);
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line || /^\/\//.test(line)) continue;
+        if (/^\s*@\w/.test(line) && !/;$/.test(line)) {
+            const production = parseHeader(line);
+            productions[production.name] = production;
+            stack.push(production);
+            if (production.indent == 0) {
+                rootProductions.push(production.name);
+            }
+        } else {
+            let production = stack[stack.length - 1];
+            while (production && getIndent(line) <= production.indent) {
+                stack.pop();
+                production = stack[stack.length - 1];
+            }
+            if (!production) continue;
+            if (isPart(line)) {
+                production.parts.push(parsePart(line.trim()));
+            } else {
+                production.codes.push(parseCode(removeIndent(line, production.indent + 1)));
+            }
         }
     }
 
-    for (const name in productions) {
-        const production = productions[name];
+    // #endregion
 
-        // 填充 extends
-        if (!production.extends) {
-            production.extends = "Node";
-            for (const n of rootProductions) {
-                if (production.name.endsWith(n) && production.name !== n) {
-                    production.extends = n;
-                    break;
+    eachProduction(function (production) {
+
+        // 补全参数注释
+        for (let i = 0; i < production.params.length; i++) {
+            const param = production.params[i];
+            param.comment = param.comment || comments[param.name];
+            param.type = param.type || types[param.name];
+            param.comment += "。";
+        }
+
+        // 补全成员的注释
+        for (let i = 0; i < production.parts.length; i++) {
+            const part = production.parts[i];
+            part.comment = part.comment || comments[part.name];
+            part.type = part.type || types[part.name];
+            if (production.params[i] && production.params[i].name === "*") {
+                production.params[i].name = part.name;
+                production.params[i].type = part.type;
+                production.params[i].comment = production.params[i].comment || ("当前" + production.comment.replace(/\(.*\)/, "") + "的" + part.comment + "。");
+                part.equals = part.equals || part.name;
+            }
+
+            // 如果目标节点是列表，则按列表解析。
+            if (productions[part.type] && productions[part.type].list) {
+                part.equals = part.equals || productions[part.type].list.equals;
+                part.type = productions[part.type].list.type;
+            }
+
+            // 自动生成 equals
+            if (!part.equals) {
+                part.equals = part.type === "TokenType" ? part.tokens && part.tokens.length > 1 ? "@read" : "@readToken('" + part.tokens[0] + "')" : "@" + part.type + "(" + (part.args || "") + ")";
+            }
+
+            // 追加内联部分。
+            if (productions[part.type] && productions[part.type].inline) {
+                for (var part2 of productions[part.type].parts) {
+                    production.parts.splice(i++, 0, {
+                        inlined: true,
+                        name: part2.name,
+                        type: part2.type,
+                        comment: part.comment
+                    });
                 }
             }
-            if (production.name.endsWith("Literal")) {
-                production.extends = "Expression";
-            }
+
+            part.comment = "获取当前" + production.comment.replace(/\(.*\)/, "") + "的" + part.comment + "。";
+
         }
 
-        for (const part of production.parts) {
-            // 填充组成部分。
-            if (!part.equals) {
-
-            }
-        }
-
-        // 填充代码
+        // 生成解析代码。
         if (production.parts.length && !production.codes.length) {
-
+            if (!production.inline) {
+                production.codes.push("const result = new @" + production.name + "();");
+            }
+            for (let i = 0; i < production.parts.length; i++) {
+                let equals = "result." + production.parts[i].name + " = " + production.parts[i].equals + ";";
+                if (production.parts[i].optional && production.parts[i].tokens) {
+                    equals += "if (@peek === '" + production.parts[i].tokens[0] + "') ";
+                }
+                production.codes.push(equals);
+            }
+            if (!production.inline) {
+                production.codes.push("return result;");
+            }
         }
 
+        if (production.parts.length) {
+            production.classComment = "表示一个" + production.comment + "。";
+        }
+        production.comment = "解析一个" + production.comment + "。";
 
+        delete production.indent;
+        cleanObj(production);
+    });
 
-    }
+    eachProduction(function (production) {
 
+    });
 
     var s = tpack.createFile("d.json");
     s.content = JSON.stringify(productions, null, 4);
     s.save();
 
-    function readSource() {
+    function getIndent(line) {
+        return (/\S/.exec(line.replace(/    /g, "\t")) || { index: 0 }).index;
+    }
 
-        const productions = {};
+    function removeIndent(line, count) {
+        return line.replace(/    /g, "\t").substring(count);
+    }
 
-        const stack = [];
-        const lines = source.split(/\r\n?|\n/);
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (!line || /^\/\//.test(line)) continue;
-            if (/^\s*@\w/.test(line) && !isCode(line)) {
-                const production = parseHeader(line);
-                productions[production.name] = production;
-                stack.push(production);
-            } else {
-                let production = stack[stack.length - 1];
-                while (production && getIndent(line) <= production.indent) {
-                    stack.pop();
-                    production = stack[stack.length - 1];
-                }
-                if (!production) continue;
-                if (isCode(line)) {
-                    production.codes.push(parseCode(removeIndent(line, production.indent + 1)));
-                } else {
-                    production.parts.push(parsePart(line.trim()));
+    function split2(line, sepeator) {
+        var p = line.indexOf(sepeator);
+        return p >= 0 ? [line.substring(0, p), line.substring(p + sepeator.length)] : [line, ""];
+    }
+
+    function isPart(line) {
+        line = line.trim();
+        return /^\?|^'.*'$|^\w+:\s*.+/.test(line);
+    }
+
+    function parseHeader(line) {
+        // @Name(p:T=v/*comment*/) doc extends Foo alias A | B list ... a // title
+        // 当参数 0 为 result 表示 inline；当参数为 * 表示映射成员。
+        const result = {
+            indent: getIndent(line),
+            name: "",
+            params: [],
+            doc: false,
+            extends: "",
+            alias: "",
+            list: null,
+
+            comment: "",
+            parts: [],
+            codes: [],
+
+            inline: false
+        };
+
+        result.name = line.replace(/^\s*@/, "")
+            .replace(/\/\/\s*(.+)$/, function (_, value) {
+                result.comment = value.trim();
+                return "";
+            })
+            .replace(/\bdoc\b/, function (_, value) {
+                result.doc = true;
+                return "";
+            })
+            .replace(/extends\s+(\w+)/, function (_, value) {
+                result.extends = value.trim();
+                return "";
+            })
+            .replace(/alias\s+(.+)/, function (_, value) {
+                result.alias = value.trim();
+                return "";
+            })
+            .replace(/list\s+(.+)/, function (_, value) {
+                result.list = parseList(value);
+                return "";
+            })
+            .replace(/\(([^)]+?)\)/, function (_, params) {
+                result.params = params.split(/,\s*/).map(parseParam);
+                return "";
+            })
+            .trim();
+
+        // 填充 extends
+        if (!result.extends) {
+            result.extends = "Node";
+            const extendsMap = {
+                "Expression": "Expression",
+                "Statement": "Statement",
+                "Literal": "Expression",
+                "Declaration": "Declaration",
+            }
+            for (const n in extendsMap) {
+                if (result.name.indexOf(n) >= 0 && result.name !== n) {
+                    result.extends = extendsMap[n];
+                    break;
                 }
             }
         }
 
-        return productions;
-
-        function getIndent(line) {
-            return (/\S/.exec(line.replace(/    /g, "\t")) || { index: 0 }).index;
+        // @产生式(result)
+        if (result.params && result.params.length && result.params[0].name === "result") {
+            result.inline = true;
+            result.params[0].comment = result.params[0].comment || "存放结果的目标节点";
         }
 
-        function removeIndent(line, count) {
-            return line.replace(/    /g, "\t").substring(count);
-        }
+        return result;
+    }
 
-        function split2(line, sepeator) {
-            var p = line.indexOf(sepeator);
-            return p >= 0 ? [line.substring(0, p), line.substring(p + sepeator.length)] : [line, ""];
-        }
+    function parseParam(line) {
+        const result = {
+            comment: "",
+            name: "",
+            equal: "",
+            question: false,
+            type: ""
+        };
 
-        function isCode(line) {
-            line = line.trim();
-            return /[\{:;\}\?]$/.test(line) && !/^\?[:;\{\?]$/.test(line);
-        }
-
-        function parseHeader(line) {
-            const result = {
-                indent: getIndent(line),
-                doc: false,
-                extends: "",
-                comment: "",
-                name: "",
-                equals: "",
-                params: [],
-                parts: [],
-                codes: []
-            };
-
-            result.name = line.replace(/^\s*@/, "")
-                .replace(/\/\/\s*(.*)$/, function (_, value) {
-                    result.comment = value.trim();
-                    return "";
-                })
-                .replace(/\bdoc\b/, function (_, value) {
-                    result.doc = true;
-                    return "";
-                })
-                .replace(/extends\s*(\w+)/, function (_, value) {
-                    result.extends = value.trim();
-                    return "";
-                })
-                .replace(/\(([^)]*?)\)/, function (_, params) {
-                    result.params = params.split(/,\s*/).map(parseParam);
-                    return "";
-                })
-                .replace(/=(.*)/, function (_, value) {
-                    result.equals = value.trim();
-                    return "";
-                })
-                .trim();
-            return result;
-        }
-
-        function parseParam(line) {
-            const result = {
-                comment: "",
-                name: "",
-                equal: "",
-                question: false,
-                type: ""
-            };
-            result.name = line.replace(/\/\*(.*)\*\//, function (_, comment) {
+        result.name = line
+            .replace(/\/\*(.+)\*\//, function (_, comment) {
                 result.comment = comment.trim();
                 return "";
             })
-                .replace(/=(.*)/, function (_, value) {
-                    result.equal = value.trim();
-                    return "";
-                })
-                .replace(/:(.*)/, function (_, type) {
-                    result.type = type.trim();
-                    return "";
-                })
-                .replace(/\?/, function (_) {
-                    result.question = true;
-                    return "";
-                })
-                .trim();
-            return result;
+            .replace(/=(.+)/, function (_, value) {
+                result.equal = value.trim();
+                return "";
+            })
+            .replace(/:(.+)/, function (_, type) {
+                result.type = type.trim();
+                return "";
+            })
+            .replace(/\?/, function (_) {
+                result.question = true;
+                return "";
+            })
+            .trim();
+
+        // 未提供注释和类型时，可以使用已提供的注释和类型。
+        if (result.comment && !comments[result.name]) {
+            comments[result.name] = result.comment;
+        }
+        if (result.type && !types[result.name]) {
+            types[result.name] = result.type;
+        }
+        return result;
+    }
+
+    function parseList(line) {
+        // [ ?TupleTypeElement , ...isTypeNodeStart ]
+        const result = {
+            element: "",
+            open: "",
+            close: "",
+            continue: "",
+            seperator: "",
+            optional: false,
+            type: "",
+            equals: ""
+        };
+        let dotDotDot = "";
+
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 5) {
+            result.open = parts[0];
+            result.element = parts[1];
+            result.seperator = parts[2];
+            dotDotDot = parts[3];
+            result.close = parts[4];
+        } else if (parts.length === 4) {
+            result.open = parts[0];
+            result.element = parts[1];
+            dotDotDot = parts[2];
+            result.close = parts[3];
+        } else if (parts.length === 3) {
+            result.element = parts[0];
+            result.seperator = parts[1];
+            dotDotDot = parts[2];
+        } else if (parts.length === 2) {
+            result.element = parts[0];
+            dotDotDot = parts[1];
         }
 
-        function parseCode(line) {
-            return line.replace(/@peek/g, "this.lexer.peek().type")
-            //.replace(/@read/g, "this.lexer.read().start")
-            //.replace(/'(.+)'/g, function (_, t) {
-            //    if (!/^a-z/.test(t)) t = tokenTypes[t];
-            //    return "TokenType." + t;
-            //})
-            //.replace(/@([A-Z])/g, "this.parse$1")
-            //.replace(/@/g, "this.");
+        if (/^\?/.test(result.element)) {
+            result.optional = true;
+            result.element = result.element.substring(1);
         }
 
-        function parsePart(line) {
-            const result = {
-                optional: false,
-                name: "",
-                comment: "",
-                args: "",
-                equals: "",
-                type: ""
-            };
-            result.name = line
-                .replace(/\/\/\s*(.*)$/, function (_, name) {
-                    result.comment = name.trim();
-                    return "";
-                })
-                .replace(/=(.*)/, function (_, value) {
-                    result.equals = value.trim();
-                    return "";
-                })
-                .replace(/\(([^)]*?)\)/, function (_, value) {
-                    result.args = value.trim();
-                    return "";
-                })
-                .replace(/:(.*)/, function (_, value) {
-                    result.type = value.trim();
-                    return "";
-                })
-                .replace(/^\?/g, function () {
-                    result.optional = true;
-                    return "";
-                });
-            return result;
+        if (dotDotDot.length > 3) {
+            result.continue = dotDotDot.substring(3);
         }
 
+        if (result.seperator) {
+            result.equals = `@DelimitedList(@${result.element}, ${result.open ? "'" + result.open + "'" : undefined}, ${result.close ? "'" + result.close + "'" : undefined}, ${result.optional}, ${result.continue ? "@" + result.continue : undefined})`;
+        } else {
+            result.equals = `@NodeList(@${result.element}, ${result.open ? "'" + result.open + "'" : undefined}, ${result.close ? "'" + result.close + "'" : undefined})`;
+        }
+        result.type = "@NodeList<@" + result.element + ">";
+        result.equals = result.equals.replace(', undefined)', ')')
+            .replace(', false)', ')')
+            .replace(', undefined)', ')')
+            .replace(', undefined)', ')');
+
+        listItems.push(result.element);
+
+        return result;
+    }
+
+    function parseCode(line) {
+        return line.replace(/@peek/g, "this.lexer.peek().type")
+        //.replace(/@read/g, "this.lexer.read().start")
+        //.replace(/'(.+)'/g, function (_, t) {
+        //    if (!/^a-z/.test(t)) t = tokenTypes[t];
+        //    return "TokenType." + t;
+        //})
+        //.replace(/@([A-Z])/g, "this.parse$1")
+        //.replace(/@/g, "this.");
+    }
+
+    function parsePart(line) {
+        const result = {
+            optional: false,
+            name: "",
+            comment: "",
+            args: "",
+            equals: "",
+            type: "",
+            tokens: [],
+            list: null
+        };
+
+        result.name = line
+            .replace(/\/\/\s*(.+)$/, function (_, name) {
+                result.comment = name.trim();
+                return "";
+            })
+            .replace(/=(.+)/, function (_, value) {
+                result.equals = value.trim();
+                return "";
+            })
+            .replace(/\(([^)]+?)\)/, function (_, value) {
+                result.args = value.trim();
+                return "";
+            })
+            .replace(/:(.+)/, function (_, value) {
+                result.type = value.trim();
+                return "";
+            })
+            .replace(/^\?/g, function () {
+                result.optional = true;
+                return "";
+            });
+
+        if (!result.type) {
+            result.type = result.name;
+            result.name = "";
+        }
+        if (/^'.*'$/.test(result.type)) {
+            result.tokens = result.type.substring(1, result.type.length - 1).split("'|'");
+            result.name = result.name || ((tokenTypes[result.tokens[0]] || result.tokens[0]) + "Token");
+            result.type = "TokenType";
+            result.comment = result.comment || (result.name + " 的位置");
+        }
+        if (result.optional) {
+            result.comment += "(可能不存在)";
+        }
+        if (result.tokens && result.tokens.length > 1) {
+            result.comment += "。合法的值有：`" + result.tokens.join("`、`") + "`";
+        }
+        if (result.comment && !comments[result.name]) {
+            comments[result.name] = result.comment;
+        }
+        if (result.type.indexOf(" ...") >= 0) {
+            result.list = parseList(result.type);
+            result.equals = result.equals || result.list.equals;
+            result.type = result.type || result.list.type;
+        }
+        return result;
+    }
+
+    function eachProduction(callback) {
+        for (const name in productions) {
+            callback(productions[name]);
+        }
+    }
+
+    function cleanObj(obj) {
+        for (const k in obj) {
+            if (!obj[k]) {
+                delete obj[k];
+            } else if (Array.isArray(obj[k])) {
+                if (!obj[k].length) {
+                    delete obj[k];
+                } else {
+                    obj[k].forEach(cleanObj);
+                }
+            }
+        }
     }
 
 }
