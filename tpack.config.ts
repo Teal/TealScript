@@ -415,7 +415,8 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
             productions[production.name] = production;
             stack.push(production);
             if (production.indent == 0) {
-                rootProductions.push(production.name);
+                production.region = production.comment;
+                rootProductions.push(production.comment);
             }
         } else {
             let production = stack[stack.length - 1];
@@ -434,7 +435,15 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
 
     // #endregion
 
+    // #region 补全和生成信息
+
     eachProduction(function (production) {
+
+        if (production.inline) {
+            production.params[0].type = "{" +
+                production.parts.map(p => p.tokens.length ? "'" + p.tokens[0] + "'?: number" : p.name + "?: " + p.type).join(", ") +
+                "}";
+        }
 
         // 补全参数注释
         for (let i = 0; i < production.params.length; i++) {
@@ -464,7 +473,7 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
 
             // 自动生成 equals
             if (!part.equals) {
-                part.equals = part.type === "TokenType" ? part.tokens && part.tokens.length > 1 ? "@read" : "@readToken('" + part.tokens[0] + "')" : "@" + part.type + "(" + (part.args || "") + ")";
+                part.equals = part.tokens.length ? part.tokens.length > 1 ? "@read" : "@readToken('" + part.tokens[0] + "')" : "@" + part.type + "(" + (part.args || "") + ")";
             }
 
             // 追加内联部分。
@@ -509,9 +518,36 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
         cleanObj(production);
     });
 
-    eachProduction(function (production) {
+    // #endregion
 
+    // #region 生成代码
+
+    const regions = {
+
+    };
+    eachProduction(function (production) {
+        const data = regions[production.region] = {
+            parser: "",
+            nodes: "",
+            nodeVisitor: ""
+        };
+
+        // 生成解析器。
+        data.parser += "\n";
+        data.parser += "\t/**\n";
+        data.parser += "\t * " + production.comment + "\n";
+        data.parser += production.params ? production.params.map(p => "\t * @param " + p.name + " " + p.comment + "\n").join("") : "";
+        data.parser += "\t */";
+        data.parser += "\tprivate parse" + production.name + "(" + (production.params ? production.params.map(p => p.name + (p.equal ? " = " + p.equal : p.type ? " : " + p.type : "")).join(", ") : "") + ") {";
+        production.codes && production.codes.forEach(function (code) {
+            data.parser += "\t\t" + code;
+        });
+        data.parser += "\t}";
+
+        // 生成节点。
     });
+
+    // #endregion
 
     var s = tpack.createFile("d.json");
     s.content = JSON.stringify(productions, null, 4);
@@ -539,6 +575,7 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
         // @Name(p:T=v/*comment*/) doc extends Foo alias A | B list ... a // title
         // 当参数 0 为 result 表示 inline；当参数为 * 表示映射成员。
         const result = {
+            region: rootProductions[rootProductions.length - 1],
             indent: getIndent(line),
             name: "",
             params: [],
@@ -728,12 +765,12 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
             list: null
         };
 
-        result.name = line
+        result.name = line.trim()
             .replace(/\/\/\s*(.+)$/, function (_, name) {
                 result.comment = name.trim();
                 return "";
             })
-            .replace(/=(.+)/, function (_, value) {
+            .replace(/=\s(.+)/, function (_, value) {
                 result.equals = value.trim();
                 return "";
             })
@@ -741,7 +778,7 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
                 result.args = value.trim();
                 return "";
             })
-            .replace(/:(.+)/, function (_, value) {
+            .replace(/:\s(.+)/, function (_, value) {
                 result.type = value.trim();
                 return "";
             })
@@ -754,10 +791,11 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
             result.type = result.name;
             result.name = "";
         }
+
         if (/^'.*'$/.test(result.type)) {
             result.tokens = result.type.substring(1, result.type.length - 1).split("'|'");
             result.name = result.name || ((tokenTypes[result.tokens[0]] || result.tokens[0]) + "Token");
-            result.type = "TokenType";
+            result.type = "number";
             result.comment = result.comment || (result.name + " 的位置");
         }
         if (result.optional) {

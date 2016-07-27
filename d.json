@@ -1,5 +1,6 @@
 {
     "TypeNode": {
+        "region": "类型节点",
         "name": "TypeNode",
         "params": [
             {
@@ -70,6 +71,7 @@
         ]
     },
     "PredefinedTypeNode": {
+        "region": "类型节点",
         "name": "PredefinedTypeNode",
         "extends": "Node",
         "comment": "解析一个内置类型节点(`number`、`string`、...)。",
@@ -78,7 +80,7 @@
                 "name": "type",
                 "comment": "获取当前内置类型节点的类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`。",
                 "equals": "@read",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "any",
                     "number",
@@ -113,6 +115,7 @@
         "classComment": "表示一个内置类型节点(`number`、`string`、...)。"
     },
     "GenericTypeOrTypeReferenceNode": {
+        "region": "类型节点",
         "name": "GenericTypeOrTypeReferenceNode",
         "extends": "Node",
         "comment": "解析一个泛型类型节点(`x<T>`)或类型引用节点(`x`)。",
@@ -125,6 +128,7 @@
         ]
     },
     "GenericTypeNode": {
+        "region": "类型节点",
         "name": "GenericTypeNode",
         "params": [
             {
@@ -158,6 +162,7 @@
         "classComment": "表示一个泛型类型节点(`Array<number>`)。"
     },
     "TypeArguments": {
+        "region": "类型节点",
         "name": "TypeArguments",
         "extends": "Node",
         "list": {
@@ -173,6 +178,7 @@
         "comment": "解析一个类型参数列表(`<number>`)。"
     },
     "TypeArgument": {
+        "region": "类型节点",
         "name": "TypeArgument",
         "extends": "Node",
         "comment": "解析一个类型参数(`number`)。",
@@ -193,6 +199,7 @@
         "classComment": "表示一个类型参数(`number`)。"
     },
     "TypeReferenceNode": {
+        "region": "类型节点",
         "name": "TypeReferenceNode",
         "extends": "TypeNode",
         "comment": "解析一个类型引用节点(`x`)。",
@@ -201,7 +208,7 @@
                 "name": "value",
                 "comment": "获取当前类型引用节点的值部分。",
                 "equals": "@readToken('identifier')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "identifier"
                 ]
@@ -221,6 +228,7 @@
         "classComment": "表示一个类型引用节点(`x`)。"
     },
     "ErrorTypeNode": {
+        "region": "类型节点",
         "name": "ErrorTypeNode",
         "params": [
             {
@@ -239,6 +247,7 @@
         ]
     },
     "FunctionOrParenthesizedTypeNode": {
+        "region": "类型节点",
         "name": "FunctionOrParenthesizedTypeNode",
         "extends": "Node",
         "comment": "解析一个函数(`()=> void`)或括号类型节点(`(x)`)。",
@@ -254,6 +263,7 @@
         ]
     },
     "FunctionTypeNode": {
+        "region": "类型节点",
         "name": "FunctionTypeNode",
         "params": [
             {
@@ -285,9 +295,13 @@
                 "type": "@NodeList<@ParameterDeclaration>"
             },
             {
-                "comment": "获取当前函数类型节点。的(可能不存在)。",
-                "equals": ">'",
-                "type": "'"
+                "name": "=>Token",
+                "comment": "获取当前函数类型节点。的=>Token 的位置。",
+                "equals": "@readToken('=>')",
+                "type": "number",
+                "tokens": [
+                    "=>"
+                ]
             },
             {
                 "name": "returnType",
@@ -300,13 +314,14 @@
             "const result = new @FunctionTypeNode();",
             "result.typeParameters = typeParameters;if (@peek === 'undefined') ",
             "result.parameters = parameters;if (@peek === 'undefined') ",
-            "result. = >';",
+            "result.=>Token = @readToken('=>');",
             "result.returnType = @TypeNode()();",
             "return result;"
         ],
         "classComment": "表示一个函数类型节点(`(x: number) => void`)。。"
     },
     "TypeParameters": {
+        "region": "类型节点",
         "name": "TypeParameters",
         "extends": "Node",
         "list": {
@@ -322,6 +337,7 @@
         "comment": "解析一个类型参数列表(`<T>`)。"
     },
     "TypeParameterDeclaration": {
+        "region": "类型节点",
         "name": "TypeParameterDeclaration",
         "extends": "Declaration",
         "comment": "解析一个类型参数声明(`T`、`T extends R`)。",
@@ -358,6 +374,7 @@
         "classComment": "表示一个类型参数声明(`T`、`T extends R`)。"
     },
     "Parameters": {
+        "region": "类型节点",
         "name": "Parameters",
         "extends": "Node",
         "list": {
@@ -373,6 +390,7 @@
         "comment": "解析一个参数列表(`(x, y)`)。"
     },
     "ParameterDeclaration": {
+        "region": "类型节点",
         "name": "ParameterDeclaration",
         "extends": "Declaration",
         "comment": "解析一个参数声明(`x`、`x?: number`)。",
@@ -389,7 +407,7 @@
                 "name": "...Token",
                 "comment": "获取当前参数声明的...Token 的位置(可能不存在)。",
                 "equals": "@readToken('...')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "..."
                 ]
@@ -405,15 +423,15 @@
                 "name": "?Token",
                 "comment": "获取当前参数声明的?Token 的位置(可能不存在)。",
                 "equals": "@readToken('?')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "?"
                 ]
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -430,7 +448,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -452,10 +471,10 @@
             "result....Token = @readToken('...');if (@peek === '...') ",
             "result.name = @BindingName();",
             "result.?Token = @readToken('?');if (@peek === '?') ",
-            "result.' = undefined;",
+            "result.:Token = undefined;",
             "result.type = undefined;",
             "result. = @TypeAnnotation();if (@peek === 'undefined') ",
-            "result. = undefined;",
+            "result.=Token = undefined;",
             "result.initializer = undefined;",
             "result. = @Initializer();if (@peek === 'undefined') ",
             "return result;"
@@ -463,12 +482,14 @@
         "classComment": "表示一个参数声明(`x`、`x?: number`)。"
     },
     "BindingName": {
+        "region": "类型节点",
         "name": "BindingName",
         "extends": "Node",
         "alias": "Identifier | ArrayBindingPattern | ObjectBindingPattern",
         "comment": "解析一个绑定名称(`x`, `[x]`, `{x: x}`)。"
     },
     "ArrayBindingPattern": {
+        "region": "类型节点",
         "name": "ArrayBindingPattern",
         "extends": "Node",
         "comment": "解析一个数组绑定模式项(`[x]`)。",
@@ -498,6 +519,7 @@
         "classComment": "表示一个数组绑定模式项(`[x]`)。"
     },
     "ArrayBindingElement": {
+        "region": "类型节点",
         "name": "ArrayBindingElement",
         "extends": "Node",
         "comment": "解析一个数组绑定模式项(`x`)。",
@@ -507,7 +529,7 @@
                 "name": "...Token",
                 "comment": "获取当前数组绑定模式项的...Token 的位置(可能不存在)。",
                 "equals": "@readToken('...')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "..."
                 ]
@@ -521,7 +543,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -549,6 +572,7 @@
         "classComment": "表示一个数组绑定模式项(`x`)。"
     },
     "ObjectBindingPattern": {
+        "region": "类型节点",
         "name": "ObjectBindingPattern",
         "extends": "Node",
         "comment": "解析一个对象绑定模式项(`{x: x}`)。",
@@ -578,6 +602,7 @@
         "classComment": "表示一个对象绑定模式项(`{x: x}`)。"
     },
     "ObjectBindingElement": {
+        "region": "类型节点",
         "name": "ObjectBindingElement",
         "extends": "Node",
         "comment": "解析一个对象绑定模式项(`x`)。",
@@ -587,7 +612,7 @@
                 "name": "...Token",
                 "comment": "获取当前对象绑定模式项的...Token 的位置(可能不存在)。",
                 "equals": "@readToken('...')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "..."
                 ]
@@ -600,10 +625,13 @@
             },
             {
                 "optional": true,
-                "name": "'",
-                "comment": "获取当前对象绑定模式项的(可能不存在)。",
-                "equals": "@'()",
-                "type": "'"
+                "name": ":Token",
+                "comment": "获取当前对象绑定模式项的:Token 的位置(可能不存在)。",
+                "equals": "@readToken(':')",
+                "type": "number",
+                "tokens": [
+                    ":"
+                ]
             },
             {
                 "name": "value",
@@ -613,7 +641,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -633,9 +662,9 @@
             "const result = new @ObjectBindingElement();",
             "result....Token = @readToken('...');if (@peek === '...') ",
             "result.key = @PropertyName,();",
-            "result.' = @'();if (@peek === 'undefined') ",
+            "result.:Token = @readToken(':');if (@peek === ':') ",
             "result.value = @BindingName();",
-            "result. = undefined;",
+            "result.=Token = undefined;",
             "result.initializer = undefined;",
             "result. = @Initializer();if (@peek === 'undefined') ",
             "return result;"
@@ -643,6 +672,7 @@
         "classComment": "表示一个对象绑定模式项(`x`)。"
     },
     "PropertyName": {
+        "region": "类型节点",
         "name": "PropertyName",
         "extends": "Node",
         "alias": "Identifier | NumericLiteral | StringLiteral | ComputedPropertyName",
@@ -663,6 +693,7 @@
         ]
     },
     "ComputedPropertyName": {
+        "region": "类型节点",
         "name": "ComputedPropertyName",
         "extends": "Node",
         "comment": "解析一个已计算的属性名(`[1]`)。",
@@ -682,12 +713,13 @@
         "classComment": "表示一个已计算的属性名(`[1]`)。"
     },
     "TypeAnnotation": {
+        "region": "类型节点",
         "name": "TypeAnnotation",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{':'?: number, type?: TypeNode}"
             }
         ],
         "extends": "Node",
@@ -695,10 +727,13 @@
         "parts": [
             {
                 "optional": true,
-                "name": "'",
-                "comment": "获取当前类型注解的(可能不存在)。",
-                "equals": "@'()",
-                "type": "'"
+                "name": ":Token",
+                "comment": "获取当前类型注解的:Token 的位置(可能不存在)。",
+                "equals": "@readToken(':')",
+                "type": "number",
+                "tokens": [
+                    ":"
+                ]
             },
             {
                 "optional": true,
@@ -709,19 +744,20 @@
             }
         ],
         "codes": [
-            "result.' = @'();if (@peek === 'undefined') ",
+            "result.:Token = @readToken(':');if (@peek === ':') ",
             "result.type = @TypeNode();if (@peek === 'undefined') "
         ],
         "inline": true,
         "classComment": "表示一个类型注解(`: number`)。"
     },
     "Initializer": {
+        "region": "类型节点",
         "name": "Initializer",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{'='?: number, initializer?: Expression}"
             },
             {
                 "comment": "是否解析 in 表达式。。",
@@ -734,9 +770,13 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前初始值的(可能不存在)。",
-                "equals": "'",
-                "type": "'"
+                "name": "=Token",
+                "comment": "获取当前初始值的=Token 的位置(可能不存在)。",
+                "equals": "@readToken('=')",
+                "type": "number",
+                "tokens": [
+                    "="
+                ]
             },
             {
                 "optional": true,
@@ -748,13 +788,14 @@
             }
         ],
         "codes": [
-            "result. = ';if (@peek === 'undefined') ",
+            "result.=Token = @readToken('=');if (@peek === '=') ",
             "result.initializer = @Expression(Precedence.assignment, allowIn);if (@peek === 'undefined') "
         ],
         "inline": true,
         "classComment": "表示一个初始值。"
     },
     "ParenthesizedTypeNode": {
+        "region": "类型节点",
         "name": "ParenthesizedTypeNode",
         "extends": "Node",
         "comment": "解析一个括号类型节点(`(number)`)。",
@@ -763,7 +804,7 @@
                 "name": "(Token",
                 "comment": "获取当前括号类型节点的(Token 的位置。",
                 "equals": "@readToken('(')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -778,7 +819,7 @@
                 "name": ")Token",
                 "comment": "获取当前括号类型节点的)Token 的位置。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -794,6 +835,7 @@
         "classComment": "表示一个括号类型节点(`(number)`)。"
     },
     "TupleTypeNode": {
+        "region": "类型节点",
         "name": "TupleTypeNode",
         "extends": "Node",
         "comment": "解析一个元祖类型节点(`[string, number]`)。",
@@ -823,6 +865,7 @@
         "classComment": "表示一个元祖类型节点(`[string, number]`)。"
     },
     "TupleTypeElement": {
+        "region": "类型节点",
         "name": "TupleTypeElement",
         "extends": "Node",
         "comment": "解析一个元祖类型节点元素(`x`)。",
@@ -843,6 +886,7 @@
         "classComment": "表示一个元祖类型节点元素(`x`)。"
     },
     "ObjectTypeNode": {
+        "region": "类型节点",
         "name": "ObjectTypeNode",
         "extends": "Node",
         "comment": "解析一个对象类型节点(`{x: number}`)。",
@@ -872,6 +916,7 @@
         "classComment": "表示一个对象类型节点(`{x: number}`)。"
     },
     "TypeMemberSignature": {
+        "region": "类型节点",
         "name": "TypeMemberSignature",
         "extends": "Node",
         "alias": "PropertySignature | CallSignature | ConstructSignature | IndexSignature | MethodSignature | AccessorSignature",
@@ -919,6 +964,7 @@
         ]
     },
     "PropertySignature": {
+        "region": "类型节点",
         "name": "PropertySignature",
         "params": [
             {
@@ -929,7 +975,7 @@
             {
                 "comment": "undefined。",
                 "name": "?Token",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "doc": true,
@@ -947,15 +993,15 @@
                 "name": "?Token",
                 "comment": "获取当前属性签名的?Token 的位置(可能不存在)。",
                 "equals": "?Token",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "?"
                 ]
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -977,6 +1023,7 @@
         "classComment": "表示一个属性签名(`x: number`)。"
     },
     "CallSignature": {
+        "region": "类型节点",
         "name": "CallSignature",
         "doc": true,
         "extends": "Node",
@@ -990,8 +1037,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -1014,6 +1061,7 @@
         "classComment": "表示一个函数签名(`(): number`)。"
     },
     "ConstructSignature": {
+        "region": "类型节点",
         "name": "ConstructSignature",
         "doc": true,
         "extends": "Node",
@@ -1023,7 +1071,7 @@
                 "name": "newToken",
                 "comment": "获取当前构造函数签名的newToken 的位置。",
                 "equals": "@readToken('new')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "new"
                 ]
@@ -1036,8 +1084,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -1060,6 +1108,7 @@
         "classComment": "表示一个构造函数签名(`new x(): number`)。"
     },
     "IndexSignature": {
+        "region": "类型节点",
         "name": "IndexSignature",
         "doc": true,
         "extends": "Node",
@@ -1069,7 +1118,7 @@
                 "name": "[Token",
                 "comment": "获取当前索引器声明的[Token 的位置。",
                 "equals": "@readToken('[')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "["
                 ]
@@ -1082,8 +1131,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -1102,15 +1151,15 @@
                 "name": "]Token",
                 "comment": "获取当前索引器声明的]Token 的位置。",
                 "equals": "@readToken(']')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "]"
                 ]
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -1132,6 +1181,7 @@
         "classComment": "表示一个索引器声明(`get x() {...}`、`set x(value) {...}`)。"
     },
     "MethodSignature": {
+        "region": "类型节点",
         "name": "MethodSignature",
         "params": [
             {
@@ -1142,7 +1192,7 @@
             {
                 "comment": "undefined。",
                 "name": "?Token",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "doc": true,
@@ -1160,7 +1210,7 @@
                 "name": "?Token",
                 "comment": "获取当前方法签名的?Token 的位置(可能不存在)。",
                 "equals": "?Token",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "?"
                 ]
@@ -1173,8 +1223,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -1197,17 +1247,18 @@
         "classComment": "表示一个方法签名(`x(): number`)。"
     },
     "AccessorSignature": {
+        "region": "类型节点",
         "name": "AccessorSignature",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "getToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
                 "name": "setToken",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "doc": true,
@@ -1219,7 +1270,7 @@
                 "name": "getToken",
                 "comment": "获取当前访问器签名的getToken 的位置(可能不存在)。",
                 "equals": "getToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "get"
                 ]
@@ -1229,7 +1280,7 @@
                 "name": "setToken",
                 "comment": "获取当前访问器签名的setToken 的位置(可能不存在)。",
                 "equals": "setToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "set"
                 ]
@@ -1245,15 +1296,15 @@
                 "name": "?Token",
                 "comment": "获取当前访问器签名的?Token 的位置(可能不存在)。",
                 "equals": "@readToken('?')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "?"
                 ]
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -1276,12 +1327,13 @@
         "classComment": "表示一个访问器签名(`get x(): number`、`set x(value): void`)。"
     },
     "ObjectMemberTail": {
+        "region": "类型节点",
         "name": "ObjectMemberTail",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{','?: number, ';'?: number}"
             }
         ],
         "extends": "Node",
@@ -1292,7 +1344,7 @@
                 "name": ",Token",
                 "comment": "获取当前对象成员尾部的,Token 的位置(可能不存在)。",
                 "equals": "@readToken(',')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ","
                 ]
@@ -1302,7 +1354,7 @@
                 "name": ";Token",
                 "comment": "获取当前对象成员尾部的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -1321,6 +1373,7 @@
         "classComment": "表示一个对象成员尾部。"
     },
     "ConstructorTypeNode": {
+        "region": "类型节点",
         "name": "ConstructorTypeNode",
         "extends": "Node",
         "comment": "解析一个构造函数类型节点(`new () => void`)。",
@@ -1329,7 +1382,7 @@
                 "name": "newToken",
                 "comment": "获取当前构造函数类型节点的newToken 的位置。",
                 "equals": "@readToken('new')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "new"
                 ]
@@ -1341,9 +1394,13 @@
                 "type": "@NodeList<@TypeParameterDeclaration>"
             },
             {
-                "comment": "获取当前构造函数类型节点的(可能不存在)。",
-                "equals": ">'",
-                "type": "'"
+                "name": "=>Token",
+                "comment": "获取当前构造函数类型节点的=>Token 的位置。",
+                "equals": "@readToken('=>')",
+                "type": "number",
+                "tokens": [
+                    "=>"
+                ]
             },
             {
                 "name": "return",
@@ -1358,6 +1415,7 @@
         "classComment": "表示一个构造函数类型节点(`new () => void`)。"
     },
     "TypeQueryNode": {
+        "region": "类型节点",
         "name": "TypeQueryNode",
         "extends": "TypeNode",
         "comment": "解析一个类型查询节点(`typeof x`)。",
@@ -1366,7 +1424,7 @@
                 "name": "typeofToken",
                 "comment": "获取当前类型查询节点的typeofToken 的位置。",
                 "equals": "@readToken('typeof')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "typeof"
                 ]
@@ -1388,6 +1446,7 @@
         "classComment": "表示一个类型查询节点(`typeof x`)。"
     },
     "LiteralTypeNode": {
+        "region": "类型节点",
         "name": "LiteralTypeNode",
         "extends": "Expression",
         "comment": "解析一个字面量类型节点(`\"abc\"`、`true`)。",
@@ -1408,6 +1467,7 @@
         "classComment": "表示一个字面量类型节点(`\"abc\"`、`true`)。"
     },
     "QualifiedNameTypeNode": {
+        "region": "类型节点",
         "name": "QualifiedNameTypeNode",
         "params": [
             {
@@ -1429,7 +1489,7 @@
                 "name": ".Token",
                 "comment": "获取当前限定名称类型节点的.Token 的位置。",
                 "equals": "@readToken('.')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "."
                 ]
@@ -1452,6 +1512,7 @@
         "classComment": "表示一个限定名称类型节点(`\"abc\"`、`true`)。"
     },
     "ArrayTypeNode": {
+        "region": "类型节点",
         "name": "ArrayTypeNode",
         "params": [
             {
@@ -1473,7 +1534,7 @@
                 "name": "[Token",
                 "comment": "获取当前数组类型节点的[Token 的位置。",
                 "equals": "@readToken('[')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "["
                 ]
@@ -1482,7 +1543,7 @@
                 "name": "]Token",
                 "comment": "获取当前数组类型节点的]Token 的位置。",
                 "equals": "@readToken(']')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "]"
                 ]
@@ -1498,6 +1559,7 @@
         "classComment": "表示一个数组类型节点(`T[]`)。"
     },
     "BinaryTypeNode": {
+        "region": "类型节点",
         "name": "BinaryTypeNode",
         "params": [
             {
@@ -1519,7 +1581,7 @@
                 "name": "operator",
                 "comment": "获取当前双目表达式的运算类型。合法的值有：`&`、`|`、`is`。",
                 "equals": "@read",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "&",
                     "|",
@@ -1544,6 +1606,7 @@
         "classComment": "表示一个双目表达式(x + y、x = y、...)。"
     },
     "Expression": {
+        "region": "表达式",
         "name": "Expression",
         "params": [
             {
@@ -1678,6 +1741,7 @@
         ]
     },
     "ArrowFunctionOrGenericExpressionOrIdentifier": {
+        "region": "表达式",
         "name": "ArrowFunctionOrGenericExpressionOrIdentifier",
         "params": [
             {
@@ -1711,6 +1775,7 @@
         ]
     },
     "GenericExpression": {
+        "region": "表达式",
         "name": "GenericExpression",
         "params": [
             {
@@ -1749,6 +1814,7 @@
         "classComment": "表示一个泛型表达式(`x<number>`)。"
     },
     "Identifier": {
+        "region": "表达式",
         "name": "Identifier",
         "params": [
             {
@@ -1764,7 +1830,7 @@
                 "name": "value",
                 "comment": "获取当前标识符的值部分。",
                 "equals": "@readToken('identifier')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "identifier"
                 ]
@@ -1784,6 +1850,7 @@
         "classComment": "表示一个标识符(`x`)。"
     },
     "ErrorIdentifier": {
+        "region": "表达式",
         "name": "ErrorIdentifier",
         "params": [
             {
@@ -1802,6 +1869,7 @@
         ]
     },
     "SimpleLiteral": {
+        "region": "表达式",
         "name": "SimpleLiteral",
         "extends": "Expression",
         "comment": "解析一个简单字面量(`null`、`true`、`false`、`this`、`super`)。",
@@ -1810,7 +1878,7 @@
                 "name": "type",
                 "comment": "获取当前简单字面量的类型。合法的值有：`this`、`null`、`true`、`false`、`super`。",
                 "equals": "@read",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "this",
                     "null",
@@ -1828,6 +1896,7 @@
         "classComment": "表示一个简单字面量(`null`、`true`、`false`、`this`、`super`)。"
     },
     "ArrowFunctionOrParenthesizedExpression": {
+        "region": "表达式",
         "name": "ArrowFunctionOrParenthesizedExpression",
         "params": [
             {
@@ -1850,6 +1919,7 @@
         ]
     },
     "ArrowFunctionExpression": {
+        "region": "表达式",
         "name": "ArrowFunctionExpression",
         "params": [
             {
@@ -1899,8 +1969,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -1928,6 +1998,7 @@
         "classComment": "表示一个箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。。"
     },
     "ParenthesizedExpression": {
+        "region": "表达式",
         "name": "ParenthesizedExpression",
         "extends": "Expression",
         "comment": "解析一个括号表达式(`(x)`)。",
@@ -1936,7 +2007,7 @@
                 "name": "(Token",
                 "comment": "获取当前括号表达式的(Token 的位置。",
                 "equals": "@readToken('(')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -1951,7 +2022,7 @@
                 "name": ")Token",
                 "comment": "获取当前括号表达式的)Token 的位置。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -1967,6 +2038,7 @@
         "classComment": "表示一个括号表达式(`(x)`)。"
     },
     "NumericLiteral": {
+        "region": "表达式",
         "name": "NumericLiteral",
         "extends": "Expression",
         "comment": "解析一个数字字面量(`1`)。",
@@ -1975,7 +2047,7 @@
                 "name": "value",
                 "comment": "获取当前数字字面量的value 的位置。",
                 "equals": "@readToken('numericLiteral')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "numericLiteral"
                 ]
@@ -1989,6 +2061,7 @@
         "classComment": "表示一个数字字面量(`1`)。"
     },
     "StringLiteral": {
+        "region": "表达式",
         "name": "StringLiteral",
         "extends": "Expression",
         "comment": "解析一个字符串字面量(`'abc'`、`\"abc\"`、`\\`abc\\``)。",
@@ -1997,7 +2070,7 @@
                 "name": "value",
                 "comment": "获取当前字符串字面量的value 的位置。",
                 "equals": "@readToken('stringLiteral')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "stringLiteral"
                 ]
@@ -2011,6 +2084,7 @@
         "classComment": "表示一个字符串字面量(`'abc'`、`\"abc\"`、`\\`abc\\``)。"
     },
     "ArrayLiteral": {
+        "region": "表达式",
         "name": "ArrayLiteral",
         "extends": "Expression",
         "comment": "解析一个数组字面量(`[x, y]`)。",
@@ -2040,6 +2114,7 @@
         "classComment": "表示一个数组字面量(`[x, y]`)。"
     },
     "ArrayLiteralElement": {
+        "region": "表达式",
         "name": "ArrayLiteralElement",
         "extends": "Expression",
         "comment": "解析一个数组字面量元素(`x`)。",
@@ -2049,7 +2124,7 @@
                 "name": "...Token",
                 "comment": "获取当前数组字面量元素的...Token 的位置(可能不存在)。",
                 "equals": "@readToken('...')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "..."
                 ]
@@ -2074,6 +2149,7 @@
         "classComment": "表示一个数组字面量元素(`x`)。"
     },
     "ObjectLiteral": {
+        "region": "表达式",
         "name": "ObjectLiteral",
         "extends": "Expression",
         "comment": "解析一个对象字面量(`{x: y}`)。",
@@ -2103,6 +2179,7 @@
         "classComment": "表示一个对象字面量(`{x: y}`)。"
     },
     "ObjectLiteralElement": {
+        "region": "表达式",
         "name": "ObjectLiteralElement",
         "extends": "Expression",
         "alias": "ObjectPropertyDeclaration | ObjectMethodDeclaration | ObjectAccessorDeclaration",
@@ -2135,6 +2212,7 @@
         ]
     },
     "ObjectAccessorDeclaration": {
+        "region": "表达式",
         "name": "ObjectAccessorDeclaration",
         "params": [
             {
@@ -2144,12 +2222,12 @@
             {
                 "comment": "undefined。",
                 "name": "getToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
                 "name": "setToken",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "doc": true,
@@ -2167,7 +2245,7 @@
                 "name": "getToken",
                 "comment": "获取当前访问器声明的getToken 的位置(可能不存在)。",
                 "equals": "getToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "get"
                 ]
@@ -2177,7 +2255,7 @@
                 "name": "setToken",
                 "comment": "获取当前访问器声明的setToken 的位置(可能不存在)。",
                 "equals": "setToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "set"
                 ]
@@ -2190,8 +2268,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -2208,7 +2286,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=>Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -2220,7 +2299,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -2237,6 +2316,7 @@
         "classComment": "表示一个访问器声明(`get x() {...}`、`set x(value) {...}`)。"
     },
     "ObjectMethodDeclaration": {
+        "region": "表达式",
         "name": "ObjectMethodDeclaration",
         "params": [
             {
@@ -2246,7 +2326,7 @@
             {
                 "comment": "undefined。",
                 "name": "*Token",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
@@ -2269,7 +2349,7 @@
                 "name": "*Token",
                 "comment": "获取当前方法声明的*Token 的位置(可能不存在)。",
                 "equals": "*Token",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "*"
                 ]
@@ -2289,8 +2369,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -2307,7 +2387,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=>Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -2319,7 +2400,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -2336,6 +2417,7 @@
         "classComment": "表示一个方法声明(`x() {...}`)。"
     },
     "ObjectPropertyDeclaration": {
+        "region": "表达式",
         "name": "ObjectPropertyDeclaration",
         "params": [
             {
@@ -2349,8 +2431,8 @@
             },
             {
                 "comment": "undefined。",
-                "name": "'",
-                "type": "'"
+                "name": ":Token",
+                "type": "number"
             }
         ],
         "doc": true,
@@ -2371,16 +2453,23 @@
             },
             {
                 "optional": true,
-                "name": "'",
-                "comment": "获取当前属性声明的(可能不存在)。",
-                "equals": "'",
-                "type": "'"
+                "name": ":Token",
+                "comment": "获取当前属性声明的:Token 的位置(可能不存在)。",
+                "equals": ":Token",
+                "type": "number",
+                "tokens": [
+                    ":"
+                ]
             },
             {
                 "optional": true,
-                "comment": "获取当前属性声明的(可能不存在)。",
-                "equals": "'",
-                "type": "'"
+                "name": "=Token",
+                "comment": "获取当前属性声明的=Token 的位置(可能不存在)。",
+                "equals": "@readToken('=')",
+                "type": "number",
+                "tokens": [
+                    "="
+                ]
             },
             {
                 "optional": true,
@@ -2411,6 +2500,7 @@
         "classComment": "表示一个属性声明(`x: y`)。"
     },
     "NewTargetOrNewExpression": {
+        "region": "表达式",
         "name": "NewTargetOrNewExpression",
         "extends": "Expression",
         "comment": "解析一个new.target(`new.target`) 或 new 表达式(`new x()`)。",
@@ -2423,12 +2513,13 @@
         ]
     },
     "NewTargetExpression": {
+        "region": "表达式",
         "name": "NewTargetExpression",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "newToken",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "extends": "Expression",
@@ -2438,7 +2529,7 @@
                 "name": "newToken",
                 "comment": "获取当前new.target 表达式的newToken 的位置。",
                 "equals": "newToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "new"
                 ]
@@ -2447,7 +2538,7 @@
                 "name": ".Token",
                 "comment": "获取当前new.target 表达式的.Token 的位置。",
                 "equals": "@readToken('.')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "."
                 ]
@@ -2468,12 +2559,13 @@
         "classComment": "表示一个new.target 表达式(`new.target`)。"
     },
     "NewExpression": {
+        "region": "表达式",
         "name": "NewExpression",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "newToken",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "extends": "Expression",
@@ -2483,7 +2575,7 @@
                 "name": "newToken",
                 "comment": "获取当前new 表达式的newToken 的位置。",
                 "equals": "newToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "new"
                 ]
@@ -2513,6 +2605,7 @@
         "classComment": "表示一个new 表达式(`new x()`、`new x`)。"
     },
     "RegularExpressionLiteral": {
+        "region": "表达式",
         "name": "RegularExpressionLiteral",
         "extends": "Expression",
         "comment": "解析一个正则表达式字面量(/abc/)。",
@@ -2521,7 +2614,7 @@
                 "name": "value",
                 "comment": "获取当前正则表达式字面量的value 的位置。",
                 "equals": "@readToken('stringLiteral')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "stringLiteral"
                 ]
@@ -2531,7 +2624,7 @@
                 "name": "flags",
                 "comment": "获取当前正则表达式字面量的标志部分(可能不存在)。",
                 "equals": "@readToken('stringLiteral')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "stringLiteral"
                 ]
@@ -2549,6 +2642,7 @@
         "classComment": "表示一个正则表达式字面量(/abc/)。"
     },
     "TemplateLiteral": {
+        "region": "表达式",
         "name": "TemplateLiteral",
         "extends": "Expression",
         "comment": "解析一个模板字面量(`\\`abc\\``)。",
@@ -2580,6 +2674,7 @@
         "classComment": "表示一个模板字面量(`\\`abc\\``)。"
     },
     "TemplateSpan": {
+        "region": "表达式",
         "name": "TemplateSpan",
         "extends": "Node",
         "comment": "解析一个模板文本区块(`\\`abc${`、`}abc${`、`}abc\\``)。",
@@ -2588,7 +2683,7 @@
                 "name": "value",
                 "comment": "获取当前模板文本区块的value 的位置。",
                 "equals": "@readToken('stringLiteral')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "stringLiteral"
                 ]
@@ -2602,6 +2697,7 @@
         "classComment": "表示一个模板文本区块(`\\`abc${`、`}abc${`、`}abc\\``)。"
     },
     "ArrowFunctionOrTypeAssertionExpression": {
+        "region": "表达式",
         "name": "ArrowFunctionOrTypeAssertionExpression",
         "params": [
             {
@@ -2625,6 +2721,7 @@
         ]
     },
     "TypeAssertionExpression()": {
+        "region": "表达式",
         "name": "TypeAssertionExpression()",
         "extends": "Expression",
         "comment": "解析一个类型确认表达式(<T>xx)。",
@@ -2633,7 +2730,7 @@
                 "name": "<Token",
                 "comment": "获取当前类型确认表达式的<Token 的位置。",
                 "equals": "@readToken('<')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "<"
                 ]
@@ -2648,7 +2745,7 @@
                 "name": ">Token",
                 "comment": "获取当前类型确认表达式的>Token 的位置。",
                 "equals": "@readToken('>')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ">"
                 ]
@@ -2672,6 +2769,7 @@
         "classComment": "表示一个类型确认表达式(<T>xx)。"
     },
     "YieldExpression": {
+        "region": "表达式",
         "name": "YieldExpression",
         "params": [
             {
@@ -2687,7 +2785,7 @@
                 "name": "yieldToken",
                 "comment": "获取当前yield 表达式的yieldToken 的位置。",
                 "equals": "@readToken('yield')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "yield"
                 ]
@@ -2697,7 +2795,7 @@
                 "name": "*Token",
                 "comment": "获取当前yield 表达式的*Token 的位置(可能不存在)。",
                 "equals": "@readToken('*')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "*"
                 ]
@@ -2721,6 +2819,7 @@
         "classComment": "表示一个yield 表达式(`yield xx`)。"
     },
     "AwaitExpressionOrIdentifier": {
+        "region": "表达式",
         "name": "AwaitExpressionOrIdentifier",
         "params": [
             {
@@ -2742,12 +2841,13 @@
         ]
     },
     "AwaitExpression": {
+        "region": "表达式",
         "name": "AwaitExpression",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "awaitToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "是否解析 in 表达式。。",
@@ -2762,7 +2862,7 @@
                 "name": "awaitToken",
                 "comment": "获取当前await 表达式的awaitToken 的位置。",
                 "equals": "awaitToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "await"
                 ]
@@ -2784,6 +2884,7 @@
         "classComment": "表示一个await 表达式(`await xx`)。"
     },
     "AsyncArrowFunctionOrIdentifier": {
+        "region": "表达式",
         "name": "AsyncArrowFunctionOrIdentifier",
         "params": [
             {
@@ -2810,6 +2911,7 @@
         ]
     },
     "UnaryExpression": {
+        "region": "表达式",
         "name": "UnaryExpression",
         "extends": "Expression",
         "comment": "解析一个一元运算表达式(`+x`、`typeof x`、...)。",
@@ -2818,7 +2920,7 @@
                 "name": "operator",
                 "comment": "获取当前一元运算表达式的operator 的位置。合法的值有：`delete`、`void`、`typeof`、`+`、`-`、`~`、`!`、`++`、`--`、`...`。",
                 "equals": "@read",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "delete",
                     "void",
@@ -2849,6 +2951,7 @@
         "classComment": "表示一个一元运算表达式(`+x`、`typeof x`、...)。"
     },
     "MemberCallExpression": {
+        "region": "表达式",
         "name": "MemberCallExpression",
         "params": [
             {
@@ -2870,7 +2973,7 @@
                 "name": ".Token",
                 "comment": "获取当前成员调用表达式的.Token 的位置。",
                 "equals": "@readToken('.')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "."
                 ]
@@ -2892,6 +2995,7 @@
         "classComment": "表示一个成员调用表达式(x.y)。"
     },
     "MemberCallArgument": {
+        "region": "表达式",
         "name": "MemberCallArgument",
         "extends": "Node",
         "comment": "解析一个成员调用参数。",
@@ -2909,6 +3013,7 @@
         ]
     },
     "FunctionCallExpression": {
+        "region": "表达式",
         "name": "FunctionCallExpression",
         "params": [
             {
@@ -2942,6 +3047,7 @@
         "classComment": "表示一个函数调用表达式(`x()`)。"
     },
     "Arguments": {
+        "region": "表达式",
         "name": "Arguments",
         "extends": "Node",
         "list": {
@@ -2957,15 +3063,20 @@
         "comment": "解析一个函数调用参数列表。"
     },
     "Argument": {
+        "region": "表达式",
         "name": "Argument",
         "extends": "Node",
         "comment": "解析一个函数调用参数(`x`)。",
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前函数调用参数的(可能不存在)。",
-                "equals": "@...()",
-                "type": "..."
+                "name": "...Token",
+                "comment": "获取当前函数调用参数的...Token 的位置(可能不存在)。",
+                "equals": "@readToken('...')",
+                "type": "number",
+                "tokens": [
+                    "..."
+                ]
             },
             {
                 "name": "value",
@@ -2977,13 +3088,14 @@
         ],
         "codes": [
             "const result = new @Argument();",
-            "result. = @...();if (@peek === 'undefined') ",
+            "result....Token = @readToken('...');if (@peek === '...') ",
             "result.value = @Expression(Precedence.assignment);",
             "return result;"
         ],
         "classComment": "表示一个函数调用参数(`x`)。"
     },
     "IndexCallExpression": {
+        "region": "表达式",
         "name": "IndexCallExpression",
         "params": [
             {
@@ -3005,7 +3117,7 @@
                 "name": "[Token",
                 "comment": "获取当前索引调用表达式的[Token 的位置。",
                 "equals": "@readToken('[')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "["
                 ]
@@ -3020,7 +3132,7 @@
                 "name": "]Token",
                 "comment": "获取当前索引调用表达式的]Token 的位置。",
                 "equals": "@readToken(']')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "]"
                 ]
@@ -3037,6 +3149,7 @@
         "classComment": "表示一个索引调用表达式(`x[y]`)。"
     },
     "ConditionalExpression": {
+        "region": "表达式",
         "name": "ConditionalExpression",
         "params": [
             {
@@ -3085,6 +3198,7 @@
         "classComment": "表示一个条件表达式(`x ? y : z`)。"
     },
     "PostfixExpression": {
+        "region": "表达式",
         "name": "PostfixExpression",
         "params": [
             {
@@ -3107,7 +3221,7 @@
                 "name": "operator",
                 "comment": "获取当前后缀表达式的operator 的位置。合法的值有：`++`、`--`。",
                 "equals": "@read",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "++",
                     "--"
@@ -3123,6 +3237,7 @@
         "classComment": "表示一个后缀表达式(`x++`、`x--`)。"
     },
     "TemplateCallExpression": {
+        "region": "表达式",
         "name": "TemplateCallExpression",
         "params": [
             {
@@ -3161,6 +3276,7 @@
         "classComment": "表示一个模板调用表达式(`x\\`abc\\``)。"
     },
     "BinaryExpression": {
+        "region": "表达式",
         "name": "BinaryExpression",
         "params": [
             {
@@ -3185,28 +3301,68 @@
             },
             {
                 "name": "operator",
-                "comment": "获取当前双目表达式的运算类型。",
-                "equals": "'|'/='|'%='|'+='|'‐='|'<<='|'>>='|'>>>='|'&='|'^='|'|='|'**='|'='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|'>'|'<='|'>='|'instanceof'|'in'|'<<'|'>>'|'>>>'|'+'|'-'|'*'|'/'|'%'|'**'",
-                "type": "','|'*"
+                "comment": "获取当前双目表达式的运算类型。合法的值有：`,`、`*=`、`/=`、`%=`、`+=`、`‐=`、`<<=`、`>>=`、`>>>=`、`&=`、`^=`、`|=`、`**=`、`=`、`||`、`&&`、`|`、`^`、`&`、`==`、`!=`、`===`、`!==`、`<`、`>`、`<=`、`>=`、`instanceof`、`in`、`<<`、`>>`、`>>>`、`+`、`-`、`*`、`/`、`%`、`**`。",
+                "equals": "@read",
+                "type": "number",
+                "tokens": [
+                    ",",
+                    "*=",
+                    "/=",
+                    "%=",
+                    "+=",
+                    "‐=",
+                    "<<=",
+                    ">>=",
+                    ">>>=",
+                    "&=",
+                    "^=",
+                    "|=",
+                    "**=",
+                    "=",
+                    "||",
+                    "&&",
+                    "|",
+                    "^",
+                    "&",
+                    "==",
+                    "!=",
+                    "===",
+                    "!==",
+                    "<",
+                    ">",
+                    "<=",
+                    ">=",
+                    "instanceof",
+                    "in",
+                    "<<",
+                    ">>",
+                    ">>>",
+                    "+",
+                    "-",
+                    "*",
+                    "/",
+                    "%",
+                    "**"
+                ]
             },
             {
                 "name": "right",
                 "comment": "获取当前双目表达式的右值部分。",
-                "args": "getPrecedence(result.operator",
-                "equals": "@Expression + (isRightHandOperator(result.operator) ? 0 : 1), allowIn)(getPrecedence(result.operator)",
-                "type": "Expression + (isRightHandOperator(result.operator) ? 0 : 1), allowIn)"
+                "equals": "@Expression()",
+                "type": "Expression"
             }
         ],
         "codes": [
             "const result = new @BinaryExpression();",
             "result.left = left;",
-            "result.operator = '|'/='|'%='|'+='|'‐='|'<<='|'>>='|'>>>='|'&='|'^='|'|='|'**='|'='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|'>'|'<='|'>='|'instanceof'|'in'|'<<'|'>>'|'>>>'|'+'|'-'|'*'|'/'|'%'|'**';",
-            "result.right = @Expression + (isRightHandOperator(result.operator) ? 0 : 1), allowIn)(getPrecedence(result.operator);",
+            "result.operator = @read;",
+            "result.right = Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn);",
             "return result;"
         ],
         "classComment": "表示一个双目表达式(x + y、x = y、...)。"
     },
     "Statement": {
+        "region": "语句",
         "name": "Statement",
         "extends": "Node",
         "comment": "解析一个语句。",
@@ -3234,6 +3390,7 @@
         ]
     },
     "LabeledOrExpressionStatement": {
+        "region": "语句",
         "name": "LabeledOrExpressionStatement",
         "params": [
             {
@@ -3252,6 +3409,7 @@
         ]
     },
     "LabelledStatement": {
+        "region": "语句",
         "name": "LabelledStatement",
         "params": [
             {
@@ -3271,10 +3429,13 @@
                 "type": "Identifier"
             },
             {
-                "name": "'",
-                "comment": "获取当前标签语句的(可能不存在)。",
-                "equals": "@'()",
-                "type": "'"
+                "name": ":Token",
+                "comment": "获取当前标签语句的:Token 的位置。",
+                "equals": "@readToken(':')",
+                "type": "number",
+                "tokens": [
+                    ":"
+                ]
             },
             {
                 "name": "statement",
@@ -3286,13 +3447,14 @@
         "codes": [
             "const result = new @LabelledStatement();",
             "result.label = label;",
-            "result.' = @'();",
+            "result.:Token = @readToken(':');",
             "result.statement = @Statement();",
             "return result;"
         ],
         "classComment": "表示一个标签语句(`x: ...`)。"
     },
     "ExpressionStatement": {
+        "region": "语句",
         "name": "ExpressionStatement",
         "params": [
             {
@@ -3320,6 +3482,7 @@
         "classComment": "表示一个表达式语句(`x();`)。"
     },
     "BlockStatement": {
+        "region": "语句",
         "name": "BlockStatement",
         "extends": "Statement",
         "comment": "解析一个语句块(`{...}`)。",
@@ -3349,6 +3512,7 @@
         "classComment": "表示一个语句块(`{...}`)。"
     },
     "VariableStatement:": {
+        "region": "语句",
         "name": "VariableStatement:",
         "params": [
             {
@@ -3374,7 +3538,7 @@
                 "name": "type",
                 "comment": "获取当前变量声明语句的type 的位置。合法的值有：`var`、`let`、`const`。",
                 "equals": "@read",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "var",
                     "let",
@@ -3408,6 +3572,7 @@
         "classComment": "表示一个变量声明语句(`var x`、`let x`、`const x`)。"
     },
     "VariableDeclarationWithoutIn()": {
+        "region": "语句",
         "name": "VariableDeclarationWithoutIn()",
         "extends": "Declaration",
         "comment": "解析一个变量声明（不带 in）。",
@@ -3416,6 +3581,7 @@
         ]
     },
     "VariableDeclaration": {
+        "region": "语句",
         "name": "VariableDeclaration",
         "params": [
             {
@@ -3435,8 +3601,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -3453,7 +3619,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -3473,10 +3640,10 @@
         "codes": [
             "const result = new @VariableDeclaration();",
             "result.mame = @BindingName();",
-            "result.' = undefined;",
+            "result.:Token = undefined;",
             "result.type = undefined;",
             "result. = @TypeAnnotation();if (@peek === 'undefined') ",
-            "result.undefined = undefined;",
+            "result.=Token = undefined;",
             "result.initializer = undefined;",
             "result. = @Initializer(allowIn);if (@peek === 'undefined') ",
             "return result;"
@@ -3484,6 +3651,7 @@
         "classComment": "表示一个变量声明(`x = 1`、`[x] = [1]`、`{a: x} = {a: 1}`)。"
     },
     "VariableOrExpressionStatement": {
+        "region": "语句",
         "name": "VariableOrExpressionStatement",
         "params": [
             {
@@ -3513,6 +3681,7 @@
         ]
     },
     "IfStatement": {
+        "region": "语句",
         "name": "IfStatement",
         "extends": "Statement",
         "comment": "解析一个if 语句(`if (x) ...`)。",
@@ -3521,7 +3690,7 @@
                 "name": "ifToken",
                 "comment": "获取当前if 语句的ifToken 的位置。",
                 "equals": "@readToken('if')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "if"
                 ]
@@ -3537,7 +3706,7 @@
                 "name": "elseToken",
                 "comment": "获取当前if 语句的elseToken 的位置(可能不存在)。",
                 "equals": "@readToken('else')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "else"
                 ]
@@ -3565,12 +3734,13 @@
         "classComment": "表示一个if 语句(`if (x) ...`)。"
     },
     "Condition": {
+        "region": "语句",
         "name": "Condition",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{'('?: number, condition?: Expression(), ')'?: number}"
             }
         ],
         "extends": "Node",
@@ -3581,7 +3751,7 @@
                 "name": "(Token",
                 "comment": "获取当前条件表达式的(Token 的位置(可能不存在)。",
                 "equals": "@readToken('(')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -3597,7 +3767,7 @@
                 "name": ")Token",
                 "comment": "获取当前条件表达式的)Token 的位置(可能不存在)。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -3613,6 +3783,7 @@
         "classComment": "表示一个条件表达式。"
     },
     "EmbeddedStatement": {
+        "region": "语句",
         "name": "EmbeddedStatement",
         "extends": "Statement",
         "comment": "解析一个内嵌语句。",
@@ -3621,6 +3792,7 @@
         ]
     },
     "ForOrForInOrForOfOrForToStatement": {
+        "region": "语句",
         "name": "ForOrForInOrForOfOrForToStatement",
         "extends": "Statement",
         "comment": "解析一个for 或 for..in 或 for..of 或 for..to 语句。",
@@ -3644,17 +3816,18 @@
         ]
     },
     "ForStatement": {
+        "region": "语句",
         "name": "ForStatement",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "forToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
                 "name": "(Token",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
@@ -3669,7 +3842,7 @@
                 "name": "forToken",
                 "comment": "获取当前for 语句的forToken 的位置。",
                 "equals": "forToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "for"
                 ]
@@ -3679,7 +3852,7 @@
                 "name": "(Token",
                 "comment": "获取当前for 语句的(Token 的位置(可能不存在)。",
                 "equals": "(Token",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -3695,7 +3868,7 @@
                 "name": "firstSemicolon",
                 "comment": "获取当前for 语句的条件部分中首个分号。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -3711,7 +3884,7 @@
                 "name": "secondSemicolon",
                 "comment": "获取当前for 语句的条件部分中第二个分号。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -3728,7 +3901,7 @@
                 "name": ")Token",
                 "comment": "获取当前for 语句的)Token 的位置(可能不存在)。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -3756,17 +3929,18 @@
         "classComment": "表示一个for 语句(`for(var i = 0; i < 9; i++) ...`)。"
     },
     "ForInStatement": {
+        "region": "语句",
         "name": "ForInStatement",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "forToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
                 "name": "(Token",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
@@ -3781,7 +3955,7 @@
                 "name": "forToken",
                 "comment": "获取当前for..in 语句的forToken 的位置。",
                 "equals": "forToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "for"
                 ]
@@ -3791,7 +3965,7 @@
                 "name": "(Token",
                 "comment": "获取当前for..in 语句的(Token 的位置(可能不存在)。",
                 "equals": "(Token",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -3806,7 +3980,7 @@
                 "name": "inToken",
                 "comment": "获取当前for..in 语句的inToken 的位置。",
                 "equals": "@readToken('in')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "in"
                 ]
@@ -3822,7 +3996,7 @@
                 "name": ")Token",
                 "comment": "获取当前for..in 语句的)Token 的位置(可能不存在)。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -3848,17 +4022,18 @@
         "classComment": "表示一个for..in 语句(`for(var x in y) ...`)。"
     },
     "ForOfStatement": {
+        "region": "语句",
         "name": "ForOfStatement",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "forToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
                 "name": "(Token",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
@@ -3873,7 +4048,7 @@
                 "name": "forToken",
                 "comment": "获取当前for..of 语句的forToken 的位置。",
                 "equals": "forToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "for"
                 ]
@@ -3883,7 +4058,7 @@
                 "name": "(Token",
                 "comment": "获取当前for..of 语句的(Token 的位置(可能不存在)。",
                 "equals": "(Token",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -3898,7 +4073,7 @@
                 "name": "ofToken",
                 "comment": "获取当前for..of 语句的ofToken 的位置。",
                 "equals": "@readToken('of')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "of"
                 ]
@@ -3914,7 +4089,7 @@
                 "name": ")Token",
                 "comment": "获取当前for..of 语句的)Token 的位置(可能不存在)。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -3940,17 +4115,18 @@
         "classComment": "表示一个for..of 语句(`for(var x of y) ...`)。"
     },
     "ForToStatement": {
+        "region": "语句",
         "name": "ForToStatement",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "forToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
                 "name": "(Token",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
@@ -3965,7 +4141,7 @@
                 "name": "forToken",
                 "comment": "获取当前for..to 语句的forToken 的位置。",
                 "equals": "forToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "for"
                 ]
@@ -3975,7 +4151,7 @@
                 "name": "(Token",
                 "comment": "获取当前for..to 语句的(Token 的位置(可能不存在)。",
                 "equals": "(Token",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -3990,7 +4166,7 @@
                 "name": "toToken",
                 "comment": "获取当前for..to 语句的toToken 的位置。",
                 "equals": "@readToken('to')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "to"
                 ]
@@ -4006,7 +4182,7 @@
                 "name": ")Token",
                 "comment": "获取当前for..to 语句的)Token 的位置(可能不存在)。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -4032,6 +4208,7 @@
         "classComment": "表示一个for..to 语句(`for(var x = 0 to 10) ...`)。"
     },
     "WhileStatement": {
+        "region": "语句",
         "name": "WhileStatement",
         "extends": "Statement",
         "comment": "解析一个while 语句(`while(x) ...`)。",
@@ -4040,7 +4217,7 @@
                 "name": "whileToken",
                 "comment": "获取当前while 语句的whileToken 的位置。",
                 "equals": "@readToken('while')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "while"
                 ]
@@ -4058,6 +4235,7 @@
         "classComment": "表示一个while 语句(`while(x) ...`)。"
     },
     "SwitchStatement": {
+        "region": "语句",
         "name": "SwitchStatement",
         "extends": "Statement",
         "comment": "解析一个switch 语句(`switch(x) {...}`)。",
@@ -4066,7 +4244,7 @@
                 "name": "switchToken",
                 "comment": "获取当前switch 语句的switchToken 的位置。",
                 "equals": "@readToken('switch')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "switch"
                 ]
@@ -4074,7 +4252,7 @@
             {
                 "inlined": true,
                 "name": "(Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -4086,7 +4264,7 @@
             {
                 "inlined": true,
                 "name": ")Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -4124,6 +4302,7 @@
         "classComment": "表示一个switch 语句(`switch(x) {...}`)。"
     },
     "CaseOrDefaultClause": {
+        "region": "语句",
         "name": "CaseOrDefaultClause",
         "extends": "Node",
         "comment": "解析一个case(`case x: ...`) 或 default(`default: ...`) 分支。",
@@ -4140,6 +4319,7 @@
         ]
     },
     "CaseClause": {
+        "region": "语句",
         "name": "CaseClause",
         "extends": "Node",
         "comment": "解析一个case 分支(`case x: ...`)。",
@@ -4148,7 +4328,7 @@
                 "name": "caseToken",
                 "comment": "获取当前case 分支的caseToken 的位置。",
                 "equals": "@readToken('case')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "case"
                 ]
@@ -4170,10 +4350,13 @@
                 }
             },
             {
-                "name": "'",
-                "comment": "获取当前case 分支的(可能不存在)。",
-                "equals": "@'()",
-                "type": "'"
+                "name": ":Token",
+                "comment": "获取当前case 分支的:Token 的位置。",
+                "equals": "@readToken(':')",
+                "type": "number",
+                "tokens": [
+                    ":"
+                ]
             },
             {
                 "name": "statements",
@@ -4196,13 +4379,14 @@
             "const result = new @CaseClause();",
             "result.caseToken = @readToken('case');",
             "result.labels = @DelimitedList(@CaseClauseLabel, undefined, undefined, false, @isCaseLabelStart);",
-            "result.' = @'();",
+            "result.:Token = @readToken(':');",
             "result.statements = @NodeList(@CaseStatement);",
             "return result;"
         ],
         "classComment": "表示一个case 分支(`case x: ...`)。"
     },
     "CaseClauseLabel": {
+        "region": "语句",
         "name": "CaseClauseLabel",
         "extends": "Node",
         "comment": "解析一个case 分支标签(`case x: ...`)。",
@@ -4212,7 +4396,7 @@
                 "name": "elseToken",
                 "comment": "获取当前case 分支标签的elseToken 的位置(可能不存在)。",
                 "equals": "@readToken('else')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "else"
                 ]
@@ -4238,6 +4422,7 @@
         "classComment": "表示一个case 分支标签(`case x: ...`)。"
     },
     "DefaultClause": {
+        "region": "语句",
         "name": "DefaultClause",
         "extends": "Node",
         "comment": "解析一个default 分支(`default: ...`)。",
@@ -4246,16 +4431,19 @@
                 "name": "defaultToken",
                 "comment": "获取当前default 分支的defaultToken 的位置。",
                 "equals": "@readToken('default')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "default"
                 ]
             },
             {
-                "name": "'",
-                "comment": "获取当前default 分支的(可能不存在)。",
-                "equals": "@'()",
-                "type": "'"
+                "name": ":Token",
+                "comment": "获取当前default 分支的:Token 的位置。",
+                "equals": "@readToken(':')",
+                "type": "number",
+                "tokens": [
+                    ":"
+                ]
             },
             {
                 "name": "statements",
@@ -4277,13 +4465,14 @@
         "codes": [
             "const result = new @DefaultClause();",
             "result.defaultToken = @readToken('default');",
-            "result.' = @'();",
+            "result.:Token = @readToken(':');",
             "result.statements = @NodeList(@CaseStatement);",
             "return result;"
         ],
         "classComment": "表示一个default 分支(`default: ...`)。"
     },
     "CaseStatement": {
+        "region": "语句",
         "name": "CaseStatement",
         "extends": "Statement",
         "comment": "解析一个case 段语句。",
@@ -4300,6 +4489,7 @@
         ]
     },
     "DoWhileStatement": {
+        "region": "语句",
         "name": "DoWhileStatement",
         "extends": "Statement",
         "comment": "解析一个do..while 语句(`do ... while(x);`)。",
@@ -4308,7 +4498,7 @@
                 "name": "doToken",
                 "comment": "获取当前do..while 语句的doToken 的位置。",
                 "equals": "@readToken('do')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "do"
                 ]
@@ -4323,7 +4513,7 @@
                 "name": "whileToken",
                 "comment": "获取当前do..while 语句的whileToken 的位置。",
                 "equals": "@readToken('while')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "while"
                 ]
@@ -4333,7 +4523,7 @@
                 "name": ";Token",
                 "comment": "获取当前do..while 语句的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -4345,6 +4535,7 @@
         "classComment": "表示一个do..while 语句(`do ... while(x);`)。"
     },
     "BreakStatement": {
+        "region": "语句",
         "name": "BreakStatement",
         "extends": "Statement",
         "comment": "解析一个break 语句(`break xx;`)。",
@@ -4353,7 +4544,7 @@
                 "name": "breakToken",
                 "comment": "获取当前break 语句的breakToken 的位置。",
                 "equals": "@readToken('break')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "break"
                 ]
@@ -4371,7 +4562,7 @@
                 "name": ";Token",
                 "comment": "获取当前break 语句的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -4385,6 +4576,7 @@
         "classComment": "表示一个break 语句(`break xx;`)。"
     },
     "ContinueStatement": {
+        "region": "语句",
         "name": "ContinueStatement",
         "extends": "Statement",
         "comment": "解析一个continue 语句(`continue xx;`)。",
@@ -4393,7 +4585,7 @@
                 "name": "continueToken",
                 "comment": "获取当前continue 语句的continueToken 的位置。",
                 "equals": "@readToken('continue')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "continue"
                 ]
@@ -4411,7 +4603,7 @@
                 "name": ";Token",
                 "comment": "获取当前continue 语句的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -4425,12 +4617,13 @@
         "classComment": "表示一个continue 语句(`continue xx;`)。"
     },
     "BreakOrContinueStatement": {
+        "region": "语句",
         "name": "BreakOrContinueStatement",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{}"
             },
             {
                 "comment": "undefined。",
@@ -4450,6 +4643,7 @@
         "inline": true
     },
     "ReturnStatement": {
+        "region": "语句",
         "name": "ReturnStatement",
         "extends": "Statement",
         "comment": "解析一个return 语句(`return x;`)。",
@@ -4458,7 +4652,7 @@
                 "name": "returnToken",
                 "comment": "获取当前return 语句的returnToken 的位置。",
                 "equals": "@readToken('return')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "return"
                 ]
@@ -4475,7 +4669,7 @@
                 "name": ";Token",
                 "comment": "获取当前return 语句的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -4493,6 +4687,7 @@
         "classComment": "表示一个return 语句(`return x;`)。"
     },
     "TryStatement": {
+        "region": "语句",
         "name": "TryStatement",
         "extends": "Statement",
         "comment": "解析一个try 语句(`try {...} catch(e) {...}`)。",
@@ -4501,7 +4696,7 @@
                 "name": "tryToken",
                 "comment": "获取当前try 语句的tryToken 的位置。",
                 "equals": "@readToken('try')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "try"
                 ]
@@ -4539,6 +4734,7 @@
         "classComment": "表示一个try 语句(`try {...} catch(e) {...}`)。"
     },
     "CatchClause": {
+        "region": "语句",
         "name": "CatchClause",
         "extends": "Node",
         "comment": "解析一个catch 分句(`catch(e) {...}`)。",
@@ -4547,7 +4743,7 @@
                 "name": "catchToken",
                 "comment": "获取当前catch 分句的catchToken 的位置。",
                 "equals": "@readToken('catch')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "catch"
                 ]
@@ -4557,7 +4753,7 @@
                 "name": "(Token",
                 "comment": "获取当前catch 分句的(Token 的位置(可能不存在)。",
                 "equals": "@readToken('(')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -4574,7 +4770,7 @@
                 "name": ")Token",
                 "comment": "获取当前catch 分句的)Token 的位置(可能不存在)。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -4608,6 +4804,7 @@
         "classComment": "表示一个catch 分句(`catch(e) {...}`)。"
     },
     "FinallyClause": {
+        "region": "语句",
         "name": "FinallyClause",
         "extends": "Node",
         "comment": "解析一个finally 分句(`finally {...}`)。",
@@ -4616,7 +4813,7 @@
                 "name": "finallyToken",
                 "comment": "获取当前finally 分句的finallyToken 的位置。",
                 "equals": "@readToken('finally')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "finally"
                 ]
@@ -4637,6 +4834,7 @@
         "classComment": "表示一个finally 分句(`finally {...}`)。"
     },
     "DebuggerStatement": {
+        "region": "语句",
         "name": "DebuggerStatement",
         "extends": "Statement",
         "comment": "解析一个debugger 语句(`debugger;`)。",
@@ -4645,7 +4843,7 @@
                 "name": "debuggerToken",
                 "comment": "获取当前debugger 语句的debuggerToken 的位置。",
                 "equals": "@readToken('debugger')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "debugger"
                 ]
@@ -4655,7 +4853,7 @@
                 "name": ";Token",
                 "comment": "获取当前debugger 语句的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -4670,6 +4868,7 @@
         "classComment": "表示一个debugger 语句(`debugger;`)。"
     },
     "EmptyStatement": {
+        "region": "语句",
         "name": "EmptyStatement",
         "extends": "Statement",
         "comment": "解析一个空语句(`;`)。",
@@ -4678,7 +4877,7 @@
                 "name": ";Token",
                 "comment": "获取当前空语句的;Token 的位置。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -4692,6 +4891,7 @@
         "classComment": "表示一个空语句(`;`)。"
     },
     "WithStatement": {
+        "region": "语句",
         "name": "WithStatement",
         "extends": "Statement",
         "comment": "解析一个with 语句(`with (x) ...`)。",
@@ -4700,7 +4900,7 @@
                 "name": "withToken",
                 "comment": "获取当前with 语句的withToken 的位置。",
                 "equals": "@readToken('with')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "with"
                 ]
@@ -4710,7 +4910,7 @@
                 "name": "(Token",
                 "comment": "获取当前with 语句的(Token 的位置(可能不存在)。",
                 "equals": "@readToken('(')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "("
                 ]
@@ -4726,7 +4926,7 @@
                 "name": ")Token",
                 "comment": "获取当前with 语句的)Token 的位置(可能不存在)。",
                 "equals": "@readToken(')')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ")"
                 ]
@@ -4751,17 +4951,19 @@
         "classComment": "表示一个with 语句(`with (x) ...`)。"
     },
     "Declaration": {
+        "region": "声明",
         "name": "Declaration",
         "extends": "Statement",
         "comment": "解析一个声明。"
     },
     "FunctionDeclarationOrExpression": {
+        "region": "声明",
         "name": "FunctionDeclarationOrExpression",
         "params": [
             {
                 "comment": "解析的目标节点。",
                 "name": "result",
-                "type": "@FunctionDeclaration | @FunctionExpression"
+                "type": "{}"
             },
             {
                 "comment": "(可能不存在)。",
@@ -4785,6 +4987,7 @@
         "inline": true
     },
     "FunctionDeclaration": {
+        "region": "声明",
         "name": "FunctionDeclaration",
         "params": [
             {
@@ -4816,7 +5019,7 @@
                 "name": "functionToken",
                 "comment": "获取当前函数声明的functionToken 的位置。",
                 "equals": "@readToken('function')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "function"
                 ]
@@ -4826,7 +5029,7 @@
                 "name": "*Token",
                 "comment": "获取当前函数声明的*Token 的位置(可能不存在)。",
                 "equals": "@readToken('*')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "*"
                 ]
@@ -4846,8 +5049,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -4864,7 +5067,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=>Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -4876,7 +5080,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -4896,6 +5100,7 @@
         "classComment": "表示一个函数声明(`function fn() {...}`、`function *fn() {...}`)。"
     },
     "FunctionExpression": {
+        "region": "声明",
         "name": "FunctionExpression",
         "params": [
             {
@@ -4917,7 +5122,7 @@
                 "name": "functionToken",
                 "comment": "获取当前函数表达式的functionToken 的位置。",
                 "equals": "@readToken('function')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "function"
                 ]
@@ -4927,7 +5132,7 @@
                 "name": "*Token",
                 "comment": "获取当前函数表达式的*Token 的位置(可能不存在)。",
                 "equals": "@readToken('*')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "*"
                 ]
@@ -4947,8 +5152,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -4965,7 +5170,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=>Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -4977,7 +5183,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -4996,12 +5202,13 @@
         "classComment": "表示一个函数表达式(`function () {}`)。"
     },
     "FunctionBody": {
+        "region": "声明",
         "name": "FunctionBody",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{'=>'?: number, body?: BlockStatement | Expression, ';'?: number}"
             }
         ],
         "extends": "Node",
@@ -5009,9 +5216,13 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前函数主体的(可能不存在)。",
-                "equals": ">'",
-                "type": "'"
+                "name": "=>Token",
+                "comment": "获取当前函数主体的=>Token 的位置(可能不存在)。",
+                "equals": "@readToken('=>')",
+                "type": "number",
+                "tokens": [
+                    "=>"
+                ]
             },
             {
                 "optional": true,
@@ -5025,7 +5236,7 @@
                 "name": ";Token",
                 "comment": "获取当前函数主体的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -5049,12 +5260,13 @@
         "classComment": "表示一个函数主体(`{...}`、`=> xx`、`;`)。"
     },
     "ClassDeclarationOrExpression": {
+        "region": "声明",
         "name": "ClassDeclarationOrExpression",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ClassDeclaration | @ClassExpression"
+                "type": "{}"
             }
         ],
         "extends": "Expression",
@@ -5071,6 +5283,7 @@
         "inline": true
     },
     "ClassDeclaration": {
+        "region": "声明",
         "name": "ClassDeclaration",
         "params": [
             {
@@ -5102,7 +5315,7 @@
                 "name": "classToken",
                 "comment": "获取当前类声明的classToken 的位置。",
                 "equals": "@readToken('class')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "class"
                 ]
@@ -5116,7 +5329,7 @@
             {
                 "inlined": true,
                 "name": "extendsToken",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5134,7 +5347,7 @@
             {
                 "inlined": true,
                 "name": "implementsToken",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5158,7 +5371,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5179,6 +5392,7 @@
         "classComment": "表示一个类声明(`class xx {}`)。"
     },
     "ClassExpression": {
+        "region": "声明",
         "name": "ClassExpression",
         "doc": true,
         "extends": "Expression",
@@ -5188,7 +5402,7 @@
                 "name": "classToken",
                 "comment": "获取当前类表达式的classToken 的位置。",
                 "equals": "@readToken('class')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "class"
                 ]
@@ -5202,7 +5416,7 @@
             {
                 "inlined": true,
                 "name": "extendsToken",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5220,7 +5434,7 @@
             {
                 "inlined": true,
                 "name": "implementsToken",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5244,7 +5458,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5263,12 +5477,13 @@
         "classComment": "表示一个类表达式(`class xx {}`)。"
     },
     "ExtendsClause": {
+        "region": "声明",
         "name": "ExtendsClause",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{'extends'?: number, extends?: ClassHeritageNode , ... isExpressionStart}"
             }
         ],
         "extends": "Node",
@@ -5279,7 +5494,7 @@
                 "name": "extendsToken",
                 "comment": "获取当前extends 分句的extendsToken 的位置(可能不存在)。",
                 "equals": "@readToken('extends')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "extends"
                 ]
@@ -5310,12 +5525,13 @@
         "classComment": "表示一个extends 分句(`extends xx`)。"
     },
     "ImplementsClause": {
+        "region": "声明",
         "name": "ImplementsClause",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{'implements'?: number, implements?: ClassHeritageNode , ... isExpressionStart}"
             }
         ],
         "extends": "Node",
@@ -5326,7 +5542,7 @@
                 "name": "implementsToken",
                 "comment": "获取当前implements 分句的implementsToken 的位置(可能不存在)。",
                 "equals": "@readToken('implements')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "implements"
                 ]
@@ -5357,6 +5573,7 @@
         "classComment": "表示一个implements 分句(`implements xx`)。"
     },
     "ClassHeritageNode": {
+        "region": "声明",
         "name": "ClassHeritageNode",
         "extends": "Node",
         "comment": "解析一个extends 或 implements 分句项。",
@@ -5377,12 +5594,13 @@
         "classComment": "表示一个extends 或 implements 分句项。"
     },
     "ClassBody": {
+        "region": "声明",
         "name": "ClassBody",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{members?: { ClassElement ... }, ';'?: number}"
             }
         ],
         "extends": "Node",
@@ -5410,7 +5628,7 @@
                 "name": ";Token",
                 "comment": "获取当前类主体的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -5427,6 +5645,7 @@
         "classComment": "表示一个类主体(`{...}`、`;`)。"
     },
     "ClassElement": {
+        "region": "声明",
         "name": "ClassElement",
         "extends": "Node",
         "alias": "MethodDeclaration | PropertyDeclaration | AccessorDeclaration",
@@ -5460,6 +5679,7 @@
         ]
     },
     "AccessorDeclaration": {
+        "region": "声明",
         "name": "AccessorDeclaration",
         "params": [
             {
@@ -5473,12 +5693,12 @@
             {
                 "comment": "undefined。",
                 "name": "getToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
                 "name": "setToken",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "doc": true,
@@ -5502,7 +5722,7 @@
                 "name": "getToken",
                 "comment": "获取当前访问器声明的getToken 的位置(可能不存在)。",
                 "equals": "getToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "get"
                 ]
@@ -5512,7 +5732,7 @@
                 "name": "setToken",
                 "comment": "获取当前访问器声明的setToken 的位置(可能不存在)。",
                 "equals": "setToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "set"
                 ]
@@ -5525,8 +5745,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5543,7 +5763,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=>Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5555,7 +5776,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5571,6 +5792,7 @@
         "classComment": "表示一个访问器声明(`get x() {...}`、`set x(value) {...}`)。"
     },
     "MethodDeclaration": {
+        "region": "声明",
         "name": "MethodDeclaration",
         "params": [
             {
@@ -5583,7 +5805,8 @@
             },
             {
                 "comment": "undefined。",
-                "type": "*"
+                "name": "*Token",
+                "type": "number"
             },
             {
                 "comment": "undefined。",
@@ -5609,9 +5832,13 @@
             },
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
-                "equals": "@*()",
-                "type": "*"
+                "name": "*Token",
+                "comment": "获取当前方法声明的*Token 的位置(可能不存在)。",
+                "equals": "*Token",
+                "type": "number",
+                "tokens": [
+                    "*"
+                ]
             },
             {
                 "optional": true,
@@ -5628,8 +5855,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5646,7 +5873,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=>Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5658,7 +5886,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5674,6 +5902,7 @@
         "classComment": "表示一个方法声明(`x() {...}`)。"
     },
     "PropertyDeclaration": {
+        "region": "声明",
         "name": "PropertyDeclaration",
         "params": [
             {
@@ -5714,8 +5943,8 @@
             },
             {
                 "inlined": true,
-                "name": "'",
-                "type": "'",
+                "name": ":Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5732,7 +5961,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5753,10 +5983,10 @@
             "result. = @Decorators();if (@peek === 'undefined') ",
             "result. = @Modifiers();if (@peek === 'undefined') ",
             "result.name = name;",
-            "result.' = undefined;",
+            "result.:Token = undefined;",
             "result.type = undefined;",
             "result. = @TypeAnnotation();if (@peek === 'undefined') ",
-            "result.undefined = undefined;",
+            "result.=Token = undefined;",
             "result.initializer = undefined;",
             "result. = @Initializer();if (@peek === 'undefined') ",
             "return result;"
@@ -5764,6 +5994,7 @@
         "classComment": "表示一个属性声明(`x: number`)。"
     },
     "InterfaceDeclaration": {
+        "region": "声明",
         "name": "InterfaceDeclaration",
         "params": [
             {
@@ -5795,7 +6026,7 @@
                 "name": "interfaceToken",
                 "comment": "获取当前接口声明的interfaceToken 的位置。",
                 "equals": "@readToken('interface')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "interface"
                 ]
@@ -5816,7 +6047,7 @@
             {
                 "inlined": true,
                 "name": "extendsToken",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5864,6 +6095,7 @@
         "classComment": "表示一个接口声明(`interface T {...}`)。"
     },
     "EnumDeclaration": {
+        "region": "声明",
         "name": "EnumDeclaration",
         "params": [
             {
@@ -5895,7 +6127,7 @@
                 "name": "enumToken",
                 "comment": "获取当前枚举声明的enumToken 的位置。",
                 "equals": "@readToken('enum')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "enum"
                 ]
@@ -5910,7 +6142,7 @@
             {
                 "inlined": true,
                 "name": "extendsToken",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5957,6 +6189,7 @@
         "classComment": "表示一个枚举声明(`enum T {}`)。"
     },
     "EnumMemberDeclaration": {
+        "region": "声明",
         "name": "EnumMemberDeclaration",
         "extends": "Declaration",
         "comment": "解析一个枚举成员声明(`x`、`x = 1`)。",
@@ -5969,7 +6202,8 @@
             },
             {
                 "inlined": true,
-                "type": "'",
+                "name": "=Token",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -5988,7 +6222,7 @@
         "codes": [
             "const result = new @EnumMemberDeclaration();",
             "result.name = @PropertyName();",
-            "result.undefined = undefined;",
+            "result.=Token = undefined;",
             "result.initializer = undefined;",
             "result. = @Initializer();if (@peek === 'undefined') ",
             "return result;"
@@ -5996,12 +6230,13 @@
         "classComment": "表示一个枚举成员声明(`x`、`x = 1`)。"
     },
     "NamespaceOrModuleDeclaration": {
+        "region": "声明",
         "name": "NamespaceOrModuleDeclaration",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@NamespaceDeclaration | @ModuleDeclaration"
+                "type": "{}"
             },
             {
                 "comment": "修饰器列表。",
@@ -6041,6 +6276,7 @@
         "inline": true
     },
     "NamespaceDeclaration": {
+        "region": "声明",
         "name": "NamespaceDeclaration",
         "params": [
             {
@@ -6072,7 +6308,7 @@
                 "name": "namespaceToken",
                 "comment": "获取当前命名空间声明的namespaceToken 的位置。",
                 "equals": "@readToken('namespace')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "namespace"
                 ]
@@ -6093,6 +6329,7 @@
         "classComment": "表示一个命名空间声明(`namespace T {}`)。"
     },
     "ModuleDeclaration": {
+        "region": "声明",
         "name": "ModuleDeclaration",
         "params": [
             {
@@ -6124,7 +6361,7 @@
                 "name": "moduleToken",
                 "comment": "获取当前模块声明的moduleToken 的位置。",
                 "equals": "@readToken('module')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "module"
                 ]
@@ -6145,12 +6382,13 @@
         "classComment": "表示一个模块声明(`module T {}`)。"
     },
     "BlockBody": {
+        "region": "声明",
         "name": "BlockBody",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{statements?: { Statement ... }}"
             }
         ],
         "extends": "Node",
@@ -6180,6 +6418,7 @@
         "classComment": "表示一个语句块主体(`{...}`)。"
     },
     "ExtensionDeclaration": {
+        "region": "声明",
         "name": "ExtensionDeclaration",
         "params": [
             {
@@ -6211,7 +6450,7 @@
                 "name": "extendsToken",
                 "comment": "获取当前扩展声明的extendsToken 的位置。",
                 "equals": "@readToken('extends')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "extends"
                 ]
@@ -6225,7 +6464,7 @@
             {
                 "inlined": true,
                 "name": "extendsToken",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -6243,7 +6482,7 @@
             {
                 "inlined": true,
                 "name": "implementsToken",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -6267,7 +6506,7 @@
             {
                 "inlined": true,
                 "name": ";Token",
-                "type": "TokenType",
+                "type": "number",
                 "comment": "(可能不存在)"
             },
             {
@@ -6297,6 +6536,7 @@
         "classComment": "表示一个扩展声明(`extends T {}`)。"
     },
     "DeclarationOrExpressionStatement": {
+        "region": "声明",
         "name": "DeclarationOrExpressionStatement",
         "extends": "Expression",
         "comment": "解析一个声明或表达式语句。",
@@ -6333,6 +6573,7 @@
         ]
     },
     "Decorators": {
+        "region": "声明",
         "name": "Decorators",
         "extends": "Node",
         "comment": "解析一个修饰器列表。",
@@ -6365,6 +6606,7 @@
         "classComment": "表示一个修饰器列表。"
     },
     "Decorator": {
+        "region": "声明",
         "name": "Decorator",
         "extends": "Node",
         "comment": "解析一个修饰器(`@x`)。",
@@ -6373,7 +6615,7 @@
                 "name": "@Token",
                 "comment": "获取当前修饰器的@Token 的位置。",
                 "equals": "@readToken('@')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "@"
                 ]
@@ -6395,6 +6637,7 @@
         "classComment": "表示一个修饰器(`@x`)。"
     },
     "Modifiers": {
+        "region": "声明",
         "name": "Modifiers",
         "extends": "Node",
         "comment": "解析一个修饰符列表。",
@@ -6452,6 +6695,7 @@
         "classComment": "表示一个修饰符列表。"
     },
     "Modifier": {
+        "region": "声明",
         "name": "Modifier",
         "extends": "Node",
         "comment": "解析一个修饰符(`static`、`private`、...)。",
@@ -6460,7 +6704,7 @@
                 "name": "type",
                 "comment": "获取当前修饰符的type 的位置。合法的值有：`export`、`default`、`declare`、`const`、`static`、`abstract`、`readonly`、`async`、`public`、`protected`、`private`。",
                 "equals": "@read",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "export",
                     "default",
@@ -6484,6 +6728,7 @@
         "classComment": "表示一个修饰符(`static`、`private`、...)。"
     },
     "TypeAliasDeclaration": {
+        "region": "声明",
         "name": "TypeAliasDeclaration",
         "extends": "Declaration",
         "comment": "解析一个类型别名声明(`type A = number;`)。",
@@ -6492,7 +6737,7 @@
                 "name": "typeToken",
                 "comment": "获取当前类型别名声明的typeToken 的位置。",
                 "equals": "@readToken('type')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "type"
                 ]
@@ -6510,16 +6755,20 @@
                 "type": "@NodeList<@TypeParameterDeclaration>"
             },
             {
-                "comment": "获取当前类型别名声明的(可能不存在)。",
-                "equals": "'",
-                "type": "'"
+                "name": "=Token",
+                "comment": "获取当前类型别名声明的=Token 的位置。",
+                "equals": "@readToken('=')",
+                "type": "number",
+                "tokens": [
+                    "="
+                ]
             },
             {
                 "optional": true,
                 "name": ";Token",
                 "comment": "获取当前类型别名声明的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -6531,6 +6780,7 @@
         "classComment": "表示一个类型别名声明(`type A = number;`)。"
     },
     "ImportAssignmentOrImportDeclaration": {
+        "region": "声明",
         "name": "ImportAssignmentOrImportDeclaration",
         "extends": "Declaration",
         "comment": "解析一个import 赋值或 import 声明。",
@@ -6544,12 +6794,13 @@
         ]
     },
     "ImportAssignmentDeclaration": {
+        "region": "声明",
         "name": "ImportAssignmentDeclaration",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "importToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
@@ -6564,7 +6815,7 @@
                 "name": "importToken",
                 "comment": "获取当前import 赋值声明的importToken 的位置。",
                 "equals": "importToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "import"
                 ]
@@ -6576,9 +6827,13 @@
                 "type": "Identifier"
             },
             {
-                "comment": "获取当前import 赋值声明的(可能不存在)。",
-                "equals": "'",
-                "type": "'"
+                "name": "=Token",
+                "comment": "获取当前import 赋值声明的=Token 的位置。",
+                "equals": "@readToken('=')",
+                "type": "number",
+                "tokens": [
+                    "="
+                ]
             },
             {
                 "name": "value",
@@ -6592,7 +6847,7 @@
                 "name": ";Token",
                 "comment": "获取当前import 赋值声明的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -6602,7 +6857,7 @@
             "const result = new @ImportAssignmentDeclaration();",
             "result.importToken = importToken;",
             "result.variable = variable;",
-            "result. = ';",
+            "result.=Token = @readToken('=');",
             "result.value = @Expression(Precedence.assignment);",
             "result.;Token = @readToken(';');if (@peek === ';') ",
             "return result;"
@@ -6610,17 +6865,18 @@
         "classComment": "表示一个import 赋值声明。"
     },
     "ImportDeclaration": {
+        "region": "声明",
         "name": "ImportDeclaration",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "importToken",
-                "type": "TokenType"
+                "type": "number"
             },
             {
                 "comment": "undefined。",
                 "name": "variables",
-                "type": "... ImportClause , ..."
+                "type": "ImportClause , ..."
             }
         ],
         "extends": "Declaration",
@@ -6630,7 +6886,7 @@
                 "name": "importToken",
                 "comment": "获取当前import 声明的importToken 的位置。",
                 "equals": "importToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "import"
                 ]
@@ -6639,17 +6895,17 @@
                 "optional": true,
                 "name": "variables",
                 "comment": "获取当前import 声明的(可能不存在)。",
-                "equals": "@NodeList(@ImportClause, '...', '...')",
-                "type": "... ImportClause , ...",
+                "equals": "@DelimitedList(@ImportClause)",
+                "type": "ImportClause , ...",
                 "list": {
                     "element": "ImportClause",
-                    "open": "...",
-                    "close": "...",
+                    "open": "",
+                    "close": "",
                     "continue": "",
-                    "seperator": "",
+                    "seperator": ",",
                     "optional": false,
                     "type": "@NodeList<@ImportClause>",
-                    "equals": "@NodeList(@ImportClause, '...', '...')"
+                    "equals": "@DelimitedList(@ImportClause)"
                 }
             },
             {
@@ -6669,7 +6925,7 @@
                 "name": ";Token",
                 "comment": "获取当前import 声明的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -6687,6 +6943,7 @@
         "classComment": "表示一个import 声明(`import x from '...';`)。"
     },
     "ImportClause": {
+        "region": "声明",
         "name": "ImportClause",
         "extends": "Node",
         "alias": "SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause",
@@ -6705,6 +6962,7 @@
         ]
     },
     "NamespaceImportClause": {
+        "region": "声明",
         "name": "NamespaceImportClause",
         "extends": "Node",
         "comment": "解析一个命名空间导入分句(`* as x`)。",
@@ -6723,6 +6981,7 @@
         "classComment": "表示一个命名空间导入分句(`* as x`)。"
     },
     "NamedImportClause": {
+        "region": "声明",
         "name": "NamedImportClause",
         "extends": "Node",
         "comment": "解析一个对象导入分句(`{x, x as y}`)。",
@@ -6752,6 +7011,7 @@
         "classComment": "表示一个对象导入分句(`{x, x as y}`)。"
     },
     "SimpleImportClause": {
+        "region": "声明",
         "name": "SimpleImportClause",
         "extends": "Node",
         "comment": "解析一个简单导入分句。",
@@ -6760,6 +7020,7 @@
         ]
     },
     "SimpleImportOrExportClause": {
+        "region": "声明",
         "name": "SimpleImportOrExportClause",
         "params": [
             {
@@ -6781,9 +7042,13 @@
             },
             {
                 "optional": true,
-                "comment": "获取当前简单导入或导出分句的(可能不存在)。",
-                "equals": "@as()",
-                "type": "as"
+                "name": "asToken",
+                "comment": "获取当前简单导入或导出分句的asToken 的位置(可能不存在)。",
+                "equals": "@readToken('as')",
+                "type": "number",
+                "tokens": [
+                    "as"
+                ]
             },
             {
                 "name": "variable",
@@ -6810,6 +7075,7 @@
         "classComment": "表示一个简单导入或导出分句(`x`、`x as y`)。"
     },
     "ExportAssignmentOrExportDeclaration": {
+        "region": "声明",
         "name": "ExportAssignmentOrExportDeclaration",
         "extends": "Declaration",
         "comment": "解析一个export 赋值或 export 声明。",
@@ -6854,12 +7120,13 @@
         ]
     },
     "ExportNamespaceDeclaration": {
+        "region": "声明",
         "name": "ExportNamespaceDeclaration",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "exportToken",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "extends": "Declaration",
@@ -6869,7 +7136,7 @@
                 "name": "exportToken",
                 "comment": "获取当前导出列表声明的exportToken 的位置。",
                 "equals": "exportToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "export"
                 ]
@@ -6878,7 +7145,7 @@
                 "name": "*Token",
                 "comment": "获取当前导出列表声明的*Token 的位置。",
                 "equals": "@readToken('*')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "*"
                 ]
@@ -6887,7 +7154,7 @@
                 "name": "fromToken",
                 "comment": "获取当前导出列表声明的fromToken 的位置。",
                 "equals": "@readToken('from')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "from"
                 ]
@@ -6903,7 +7170,7 @@
                 "name": ";Token",
                 "comment": "获取当前导出列表声明的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -6921,12 +7188,13 @@
         "classComment": "表示一个导出列表声明(`export * from ...`)。"
     },
     "ExportListDeclaration": {
+        "region": "声明",
         "name": "ExportListDeclaration",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "exportToken",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "extends": "Declaration",
@@ -6936,7 +7204,7 @@
                 "name": "exportToken",
                 "comment": "获取当前导出列表声明的exportToken 的位置。",
                 "equals": "exportToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "export"
                 ]
@@ -6961,7 +7229,7 @@
                 "name": "fromToken",
                 "comment": "获取当前导出列表声明的fromToken 的位置。",
                 "equals": "@readToken('from')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "from"
                 ]
@@ -6977,7 +7245,7 @@
                 "name": ";Token",
                 "comment": "获取当前导出列表声明的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -6995,12 +7263,13 @@
         "classComment": "表示一个导出列表声明(`export a from ...`)。"
     },
     "ExportAssignmentDeclaration": {
+        "region": "声明",
         "name": "ExportAssignmentDeclaration",
         "params": [
             {
                 "comment": "undefined。",
                 "name": "exportToken",
-                "type": "TokenType"
+                "type": "number"
             }
         ],
         "extends": "Declaration",
@@ -7010,15 +7279,19 @@
                 "name": "exportToken",
                 "comment": "获取当前导出赋值声明的exportToken 的位置。",
                 "equals": "exportToken",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     "export"
                 ]
             },
             {
-                "comment": "获取当前导出赋值声明的(可能不存在)。",
-                "equals": "'",
-                "type": "'"
+                "name": "=Token",
+                "comment": "获取当前导出赋值声明的=Token 的位置。",
+                "equals": "@readToken('=')",
+                "type": "number",
+                "tokens": [
+                    "="
+                ]
             },
             {
                 "name": "value",
@@ -7032,7 +7305,7 @@
                 "name": ";Token",
                 "comment": "获取当前导出赋值声明的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -7041,7 +7314,7 @@
         "codes": [
             "const result = new @ExportAssignmentDeclaration();",
             "result.exportToken = exportToken;",
-            "result. = ';",
+            "result.=Token = @readToken('=');",
             "result.value = @Expression(Precedence.assignment);",
             "result.;Token = @readToken(';');if (@peek === ';') ",
             "return result;"
@@ -7049,6 +7322,7 @@
         "classComment": "表示一个导出赋值声明(`export = 1;`)。"
     },
     "ExportDefaultDeclaration": {
+        "region": "声明",
         "name": "ExportDefaultDeclaration",
         "params": [
             {
@@ -7077,7 +7351,7 @@
                 "name": ";Token",
                 "comment": "获取当前export default 声明的;Token 的位置(可能不存在)。",
                 "equals": "@readToken(';')",
-                "type": "TokenType",
+                "type": "number",
                 "tokens": [
                     ";"
                 ]
@@ -7093,12 +7367,13 @@
         "classComment": "表示一个export default 声明(`export default x = 1;`)。"
     },
     "DocComment": {
+        "region": "文档注释",
         "name": "DocComment",
         "params": [
             {
                 "comment": "存放结果的目标节点。",
                 "name": "result",
-                "type": "@ContinueStatement"
+                "type": "{}"
             }
         ],
         "extends": "Node",

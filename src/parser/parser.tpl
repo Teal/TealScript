@@ -643,7 +643,7 @@
 					arguments: Arguments
 					@Arguments list ( Argument , ...isArgumentStart ) // 函数调用参数列表
 						@Argument // 函数调用参数(`x`)
-							?...
+							?'...'
 							value: Expression(Precedence.assignment)
 			case '[':
 				result = @IndexCallExpression(result);
@@ -696,7 +696,12 @@
 		@BinaryExpression(*, allowIn) // 双目表达式(x + y、x = y、...)
 			left: Expression // 左值部分
 			operator: ','|'*='|'/='|'%='|'+='|'‐='|'<<='|'>>='|'>>>='|'&='|'^='|'|='|'**='|'='|'||'|'&&'|'|'|'^'|'&'|'=='|'!='|'==='|'!=='|'<'|'>'|'<='|'>='|'instanceof'|'in'|'<<'|'>>'|'>>>'|'+'|'-'|'*'|'/'|'%'|'**' // 运算类型
-			right: Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn) // 右值部分
+			right: Expression // 右值部分
+			const result = new @BinaryExpression();
+			result.left = left;
+			result.operator = @read;
+			result.right = Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn);
+			return result;
 	}
 	return result;
 
@@ -1209,7 +1214,7 @@
 						@MethodDeclaration(*, *, *, *) doc // 方法声明(`x() {...}`)
 							?Decorators
 							?Modifiers
-							?*
+							?'*'
 							?name: PropertyName
 							?TypeParameters
 							Parameters
@@ -1384,7 +1389,7 @@
 			?';'
 		@ImportDeclaration(*, *) // import 声明(`import x from '...';`)
 			'import'
-			?variables: ... ImportClause , ...
+			?variables: ImportClause , ...
 			?'from' = imports ? @readToken(@from) : undefined
 			from: StringLiteral // 导入模块名
 			?';'
@@ -1419,7 +1424,7 @@
 				}
 				@SimpleImportOrExportClause(importClause: boolean/* 解析 import 分句*/) // 简单导入或导出分句(`x`、`x as y`)
 					?name: Identifier(true) // 导入或导出的名称
-					?as 
+					?'as' 
 					variable: Identifier // 导入或导出的变量
 					const result = new @SimpleImportOrExportClause();
 					const nameOrVariable = @Identifier(true);
