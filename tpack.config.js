@@ -292,3 +292,90 @@ tpack.task("gen-nodes", function () {
         }
     });
 });
+/// 生成函数。
+/// @param source 源文件内容。
+/// @param tokenTypes 所有标记类型。
+/// @param parser 输入 parser.ts 源文件。
+/// @param parser 输入 nodes.ts 源文件。
+/// @param parser 输入 nodeVisitor.ts 源文件。
+/// @returns {{parser, nodes, nodeVisitor}}
+function main(source, tokenTypes, parser, nodes, nodeVisitor) {
+    var defs = {};
+    var stack = [{ indent: -1 }];
+    var lines = source.split(/\r\n?|\n/);
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line)
+            continue;
+        // 定义头。
+        if (/^@/.test(line)) {
+            var def = { indent: getIndent(line), params: [], parts: [], codes: [], name: "" };
+            line = line.replace(/\/\/\s*(.*)/, function (_, name) {
+                def.name = name;
+                return "";
+            }).replace(/@(\w+)\s*\(([^)]*?)\)/, function (_, prop, value) {
+                def[prop] = value;
+                return "";
+            }).replace(/\(([^)]*?)\)/, function (_, params) {
+                def.params = params.split(/,\s*/).map(function (p) {
+                    var info = {};
+                    p = p.replace(/\/\*(.*)\*\/, function(_, comment){, info.comment = comment);
+                }).replace(/:(.*)/, function (_, type) {
+                    info.type = type;
+                });
+                info.name = p.trim();
+                return info;
+            });
+            return "";
+        }
+        ;
+        def.name = line.trim();
+        continue;
+    }
+    // 没有继续缩进则跳出当前定义。
+    var def = stack[stack.length - 1];
+    if (getIndent(line) <= def.indent) {
+        stack.pop();
+        def = stack[stack.length - 1];
+    }
+    if (isCode(line)) {
+        def.parts.push(formatPart(removeIndent(line, def.indent + 1)));
+    }
+    else {
+        def.codes.push(formatCode(line.trim()));
+    }
+}
+function getIndent(line) {
+    return /^\s*/.exec(line)[0].length;
+}
+function removeIndent(line, count) {
+    return line.substring(count);
+}
+function split2(line, sepeator) {
+    var p = line.indexOf(sepeator);
+    return p >= 0 ? [line.substring(0, p), line.substring(p + sepeator.length)] : [line, ""];
+}
+function isCode(line) {
+    return /[\{:;\}\?]$/.test(line) && !/^\?[:;\{\?]$/.test(line);
+}
+function formatCode(line) {
+    return line.replace(/@peek/g, "this.lexer.peek().type")
+        .replace(/@read/g, "this.lexer.read().start")
+        .replace(/'(.+)'/g, function (_, t) {
+        if (!/^a-z/.test(t))
+            t = tokenTypes[t];
+        return "TokenType." + t;
+    })
+        .replace(/@([A-Z])/g, "this.parse$1")
+        .replace(/@/g, "this.");
+}
+function formatPart(line) {
+    var info = {};
+    line = line.replace(/=(.*)/, function (_, value) {
+        info.value = value;
+    }).replace(/:(.*)/, function (_, type) {
+        info.type = type;
+    });
+    info.name = line;
+    return info;
+}

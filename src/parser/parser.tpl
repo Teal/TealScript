@@ -13,20 +13,6 @@
 // 	typeParameters: TypeParameters
 // ErrorIdentifier
 
-
-// (a: /a/ )=>7
-	// @followsTypeArguments() // 判断是否紧跟类型参数
-	// 	@read; // <
-	// 	const followsTypeNode = @followsTypeNode();
-	// 	if (@peek === '>' || @peek === ',') {
-	// 		return true;
-	// 	}
-	// 	return followsTypeNode;
-		
-			// @ArrowExpression(allowIn: boolean): // 箭头表达式
-			// 	=>
-			// 	body: Expression(Precedence.assignment, allowIn)
-
 //------------------------------------------------------------------
 
 @TypeNode(precedence = Precedence.any) // 类型节点
@@ -708,8 +694,11 @@
 		        	label: Identifier
 		        	:
 		        	statement: Statement // 主体部分
-		        @ExpressionStatement(*) // 表达式语句(`x();`)
+		        @ExpressionStatement(expression?: @Expression) // 表达式语句(`x();`)
 		        	expression: Expression // 表达式部分
+					const result = new @ExpressionStatement();
+					result.expression = expression || @Expression();
+					return result;
 		case '{':
 			return @BlockStatement();
 			@BlockStatement // 语句块(`{...}`)
@@ -992,7 +981,7 @@
 		        if (@peek === 'catch') result.catch = @CatchClause();
 		        if (@peek === 'finally') result.catch = @FinallyClause();
 		        if (@options.allowSimpleTryBlock === false && !result.catch && !result.finally) {
-		            @error(@lexer.peek(), "'catch' or 'finally' expected. Unexpected token '{0}'", getTokenName(@lexer.peek()));
+		            @error(@lexer.peek(), "'catch' or 'finally' expected. Unexpected token '{0}'.", getTokenName(@lexer.peek()));
 		        }
 		        return result;
 		        @CatchClause // catch 分句(`catch(e) {...}`)
@@ -1008,7 +997,7 @@
 					if (@options.allowMissingCatchVaribale === false || isBindingName(@peek)) {
 						result.variable = @BindingName();
 						if (@peek === ':') {
-							@error(@peek, "Catch variable cannot have a type annotation; Unexpected token ':'");
+							@error(@peek, "Catch variable cannot have a type annotation; Unexpected token ':'.");
 							@read;
 							if (isTypeNodeStart(@peek)) {
 								@TypeNode();
@@ -1048,21 +1037,19 @@
 				if (hasParan) result.closeParanToken = @readToken(')');
 		        result.body = @EmbeddedStatement();
 		        return result;
-		case 'class':
-			return @ClassDeclaration();
-
 		case 'import':
 			return @ImportAssignmentOrImportDeclaration();
-
 		case 'export':
 			return @ExportAssignmentOrExportDeclaration();
-
+		case 'type':
+			return @TypeAliasDeclaration();
+		//+ case 'class':
+		//+ 	return @ClassDeclaration();
 		default:
 			if (isDeclarationStart(@peek)) {
 				return @DeclarationOrExpressionStatement();
 			}
 			return @ExpressionStatement(@Expression());
-			
 	}
 		
 @Declaration @extends(Statement) // 声明
@@ -1166,7 +1153,7 @@
 			} else {
 				@tryReadSemicolon(result);
 			}
-			@ClassElement @alias(MethodDeclaration | PropertyDeclaration | AccessorDeclaration) // 类成员
+			@ClassElement = MethodDeclaration | PropertyDeclaration | AccessorDeclaration // 类成员
 				const decorators = @Decorators();
 				const modifiers = @Modifiers();
 				switch (@peek) {
@@ -1234,46 +1221,49 @@
 		@EnumMemberDeclaration // 枚举成员声明(`x`、`x = 1`)
 			name: PropertyName
 			?Initializer
-	@NamespaceOrModuleDeclaration(result: @NamespaceDeclaration | @ModuleDeclaration, decorators: @NodeList<@Decorator>, modifiers: @NodeList<@Modifier>, type: TokenType) // 命名空间或模块声明
+	@NamespaceOrModuleDeclaration(result: @NamespaceDeclaration | @ModuleDeclaration, decorators: @NodeList<@Decorator>, modifiers: @NodeList<@Modifier>, type: TokenType) @doc // 命名空间或模块声明
 		@DocComment(result);
 		if (decorators) result.decorators = decorators;
 		if (modifiers) result.modifiers = modifiers;
 		if (type === @namespace) result.namespaceToken = @readToken(type);
 		else result.moduleToken = @readToken(type);
-		result.names = new NodeList<Identifier>();
-		while (true) {
-			// todo
+		if (type === 'module' && @peek === 'stringLiteral') {
+			(<@ModuleDeclaration>result).name = @StringLiteral();
+		} else {
+			result.name = @Identifier();
+			while (@peek === '.') {
+				result.name = @MemberCallExpression(result.name);
+			}
 		}
 		@BlockBody(result);
 		@NamespaceDeclaration(*, *) @doc // 命名空间声明(`namespace T {}`)
 			?Decorators
 			?Modifiers
 			namespace
-			names:  ... Identifier . ... isIdentifierName
+			name: Identifier | MemberCallExpression
 			?BlockBody
 			const result = new @NamespaceDeclaration();
-			@NamespaceOrModuleDeclaration(result, decorators, modifiers, <namespace>);
+			@NamespaceOrModuleDeclaration(result, decorators, modifiers, 'namespace');
 			return result;
 		@ModuleDeclaration(*, *) @doc // 模块声明(`module T {}`)
 			?Decorators
 			?Modifiers
 			module
-			names:  ... Identifier . ... isIdentifierName
+			name: Identifier | MemberCallExpression | StringLiteral
 			?BlockBody
 			const result = new @ModuleDeclaration();
-			@NamespaceOrModuleDeclaration(result, decorators, modifiers, <module>);
+			@NamespaceOrModuleDeclaration(result, decorators, modifiers, 'module');
 			return result;
 		@BlockBody(result) // 语句块主体(`{...}`)
 			statements: { Statement ... }
-	@ExtensionDeclaration(*, *) // 扩展声明(`extends T {}`)
+	@ExtensionDeclaration(*, *) @doc // 扩展声明(`extends T {}`)
 		?Decorators
 		?Modifiers
 		extends
-		type: TypeNode()
+		type: TypeNode
 		?ExtendsClause
 		?ImplementsClause
 		?ClassBody
-
 	@DeclarationOrExpressionStatement // 声明或表达式语句
 		const savedState = @stashSave();
 		const decorators = @Decorators();
@@ -1302,26 +1292,28 @@
 				return @ExtensionDeclaration(decorators, modifiers);
 			default:
 				@stashRestore(savedState);
-				return @ExpressionStatement();
+				return @ExpressionStatement(@Expression());
 		}
-
 	@Decorators // 修饰器列表
-		decorators: Decorator...  // 修饰器列表
-		
+		decorators: Decorator ...  // 修饰器列表
+		let result: @NodeList<@Decorator>;
+		while (@peek === '@') {
+			if (!result) result = new @NodeList()<nodes.Modifier>();
+			result.push(@Decorator());
+		}
+		return result;
 		@Decorator // 修饰器(`@x`)
 			@
 			body: Expression(Precedence.leftHandSide)
-
 	@Modifiers // 修饰符列表
-		modifiers: Modifier...
-
+		modifiers: Modifier ...
 		let result: nodes.NodeList<nodes.Modifier>;
 		while (isModifier(@peek)) {
 			const savedToken = @lexer.current;
 			const modifier = @Modifier();
 			switch (modifier.type) {
 				case 'export':
-					if (!result) result = new @NodeList()<nodes.Modifier>();
+					if (!result) result = new @NodeList()<@Modifier>();
 					result.push(modifier);
 					if (@peek === 'default') {
 						result.push(@Modifier());
@@ -1329,14 +1321,14 @@
 					continue;
 				case 'const':
 					if (@peek === 'enum') {
-						if (!result) result = new @NodeList()<nodes.Modifier>();
+						if (!result) result = new @NodeList()<@Modifier>();
 						result.push(modifier);
 						continue;
 					}
 					break;
 				default:
 					if (@sameLine) {
-						if (!result) result = new @NodeList()<nodes.Modifier>();
+						if (!result) result = new @NodeList()<@Modifier>();
 						result.push(modifier);
 						continue;
 					}
@@ -1346,32 +1338,34 @@
 			break;
 		}
 		return result;
-
 		@Modifier // 修饰符(`static`、`private`、...)
 			type: 'export'|'default'|'declare'|'const'|'static'|'abstract'|'readonly'|'async'|'public'|'protected'|'private'
-
+	@TypeAliasDeclaration // 类型别名声明(`type A = number;`)
+		type
+		name: Identifier
+		?TypeParameters
+		=
+		TypeNode
+		?;
 	@ImportAssignmentOrImportDeclaration // import 赋值或 import 声明
-		const start = @read;
-		const imports = @NodeList(@ImportClause, undefined, undefined, ',');
-		if (@peek === '=' && imports.length === 1 && imports[0].constructor === nodes.SimpleImportClause && (<nodes.SimpleImportClause>imports[0]).name == null) {
-			return @ImportAssignmentDeclaration(start, (<nodes.SimpleImportClause>imports[0]).variable);
+		const importToken = @read;
+		const imports = @DelimitedList(@ImportClause, undefined, undefined, isBindingNameStart);
+		if (@peek === '=' && imports.length === 1 && imports[0].constructor === @SimpleImportClause && (<@SimpleImportClause>imports[0]).name == null) {
+			return @ImportAssignmentDeclaration(importToken, (<@SimpleImportClause>imports[0]).variable);
 		}
-		return @ImportDeclaration(start, imports);
-
+		return @ImportDeclaration(importToken, imports);
 		@ImportAssignmentDeclaration(*, *) // import 赋值声明
 			import
 			variable: Identifier // 别名
 			=
 			value: Expression(Precedence.assignment)
 			?;
-
 		@ImportDeclaration(*, *) // import 声明(`import x from '...';`)
 			import
-			?names: ImportClause,...
+			?names: ... ImportClause , ...
 			?from = imports ? @readToken(@from) : undefined
 			expression: StringLiteral // 导入模块名
 			?;
-
 			const result = new @ImportDeclaration();
 			if (names) {
 				result.names = names;
@@ -1379,24 +1373,32 @@
 			}
 			result.target = @StringLiteral();
 			return result;
-
-			@ImportClause @alias(SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause) // import 分句(`x`、`{x}`、...)
+			@ImportClause = SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause // import 分句(`x`、`{x}`、...)
 				switch (@peek) {
-					case 'identifier':
-						return @SimpleImportOrExportClause(true);
+					//+ case 'identifier':
+					//+		return @SimpleImportOrExportClause(true);
 					case '*':
 						return @NamespaceImportClause();
+						@NamespaceImportClause // 命名空间导入分句(`* as x`)
+							*
+							as
+							variable: Identifier
 					case '{':
 						return @NamedImportClause();
+						@NamedImportClause // 对象导入分句(`{x, x as y}`)
+							elements: { SimpleImportOrExportClause , ... }
+							const result = new @NamedImportClause();
+							result.elements = @DelimitedList(@SimpleImportClause, '{', '}', isIdentifierName);
+							return result;
 					default:
-						return @SimpleImportOrExportClause(true);
+						return @SimpleImportClause();
+						@SimpleImportClause // 简单导入分句
+							return @SimpleImportOrExportClause(true);
 				}
-
 				@SimpleImportOrExportClause(importClause: boolean/* 解析 import 分句*/) // 简单导入或导出分句(`x`、`x as y`)
 					?name: Identifier(true) // 导入或导出的名称
 					?as 
 					variable: Identifier // 导入或导出的变量
-
 					const result = new @SimpleImportOrExportClause();
 					const nameOrVariable = @Identifier(true);
 					if (@peek === @as) {
@@ -1410,18 +1412,9 @@
 						result.variable = nameOrVariable;
 					}
 					return result;
-
-				@NamespaceImportClause // 命名空间导入分句(* as d)
-					*
-					as
-					variable: Identifier(false)
-
-				@NamedImportClause // 对象导入分句(`{x, x as y}`)
-					{ SimpleImportClause,... }
-
 	@ExportAssignmentOrExportDeclaration // export 赋值或 export 声明
 		const savedState = @lexer.current;
-		const start = @read;
+		const exportToekn = @read;
 		switch (@peek) {
 			case 'function':
 				@lexer.current = savedState;
@@ -1441,45 +1434,42 @@
 			case 'module':
 				@lexer.current = savedState;
 				return @ModuleDeclaration(undefined, @Modifiers());
-
 			case 'var':
 			case 'let':
 			case 'const':
 				@lexer.current = savedState;
 				return @VariableStatement(@Modifiers());
-
 			case '*':
-				return @ExportNamespaceDeclaration(start);
-
+				return @ExportNamespaceDeclaration(exportToekn);
 				@ExportNamespaceDeclaration(*) // 导出列表声明(`export * from ...`)
 					export
 					*
 					from
 					expression: StringLiteral // 导入模块名
 					?;
-
 			case '{':
-				return @ExportListDeclaration(start);
-
+				return @ExportListDeclaration(exportToekn);
 				@ExportListDeclaration(*) // 导出列表声明(`export a from ...`)
 					export
-					names: { SimpleImportOrExportClause... } = @NodeList(@SimpleImportOrExportClause, '{', '}', ',')
+					names: { SimpleImportOrExportClause ... } = @DelimitedList(@SimpleImportOrExportClause, '{', '}', false)
 					from
 					expression: StringLiteral // 导入模块名
 					?;
-
 			case '=':
 				return @ExportAssignmentDeclaration(start);
-
 				@ExportAssignmentDeclaration(*) // 导出赋值声明(`export = 1;`)
 					export
 					=
 					value: Expression(Precedence.assignment)
 					?;
-					
 			default:
-				@error(@peek, "Declaration or statement expected.");
-				return @toExpressionStatement(@Identifier(true));
+				// @lexer.current = savedState;
+				// @error(@peek, "Declaration or statement expected. Unexpected token '{0}'.", getTokenName(@peek));
+				return @ExportDefaultDeclaration(@Modifiers());
+				@ExportDefaultDeclaration(*)  // export default 声明(`export default x = 1;`)
+					?modifiers: Modifiers
+					expression: Expression(Precedence.assignment)
+					?;
 		}
 
 @DocComment(result) // 文档注释
