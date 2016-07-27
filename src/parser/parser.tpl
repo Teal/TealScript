@@ -1,19 +1,12 @@
 // TealScript 语法解析器
 // 此文件可用于生成 parser.ts、nodes.ts、nodeVisitor.ts
 
-
-// decorators: Decorator...
-// 		@Decorator // 修饰器(`@x`、`@x()`)
-// 			@
-// 			body: Expression(Expression.leftHandSide, false)
-// 	modifiers: Modifiers
-// 		Modifier // 修饰符(`static`、`private`、...)
-// 			type: <static>|<abstract>|<public>|<protected>|<private>|<const>
-// 	name: Identifier
-// 	typeParameters: TypeParameters
-// ErrorIdentifier
-
-//------------------------------------------------------------------
+// 语法说明：
+//	@ 开头表示一个产生式。
+//	紧跟的缩进行是对上一个产生式的说明。
+//	所有产生式将最终生成一个前缀为 parse 的函数。
+//	如果产生式下包含了代码以外的定义，则该产生式还会生成一个节点类。
+//	在代码中，@产生式会转为对应的 parse 函数调用；@ 会转为 this.。
 
 @TypeNode(precedence = Precedence.any) // 类型节点
 	let result: @TypeNode;
