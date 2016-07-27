@@ -499,8 +499,8 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
             }
             for (let i = 0; i < production.parts.length; i++) {
                 let equals = "result." + production.parts[i].name + " = " + production.parts[i].equals + ";";
-                if (production.parts[i].optional && production.parts[i].tokens) {
-                    equals += "if (@peek === '" + production.parts[i].tokens[0] + "') ";
+                if (production.parts[i].optional && production.parts[i].tokens.length) {
+                    equals = "if (@peek === '" + production.parts[i].tokens[0] + "') " + equals;
                 }
                 production.codes.push(equals);
             }

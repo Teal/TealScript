@@ -125,7 +125,7 @@
 												}
 								@TypeAnnotation(result) // 类型注解(`: number`)
 									?':'
-									?type: TypeNode
+									?type: TypeNode // 类型部分
 								@Initializer(result, allowIn) // 初始值
 									?'='
 									?initializer: Expression(Precedence.assignment, allowIn)

@@ -312,8 +312,8 @@
         ],
         "codes": [
             "const result = new @FunctionTypeNode();",
-            "result.typeParameters = typeParameters;if (@peek === 'undefined') ",
-            "result.parameters = parameters;if (@peek === 'undefined') ",
+            "result.typeParameters = typeParameters;",
+            "result.parameters = parameters;",
             "result.=>Token = @readToken('=>');",
             "result.returnType = @TypeNode()();",
             "return result;"
@@ -467,16 +467,16 @@
         ],
         "codes": [
             "const result = new @ParameterDeclaration();",
-            "result.modifiers = @Modifiers();if (@peek === 'undefined') ",
-            "result....Token = @readToken('...');if (@peek === '...') ",
+            "result.modifiers = @Modifiers();",
+            "if (@peek === '...') result....Token = @readToken('...');",
             "result.name = @BindingName();",
-            "result.?Token = @readToken('?');if (@peek === '?') ",
+            "if (@peek === '?') result.?Token = @readToken('?');",
             "result.:Token = undefined;",
             "result.type = undefined;",
-            "result. = @TypeAnnotation();if (@peek === 'undefined') ",
+            "result. = @TypeAnnotation();",
             "result.=Token = undefined;",
             "result.initializer = undefined;",
-            "result. = @Initializer();if (@peek === 'undefined') ",
+            "result. = @Initializer();",
             "return result;"
         ],
         "classComment": "表示一个参数声明(`x`、`x?: number`)。"
@@ -660,13 +660,13 @@
         ],
         "codes": [
             "const result = new @ObjectBindingElement();",
-            "result....Token = @readToken('...');if (@peek === '...') ",
+            "if (@peek === '...') result....Token = @readToken('...');",
             "result.key = @PropertyName,();",
-            "result.:Token = @readToken(':');if (@peek === ':') ",
+            "if (@peek === ':') result.:Token = @readToken(':');",
             "result.value = @BindingName();",
             "result.=Token = undefined;",
             "result.initializer = undefined;",
-            "result. = @Initializer();if (@peek === 'undefined') ",
+            "result. = @Initializer();",
             "return result;"
         ],
         "classComment": "表示一个对象绑定模式项(`x`)。"
@@ -738,14 +738,14 @@
             {
                 "optional": true,
                 "name": "type",
-                "comment": "获取当前类型注解的(可能不存在)。",
+                "comment": "获取当前类型注解的类型部分(可能不存在)。",
                 "equals": "@TypeNode()",
                 "type": "TypeNode"
             }
         ],
         "codes": [
-            "result.:Token = @readToken(':');if (@peek === ':') ",
-            "result.type = @TypeNode();if (@peek === 'undefined') "
+            "if (@peek === ':') result.:Token = @readToken(':');",
+            "result.type = @TypeNode();"
         ],
         "inline": true,
         "classComment": "表示一个类型注解(`: number`)。"
@@ -788,8 +788,8 @@
             }
         ],
         "codes": [
-            "result.=Token = @readToken('=');if (@peek === '=') ",
-            "result.initializer = @Expression(Precedence.assignment, allowIn);if (@peek === 'undefined') "
+            "if (@peek === '=') result.=Token = @readToken('=');",
+            "result.initializer = @Expression(Precedence.assignment, allowIn);"
         ],
         "inline": true,
         "classComment": "表示一个初始值。"
@@ -2599,7 +2599,7 @@
             "const result = new @NewExpression();",
             "result.newToken = newToken;",
             "result.target = @Expression(Precedence.member);",
-            "result.arguments = @DelimitedList(@Argument, '(', ')', false, @isArgumentStart);if (@peek === 'undefined') ",
+            "result.arguments = @DelimitedList(@Argument, '(', ')', false, @isArgumentStart);",
             "return result;"
         ],
         "classComment": "表示一个new 表达式(`new x()`、`new x`)。"
@@ -3088,7 +3088,7 @@
         ],
         "codes": [
             "const result = new @Argument();",
-            "result....Token = @readToken('...');if (@peek === '...') ",
+            "if (@peek === '...') result....Token = @readToken('...');",
             "result.value = @Expression(Precedence.assignment);",
             "return result;"
         ],
@@ -3564,7 +3564,7 @@
         ],
         "codes": [
             "const result = new @VariableStatement:();",
-            "result. = @Modifiers();if (@peek === 'undefined') ",
+            "result. = @Modifiers();",
             "result.type = @read;",
             "result.variables = @DelimitedList(allowIn === false ? @VariableDeclarationWithoutIn : @VariableDeclaration, undefined, undefined, isBindingNameStart);",
             "return result;"
@@ -3642,10 +3642,10 @@
             "result.mame = @BindingName();",
             "result.:Token = undefined;",
             "result.type = undefined;",
-            "result. = @TypeAnnotation();if (@peek === 'undefined') ",
+            "result. = @TypeAnnotation();",
             "result.=Token = undefined;",
             "result.initializer = undefined;",
-            "result. = @Initializer(allowIn);if (@peek === 'undefined') ",
+            "result. = @Initializer(allowIn);",
             "return result;"
         ],
         "classComment": "表示一个变量声明(`x = 1`、`[x] = [1]`、`{a: x} = {a: 1}`)。"
@@ -4862,7 +4862,7 @@
         "codes": [
             "const result = new @DebuggerStatement();",
             "result.debuggerToken = @readToken('debugger');",
-            "result.;Token = @readToken(';');if (@peek === ';') ",
+            "if (@peek === ';') result.;Token = @readToken(';');",
             "return result;"
         ],
         "classComment": "表示一个debugger 语句(`debugger;`)。"
@@ -5518,8 +5518,8 @@
             }
         ],
         "codes": [
-            "result.extendsToken = @readToken('extends');if (@peek === 'extends') ",
-            "result.extends = @NodeList(@,, 'ClassHeritageNode', 'isExpressionStart');if (@peek === 'undefined') "
+            "if (@peek === 'extends') result.extendsToken = @readToken('extends');",
+            "result.extends = @NodeList(@,, 'ClassHeritageNode', 'isExpressionStart');"
         ],
         "inline": true,
         "classComment": "表示一个extends 分句(`extends xx`)。"
@@ -5566,8 +5566,8 @@
             }
         ],
         "codes": [
-            "result.implementsToken = @readToken('implements');if (@peek === 'implements') ",
-            "result.implements = @NodeList(@,, 'ClassHeritageNode', 'isExpressionStart');if (@peek === 'undefined') "
+            "if (@peek === 'implements') result.implementsToken = @readToken('implements');",
+            "result.implements = @NodeList(@,, 'ClassHeritageNode', 'isExpressionStart');"
         ],
         "inline": true,
         "classComment": "表示一个implements 分句(`implements xx`)。"
@@ -5980,15 +5980,15 @@
         ],
         "codes": [
             "const result = new @PropertyDeclaration();",
-            "result. = @Decorators();if (@peek === 'undefined') ",
-            "result. = @Modifiers();if (@peek === 'undefined') ",
+            "result. = @Decorators();",
+            "result. = @Modifiers();",
             "result.name = name;",
             "result.:Token = undefined;",
             "result.type = undefined;",
-            "result. = @TypeAnnotation();if (@peek === 'undefined') ",
+            "result. = @TypeAnnotation();",
             "result.=Token = undefined;",
             "result.initializer = undefined;",
-            "result. = @Initializer();if (@peek === 'undefined') ",
+            "result. = @Initializer();",
             "return result;"
         ],
         "classComment": "表示一个属性声明(`x: number`)。"
@@ -6081,14 +6081,14 @@
         ],
         "codes": [
             "const result = new @InterfaceDeclaration();",
-            "result. = @Decorators();if (@peek === 'undefined') ",
-            "result. = @Modifiers();if (@peek === 'undefined') ",
+            "result. = @Decorators();",
+            "result. = @Modifiers();",
             "result.interfaceToken = @readToken('interface');",
             "result.name = @Identifier(false);",
-            "result. = @DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName);if (@peek === 'undefined') ",
+            "result. = @DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName);",
             "result.extendsToken = undefined;",
             "result.extends = undefined;",
-            "result. = @ExtendsClause();if (@peek === 'undefined') ",
+            "result. = @ExtendsClause();",
             "result.members = @NodeList(@TypeMemberSignature, '{', '}');",
             "return result;"
         ],
@@ -6176,13 +6176,13 @@
         ],
         "codes": [
             "const result = new @EnumDeclaration();",
-            "result. = @Decorators();if (@peek === 'undefined') ",
-            "result. = @Modifiers();if (@peek === 'undefined') ",
+            "result. = @Decorators();",
+            "result. = @Modifiers();",
             "result.enumToken = @readToken('enum');",
             "result.name = @Identifier(false);",
             "result.extendsToken = undefined;",
             "result.extends = undefined;",
-            "result. = @ExtendsClause();if (@peek === 'undefined') ",
+            "result. = @ExtendsClause();",
             "result.members = @DelimitedList(@EnumMemberDeclaration, '{', '}', true, @isPropertyNameStart);",
             "return result;"
         ],
@@ -6224,7 +6224,7 @@
             "result.name = @PropertyName();",
             "result.=Token = undefined;",
             "result.initializer = undefined;",
-            "result. = @Initializer();if (@peek === 'undefined') ",
+            "result. = @Initializer();",
             "return result;"
         ],
         "classComment": "表示一个枚举成员声明(`x`、`x = 1`)。"
@@ -6518,19 +6518,19 @@
         ],
         "codes": [
             "const result = new @ExtensionDeclaration();",
-            "result. = @Decorators();if (@peek === 'undefined') ",
-            "result. = @Modifiers();if (@peek === 'undefined') ",
+            "result. = @Decorators();",
+            "result. = @Modifiers();",
             "result.extendsToken = @readToken('extends');",
             "result.type = @TypeNode();",
             "result.extendsToken = undefined;",
             "result.extends = undefined;",
-            "result. = @ExtendsClause();if (@peek === 'undefined') ",
+            "result. = @ExtendsClause();",
             "result.implementsToken = undefined;",
             "result.implements = undefined;",
-            "result. = @ImplementsClause();if (@peek === 'undefined') ",
+            "result. = @ImplementsClause();",
             "result.members = undefined;",
             "result.;Token = undefined;",
-            "result. = @ClassBody();if (@peek === 'undefined') ",
+            "result. = @ClassBody();",
             "return result;"
         ],
         "classComment": "表示一个扩展声明(`extends T {}`)。"
@@ -6859,7 +6859,7 @@
             "result.variable = variable;",
             "result.=Token = @readToken('=');",
             "result.value = @Expression(Precedence.assignment);",
-            "result.;Token = @readToken(';');if (@peek === ';') ",
+            "if (@peek === ';') result.;Token = @readToken(';');",
             "return result;"
         ],
         "classComment": "表示一个import 赋值声明。"
@@ -7182,7 +7182,7 @@
             "result.*Token = @readToken('*');",
             "result.fromToken = @readToken('from');",
             "result.from = @StringLiteral();",
-            "result.;Token = @readToken(';');if (@peek === ';') ",
+            "if (@peek === ';') result.;Token = @readToken(';');",
             "return result;"
         ],
         "classComment": "表示一个导出列表声明(`export * from ...`)。"
@@ -7257,7 +7257,7 @@
             "result.variables = @NodeList(@SimpleImportOrExportClause, '{', '}');",
             "result.fromToken = @readToken('from');",
             "result.from = @StringLiteral();",
-            "result.;Token = @readToken(';');if (@peek === ';') ",
+            "if (@peek === ';') result.;Token = @readToken(';');",
             "return result;"
         ],
         "classComment": "表示一个导出列表声明(`export a from ...`)。"
@@ -7316,7 +7316,7 @@
             "result.exportToken = exportToken;",
             "result.=Token = @readToken('=');",
             "result.value = @Expression(Precedence.assignment);",
-            "result.;Token = @readToken(';');if (@peek === ';') ",
+            "if (@peek === ';') result.;Token = @readToken(';');",
             "return result;"
         ],
         "classComment": "表示一个导出赋值声明(`export = 1;`)。"
@@ -7359,9 +7359,9 @@
         ],
         "codes": [
             "const result = new @ExportDefaultDeclaration();",
-            "result. = @Modifiers();if (@peek === 'undefined') ",
+            "result. = @Modifiers();",
             "result.expression = @Expression(Precedence.assignment);",
-            "result.;Token = @readToken(';');if (@peek === ';') ",
+            "if (@peek === ';') result.;Token = @readToken(';');",
             "return result;"
         ],
         "classComment": "表示一个export default 声明(`export default x = 1;`)。"
