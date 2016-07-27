@@ -31,7 +31,7 @@
 						@TypeArguments = < ... TypeArgument , isTypeNodeStart ... > // 类型参数列表(`<number>`)
 							@TypeArgument // 类型参数(`number`)
 								value: TypeNode(Precedence.assignment) // 值
-					@TypeReferenceNode() @extends(TypeNode) // 类型引用节点(`x`)
+					@TypeReferenceNode() extends TypeNode // 类型引用节点(`x`)
 						value: 'identifier' // 值部分
 						if (isIdentifierName(@peek)) {
 							const result = new @TypeReferenceNode();
@@ -178,37 +178,37 @@
 							default:
 								return @PropertySignature(name, questionToken);
 						}
-						@PropertySignature(*, *) @doc // 属性签名(`x: number`)
+						@PropertySignature(*, *) doc // 属性签名(`x: number`)
 							name: PropertyName
 							??
 							?TypeAnnotation
 							ObjectMemberTail
-						@CallSignature @doc // 函数签名(`(): number`)
+						@CallSignature doc // 函数签名(`(): number`)
 							?TypeParameters
 							Parameters
 							?TypeAnnotation
 							ObjectMemberTail
-						@ConstructSignature @doc // 构造函数签名(`new x(): number`)
+						@ConstructSignature doc // 构造函数签名(`new x(): number`)
 							new
 							?TypeParameters
 							Parameters
 							?TypeAnnotation
 							ObjectMemberTail
-						@IndexSignature @doc // 索引器声明(`get x() {...}`、`set x(value) {...}`)
+						@IndexSignature doc // 索引器声明(`get x() {...}`、`set x(value) {...}`)
 							[
 							argument: Identifier(false)
 							?TypeAnnotation
 							]
 							?TypeAnnotation
 							ObjectMemberTail
-						@MethodSignature(*, *) @doc // 方法签名(`x(): number`)
+						@MethodSignature(*, *) doc // 方法签名(`x(): number`)
 							name: PropertyName
 							??
 							?TypeParameters
 							Parameters
 							?TypeAnnotation
 							ObjectMemberTail
-						@AccessorSignature(*, *) @doc // 访问器签名(`get x(): number`、`set x(value): void`)
+						@AccessorSignature(*, *) doc // 访问器签名(`get x(): number`、`set x(value): void`)
 							?get
 							?set
 							name: PropertyName
@@ -239,7 +239,7 @@
 			case 'typeof':
 				result = @TypeQueryNode();
 				break;
-				@TypeQueryNode @extends(TypeNode) // 类型查询节点(`typeof x`)
+				@TypeQueryNode extends TypeNode // 类型查询节点(`typeof x`)
 					typeof
 					operand: Expression(Precedence.postfix)
 			case '=>':
@@ -401,7 +401,7 @@
 							@lexer.read();
 							if (isKeyword(@peek) || @peek === '[') {
 								return @ObjectAccessorDeclaration(modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
-								@ObjectAccessorDeclaration(*, *, *) @doc // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+								@ObjectAccessorDeclaration(*, *, *) doc // 访问器声明(`get x() {...}`、`set x(value) {...}`)
 									?Modifiers
 									?get
 									?set
@@ -421,7 +421,7 @@
 						case '(':
 						case '<':
 							return @ObjectMethodDeclaration(modifiers, undefined, name);
-							@ObjectMethodDeclaration(*, *, *) @doc // 方法声明(`x() {...}`)
+							@ObjectMethodDeclaration(*, *, *) doc // 方法声明(`x() {...}`)
 								?Modifiers
 								?*
 								?name: PropertyName
@@ -432,7 +432,7 @@
 								ObjectMemberTail
 						default:
 							return @ObjectPropertyDeclaration(modifiers, name);
-							@ObjectPropertyDeclaration(*, *, *) @doc // 属性声明(`x: y`)
+							@ObjectPropertyDeclaration(*, *, *) doc // 属性声明(`x: y`)
 								?Modifiers
 								key: PropertyName
 								?:
@@ -542,14 +542,27 @@
 			break;
 			@YieldExpression(allowIn) // yield 表达式(`yield xx`)
 				yield 
-				[nobr]?*
-				[nobr]?operand: Expression(Precedence.assignment, allowIn)
+				?*
+				?operand: Expression(Precedence.assignment, allowIn)
+				const result = new @YieldExpression();
+				result.yieldToken = @readToken('yield');
+				if (@sameLine && @peek === '*') result.asteriskToken = @readToken('*');
+				if (@sameLine && isExpressionStart(@peek)) result.operand = @Expression(Precedence.assignment, allowIn);
+				return result;
 		case 'await':
-			result = @AwaitExpression(allowIn);
+			result = @AwaitExpressionOrIdentifier(allowIn);
 			break;
-			@AwaitExpression(allowIn) // await 表达式(`await xx`)
-				await 
-				[nobr]operand: Expression(Precedence.assignment, allowIn)
+			@AwaitExpressionOrIdentifier(allowIn) // await 表达式(`await xx`)或标识符
+				const savedToken = @lexer.current;
+				@readToken('await');
+				if (@sameLine && isExpressionStart(@peek)) {
+					return @AwaitExpression(allowIn);
+				}
+				@lexer.current = savedToken;
+				return @Identifier();
+				@AwaitExpression(awaitToken, allowIn) // await 表达式(`await xx`)
+					await 
+					operand: Expression(Precedence.assignment, allowIn)
 		case 'class':
 			result = @ClassExpression();
 			break;
@@ -683,7 +696,7 @@
 					return @LabelledStatement(<@Identifier>parsed);
 				}
 				return @ExpressionStatement(parsed);
-		        @LabelledStatement(*) @doc // 标签语句(`x: ...`)
+		        @LabelledStatement(*) doc // 标签语句(`x: ...`)
 		        	label: Identifier
 		        	:
 		        	statement: Statement // 主体部分
@@ -943,12 +956,12 @@
             	return
             	?value: Expression
             	const result = new @ReturnStatement();
-		        result.returnToken = @readToken('return');
-		        if (!@tryReadSemicolon(result)) {
-		            result.value = @Expression();
-		    		@tryReadSemicolon(result);
-		        }
-		        return result;
+            	result.returnToken = @readToken('return');
+            	if (!@tryReadSemicolon(result)) {
+            	    result.value = @Expression();
+            		@tryReadSemicolon(result);
+            	}
+            	return result;
         case 'throw'
             return @ThrowStatement();
             ThrowStatement // throw 语句(`throw x;`)
@@ -1045,7 +1058,7 @@
 			return @ExpressionStatement(@Expression());
 	}
 		
-@Declaration @extends(Statement) // 声明
+@Declaration extends Statement // 声明
 	@FunctionDeclarationOrExpression(result: @FunctionDeclaration | @FunctionExpression/* 解析的目标节点 */, modifiers: @NodeList<@Modifier>) // 函数声明或表达式
 		@DocComment(result);
 		if (modifiers) result.modifiers = modifiers;
@@ -1056,7 +1069,7 @@
 		result.parameters = @Parameters();
 		@TypeAnnotation(result);
 		@FunctionBody(result);
-		@FunctionDeclaration(*, *) @doc // 函数声明(`function fn() {...}`、`function *fn() {...}`)
+		@FunctionDeclaration(*, *) doc // 函数声明(`function fn() {...}`、`function *fn() {...}`)
 			?Decorators
 			?Modifiers
 			function
@@ -1070,7 +1083,7 @@
 			if (decorators) result.decorators = decorators;
 			@FunctionDeclarationOrExpression(result, modifiers);
 			return result;
-		@FunctionExpression(*) @doc // 函数表达式(`function () {}`)
+		@FunctionExpression(*) doc // 函数表达式(`function () {}`)
 			?Modifiers
 			function
 			?* 
@@ -1106,7 +1119,7 @@
 		@ExtendsClause(result);
 		@ImplementsClause(result);
 		@ClassBody(result);
-		@ClassDeclaration(*, *) @doc // 类声明(`class xx {}`)
+		@ClassDeclaration(*, *) doc // 类声明(`class xx {}`)
 			?Decorators
 			?Modifiers
 			class 
@@ -1120,7 +1133,7 @@
 			if (modifiers) result.modifiers = modifiers;
 			@ClassDeclarationOrExpression(result);
 			return result;
-		@ClassExpression @doc // 类表达式(`class xx {}`)
+		@ClassExpression doc // 类表达式(`class xx {}`)
 			class 
 			name?: Identifier
 			?TypeParameters
@@ -1158,7 +1171,7 @@
 						@lexer.read();
 						if (isKeyword(@peek) || @peek === '[') {
 							return @AccessorDeclaration(decorators, modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
-							@AccessorDeclaration(*, *, *, *) @doc // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+							@AccessorDeclaration(*, *, *, *) doc // 访问器声明(`get x() {...}`、`set x(value) {...}`)
 								?Decorators
 								?Modifiers
 								?get
@@ -1178,7 +1191,7 @@
 					case '(':
 					case '<':
 						return @MethodDeclaration(decorators, modifiers, undefined, name);
-						@MethodDeclaration(*, *, *, *) @doc // 方法声明(`x() {...}`)
+						@MethodDeclaration(*, *, *, *) doc // 方法声明(`x() {...}`)
 							?Decorators
 							?Modifiers
 							?*
@@ -1189,14 +1202,14 @@
 							?FunctionBody
 					default:
 						return @PropertyDeclaration(decorators, modifiers, name);
-						@PropertyDeclaration(*, *, *) @doc // 属性声明(`x: number`)
+						@PropertyDeclaration(*, *, *) doc // 属性声明(`x: number`)
 							?Decorators
 							?Modifiers
 							name: PropertyName
 							?TypeAnnotation
 							?Initializer
 				}
-	@InterfaceDeclaration(*, *) @doc // 接口声明(`interface T {...}`)
+	@InterfaceDeclaration(*, *) doc // 接口声明(`interface T {...}`)
 		?Decorators
 		?Modifiers
 		interface
@@ -1204,7 +1217,7 @@
 		?TypeParameters
 		?ExtendsClause
 		members: { TypeMemberSignature ... }
-	@EnumDeclaration(*, *) @doc // 枚举声明(`enum T {}`)
+	@EnumDeclaration(*, *) doc // 枚举声明(`enum T {}`)
 		?Decorators
 		?Modifiers
 		enum
@@ -1214,7 +1227,7 @@
 		@EnumMemberDeclaration // 枚举成员声明(`x`、`x = 1`)
 			name: PropertyName
 			?Initializer
-	@NamespaceOrModuleDeclaration(result: @NamespaceDeclaration | @ModuleDeclaration, decorators: @NodeList<@Decorator>, modifiers: @NodeList<@Modifier>, type: TokenType) @doc // 命名空间或模块声明
+	@NamespaceOrModuleDeclaration(result: @NamespaceDeclaration | @ModuleDeclaration, decorators: @NodeList<@Decorator>, modifiers: @NodeList<@Modifier>, type: TokenType) doc // 命名空间或模块声明
 		@DocComment(result);
 		if (decorators) result.decorators = decorators;
 		if (modifiers) result.modifiers = modifiers;
@@ -1229,7 +1242,7 @@
 			}
 		}
 		@BlockBody(result);
-		@NamespaceDeclaration(*, *) @doc // 命名空间声明(`namespace T {}`)
+		@NamespaceDeclaration(*, *) doc // 命名空间声明(`namespace T {}`)
 			?Decorators
 			?Modifiers
 			namespace
@@ -1238,7 +1251,7 @@
 			const result = new @NamespaceDeclaration();
 			@NamespaceOrModuleDeclaration(result, decorators, modifiers, 'namespace');
 			return result;
-		@ModuleDeclaration(*, *) @doc // 模块声明(`module T {}`)
+		@ModuleDeclaration(*, *) doc // 模块声明(`module T {}`)
 			?Decorators
 			?Modifiers
 			module
@@ -1249,7 +1262,7 @@
 			return result;
 		@BlockBody(result) // 语句块主体(`{...}`)
 			statements: { Statement ... }
-	@ExtensionDeclaration(*, *) @doc // 扩展声明(`extends T {}`)
+	@ExtensionDeclaration(*, *) doc // 扩展声明(`extends T {}`)
 		?Decorators
 		?Modifiers
 		extends

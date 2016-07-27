@@ -399,7 +399,53 @@ tpack.task("gen-nodes", function () {
 function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
 
     const productions = readSource();
-    console.log(productions);
+
+    // 查找跟产生式。
+    const rootProductions = [];
+    for (const name in productions) {
+        const production = productions[name];
+        if (production.indent == 0) {
+            rootProductions.push(name);
+        }
+    }
+
+    for (const name in productions) {
+        const production = productions[name];
+
+        // 填充 extends
+        if (!production.extends) {
+            production.extends = "Node";
+            for (const n of rootProductions) {
+                if (production.name.endsWith(n) && production.name !== n) {
+                    production.extends = n;
+                    break;
+                }
+            }
+            if (production.name.endsWith("Literal")) {
+                production.extends = "Expression";
+            }
+        }
+
+        for (const part of production.parts) {
+            // 填充组成部分。
+            if (!part.equals) {
+
+            }
+        }
+
+        // 填充代码
+        if (production.parts.length && !production.codes.length) {
+
+        }
+
+
+
+    }
+
+
+    var s = tpack.createFile("d.json");
+    s.content = JSON.stringify(productions, null, 4);
+    s.save();
 
     function readSource() {
 
@@ -408,76 +454,23 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
         const stack = [];
         const lines = source.split(/\r\n?|\n/);
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
+            const line = lines[i];
             if (!line || /^\/\//.test(line)) continue;
-
-            if (/^@/.test(line)) {
-                const production = {
-                    indent: getIndent(line),
-                    comment: "",
-                    name: "",
-                    equals: "",
-                    params: [],
-                    parts: [],
-                    codes: []
-                };
-                production.name = line
-                    .replace(/\/\/\s*(.*)$/, function (_, name) {
-                        production.comment = name.trim();
-                        return "";
-                    })
-                    .replace(/@(\w+)\s*\(([^)]*?)\)/, function (_, prop, value) {
-                        production[prop] = value.trim();
-                        return "";
-                    })
-                    .replace(/@=(.*)/, function (_, value) {
-                        production.equals = value.trim();
-                        return "";
-                    })
-                    .replace(/\(([^)]*?)\)/, function (_, params) {
-                        production.params = params.split(/,\s*/)
-                            .map(function (p) {
-                                const info = {
-                                    comment: "",
-                                    name: "",
-                                    equal: "",
-                                    question: false,
-                                    type: ""
-                                };
-                                info.name = p.replace(/\/\*(.*)\*\//, function (_, comment) {
-                                    info.comment = comment.trim();
-                                    return "";
-                                })
-                                    .replace(/=(.*)/, function (_, value) {
-                                        info.equal = value.trim();
-                                        return "";
-                                    })
-                                    .replace(/:(.*)/, function (_, type) {
-                                        info.type = type.trim();
-                                        return "";
-                                    })
-                                    .replace(/\?/, function (_) {
-                                        info.question = true;
-                                        return "";
-                                    })
-                                    .trim();
-                                return info;
-                            });
-                        return "";
-                    });
-
+            if (/^\s*@\w/.test(line) && !isCode(line)) {
+                const production = parseHeader(line);
                 productions[production.name] = production;
                 stack.push(production);
             } else {
                 let production = stack[stack.length - 1];
-                if (getIndent(line) <= production.indent) {
+                while (production && getIndent(line) <= production.indent) {
                     stack.pop();
                     production = stack[stack.length - 1];
                 }
+                if (!production) continue;
                 if (isCode(line)) {
-                    production.codes.push(formatCode(removeIndent(line, production.indent + 1)));
+                    production.codes.push(parseCode(removeIndent(line, production.indent + 1)));
                 } else {
-                    production.parts.push(formatPart(line.trim()));
+                    production.parts.push(parsePart(line.trim()));
                 }
             }
         }
@@ -485,11 +478,11 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
         return productions;
 
         function getIndent(line) {
-            return /^\s*/.exec(line)[0].length;
+            return (/\S/.exec(line.replace(/    /g, "\t")) || { index: 0 }).index;
         }
 
         function removeIndent(line, count) {
-            return line.substring(count);
+            return line.replace(/    /g, "\t").substring(count);
         }
 
         function split2(line, sepeator) {
@@ -498,21 +491,88 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
         }
 
         function isCode(line) {
+            line = line.trim();
             return /[\{:;\}\?]$/.test(line) && !/^\?[:;\{\?]$/.test(line);
         }
 
-        function formatCode(line) {
-            return line.replace(/@peek/g, "this.lexer.peek().type")
-                .replace(/@read/g, "this.lexer.read().start")
-                .replace(/'(.+)'/g, function (_, t) {
-                    if (!/^a-z/.test(t)) t = tokenTypes[t];
-                    return "TokenType." + t;
+        function parseHeader(line) {
+            const result = {
+                indent: getIndent(line),
+                doc: false,
+                extends: "",
+                comment: "",
+                name: "",
+                equals: "",
+                params: [],
+                parts: [],
+                codes: []
+            };
+
+            result.name = line.replace(/^\s*@/, "")
+                .replace(/\/\/\s*(.*)$/, function (_, value) {
+                    result.comment = value.trim();
+                    return "";
                 })
-                .replace(/@([A-Z])/g, "this.parse$1")
-                .replace(/@/g, "this.");
+                .replace(/\bdoc\b/, function (_, value) {
+                    result.doc = true;
+                    return "";
+                })
+                .replace(/extends\s*(\w+)/, function (_, value) {
+                    result.extends = value.trim();
+                    return "";
+                })
+                .replace(/\(([^)]*?)\)/, function (_, params) {
+                    result.params = params.split(/,\s*/).map(parseParam);
+                    return "";
+                })
+                .replace(/=(.*)/, function (_, value) {
+                    result.equals = value.trim();
+                    return "";
+                })
+                .trim();
+            return result;
         }
 
-        function formatPart(line) {
+        function parseParam(line) {
+            const result = {
+                comment: "",
+                name: "",
+                equal: "",
+                question: false,
+                type: ""
+            };
+            result.name = line.replace(/\/\*(.*)\*\//, function (_, comment) {
+                result.comment = comment.trim();
+                return "";
+            })
+                .replace(/=(.*)/, function (_, value) {
+                    result.equal = value.trim();
+                    return "";
+                })
+                .replace(/:(.*)/, function (_, type) {
+                    result.type = type.trim();
+                    return "";
+                })
+                .replace(/\?/, function (_) {
+                    result.question = true;
+                    return "";
+                })
+                .trim();
+            return result;
+        }
+
+        function parseCode(line) {
+            return line.replace(/@peek/g, "this.lexer.peek().type")
+            //.replace(/@read/g, "this.lexer.read().start")
+            //.replace(/'(.+)'/g, function (_, t) {
+            //    if (!/^a-z/.test(t)) t = tokenTypes[t];
+            //    return "TokenType." + t;
+            //})
+            //.replace(/@([A-Z])/g, "this.parse$1")
+            //.replace(/@/g, "this.");
+        }
+
+        function parsePart(line) {
             const result = {
                 optional: false,
                 name: "",
@@ -526,7 +586,7 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
                     result.comment = name.trim();
                     return "";
                 })
-                .replace(/@=(.*)/, function (_, value) {
+                .replace(/=(.*)/, function (_, value) {
                     result.equals = value.trim();
                     return "";
                 })
@@ -534,7 +594,7 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
                     result.args = value.trim();
                     return "";
                 })
-                .replace(/@:(.*)/, function (_, value) {
+                .replace(/:(.*)/, function (_, value) {
                     result.type = value.trim();
                     return "";
                 })
