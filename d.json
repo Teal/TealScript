@@ -78,7 +78,7 @@
         "parts": [
             {
                 "name": "type",
-                "comment": "获取当前内置类型节点的类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`。",
+                "comment": "类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`",
                 "equals": "@read",
                 "type": "number",
                 "tokens": [
@@ -104,7 +104,8 @@
                     "double",
                     "*",
                     "?"
-                ]
+                ],
+                "partComment": "获取当前内置类型节点的类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`。"
             }
         ],
         "codes": [
@@ -142,15 +143,17 @@
         "parts": [
             {
                 "name": "target",
-                "comment": "获取当前泛型类型节点的目标部分。",
+                "comment": "目标部分",
                 "equals": "target",
-                "type": "TypeReferenceNode"
+                "type": "TypeReferenceNode",
+                "partComment": "获取当前泛型类型节点的目标部分。"
             },
             {
                 "name": "typeArguments",
-                "comment": "获取当前泛型类型节点的类型参数部分。",
+                "comment": "类型参数部分",
                 "equals": "@DelimitedList(@TypeArgument, '<', '>', false, @isTypeNodeStart)",
-                "type": "@NodeList<@TypeArgument>"
+                "type": "@NodeList<@TypeArgument>",
+                "partComment": "获取当前泛型类型节点的类型参数部分。"
             }
         ],
         "codes": [
@@ -185,10 +188,11 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前类型参数的值。",
+                "comment": "值",
                 "args": "Precedence.assignment",
                 "equals": "@TypeNode(Precedence.assignment)",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前类型参数的值。"
             }
         ],
         "codes": [
@@ -206,12 +210,13 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前类型引用节点的值部分。",
+                "comment": "值部分",
                 "equals": "@readToken('identifier')",
                 "type": "number",
                 "tokens": [
                     "identifier"
-                ]
+                ],
+                "partComment": "获取当前类型引用节点的值部分。"
             }
         ],
         "codes": [
@@ -283,31 +288,34 @@
             {
                 "optional": true,
                 "name": "typeParameters",
-                "comment": "获取当前函数类型节点。的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "typeParameters",
-                "type": "@NodeList<@TypeParameterDeclaration>"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前函数类型节点。的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "parameters",
-                "comment": "获取当前函数类型节点。的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "parameters",
-                "type": "@NodeList<@ParameterDeclaration>"
+                "type": "@NodeList<@ParameterDeclaration>",
+                "partComment": "获取当前函数类型节点。的(可能不存在)。"
             },
             {
                 "name": "=>Token",
-                "comment": "获取当前函数类型节点。的=>Token 的位置。",
+                "comment": " => 的位置",
                 "equals": "@readToken('=>')",
                 "type": "number",
                 "tokens": [
                     "=>"
-                ]
+                ],
+                "partComment": "获取当前函数类型节点。的 => 的位置。"
             },
             {
                 "name": "returnType",
-                "comment": "获取当前函数类型节点。的undefined。",
                 "equals": "@TypeNode()()",
-                "type": "TypeNode()"
+                "type": "TypeNode()",
+                "partComment": "获取当前函数类型节点。的undefined。"
             }
         ],
         "codes": [
@@ -344,22 +352,25 @@
         "parts": [
             {
                 "name": "name",
-                "comment": "获取当前类型参数声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@Identifier()",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前类型参数声明的名字部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类型参数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@extends()",
-                "type": "extends"
+                "type": "extends",
+                "partComment": "获取当前类型参数声明的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "extends",
-                "comment": "获取当前类型参数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeNode()",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前类型参数声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -398,71 +409,53 @@
             {
                 "optional": true,
                 "name": "modifiers",
-                "comment": "获取当前参数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前参数声明的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "...Token",
-                "comment": "获取当前参数声明的...Token 的位置(可能不存在)。",
+                "comment": " ... 的位置(可能不存在)",
                 "equals": "@readToken('...')",
                 "type": "number",
                 "tokens": [
                     "..."
-                ]
+                ],
+                "partComment": "获取当前参数声明的 ... 的位置(可能不存在)。"
             },
             {
                 "name": "name",
-                "comment": "获取当前参数声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@BindingName()",
-                "type": "BindingName"
+                "type": "BindingName",
+                "partComment": "获取当前参数声明的名字部分。"
             },
             {
                 "optional": true,
                 "name": "?Token",
-                "comment": "获取当前参数声明的?Token 的位置(可能不存在)。",
+                "comment": " ? 的位置(可能不存在)",
                 "equals": "@readToken('?')",
                 "type": "number",
                 "tokens": [
                     "?"
-                ]
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                ],
+                "partComment": "获取当前参数声明的 ? 的位置(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前参数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "initializer",
-                "type": "Expression",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前参数声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前参数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Initializer()",
-                "type": "Initializer"
+                "type": "Initializer",
+                "partComment": "获取当前参数声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -471,11 +464,7 @@
             "if (@peek === '...') result....Token = @readToken('...');",
             "result.name = @BindingName();",
             "if (@peek === '?') result.?Token = @readToken('?');",
-            "result.:Token = undefined;",
-            "result.type = undefined;",
             "result. = @TypeAnnotation();",
-            "result.=Token = undefined;",
-            "result.initializer = undefined;",
             "result. = @Initializer();",
             "return result;"
         ],
@@ -496,7 +485,7 @@
         "parts": [
             {
                 "name": "elements",
-                "comment": "获取当前数组绑定模式项的所有元素。",
+                "comment": "所有元素",
                 "equals": "@DelimitedList(@ArrayBindingElement, '[', ']', true, @isArrayBindingElementStart)",
                 "type": "[ ?ArrayBindingElement , ...isArrayBindingElementStart ]",
                 "list": {
@@ -508,7 +497,8 @@
                     "optional": true,
                     "type": "@NodeList<@ArrayBindingElement>",
                     "equals": "@DelimitedList(@ArrayBindingElement, '[', ']', true, @isArrayBindingElementStart)"
-                }
+                },
+                "partComment": "获取当前数组绑定模式项的所有元素。"
             }
         ],
         "codes": [
@@ -527,37 +517,28 @@
             {
                 "optional": true,
                 "name": "...Token",
-                "comment": "获取当前数组绑定模式项的...Token 的位置(可能不存在)。",
+                "comment": " ... 的位置(可能不存在)",
                 "equals": "@readToken('...')",
                 "type": "number",
                 "tokens": [
                     "..."
-                ]
+                ],
+                "partComment": "获取当前数组绑定模式项的 ... 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "value",
-                "comment": "获取当前数组绑定模式项的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@BindingName()",
-                "type": "BindingName"
-            },
-            {
-                "inlined": true,
-                "name": "=Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "initializer",
-                "type": "Expression",
-                "comment": "(可能不存在)"
+                "type": "BindingName",
+                "partComment": "获取当前数组绑定模式项的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前数组绑定模式项的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Initializer()",
-                "type": "Initializer"
+                "type": "Initializer",
+                "partComment": "获取当前数组绑定模式项的(可能不存在)。"
             }
         ],
         "codes": [
@@ -579,7 +560,7 @@
         "parts": [
             {
                 "name": "elements",
-                "comment": "获取当前对象绑定模式项的所有元素。",
+                "comment": "所有元素",
                 "equals": "@DelimitedList(@ObjectBindingElement, '{', '}', true, @isObjectBindingElementStart)",
                 "type": "{ ?ObjectBindingElement , ...isObjectBindingElementStart }",
                 "list": {
@@ -591,7 +572,8 @@
                     "optional": true,
                     "type": "@NodeList<@ObjectBindingElement>",
                     "equals": "@DelimitedList(@ObjectBindingElement, '{', '}', true, @isObjectBindingElementStart)"
-                }
+                },
+                "partComment": "获取当前对象绑定模式项的所有元素。"
             }
         ],
         "codes": [
@@ -610,52 +592,44 @@
             {
                 "optional": true,
                 "name": "...Token",
-                "comment": "获取当前对象绑定模式项的...Token 的位置(可能不存在)。",
+                "comment": " ... 的位置(可能不存在)",
                 "equals": "@readToken('...')",
                 "type": "number",
                 "tokens": [
                     "..."
-                ]
+                ],
+                "partComment": "获取当前对象绑定模式项的 ... 的位置(可能不存在)。"
             },
             {
                 "name": "key",
-                "comment": "获取当前对象绑定模式项的undefined。",
                 "equals": "@PropertyName,()",
-                "type": "PropertyName,"
+                "type": "PropertyName,",
+                "partComment": "获取当前对象绑定模式项的undefined。"
             },
             {
                 "optional": true,
                 "name": ":Token",
-                "comment": "获取当前对象绑定模式项的:Token 的位置(可能不存在)。",
+                "comment": " : 的位置(可能不存在)",
                 "equals": "@readToken(':')",
                 "type": "number",
                 "tokens": [
                     ":"
-                ]
+                ],
+                "partComment": "获取当前对象绑定模式项的 : 的位置(可能不存在)。"
             },
             {
                 "name": "value",
-                "comment": "获取当前对象绑定模式项的值。",
+                "comment": "值",
                 "equals": "@BindingName()",
-                "type": "BindingName"
-            },
-            {
-                "inlined": true,
-                "name": "=Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "initializer",
-                "type": "Expression",
-                "comment": "(可能不存在)"
+                "type": "BindingName",
+                "partComment": "获取当前对象绑定模式项的值。"
             },
             {
                 "optional": true,
-                "comment": "获取当前对象绑定模式项的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Initializer()",
-                "type": "Initializer"
+                "type": "Initializer",
+                "partComment": "获取当前对象绑定模式项的(可能不存在)。"
             }
         ],
         "codes": [
@@ -664,8 +638,6 @@
             "result.key = @PropertyName,();",
             "if (@peek === ':') result.:Token = @readToken(':');",
             "result.value = @BindingName();",
-            "result.=Token = undefined;",
-            "result.initializer = undefined;",
             "result. = @Initializer();",
             "return result;"
         ],
@@ -700,10 +672,11 @@
         "parts": [
             {
                 "name": "body",
-                "comment": "获取当前已计算的属性名的主体部分。",
+                "comment": "主体部分",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前已计算的属性名的主体部分。"
             }
         ],
         "codes": [
@@ -728,19 +701,21 @@
             {
                 "optional": true,
                 "name": ":Token",
-                "comment": "获取当前类型注解的:Token 的位置(可能不存在)。",
+                "comment": " : 的位置(可能不存在)",
                 "equals": "@readToken(':')",
                 "type": "number",
                 "tokens": [
                     ":"
-                ]
+                ],
+                "partComment": "获取当前类型注解的 : 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "type",
-                "comment": "获取当前类型注解的类型部分(可能不存在)。",
+                "comment": "类型部分(可能不存在)",
                 "equals": "@TypeNode()",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前类型注解的类型部分(可能不存在)。"
             }
         ],
         "codes": [
@@ -760,7 +735,7 @@
                 "type": "{'='?: number, initializer?: Expression}"
             },
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -771,20 +746,22 @@
             {
                 "optional": true,
                 "name": "=Token",
-                "comment": "获取当前初始值的=Token 的位置(可能不存在)。",
+                "comment": " = 的位置(可能不存在)",
                 "equals": "@readToken('=')",
                 "type": "number",
                 "tokens": [
                     "="
-                ]
+                ],
+                "partComment": "获取当前初始值的 = 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "initializer",
-                "comment": "获取当前初始值的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.assignment, allowIn",
                 "equals": "@Expression(Precedence.assignment, allowIn)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前初始值的(可能不存在)。"
             }
         ],
         "codes": [
@@ -802,27 +779,30 @@
         "parts": [
             {
                 "name": "(Token",
-                "comment": "获取当前括号类型节点的(Token 的位置。",
+                "comment": " ( 的位置",
                 "equals": "@readToken('(')",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前括号类型节点的 ( 的位置。"
             },
             {
                 "name": "body",
-                "comment": "获取当前括号类型节点的主体部分。",
+                "comment": "主体部分",
                 "equals": "@TypeNode()()",
-                "type": "TypeNode()"
+                "type": "TypeNode()",
+                "partComment": "获取当前括号类型节点的主体部分。"
             },
             {
                 "name": ")Token",
-                "comment": "获取当前括号类型节点的)Token 的位置。",
+                "comment": " ) 的位置",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前括号类型节点的 ) 的位置。"
             }
         ],
         "codes": [
@@ -842,7 +822,7 @@
         "parts": [
             {
                 "name": "elements",
-                "comment": "获取当前元祖类型节点的所有元素。",
+                "comment": "所有元素",
                 "equals": "@DelimitedList(@TupleTypeElement, '[', ']', true, @isTypeNodeStart)",
                 "type": "[ ?TupleTypeElement , ...isTypeNodeStart ]",
                 "list": {
@@ -854,7 +834,8 @@
                     "optional": true,
                     "type": "@NodeList<@TupleTypeElement>",
                     "equals": "@DelimitedList(@TupleTypeElement, '[', ']', true, @isTypeNodeStart)"
-                }
+                },
+                "partComment": "获取当前元祖类型节点的所有元素。"
             }
         ],
         "codes": [
@@ -872,10 +853,11 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前元祖类型节点元素的值。",
+                "comment": "值",
                 "args": "Precedence.assignment",
                 "equals": "@TypeNode(Precedence.assignment)",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前元祖类型节点元素的值。"
             }
         ],
         "codes": [
@@ -893,7 +875,7 @@
         "parts": [
             {
                 "name": "elements",
-                "comment": "获取当前对象类型节点的所有元素。",
+                "comment": "所有元素",
                 "equals": "@NodeList(@TypeMemberSignature, '{', '}')",
                 "type": "{ TypeMemberSignature ... }",
                 "list": {
@@ -905,7 +887,8 @@
                     "optional": false,
                     "type": "@NodeList<@TypeMemberSignature>",
                     "equals": "@NodeList(@TypeMemberSignature, '{', '}')"
-                }
+                },
+                "partComment": "获取当前对象类型节点的所有元素。"
             }
         ],
         "codes": [
@@ -984,37 +967,28 @@
         "parts": [
             {
                 "name": "name",
-                "comment": "获取当前属性签名的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "name",
-                "type": "PropertyName"
+                "type": "PropertyName",
+                "partComment": "获取当前属性签名的名字部分。"
             },
             {
                 "optional": true,
                 "name": "?Token",
-                "comment": "获取当前属性签名的?Token 的位置(可能不存在)。",
+                "comment": " ? 的位置(可能不存在)",
                 "equals": "?Token",
                 "type": "number",
                 "tokens": [
                     "?"
-                ]
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                ],
+                "partComment": "获取当前属性签名的 ? 的位置(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前属性签名的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前属性签名的(可能不存在)。"
             }
         ],
         "codes": [
@@ -1031,27 +1005,17 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前函数签名的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前函数签名的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前函数签名的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前函数签名的(可能不存在)。"
             }
         ],
         "codes": [
@@ -1069,36 +1033,27 @@
         "parts": [
             {
                 "name": "newToken",
-                "comment": "获取当前构造函数签名的newToken 的位置。",
+                "comment": " new 的位置",
                 "equals": "@readToken('new')",
                 "type": "number",
                 "tokens": [
                     "new"
-                ]
+                ],
+                "partComment": "获取当前构造函数签名的 new 的位置。"
             },
             {
                 "optional": true,
-                "comment": "获取当前构造函数签名的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前构造函数签名的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前构造函数签名的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前构造函数签名的(可能不存在)。"
             }
         ],
         "codes": [
@@ -1116,63 +1071,44 @@
         "parts": [
             {
                 "name": "[Token",
-                "comment": "获取当前索引器声明的[Token 的位置。",
+                "comment": " [ 的位置",
                 "equals": "@readToken('[')",
                 "type": "number",
                 "tokens": [
                     "["
-                ]
+                ],
+                "partComment": "获取当前索引器声明的 [ 的位置。"
             },
             {
                 "name": "argument",
-                "comment": "获取当前索引器声明的参数部分。",
+                "comment": "参数部分",
                 "equals": "@Identifier()",
-                "type": "Identifier"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "Identifier",
+                "partComment": "获取当前索引器声明的参数部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前索引器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前索引器声明的(可能不存在)。"
             },
             {
                 "name": "]Token",
-                "comment": "获取当前索引器声明的]Token 的位置。",
+                "comment": " ] 的位置",
                 "equals": "@readToken(']')",
                 "type": "number",
                 "tokens": [
                     "]"
-                ]
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                ],
+                "partComment": "获取当前索引器声明的 ] 的位置。"
             },
             {
                 "optional": true,
-                "comment": "获取当前索引器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前索引器声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -1201,43 +1137,35 @@
         "parts": [
             {
                 "name": "name",
-                "comment": "获取当前方法签名的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "name",
-                "type": "PropertyName"
+                "type": "PropertyName",
+                "partComment": "获取当前方法签名的名字部分。"
             },
             {
                 "optional": true,
                 "name": "?Token",
-                "comment": "获取当前方法签名的?Token 的位置(可能不存在)。",
+                "comment": " ? 的位置(可能不存在)",
                 "equals": "?Token",
                 "type": "number",
                 "tokens": [
                     "?"
-                ]
+                ],
+                "partComment": "获取当前方法签名的 ? 的位置(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法签名的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前方法签名的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法签名的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前方法签名的(可能不存在)。"
             }
         ],
         "codes": [
@@ -1268,56 +1196,49 @@
             {
                 "optional": true,
                 "name": "getToken",
-                "comment": "获取当前访问器签名的getToken 的位置(可能不存在)。",
+                "comment": " get 的位置(可能不存在)",
                 "equals": "getToken",
                 "type": "number",
                 "tokens": [
                     "get"
-                ]
+                ],
+                "partComment": "获取当前访问器签名的 get 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "setToken",
-                "comment": "获取当前访问器签名的setToken 的位置(可能不存在)。",
+                "comment": " set 的位置(可能不存在)",
                 "equals": "setToken",
                 "type": "number",
                 "tokens": [
                     "set"
-                ]
+                ],
+                "partComment": "获取当前访问器签名的 set 的位置(可能不存在)。"
             },
             {
                 "name": "name",
-                "comment": "获取当前访问器签名的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@PropertyName()",
-                "type": "PropertyName"
+                "type": "PropertyName",
+                "partComment": "获取当前访问器签名的名字部分。"
             },
             {
                 "optional": true,
                 "name": "?Token",
-                "comment": "获取当前访问器签名的?Token 的位置(可能不存在)。",
+                "comment": " ? 的位置(可能不存在)",
                 "equals": "@readToken('?')",
                 "type": "number",
                 "tokens": [
                     "?"
-                ]
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                ],
+                "partComment": "获取当前访问器签名的 ? 的位置(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前访问器签名的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前访问器签名的(可能不存在)。"
             }
         ],
         "codes": [
@@ -1342,22 +1263,24 @@
             {
                 "optional": true,
                 "name": ",Token",
-                "comment": "获取当前对象成员尾部的,Token 的位置(可能不存在)。",
+                "comment": " , 的位置(可能不存在)",
                 "equals": "@readToken(',')",
                 "type": "number",
                 "tokens": [
                     ","
-                ]
+                ],
+                "partComment": "获取当前对象成员尾部的 , 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前对象成员尾部的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前对象成员尾部的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -1380,33 +1303,36 @@
         "parts": [
             {
                 "name": "newToken",
-                "comment": "获取当前构造函数类型节点的newToken 的位置。",
+                "comment": " new 的位置",
                 "equals": "@readToken('new')",
                 "type": "number",
                 "tokens": [
                     "new"
-                ]
+                ],
+                "partComment": "获取当前构造函数类型节点的 new 的位置。"
             },
             {
                 "optional": true,
-                "comment": "获取当前构造函数类型节点的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前构造函数类型节点的(可能不存在)。"
             },
             {
                 "name": "=>Token",
-                "comment": "获取当前构造函数类型节点的=>Token 的位置。",
+                "comment": " => 的位置",
                 "equals": "@readToken('=>')",
                 "type": "number",
                 "tokens": [
                     "=>"
-                ]
+                ],
+                "partComment": "获取当前构造函数类型节点的 => 的位置。"
             },
             {
                 "name": "return",
-                "comment": "获取当前构造函数类型节点的undefined。",
                 "equals": "@TypeNode()",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前构造函数类型节点的undefined。"
             }
         ],
         "codes": [
@@ -1422,19 +1348,21 @@
         "parts": [
             {
                 "name": "typeofToken",
-                "comment": "获取当前类型查询节点的typeofToken 的位置。",
+                "comment": " typeof 的位置",
                 "equals": "@readToken('typeof')",
                 "type": "number",
                 "tokens": [
                     "typeof"
-                ]
+                ],
+                "partComment": "获取当前类型查询节点的 typeof 的位置。"
             },
             {
                 "name": "operand",
-                "comment": "获取当前类型查询节点的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.postfix",
                 "equals": "@Expression(Precedence.postfix)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前类型查询节点的(可能不存在)。"
             }
         ],
         "codes": [
@@ -1453,10 +1381,11 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前字面量类型节点的值。",
+                "comment": "值",
                 "args": "Precedence.primary",
                 "equals": "@Expression(Precedence.primary)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前字面量类型节点的值。"
             }
         ],
         "codes": [
@@ -1481,25 +1410,28 @@
         "parts": [
             {
                 "name": "target",
-                "comment": "获取当前限定名称类型节点的目标部分。",
+                "comment": "目标部分",
                 "equals": "target",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前限定名称类型节点的目标部分。"
             },
             {
                 "name": ".Token",
-                "comment": "获取当前限定名称类型节点的.Token 的位置。",
+                "comment": " . 的位置",
                 "equals": "@readToken('.')",
                 "type": "number",
                 "tokens": [
                     "."
-                ]
+                ],
+                "partComment": "获取当前限定名称类型节点的 . 的位置。"
             },
             {
                 "name": "argument",
-                "comment": "获取当前限定名称类型节点的参数部分。",
+                "comment": "参数部分",
                 "args": "true",
                 "equals": "@MemberCallArgument()",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前限定名称类型节点的参数部分。"
             }
         ],
         "codes": [
@@ -1526,27 +1458,30 @@
         "parts": [
             {
                 "name": "target",
-                "comment": "获取当前数组类型节点的目标部分。",
+                "comment": "目标部分",
                 "equals": "target",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前数组类型节点的目标部分。"
             },
             {
                 "name": "[Token",
-                "comment": "获取当前数组类型节点的[Token 的位置。",
+                "comment": " [ 的位置",
                 "equals": "@readToken('[')",
                 "type": "number",
                 "tokens": [
                     "["
-                ]
+                ],
+                "partComment": "获取当前数组类型节点的 [ 的位置。"
             },
             {
                 "name": "]Token",
-                "comment": "获取当前数组类型节点的]Token 的位置。",
+                "comment": " ] 的位置",
                 "equals": "@readToken(']')",
                 "type": "number",
                 "tokens": [
                     "]"
-                ]
+                ],
+                "partComment": "获取当前数组类型节点的 ] 的位置。"
             }
         ],
         "codes": [
@@ -1573,27 +1508,30 @@
         "parts": [
             {
                 "name": "left",
-                "comment": "获取当前双目表达式的左值部分。",
+                "comment": "左值部分",
                 "equals": "left",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前双目表达式的左值部分。"
             },
             {
                 "name": "operator",
-                "comment": "获取当前双目表达式的运算类型。合法的值有：`&`、`|`、`is`。",
+                "comment": "运算类型。合法的值有：`&`、`|`、`is`",
                 "equals": "@read",
                 "type": "number",
                 "tokens": [
                     "&",
                     "|",
                     "is"
-                ]
+                ],
+                "partComment": "获取当前双目表达式的运算类型。合法的值有：`&`、`|`、`is`。"
             },
             {
                 "name": "right",
-                "comment": "获取当前双目表达式的右值部分。",
+                "comment": "右值部分",
                 "args": "getPrecedence(result.operator",
                 "equals": "@TypeNode + 1)(getPrecedence(result.operator)",
-                "type": "TypeNode + 1)"
+                "type": "TypeNode + 1)",
+                "partComment": "获取当前双目表达式的右值部分。"
             }
         ],
         "codes": [
@@ -1615,7 +1553,7 @@
                 "equal": "Precedence.any"
             },
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "equal": "true",
                 "type": "boolean"
@@ -1745,7 +1683,7 @@
         "name": "ArrowFunctionOrGenericExpressionOrIdentifier",
         "params": [
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -1794,15 +1732,17 @@
         "parts": [
             {
                 "name": "target",
-                "comment": "获取当前泛型表达式的目标部分。",
+                "comment": "目标部分",
                 "equals": "target",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前泛型表达式的目标部分。"
             },
             {
                 "name": "typeArguments",
-                "comment": "获取当前泛型表达式的类型参数部分。",
+                "comment": "类型参数部分",
                 "equals": "typeArguments",
-                "type": "@NodeList<@TypeArgument>"
+                "type": "@NodeList<@TypeArgument>",
+                "partComment": "获取当前泛型表达式的类型参数部分。"
             }
         ],
         "codes": [
@@ -1828,12 +1768,13 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前标识符的值部分。",
+                "comment": "值部分",
                 "equals": "@readToken('identifier')",
                 "type": "number",
                 "tokens": [
                     "identifier"
-                ]
+                ],
+                "partComment": "获取当前标识符的值部分。"
             }
         ],
         "codes": [
@@ -1876,7 +1817,7 @@
         "parts": [
             {
                 "name": "type",
-                "comment": "获取当前简单字面量的类型。合法的值有：`this`、`null`、`true`、`false`、`super`。",
+                "comment": "类型。合法的值有：`this`、`null`、`true`、`false`、`super`",
                 "equals": "@read",
                 "type": "number",
                 "tokens": [
@@ -1885,7 +1826,8 @@
                     "true",
                     "false",
                     "super"
-                ]
+                ],
+                "partComment": "获取当前简单字面量的类型。合法的值有：`this`、`null`、`true`、`false`、`super`。"
             }
         ],
         "codes": [
@@ -1900,7 +1842,7 @@
         "name": "ArrowFunctionOrParenthesizedExpression",
         "params": [
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -1938,7 +1880,7 @@
                 "type": "NodeList<ParameterDeclaration> | Identifier"
             },
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -1949,47 +1891,40 @@
             {
                 "optional": true,
                 "name": "modifiers",
-                "comment": "获取当前箭头函数表达式。的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "modifiers",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前箭头函数表达式。的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "typeParameters",
-                "comment": "获取当前箭头函数表达式。的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "typeParameters",
-                "type": "@NodeList<@TypeParameterDeclaration>"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前箭头函数表达式。的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "parameters",
-                "comment": "获取当前箭头函数表达式。的参数部分(可能不存在)。",
+                "comment": "参数部分(可能不存在)",
                 "equals": "parameters",
-                "type": "NodeList<ParameterDeclaration> | Identifier"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "NodeList<ParameterDeclaration> | Identifier",
+                "partComment": "获取当前箭头函数表达式。的参数部分(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前箭头函数表达式。的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前箭头函数表达式。的(可能不存在)。"
             },
             {
                 "name": "body",
-                "comment": "获取当前箭头函数表达式。的主体部分。",
+                "comment": "主体部分",
                 "equals": "@peek === '{' ? @BlockStatement() : @Expression(Precedence.assignment, allowIn)",
-                "type": "BlockStatement | Expression"
+                "type": "BlockStatement | Expression",
+                "partComment": "获取当前箭头函数表达式。的主体部分。"
             }
         ],
         "codes": [
@@ -2005,27 +1940,30 @@
         "parts": [
             {
                 "name": "(Token",
-                "comment": "获取当前括号表达式的(Token 的位置。",
+                "comment": " ( 的位置",
                 "equals": "@readToken('(')",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前括号表达式的 ( 的位置。"
             },
             {
                 "name": "body",
-                "comment": "获取当前括号表达式的主体部分。",
+                "comment": "主体部分",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前括号表达式的主体部分。"
             },
             {
                 "name": ")Token",
-                "comment": "获取当前括号表达式的)Token 的位置。",
+                "comment": " ) 的位置",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前括号表达式的 ) 的位置。"
             }
         ],
         "codes": [
@@ -2045,12 +1983,13 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前数字字面量的value 的位置。",
+                "comment": " numericLiteral 的位置",
                 "equals": "@readToken('numericLiteral')",
                 "type": "number",
                 "tokens": [
                     "numericLiteral"
-                ]
+                ],
+                "partComment": "获取当前数字字面量的 numericLiteral 的位置。"
             }
         ],
         "codes": [
@@ -2068,12 +2007,13 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前字符串字面量的value 的位置。",
+                "comment": " stringLiteral 的位置",
                 "equals": "@readToken('stringLiteral')",
                 "type": "number",
                 "tokens": [
                     "stringLiteral"
-                ]
+                ],
+                "partComment": "获取当前字符串字面量的 stringLiteral 的位置。"
             }
         ],
         "codes": [
@@ -2091,7 +2031,7 @@
         "parts": [
             {
                 "name": "elements",
-                "comment": "获取当前数组字面量的元素列表。",
+                "comment": "元素列表",
                 "equals": "@DelimitedList(@ArrayLiteralElement, '[', ']', true, @isExpressionStart)",
                 "type": "[ ?ArrayLiteralElement , ...isExpressionStart ]",
                 "list": {
@@ -2103,7 +2043,8 @@
                     "optional": true,
                     "type": "@NodeList<@ArrayLiteralElement>",
                     "equals": "@DelimitedList(@ArrayLiteralElement, '[', ']', true, @isExpressionStart)"
-                }
+                },
+                "partComment": "获取当前数组字面量的元素列表。"
             }
         ],
         "codes": [
@@ -2122,20 +2063,22 @@
             {
                 "optional": true,
                 "name": "...Token",
-                "comment": "获取当前数组字面量元素的...Token 的位置(可能不存在)。",
+                "comment": " ... 的位置(可能不存在)",
                 "equals": "@readToken('...')",
                 "type": "number",
                 "tokens": [
                     "..."
-                ]
+                ],
+                "partComment": "获取当前数组字面量元素的 ... 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "value",
-                "comment": "获取当前数组字面量元素的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前数组字面量元素的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2156,7 +2099,7 @@
         "parts": [
             {
                 "name": "elements",
-                "comment": "获取当前对象字面量的所有元素。",
+                "comment": "所有元素",
                 "equals": "@NodeList(@ObjectLiteralElement, '{', '}')",
                 "type": "{ ?ObjectLiteralElement ... }",
                 "list": {
@@ -2168,7 +2111,8 @@
                     "optional": true,
                     "type": "@NodeList<@ObjectLiteralElement>",
                     "equals": "@NodeList(@ObjectLiteralElement, '{', '}')"
-                }
+                },
+                "partComment": "获取当前对象字面量的所有元素。"
             }
         ],
         "codes": [
@@ -2236,77 +2180,53 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前访问器声明的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "getToken",
-                "comment": "获取当前访问器声明的getToken 的位置(可能不存在)。",
+                "comment": " get 的位置(可能不存在)",
                 "equals": "getToken",
                 "type": "number",
                 "tokens": [
                     "get"
-                ]
+                ],
+                "partComment": "获取当前访问器声明的 get 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "setToken",
-                "comment": "获取当前访问器声明的setToken 的位置(可能不存在)。",
+                "comment": " set 的位置(可能不存在)",
                 "equals": "setToken",
                 "type": "number",
                 "tokens": [
                     "set"
-                ]
+                ],
+                "partComment": "获取当前访问器声明的 set 的位置(可能不存在)。"
             },
             {
                 "name": "name",
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@PropertyName()",
-                "type": "PropertyName"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "PropertyName",
+                "partComment": "获取当前访问器声明的名字部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=>Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前访问器声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@FunctionBody()",
-                "type": "FunctionBody"
+                "type": "FunctionBody",
+                "partComment": "获取当前访问器声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2340,74 +2260,50 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "*Token",
-                "comment": "获取当前方法声明的*Token 的位置(可能不存在)。",
+                "comment": " * 的位置(可能不存在)",
                 "equals": "*Token",
                 "type": "number",
                 "tokens": [
                     "*"
-                ]
+                ],
+                "partComment": "获取当前方法声明的 * 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "name",
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "name",
-                "type": "PropertyName"
+                "type": "PropertyName",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=>Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@FunctionBody()",
-                "type": "FunctionBody"
+                "type": "FunctionBody",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2441,43 +2337,47 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前属性声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前属性声明的(可能不存在)。"
             },
             {
                 "name": "key",
-                "comment": "获取当前属性声明的undefined。",
                 "equals": "key",
-                "type": "PropertyName"
+                "type": "PropertyName",
+                "partComment": "获取当前属性声明的undefined。"
             },
             {
                 "optional": true,
                 "name": ":Token",
-                "comment": "获取当前属性声明的:Token 的位置(可能不存在)。",
+                "comment": " : 的位置(可能不存在)",
                 "equals": ":Token",
                 "type": "number",
                 "tokens": [
                     ":"
-                ]
+                ],
+                "partComment": "获取当前属性声明的 : 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "=Token",
-                "comment": "获取当前属性声明的=Token 的位置(可能不存在)。",
+                "comment": " = 的位置(可能不存在)",
                 "equals": "@readToken('=')",
                 "type": "number",
                 "tokens": [
                     "="
-                ]
+                ],
+                "partComment": "获取当前属性声明的 = 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "value",
-                "comment": "获取当前属性声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前属性声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2527,21 +2427,23 @@
         "parts": [
             {
                 "name": "newToken",
-                "comment": "获取当前new.target 表达式的newToken 的位置。",
+                "comment": " new 的位置",
                 "equals": "newToken",
                 "type": "number",
                 "tokens": [
                     "new"
-                ]
+                ],
+                "partComment": "获取当前new.target 表达式的 new 的位置。"
             },
             {
                 "name": ".Token",
-                "comment": "获取当前new.target 表达式的.Token 的位置。",
+                "comment": " . 的位置",
                 "equals": "@readToken('.')",
                 "type": "number",
                 "tokens": [
                     "."
-                ]
+                ],
+                "partComment": "获取当前new.target 表达式的 . 的位置。"
             }
         ],
         "codes": [
@@ -2573,26 +2475,29 @@
         "parts": [
             {
                 "name": "newToken",
-                "comment": "获取当前new 表达式的newToken 的位置。",
+                "comment": " new 的位置",
                 "equals": "newToken",
                 "type": "number",
                 "tokens": [
                     "new"
-                ]
+                ],
+                "partComment": "获取当前new 表达式的 new 的位置。"
             },
             {
                 "name": "target",
-                "comment": "获取当前new 表达式的目标部分。",
+                "comment": "目标部分",
                 "args": "Precedence.member",
                 "equals": "@Expression(Precedence.member)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前new 表达式的目标部分。"
             },
             {
                 "optional": true,
                 "name": "arguments",
-                "comment": "获取当前new 表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@Argument, '(', ')', false, @isArgumentStart)",
-                "type": "@NodeList<@Argument>"
+                "type": "@NodeList<@Argument>",
+                "partComment": "获取当前new 表达式的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2612,22 +2517,24 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前正则表达式字面量的value 的位置。",
+                "comment": " stringLiteral 的位置",
                 "equals": "@readToken('stringLiteral')",
                 "type": "number",
                 "tokens": [
                     "stringLiteral"
-                ]
+                ],
+                "partComment": "获取当前正则表达式字面量的 stringLiteral 的位置。"
             },
             {
                 "optional": true,
                 "name": "flags",
-                "comment": "获取当前正则表达式字面量的标志部分(可能不存在)。",
+                "comment": "标志部分(可能不存在)",
                 "equals": "@readToken('stringLiteral')",
                 "type": "number",
                 "tokens": [
                     "stringLiteral"
-                ]
+                ],
+                "partComment": "获取当前正则表达式字面量的标志部分(可能不存在)。"
             }
         ],
         "codes": [
@@ -2649,9 +2556,10 @@
         "parts": [
             {
                 "name": "spans",
-                "comment": "获取当前模板字面量的组成部分列表。",
+                "comment": "组成部分列表",
                 "equals": "@NodeList<TemplateSpan|Expression>()",
-                "type": "NodeList<TemplateSpan|Expression>"
+                "type": "NodeList<TemplateSpan|Expression>",
+                "partComment": "获取当前模板字面量的组成部分列表。"
             }
         ],
         "codes": [
@@ -2681,12 +2589,13 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前模板文本区块的value 的位置。",
+                "comment": " stringLiteral 的位置",
                 "equals": "@readToken('stringLiteral')",
                 "type": "number",
                 "tokens": [
                     "stringLiteral"
-                ]
+                ],
+                "partComment": "获取当前模板文本区块的 stringLiteral 的位置。"
             }
         ],
         "codes": [
@@ -2701,7 +2610,7 @@
         "name": "ArrowFunctionOrTypeAssertionExpression",
         "params": [
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -2728,34 +2637,38 @@
         "parts": [
             {
                 "name": "<Token",
-                "comment": "获取当前类型确认表达式的<Token 的位置。",
+                "comment": " < 的位置",
                 "equals": "@readToken('<')",
                 "type": "number",
                 "tokens": [
                     "<"
-                ]
+                ],
+                "partComment": "获取当前类型确认表达式的 < 的位置。"
             },
             {
                 "name": "type",
-                "comment": "获取当前类型确认表达式的类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`。",
+                "comment": "类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`",
                 "equals": "@TypeNode()",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "partComment": "获取当前类型确认表达式的类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`。"
             },
             {
                 "name": ">Token",
-                "comment": "获取当前类型确认表达式的>Token 的位置。",
+                "comment": " > 的位置",
                 "equals": "@readToken('>')",
                 "type": "number",
                 "tokens": [
                     ">"
-                ]
+                ],
+                "partComment": "获取当前类型确认表达式的 > 的位置。"
             },
             {
                 "name": "operand",
-                "comment": "获取当前类型确认表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.postfix",
                 "equals": "@Expression(Precedence.postfix)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前类型确认表达式的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2773,7 +2686,7 @@
         "name": "YieldExpression",
         "params": [
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -2783,30 +2696,33 @@
         "parts": [
             {
                 "name": "yieldToken",
-                "comment": "获取当前yield 表达式的yieldToken 的位置。",
+                "comment": " yield 的位置",
                 "equals": "@readToken('yield')",
                 "type": "number",
                 "tokens": [
                     "yield"
-                ]
+                ],
+                "partComment": "获取当前yield 表达式的 yield 的位置。"
             },
             {
                 "optional": true,
                 "name": "*Token",
-                "comment": "获取当前yield 表达式的*Token 的位置(可能不存在)。",
+                "comment": " * 的位置(可能不存在)",
                 "equals": "@readToken('*')",
                 "type": "number",
                 "tokens": [
                     "*"
-                ]
+                ],
+                "partComment": "获取当前yield 表达式的 * 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "operand",
-                "comment": "获取当前yield 表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.assignment, allowIn",
                 "equals": "@Expression(Precedence.assignment, allowIn)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前yield 表达式的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2823,7 +2739,7 @@
         "name": "AwaitExpressionOrIdentifier",
         "params": [
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -2850,7 +2766,7 @@
                 "type": "number"
             },
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -2860,19 +2776,21 @@
         "parts": [
             {
                 "name": "awaitToken",
-                "comment": "获取当前await 表达式的awaitToken 的位置。",
+                "comment": " await 的位置",
                 "equals": "awaitToken",
                 "type": "number",
                 "tokens": [
                     "await"
-                ]
+                ],
+                "partComment": "获取当前await 表达式的 await 的位置。"
             },
             {
                 "name": "operand",
-                "comment": "获取当前await 表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.assignment, allowIn",
                 "equals": "@Expression(Precedence.assignment, allowIn)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前await 表达式的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2888,7 +2806,7 @@
         "name": "AsyncArrowFunctionOrIdentifier",
         "params": [
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -2918,7 +2836,7 @@
         "parts": [
             {
                 "name": "operator",
-                "comment": "获取当前一元运算表达式的operator 的位置。合法的值有：`delete`、`void`、`typeof`、`+`、`-`、`~`、`!`、`++`、`--`、`...`。",
+                "comment": " delete 的位置。合法的值有：`delete`、`void`、`typeof`、`+`、`-`、`~`、`!`、`++`、`--`、`...`",
                 "equals": "@read",
                 "type": "number",
                 "tokens": [
@@ -2932,14 +2850,16 @@
                     "++",
                     "--",
                     "..."
-                ]
+                ],
+                "partComment": "获取当前一元运算表达式的 delete 的位置。合法的值有：`delete`、`void`、`typeof`、`+`、`-`、`~`、`!`、`++`、`--`、`...`。"
             },
             {
                 "name": "operand",
-                "comment": "获取当前一元运算表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.postfix",
                 "equals": "@Expression(Precedence.postfix)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前一元运算表达式的(可能不存在)。"
             }
         ],
         "codes": [
@@ -2965,24 +2885,27 @@
         "parts": [
             {
                 "name": "target",
-                "comment": "获取当前成员调用表达式的目标部分。",
+                "comment": "目标部分",
                 "equals": "target",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前成员调用表达式的目标部分。"
             },
             {
                 "name": ".Token",
-                "comment": "获取当前成员调用表达式的.Token 的位置。",
+                "comment": " . 的位置",
                 "equals": "@readToken('.')",
                 "type": "number",
                 "tokens": [
                     "."
-                ]
+                ],
+                "partComment": "获取当前成员调用表达式的 . 的位置。"
             },
             {
                 "name": "argument",
-                "comment": "获取当前成员调用表达式的参数部分。",
+                "comment": "参数部分",
                 "equals": "@MemberCallArgument()",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前成员调用表达式的参数部分。"
             }
         ],
         "codes": [
@@ -3027,15 +2950,17 @@
         "parts": [
             {
                 "name": "target",
-                "comment": "获取当前函数调用表达式的目标部分。",
+                "comment": "目标部分",
                 "equals": "target",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前函数调用表达式的目标部分。"
             },
             {
                 "name": "arguments",
-                "comment": "获取当前函数调用表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@Argument, '(', ')', false, @isArgumentStart)",
-                "type": "@NodeList<@Argument>"
+                "type": "@NodeList<@Argument>",
+                "partComment": "获取当前函数调用表达式的(可能不存在)。"
             }
         ],
         "codes": [
@@ -3071,19 +2996,21 @@
             {
                 "optional": true,
                 "name": "...Token",
-                "comment": "获取当前函数调用参数的...Token 的位置(可能不存在)。",
+                "comment": " ... 的位置(可能不存在)",
                 "equals": "@readToken('...')",
                 "type": "number",
                 "tokens": [
                     "..."
-                ]
+                ],
+                "partComment": "获取当前函数调用参数的 ... 的位置(可能不存在)。"
             },
             {
                 "name": "value",
-                "comment": "获取当前函数调用参数的值。",
+                "comment": "值",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前函数调用参数的值。"
             }
         ],
         "codes": [
@@ -3109,33 +3036,37 @@
         "parts": [
             {
                 "name": "target",
-                "comment": "获取当前索引调用表达式的目标部分。",
+                "comment": "目标部分",
                 "equals": "target",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前索引调用表达式的目标部分。"
             },
             {
                 "name": "[Token",
-                "comment": "获取当前索引调用表达式的[Token 的位置。",
+                "comment": " [ 的位置",
                 "equals": "@readToken('[')",
                 "type": "number",
                 "tokens": [
                     "["
-                ]
+                ],
+                "partComment": "获取当前索引调用表达式的 [ 的位置。"
             },
             {
                 "name": "argument",
-                "comment": "获取当前索引调用表达式的参数部分。",
+                "comment": "参数部分",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前索引调用表达式的参数部分。"
             },
             {
                 "name": "]Token",
-                "comment": "获取当前索引调用表达式的]Token 的位置。",
+                "comment": " ] 的位置",
                 "equals": "@readToken(']')",
                 "type": "number",
                 "tokens": [
                     "]"
-                ]
+                ],
+                "partComment": "获取当前索引调用表达式的 ] 的位置。"
             }
         ],
         "codes": [
@@ -3158,7 +3089,7 @@
                 "type": "Expression"
             },
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -3168,28 +3099,32 @@
         "parts": [
             {
                 "name": "condition",
-                "comment": "获取当前条件表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前条件表达式的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前条件表达式的(可能不存在)。",
-                "equals": "@undefined()"
+                "comment": "(可能不存在)",
+                "equals": "@undefined()",
+                "partComment": "获取当前条件表达式的(可能不存在)。"
             },
             {
                 "name": "then",
-                "comment": "获取当前条件表达式的则部分。",
+                "comment": "则部分",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前条件表达式的则部分。"
             },
             {
                 "name": "else",
-                "comment": "获取当前条件表达式的否则部分。",
+                "comment": "否则部分",
                 "args": "Precedence.assignment, allowIn",
                 "equals": "@Expression(Precedence.assignment, allowIn)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前条件表达式的否则部分。"
             }
         ],
         "codes": [
@@ -3212,20 +3147,22 @@
         "parts": [
             {
                 "name": "operand",
-                "comment": "获取当前后缀表达式的操作数。",
+                "comment": "操作数",
                 "args": "Precedence.leftHandSide",
                 "equals": "operand",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前后缀表达式的操作数。"
             },
             {
                 "name": "operator",
-                "comment": "获取当前后缀表达式的operator 的位置。合法的值有：`++`、`--`。",
+                "comment": " ++ 的位置。合法的值有：`++`、`--`",
                 "equals": "@read",
                 "type": "number",
                 "tokens": [
                     "++",
                     "--"
-                ]
+                ],
+                "partComment": "获取当前后缀表达式的 ++ 的位置。合法的值有：`++`、`--`。"
             }
         ],
         "codes": [
@@ -3256,15 +3193,17 @@
         "parts": [
             {
                 "name": "target",
-                "comment": "获取当前模板调用表达式的目标部分。",
+                "comment": "目标部分",
                 "equals": "target",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前模板调用表达式的目标部分。"
             },
             {
                 "name": "argument",
-                "comment": "获取当前模板调用表达式的参数部分。",
+                "comment": "参数部分",
                 "equals": "argument",
-                "type": "TemplateLiteral | StringLiteral"
+                "type": "TemplateLiteral | StringLiteral",
+                "partComment": "获取当前模板调用表达式的参数部分。"
             }
         ],
         "codes": [
@@ -3285,7 +3224,7 @@
                 "type": "Expression"
             },
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -3295,13 +3234,14 @@
         "parts": [
             {
                 "name": "left",
-                "comment": "获取当前双目表达式的左值部分。",
+                "comment": "左值部分",
                 "equals": "left",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前双目表达式的左值部分。"
             },
             {
                 "name": "operator",
-                "comment": "获取当前双目表达式的运算类型。合法的值有：`,`、`*=`、`/=`、`%=`、`+=`、`‐=`、`<<=`、`>>=`、`>>>=`、`&=`、`^=`、`|=`、`**=`、`=`、`||`、`&&`、`|`、`^`、`&`、`==`、`!=`、`===`、`!==`、`<`、`>`、`<=`、`>=`、`instanceof`、`in`、`<<`、`>>`、`>>>`、`+`、`-`、`*`、`/`、`%`、`**`。",
+                "comment": "运算类型。合法的值有：`,`、`*=`、`/=`、`%=`、`+=`、`‐=`、`<<=`、`>>=`、`>>>=`、`&=`、`^=`、`|=`、`**=`、`=`、`||`、`&&`、`|`、`^`、`&`、`==`、`!=`、`===`、`!==`、`<`、`>`、`<=`、`>=`、`instanceof`、`in`、`<<`、`>>`、`>>>`、`+`、`-`、`*`、`/`、`%`、`**`",
                 "equals": "@read",
                 "type": "number",
                 "tokens": [
@@ -3343,13 +3283,15 @@
                     "/",
                     "%",
                     "**"
-                ]
+                ],
+                "partComment": "获取当前双目表达式的运算类型。合法的值有：`,`、`*=`、`/=`、`%=`、`+=`、`‐=`、`<<=`、`>>=`、`>>>=`、`&=`、`^=`、`|=`、`**=`、`=`、`||`、`&&`、`|`、`^`、`&`、`==`、`!=`、`===`、`!==`、`<`、`>`、`<=`、`>=`、`instanceof`、`in`、`<<`、`>>`、`>>>`、`+`、`-`、`*`、`/`、`%`、`**`。"
             },
             {
                 "name": "right",
-                "comment": "获取当前双目表达式的右值部分。",
+                "comment": "右值部分",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前双目表达式的右值部分。"
             }
         ],
         "codes": [
@@ -3424,24 +3366,27 @@
         "parts": [
             {
                 "name": "label",
-                "comment": "获取当前标签语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "label",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前标签语句的(可能不存在)。"
             },
             {
                 "name": ":Token",
-                "comment": "获取当前标签语句的:Token 的位置。",
+                "comment": " : 的位置",
                 "equals": "@readToken(':')",
                 "type": "number",
                 "tokens": [
                     ":"
-                ]
+                ],
+                "partComment": "获取当前标签语句的 : 的位置。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前标签语句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前标签语句的主体部分。"
             }
         ],
         "codes": [
@@ -3469,9 +3414,10 @@
         "parts": [
             {
                 "name": "expression",
-                "comment": "获取当前表达式语句的表达式部分。",
+                "comment": "表达式部分",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前表达式语句的表达式部分。"
             }
         ],
         "codes": [
@@ -3489,7 +3435,6 @@
         "parts": [
             {
                 "name": "statements",
-                "comment": "获取当前语句块的undefined。",
                 "equals": "@NodeList(@Statement, '{', '}')",
                 "type": "{ ?Statement ... }",
                 "list": {
@@ -3501,7 +3446,8 @@
                     "optional": true,
                     "type": "@NodeList<@Statement>",
                     "equals": "@NodeList(@Statement, '{', '}')"
-                }
+                },
+                "partComment": "获取当前语句块的undefined。"
             }
         ],
         "codes": [
@@ -3520,7 +3466,7 @@
                 "type": "Modifiers"
             },
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -3530,24 +3476,26 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前变量声明语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前变量声明语句的(可能不存在)。"
             },
             {
                 "name": "type",
-                "comment": "获取当前变量声明语句的type 的位置。合法的值有：`var`、`let`、`const`。",
+                "comment": " var 的位置。合法的值有：`var`、`let`、`const`",
                 "equals": "@read",
                 "type": "number",
                 "tokens": [
                     "var",
                     "let",
                     "const"
-                ]
+                ],
+                "partComment": "获取当前变量声明语句的 var 的位置。合法的值有：`var`、`let`、`const`。"
             },
             {
                 "name": "variables",
-                "comment": "获取当前变量声明语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(allowIn === false ? @VariableDeclarationWithoutIn : @VariableDeclaration, undefined, undefined, isBindingNameStart)",
                 "type": "VariableDeclaration , ...isBindingNameStart",
                 "list": {
@@ -3559,7 +3507,8 @@
                     "optional": false,
                     "type": "@NodeList<@VariableDeclaration>",
                     "equals": "@DelimitedList(@VariableDeclaration, undefined, undefined, false, @isBindingNameStart)"
-                }
+                },
+                "partComment": "获取当前变量声明语句的(可能不存在)。"
             }
         ],
         "codes": [
@@ -3585,7 +3534,7 @@
         "name": "VariableDeclaration",
         "params": [
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "type": "boolean"
             }
@@ -3595,56 +3544,30 @@
         "parts": [
             {
                 "name": "mame",
-                "comment": "获取当前变量声明的undefined。",
                 "equals": "@BindingName()",
-                "type": "BindingName"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "BindingName",
+                "partComment": "获取当前变量声明的undefined。"
             },
             {
                 "optional": true,
-                "comment": "获取当前变量声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "initializer",
-                "type": "Expression",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前变量声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前变量声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "allowIn",
                 "equals": "@Initializer(allowIn)",
-                "type": "Initializer"
+                "type": "Initializer",
+                "partComment": "获取当前变量声明的(可能不存在)。"
             }
         ],
         "codes": [
             "const result = new @VariableDeclaration();",
             "result.mame = @BindingName();",
-            "result.:Token = undefined;",
-            "result.type = undefined;",
             "result. = @TypeAnnotation();",
-            "result.=Token = undefined;",
-            "result.initializer = undefined;",
             "result. = @Initializer(allowIn);",
             "return result;"
         ],
@@ -3655,7 +3578,7 @@
         "name": "VariableOrExpressionStatement",
         "params": [
             {
-                "comment": "是否解析 in 表达式。。",
+                "comment": "是否解析 in 表达式。",
                 "name": "allowIn",
                 "equal": "true",
                 "type": "boolean"
@@ -3688,35 +3611,39 @@
         "parts": [
             {
                 "name": "ifToken",
-                "comment": "获取当前if 语句的ifToken 的位置。",
+                "comment": " if 的位置",
                 "equals": "@readToken('if')",
                 "type": "number",
                 "tokens": [
                     "if"
-                ]
+                ],
+                "partComment": "获取当前if 语句的 if 的位置。"
             },
             {
                 "name": "then",
-                "comment": "获取当前if 语句的则部分。",
+                "comment": "则部分",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前if 语句的则部分。"
             },
             {
                 "optional": true,
                 "name": "elseToken",
-                "comment": "获取当前if 语句的elseToken 的位置(可能不存在)。",
+                "comment": " else 的位置(可能不存在)",
                 "equals": "@readToken('else')",
                 "type": "number",
                 "tokens": [
                     "else"
-                ]
+                ],
+                "partComment": "获取当前if 语句的 else 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "else",
-                "comment": "获取当前if 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前if 语句的(可能不存在)。"
             }
         ],
         "codes": [
@@ -3749,28 +3676,31 @@
             {
                 "optional": true,
                 "name": "(Token",
-                "comment": "获取当前条件表达式的(Token 的位置(可能不存在)。",
+                "comment": " ( 的位置(可能不存在)",
                 "equals": "@readToken('(')",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前条件表达式的 ( 的位置(可能不存在)。"
             },
             {
                 "name": "condition",
-                "comment": "获取当前条件表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Expression()()",
-                "type": "Expression()"
+                "type": "Expression()",
+                "partComment": "获取当前条件表达式的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ")Token",
-                "comment": "获取当前条件表达式的)Token 的位置(可能不存在)。",
+                "comment": " ) 的位置(可能不存在)",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前条件表达式的 ) 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -3840,77 +3770,86 @@
         "parts": [
             {
                 "name": "forToken",
-                "comment": "获取当前for 语句的forToken 的位置。",
+                "comment": " for 的位置",
                 "equals": "forToken",
                 "type": "number",
                 "tokens": [
                     "for"
-                ]
+                ],
+                "partComment": "获取当前for 语句的 for 的位置。"
             },
             {
                 "optional": true,
                 "name": "(Token",
-                "comment": "获取当前for 语句的(Token 的位置(可能不存在)。",
+                "comment": " ( 的位置(可能不存在)",
                 "equals": "(Token",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前for 语句的 ( 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "initializer",
-                "comment": "获取当前for 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "initializer",
-                "type": "VariableStatement | ExpressionStatement"
+                "type": "VariableStatement | ExpressionStatement",
+                "partComment": "获取当前for 语句的(可能不存在)。"
             },
             {
                 "name": "firstSemicolon",
-                "comment": "获取当前for 语句的条件部分中首个分号。",
+                "comment": "条件部分中首个分号",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前for 语句的条件部分中首个分号。"
             },
             {
                 "optional": true,
                 "name": "condition",
-                "comment": "获取当前for 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前for 语句的(可能不存在)。"
             },
             {
                 "name": "secondSemicolon",
-                "comment": "获取当前for 语句的条件部分中第二个分号。",
+                "comment": "条件部分中第二个分号",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前for 语句的条件部分中第二个分号。"
             },
             {
                 "optional": true,
                 "name": "iterator",
-                "comment": "获取当前for 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前for 语句的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ")Token",
-                "comment": "获取当前for 语句的)Token 的位置(可能不存在)。",
+                "comment": " ) 的位置(可能不存在)",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前for 语句的 ) 的位置(可能不存在)。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前for 语句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@EmbeddedStatement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前for 语句的主体部分。"
             }
         ],
         "codes": [
@@ -3953,59 +3892,66 @@
         "parts": [
             {
                 "name": "forToken",
-                "comment": "获取当前for..in 语句的forToken 的位置。",
+                "comment": " for 的位置",
                 "equals": "forToken",
                 "type": "number",
                 "tokens": [
                     "for"
-                ]
+                ],
+                "partComment": "获取当前for..in 语句的 for 的位置。"
             },
             {
                 "optional": true,
                 "name": "(Token",
-                "comment": "获取当前for..in 语句的(Token 的位置(可能不存在)。",
+                "comment": " ( 的位置(可能不存在)",
                 "equals": "(Token",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前for..in 语句的 ( 的位置(可能不存在)。"
             },
             {
                 "name": "initializer",
-                "comment": "获取当前for..in 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "initializer",
-                "type": "VariableStatement | ExpressionStatement"
+                "type": "VariableStatement | ExpressionStatement",
+                "partComment": "获取当前for..in 语句的(可能不存在)。"
             },
             {
                 "name": "inToken",
-                "comment": "获取当前for..in 语句的inToken 的位置。",
+                "comment": " in 的位置",
                 "equals": "@readToken('in')",
                 "type": "number",
                 "tokens": [
                     "in"
-                ]
+                ],
+                "partComment": "获取当前for..in 语句的 in 的位置。"
             },
             {
                 "name": "condition",
-                "comment": "获取当前for..in 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前for..in 语句的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ")Token",
-                "comment": "获取当前for..in 语句的)Token 的位置(可能不存在)。",
+                "comment": " ) 的位置(可能不存在)",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前for..in 语句的 ) 的位置(可能不存在)。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前for..in 语句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前for..in 语句的主体部分。"
             }
         ],
         "codes": [
@@ -4046,59 +3992,66 @@
         "parts": [
             {
                 "name": "forToken",
-                "comment": "获取当前for..of 语句的forToken 的位置。",
+                "comment": " for 的位置",
                 "equals": "forToken",
                 "type": "number",
                 "tokens": [
                     "for"
-                ]
+                ],
+                "partComment": "获取当前for..of 语句的 for 的位置。"
             },
             {
                 "optional": true,
                 "name": "(Token",
-                "comment": "获取当前for..of 语句的(Token 的位置(可能不存在)。",
+                "comment": " ( 的位置(可能不存在)",
                 "equals": "(Token",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前for..of 语句的 ( 的位置(可能不存在)。"
             },
             {
                 "name": "initializer",
-                "comment": "获取当前for..of 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "initializer",
-                "type": "VariableStatement | ExpressionStatement"
+                "type": "VariableStatement | ExpressionStatement",
+                "partComment": "获取当前for..of 语句的(可能不存在)。"
             },
             {
                 "name": "ofToken",
-                "comment": "获取当前for..of 语句的ofToken 的位置。",
+                "comment": " of 的位置",
                 "equals": "@readToken('of')",
                 "type": "number",
                 "tokens": [
                     "of"
-                ]
+                ],
+                "partComment": "获取当前for..of 语句的 of 的位置。"
             },
             {
                 "name": "condition",
-                "comment": "获取当前for..of 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前for..of 语句的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ")Token",
-                "comment": "获取当前for..of 语句的)Token 的位置(可能不存在)。",
+                "comment": " ) 的位置(可能不存在)",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前for..of 语句的 ) 的位置(可能不存在)。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前for..of 语句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前for..of 语句的主体部分。"
             }
         ],
         "codes": [
@@ -4139,59 +4092,66 @@
         "parts": [
             {
                 "name": "forToken",
-                "comment": "获取当前for..to 语句的forToken 的位置。",
+                "comment": " for 的位置",
                 "equals": "forToken",
                 "type": "number",
                 "tokens": [
                     "for"
-                ]
+                ],
+                "partComment": "获取当前for..to 语句的 for 的位置。"
             },
             {
                 "optional": true,
                 "name": "(Token",
-                "comment": "获取当前for..to 语句的(Token 的位置(可能不存在)。",
+                "comment": " ( 的位置(可能不存在)",
                 "equals": "(Token",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前for..to 语句的 ( 的位置(可能不存在)。"
             },
             {
                 "name": "initializer",
-                "comment": "获取当前for..to 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "initializer",
-                "type": "VariableStatement | ExpressionStatement"
+                "type": "VariableStatement | ExpressionStatement",
+                "partComment": "获取当前for..to 语句的(可能不存在)。"
             },
             {
                 "name": "toToken",
-                "comment": "获取当前for..to 语句的toToken 的位置。",
+                "comment": " to 的位置",
                 "equals": "@readToken('to')",
                 "type": "number",
                 "tokens": [
                     "to"
-                ]
+                ],
+                "partComment": "获取当前for..to 语句的 to 的位置。"
             },
             {
                 "name": "expression",
-                "comment": "获取当前for..to 语句的表达式部分。",
+                "comment": "表达式部分",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前for..to 语句的表达式部分。"
             },
             {
                 "optional": true,
                 "name": ")Token",
-                "comment": "获取当前for..to 语句的)Token 的位置(可能不存在)。",
+                "comment": " ) 的位置(可能不存在)",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前for..to 语句的 ) 的位置(可能不存在)。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前for..to 语句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前for..to 语句的主体部分。"
             }
         ],
         "codes": [
@@ -4215,18 +4175,20 @@
         "parts": [
             {
                 "name": "whileToken",
-                "comment": "获取当前while 语句的whileToken 的位置。",
+                "comment": " while 的位置",
                 "equals": "@readToken('while')",
                 "type": "number",
                 "tokens": [
                     "while"
-                ]
+                ],
+                "partComment": "获取当前while 语句的 while 的位置。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前while 语句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@EmbeddedStatement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前while 语句的主体部分。"
             }
         ],
         "codes": [
@@ -4242,40 +4204,23 @@
         "parts": [
             {
                 "name": "switchToken",
-                "comment": "获取当前switch 语句的switchToken 的位置。",
+                "comment": " switch 的位置",
                 "equals": "@readToken('switch')",
                 "type": "number",
                 "tokens": [
                     "switch"
-                ]
-            },
-            {
-                "inlined": true,
-                "name": "(Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "condition",
-                "type": "Expression()",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ")Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                ],
+                "partComment": "获取当前switch 语句的 switch 的位置。"
             },
             {
                 "optional": true,
-                "comment": "获取当前switch 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Condition()",
-                "type": "Condition"
+                "type": "Condition",
+                "partComment": "获取当前switch 语句的(可能不存在)。"
             },
             {
                 "name": "cases",
-                "comment": "获取当前switch 语句的undefined。",
                 "equals": "@NodeList(@CaseOrDefaultClause, '{', '}')",
                 "type": "{ ?CaseOrDefaultClause ... }",
                 "list": {
@@ -4287,7 +4232,8 @@
                     "optional": true,
                     "type": "@NodeList<@CaseOrDefaultClause>",
                     "equals": "@NodeList(@CaseOrDefaultClause, '{', '}')"
-                }
+                },
+                "partComment": "获取当前switch 语句的undefined。"
             }
         ],
         "codes": [
@@ -4326,16 +4272,17 @@
         "parts": [
             {
                 "name": "caseToken",
-                "comment": "获取当前case 分支的caseToken 的位置。",
+                "comment": " case 的位置",
                 "equals": "@readToken('case')",
                 "type": "number",
                 "tokens": [
                     "case"
-                ]
+                ],
+                "partComment": "获取当前case 分支的 case 的位置。"
             },
             {
                 "name": "labels",
-                "comment": "获取当前case 分支的标签列表。",
+                "comment": "标签列表",
                 "equals": "@DelimitedList(@CaseClauseLabel, undefined, undefined, false, @isCaseLabelStart)",
                 "type": "CaseClauseLabel , ...isCaseLabelStart",
                 "list": {
@@ -4347,20 +4294,21 @@
                     "optional": false,
                     "type": "@NodeList<@CaseClauseLabel>",
                     "equals": "@DelimitedList(@CaseClauseLabel, undefined, undefined, false, @isCaseLabelStart)"
-                }
+                },
+                "partComment": "获取当前case 分支的标签列表。"
             },
             {
                 "name": ":Token",
-                "comment": "获取当前case 分支的:Token 的位置。",
+                "comment": " : 的位置",
                 "equals": "@readToken(':')",
                 "type": "number",
                 "tokens": [
                     ":"
-                ]
+                ],
+                "partComment": "获取当前case 分支的 : 的位置。"
             },
             {
                 "name": "statements",
-                "comment": "获取当前case 分支的undefined。",
                 "equals": "@NodeList(@CaseStatement)",
                 "type": "Statement ...",
                 "list": {
@@ -4372,7 +4320,8 @@
                     "optional": false,
                     "type": "@NodeList<@Statement>",
                     "equals": "@NodeList(@Statement)"
-                }
+                },
+                "partComment": "获取当前case 分支的undefined。"
             }
         ],
         "codes": [
@@ -4394,20 +4343,22 @@
             {
                 "optional": true,
                 "name": "elseToken",
-                "comment": "获取当前case 分支标签的elseToken 的位置(可能不存在)。",
+                "comment": " else 的位置(可能不存在)",
                 "equals": "@readToken('else')",
                 "type": "number",
                 "tokens": [
                     "else"
-                ]
+                ],
+                "partComment": "获取当前case 分支标签的 else 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "label",
-                "comment": "获取当前case 分支标签的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前case 分支标签的(可能不存在)。"
             }
         ],
         "codes": [
@@ -4429,25 +4380,26 @@
         "parts": [
             {
                 "name": "defaultToken",
-                "comment": "获取当前default 分支的defaultToken 的位置。",
+                "comment": " default 的位置",
                 "equals": "@readToken('default')",
                 "type": "number",
                 "tokens": [
                     "default"
-                ]
+                ],
+                "partComment": "获取当前default 分支的 default 的位置。"
             },
             {
                 "name": ":Token",
-                "comment": "获取当前default 分支的:Token 的位置。",
+                "comment": " : 的位置",
                 "equals": "@readToken(':')",
                 "type": "number",
                 "tokens": [
                     ":"
-                ]
+                ],
+                "partComment": "获取当前default 分支的 : 的位置。"
             },
             {
                 "name": "statements",
-                "comment": "获取当前default 分支的undefined。",
                 "equals": "@NodeList(@CaseStatement)",
                 "type": "Statement ...",
                 "list": {
@@ -4459,7 +4411,8 @@
                     "optional": false,
                     "type": "@NodeList<@Statement>",
                     "equals": "@NodeList(@Statement)"
-                }
+                },
+                "partComment": "获取当前default 分支的undefined。"
             }
         ],
         "codes": [
@@ -4496,37 +4449,41 @@
         "parts": [
             {
                 "name": "doToken",
-                "comment": "获取当前do..while 语句的doToken 的位置。",
+                "comment": " do 的位置",
                 "equals": "@readToken('do')",
                 "type": "number",
                 "tokens": [
                     "do"
-                ]
+                ],
+                "partComment": "获取当前do..while 语句的 do 的位置。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前do..while 语句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@EmbeddedStatement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前do..while 语句的主体部分。"
             },
             {
                 "name": "whileToken",
-                "comment": "获取当前do..while 语句的whileToken 的位置。",
+                "comment": " while 的位置",
                 "equals": "@readToken('while')",
                 "type": "number",
                 "tokens": [
                     "while"
-                ]
+                ],
+                "partComment": "获取当前do..while 语句的 while 的位置。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前do..while 语句的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前do..while 语句的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -4542,30 +4499,33 @@
         "parts": [
             {
                 "name": "breakToken",
-                "comment": "获取当前break 语句的breakToken 的位置。",
+                "comment": " break 的位置",
                 "equals": "@readToken('break')",
                 "type": "number",
                 "tokens": [
                     "break"
-                ]
+                ],
+                "partComment": "获取当前break 语句的 break 的位置。"
             },
             {
                 "optional": true,
                 "name": "label",
-                "comment": "获取当前break 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "false",
                 "equals": "@Identifier(false)",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前break 语句的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前break 语句的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前break 语句的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -4583,30 +4543,33 @@
         "parts": [
             {
                 "name": "continueToken",
-                "comment": "获取当前continue 语句的continueToken 的位置。",
+                "comment": " continue 的位置",
                 "equals": "@readToken('continue')",
                 "type": "number",
                 "tokens": [
                     "continue"
-                ]
+                ],
+                "partComment": "获取当前continue 语句的 continue 的位置。"
             },
             {
                 "optional": true,
                 "name": "label",
-                "comment": "获取当前continue 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "args": "false",
                 "equals": "@Identifier(false)",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前continue 语句的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前continue 语句的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前continue 语句的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -4650,29 +4613,32 @@
         "parts": [
             {
                 "name": "returnToken",
-                "comment": "获取当前return 语句的returnToken 的位置。",
+                "comment": " return 的位置",
                 "equals": "@readToken('return')",
                 "type": "number",
                 "tokens": [
                     "return"
-                ]
+                ],
+                "partComment": "获取当前return 语句的 return 的位置。"
             },
             {
                 "optional": true,
                 "name": "value",
-                "comment": "获取当前return 语句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Expression()",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前return 语句的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前return 语句的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前return 语句的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -4694,30 +4660,31 @@
         "parts": [
             {
                 "name": "tryToken",
-                "comment": "获取当前try 语句的tryToken 的位置。",
+                "comment": " try 的位置",
                 "equals": "@readToken('try')",
                 "type": "number",
                 "tokens": [
                     "try"
-                ]
+                ],
+                "partComment": "获取当前try 语句的 try 的位置。"
             },
             {
                 "name": "try",
-                "comment": "获取当前try 语句的undefined。",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前try 语句的undefined。"
             },
             {
                 "name": "catch",
-                "comment": "获取当前try 语句的undefined。",
                 "equals": "@CatchClause()",
-                "type": "CatchClause"
+                "type": "CatchClause",
+                "partComment": "获取当前try 语句的undefined。"
             },
             {
                 "name": "finally",
-                "comment": "获取当前try 语句的undefined。",
                 "equals": "@FinallyClause()",
-                "type": "FinallyClause"
+                "type": "FinallyClause",
+                "partComment": "获取当前try 语句的undefined。"
             }
         ],
         "codes": [
@@ -4741,45 +4708,50 @@
         "parts": [
             {
                 "name": "catchToken",
-                "comment": "获取当前catch 分句的catchToken 的位置。",
+                "comment": " catch 的位置",
                 "equals": "@readToken('catch')",
                 "type": "number",
                 "tokens": [
                     "catch"
-                ]
+                ],
+                "partComment": "获取当前catch 分句的 catch 的位置。"
             },
             {
                 "optional": true,
                 "name": "(Token",
-                "comment": "获取当前catch 分句的(Token 的位置(可能不存在)。",
+                "comment": " ( 的位置(可能不存在)",
                 "equals": "@readToken('(')",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前catch 分句的 ( 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "variable",
-                "comment": "获取当前catch 分句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@BindingName()",
-                "type": "BindingName"
+                "type": "BindingName",
+                "partComment": "获取当前catch 分句的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ")Token",
-                "comment": "获取当前catch 分句的)Token 的位置(可能不存在)。",
+                "comment": " ) 的位置(可能不存在)",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前catch 分句的 ) 的位置(可能不存在)。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前catch 分句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前catch 分句的主体部分。"
             }
         ],
         "codes": [
@@ -4811,18 +4783,20 @@
         "parts": [
             {
                 "name": "finallyToken",
-                "comment": "获取当前finally 分句的finallyToken 的位置。",
+                "comment": " finally 的位置",
                 "equals": "@readToken('finally')",
                 "type": "number",
                 "tokens": [
                     "finally"
-                ]
+                ],
+                "partComment": "获取当前finally 分句的 finally 的位置。"
             },
             {
                 "name": "statement",
-                "comment": "获取当前finally 分句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@EmbeddedStatement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前finally 分句的主体部分。"
             }
         ],
         "codes": [
@@ -4841,22 +4815,24 @@
         "parts": [
             {
                 "name": "debuggerToken",
-                "comment": "获取当前debugger 语句的debuggerToken 的位置。",
+                "comment": " debugger 的位置",
                 "equals": "@readToken('debugger')",
                 "type": "number",
                 "tokens": [
                     "debugger"
-                ]
+                ],
+                "partComment": "获取当前debugger 语句的 debugger 的位置。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前debugger 语句的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前debugger 语句的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -4875,12 +4851,13 @@
         "parts": [
             {
                 "name": ";Token",
-                "comment": "获取当前空语句的;Token 的位置。",
+                "comment": " ; 的位置",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前空语句的 ; 的位置。"
             }
         ],
         "codes": [
@@ -4898,44 +4875,49 @@
         "parts": [
             {
                 "name": "withToken",
-                "comment": "获取当前with 语句的withToken 的位置。",
+                "comment": " with 的位置",
                 "equals": "@readToken('with')",
                 "type": "number",
                 "tokens": [
                     "with"
-                ]
+                ],
+                "partComment": "获取当前with 语句的 with 的位置。"
             },
             {
                 "optional": true,
                 "name": "(Token",
-                "comment": "获取当前with 语句的(Token 的位置(可能不存在)。",
+                "comment": " ( 的位置(可能不存在)",
                 "equals": "@readToken('(')",
                 "type": "number",
                 "tokens": [
                     "("
-                ]
+                ],
+                "partComment": "获取当前with 语句的 ( 的位置(可能不存在)。"
             },
             {
                 "name": "value",
-                "comment": "获取当前with 语句的值。",
+                "comment": "值",
                 "equals": "@VariableStatement | Expression()",
-                "type": "VariableStatement | Expression"
+                "type": "VariableStatement | Expression",
+                "partComment": "获取当前with 语句的值。"
             },
             {
                 "optional": true,
                 "name": ")Token",
-                "comment": "获取当前with 语句的)Token 的位置(可能不存在)。",
+                "comment": " ) 的位置(可能不存在)",
                 "equals": "@readToken(')')",
                 "type": "number",
                 "tokens": [
                     ")"
-                ]
+                ],
+                "partComment": "获取当前with 语句的 ) 的位置(可能不存在)。"
             },
             {
                 "name": "body",
-                "comment": "获取当前with 语句的主体部分。",
+                "comment": "主体部分",
                 "equals": "@Statement()",
-                "type": "Statement"
+                "type": "Statement",
+                "partComment": "获取当前with 语句的主体部分。"
             }
         ],
         "codes": [
@@ -5005,89 +4987,67 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前函数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前函数声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前函数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前函数声明的(可能不存在)。"
             },
             {
                 "name": "functionToken",
-                "comment": "获取当前函数声明的functionToken 的位置。",
+                "comment": " function 的位置",
                 "equals": "@readToken('function')",
                 "type": "number",
                 "tokens": [
                     "function"
-                ]
+                ],
+                "partComment": "获取当前函数声明的 function 的位置。"
             },
             {
                 "optional": true,
                 "name": "*Token",
-                "comment": "获取当前函数声明的*Token 的位置(可能不存在)。",
+                "comment": " * 的位置(可能不存在)",
                 "equals": "@readToken('*')",
                 "type": "number",
                 "tokens": [
                     "*"
-                ]
+                ],
+                "partComment": "获取当前函数声明的 * 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "name",
-                "comment": "获取当前函数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Identifier()",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前函数声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前函数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前函数声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前函数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=>Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前函数声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前函数声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@FunctionBody()",
-                "type": "FunctionBody"
+                "type": "FunctionBody",
+                "partComment": "获取当前函数声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5114,83 +5074,60 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前函数表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前函数表达式的(可能不存在)。"
             },
             {
                 "name": "functionToken",
-                "comment": "获取当前函数表达式的functionToken 的位置。",
+                "comment": " function 的位置",
                 "equals": "@readToken('function')",
                 "type": "number",
                 "tokens": [
                     "function"
-                ]
+                ],
+                "partComment": "获取当前函数表达式的 function 的位置。"
             },
             {
                 "optional": true,
                 "name": "*Token",
-                "comment": "获取当前函数表达式的*Token 的位置(可能不存在)。",
+                "comment": " * 的位置(可能不存在)",
                 "equals": "@readToken('*')",
                 "type": "number",
                 "tokens": [
                     "*"
-                ]
+                ],
+                "partComment": "获取当前函数表达式的 * 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "name",
-                "comment": "获取当前函数表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Identifier()",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前函数表达式的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前函数表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前函数表达式的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前函数表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=>Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前函数表达式的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前函数表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@FunctionBody()",
-                "type": "FunctionBody"
+                "type": "FunctionBody",
+                "partComment": "获取当前函数表达式的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5217,29 +5154,32 @@
             {
                 "optional": true,
                 "name": "=>Token",
-                "comment": "获取当前函数主体的=>Token 的位置(可能不存在)。",
+                "comment": " => 的位置(可能不存在)",
                 "equals": "@readToken('=>')",
                 "type": "number",
                 "tokens": [
                     "=>"
-                ]
+                ],
+                "partComment": "获取当前函数主体的 => 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "body",
-                "comment": "获取当前函数主体的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@BlockStatement | Expression()",
-                "type": "BlockStatement | Expression"
+                "type": "BlockStatement | Expression",
+                "partComment": "获取当前函数主体的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前函数主体的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前函数主体的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -5301,84 +5241,55 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前类声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前类声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前类声明的(可能不存在)。"
             },
             {
                 "name": "classToken",
-                "comment": "获取当前类声明的classToken 的位置。",
+                "comment": " class 的位置",
                 "equals": "@readToken('class')",
                 "type": "number",
                 "tokens": [
                     "class"
-                ]
+                ],
+                "partComment": "获取当前类声明的 class 的位置。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": "extendsToken",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "extends",
-                "type": "ClassHeritageNode , ... isExpressionStart",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前类声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ExtendsClause()",
-                "type": "ExtendsClause"
-            },
-            {
-                "inlined": true,
-                "name": "implementsToken",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "implements",
-                "type": "ClassHeritageNode , ... isExpressionStart",
-                "comment": "(可能不存在)"
+                "type": "ExtendsClause",
+                "partComment": "获取当前类声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ImplementsClause()",
-                "type": "ImplementsClause"
-            },
-            {
-                "inlined": true,
-                "name": "members",
-                "type": "{ ClassElement ... }",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "ImplementsClause",
+                "partComment": "获取当前类声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ClassBody()",
-                "type": "ClassBody"
+                "type": "ClassBody",
+                "partComment": "获取当前类声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5400,72 +5311,41 @@
         "parts": [
             {
                 "name": "classToken",
-                "comment": "获取当前类表达式的classToken 的位置。",
+                "comment": " class 的位置",
                 "equals": "@readToken('class')",
                 "type": "number",
                 "tokens": [
                     "class"
-                ]
+                ],
+                "partComment": "获取当前类表达式的 class 的位置。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": "extendsToken",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "extends",
-                "type": "ClassHeritageNode , ... isExpressionStart",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前类表达式的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ExtendsClause()",
-                "type": "ExtendsClause"
-            },
-            {
-                "inlined": true,
-                "name": "implementsToken",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "implements",
-                "type": "ClassHeritageNode , ... isExpressionStart",
-                "comment": "(可能不存在)"
+                "type": "ExtendsClause",
+                "partComment": "获取当前类表达式的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ImplementsClause()",
-                "type": "ImplementsClause"
-            },
-            {
-                "inlined": true,
-                "name": "members",
-                "type": "{ ClassElement ... }",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "ImplementsClause",
+                "partComment": "获取当前类表达式的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类表达式的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ClassBody()",
-                "type": "ClassBody"
+                "type": "ClassBody",
+                "partComment": "获取当前类表达式的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5492,17 +5372,18 @@
             {
                 "optional": true,
                 "name": "extendsToken",
-                "comment": "获取当前extends 分句的extendsToken 的位置(可能不存在)。",
+                "comment": " extends 的位置(可能不存在)",
                 "equals": "@readToken('extends')",
                 "type": "number",
                 "tokens": [
                     "extends"
-                ]
+                ],
+                "partComment": "获取当前extends 分句的 extends 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "extends",
-                "comment": "获取当前extends 分句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@NodeList(@,, 'ClassHeritageNode', 'isExpressionStart')",
                 "type": "ClassHeritageNode , ... isExpressionStart",
                 "list": {
@@ -5514,7 +5395,8 @@
                     "optional": false,
                     "type": "@NodeList<@,>",
                     "equals": "@NodeList(@,, 'ClassHeritageNode', 'isExpressionStart')"
-                }
+                },
+                "partComment": "获取当前extends 分句的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5540,17 +5422,18 @@
             {
                 "optional": true,
                 "name": "implementsToken",
-                "comment": "获取当前implements 分句的implementsToken 的位置(可能不存在)。",
+                "comment": " implements 的位置(可能不存在)",
                 "equals": "@readToken('implements')",
                 "type": "number",
                 "tokens": [
                     "implements"
-                ]
+                ],
+                "partComment": "获取当前implements 分句的 implements 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "implements",
-                "comment": "获取当前implements 分句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@NodeList(@,, 'ClassHeritageNode', 'isExpressionStart')",
                 "type": "ClassHeritageNode , ... isExpressionStart",
                 "list": {
@@ -5562,7 +5445,8 @@
                     "optional": false,
                     "type": "@NodeList<@,>",
                     "equals": "@NodeList(@,, 'ClassHeritageNode', 'isExpressionStart')"
-                }
+                },
+                "partComment": "获取当前implements 分句的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5580,10 +5464,11 @@
         "parts": [
             {
                 "name": "value",
-                "comment": "获取当前extends 或 implements 分句项的值。",
+                "comment": "值",
                 "args": "Precedence.leftHandSide",
                 "equals": "@Expression(Precedence.leftHandSide)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前extends 或 implements 分句项的值。"
             }
         ],
         "codes": [
@@ -5609,7 +5494,7 @@
             {
                 "optional": true,
                 "name": "members",
-                "comment": "获取当前类主体的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@NodeList(@ClassElement, '{', '}')",
                 "type": "{ ClassElement ... }",
                 "list": {
@@ -5621,17 +5506,19 @@
                     "optional": false,
                     "type": "@NodeList<@ClassElement>",
                     "equals": "@NodeList(@ClassElement, '{', '}')"
-                }
+                },
+                "partComment": "获取当前类主体的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前类主体的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前类主体的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -5707,83 +5594,60 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前访问器声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前访问器声明的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "getToken",
-                "comment": "获取当前访问器声明的getToken 的位置(可能不存在)。",
+                "comment": " get 的位置(可能不存在)",
                 "equals": "getToken",
                 "type": "number",
                 "tokens": [
                     "get"
-                ]
+                ],
+                "partComment": "获取当前访问器声明的 get 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "setToken",
-                "comment": "获取当前访问器声明的setToken 的位置(可能不存在)。",
+                "comment": " set 的位置(可能不存在)",
                 "equals": "setToken",
                 "type": "number",
                 "tokens": [
                     "set"
-                ]
+                ],
+                "partComment": "获取当前访问器声明的 set 的位置(可能不存在)。"
             },
             {
                 "name": "name",
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@PropertyName()",
-                "type": "PropertyName"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "PropertyName",
+                "partComment": "获取当前访问器声明的名字部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=>Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前访问器声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前访问器声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@FunctionBody()",
-                "type": "FunctionBody"
+                "type": "FunctionBody",
+                "partComment": "获取当前访问器声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5820,80 +5684,57 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "*Token",
-                "comment": "获取当前方法声明的*Token 的位置(可能不存在)。",
+                "comment": " * 的位置(可能不存在)",
                 "equals": "*Token",
                 "type": "number",
                 "tokens": [
                     "*"
-                ]
+                ],
+                "partComment": "获取当前方法声明的 * 的位置(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "name",
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "name",
-                "type": "PropertyName"
+                "type": "PropertyName",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=>Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前方法声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@FunctionBody()",
-                "type": "FunctionBody"
+                "type": "FunctionBody",
+                "partComment": "获取当前方法声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5925,57 +5766,38 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前属性声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前属性声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前属性声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前属性声明的(可能不存在)。"
             },
             {
                 "name": "name",
-                "comment": "获取当前属性声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "name",
-                "type": "PropertyName"
-            },
-            {
-                "inlined": true,
-                "name": ":Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "type",
-                "type": "TypeNode",
-                "comment": "(可能不存在)"
+                "type": "PropertyName",
+                "partComment": "获取当前属性声明的名字部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前属性声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@TypeAnnotation()",
-                "type": "TypeAnnotation"
-            },
-            {
-                "inlined": true,
-                "name": "=Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "initializer",
-                "type": "Expression",
-                "comment": "(可能不存在)"
+                "type": "TypeAnnotation",
+                "partComment": "获取当前属性声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前属性声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Initializer()",
-                "type": "Initializer"
+                "type": "Initializer",
+                "partComment": "获取当前属性声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -5983,11 +5805,7 @@
             "result. = @Decorators();",
             "result. = @Modifiers();",
             "result.name = name;",
-            "result.:Token = undefined;",
-            "result.type = undefined;",
             "result. = @TypeAnnotation();",
-            "result.=Token = undefined;",
-            "result.initializer = undefined;",
             "result. = @Initializer();",
             "return result;"
         ],
@@ -6012,59 +5830,53 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前接口声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前接口声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前接口声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前接口声明的(可能不存在)。"
             },
             {
                 "name": "interfaceToken",
-                "comment": "获取当前接口声明的interfaceToken 的位置。",
+                "comment": " interface 的位置",
                 "equals": "@readToken('interface')",
                 "type": "number",
                 "tokens": [
                     "interface"
-                ]
+                ],
+                "partComment": "获取当前接口声明的 interface 的位置。"
             },
             {
                 "name": "name",
-                "comment": "获取当前接口声明的(可能不存在)。",
+                "comment": "名字部分",
                 "args": "false",
                 "equals": "@Identifier(false)",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前接口声明的名字部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前接口声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
-            },
-            {
-                "inlined": true,
-                "name": "extendsToken",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "extends",
-                "type": "ClassHeritageNode , ... isExpressionStart",
-                "comment": "(可能不存在)"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前接口声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前接口声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ExtendsClause()",
-                "type": "ExtendsClause"
+                "type": "ExtendsClause",
+                "partComment": "获取当前接口声明的(可能不存在)。"
             },
             {
                 "name": "members",
-                "comment": "获取当前接口声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@NodeList(@TypeMemberSignature, '{', '}')",
                 "type": "{ TypeMemberSignature ... }",
                 "list": {
@@ -6076,7 +5888,8 @@
                     "optional": false,
                     "type": "@NodeList<@TypeMemberSignature>",
                     "equals": "@NodeList(@TypeMemberSignature, '{', '}')"
-                }
+                },
+                "partComment": "获取当前接口声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -6086,8 +5899,6 @@
             "result.interfaceToken = @readToken('interface');",
             "result.name = @Identifier(false);",
             "result. = @DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName);",
-            "result.extendsToken = undefined;",
-            "result.extends = undefined;",
             "result. = @ExtendsClause();",
             "result.members = @NodeList(@TypeMemberSignature, '{', '}');",
             "return result;"
@@ -6113,53 +5924,46 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前枚举声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前枚举声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前枚举声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前枚举声明的(可能不存在)。"
             },
             {
                 "name": "enumToken",
-                "comment": "获取当前枚举声明的enumToken 的位置。",
+                "comment": " enum 的位置",
                 "equals": "@readToken('enum')",
                 "type": "number",
                 "tokens": [
                     "enum"
-                ]
+                ],
+                "partComment": "获取当前枚举声明的 enum 的位置。"
             },
             {
                 "name": "name",
-                "comment": "获取当前枚举声明的(可能不存在)。",
+                "comment": "名字部分",
                 "args": "false",
                 "equals": "@Identifier(false)",
-                "type": "Identifier"
-            },
-            {
-                "inlined": true,
-                "name": "extendsToken",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "extends",
-                "type": "ClassHeritageNode , ... isExpressionStart",
-                "comment": "(可能不存在)"
+                "type": "Identifier",
+                "partComment": "获取当前枚举声明的名字部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前枚举声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ExtendsClause()",
-                "type": "ExtendsClause"
+                "type": "ExtendsClause",
+                "partComment": "获取当前枚举声明的(可能不存在)。"
             },
             {
                 "name": "members",
-                "comment": "获取当前枚举声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@EnumMemberDeclaration, '{', '}', true, @isPropertyNameStart)",
                 "type": "{ ?EnumMemberDeclaration , ...isPropertyNameStart }",
                 "list": {
@@ -6171,7 +5975,8 @@
                     "optional": true,
                     "type": "@NodeList<@EnumMemberDeclaration>",
                     "equals": "@DelimitedList(@EnumMemberDeclaration, '{', '}', true, @isPropertyNameStart)"
-                }
+                },
+                "partComment": "获取当前枚举声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -6180,8 +5985,6 @@
             "result. = @Modifiers();",
             "result.enumToken = @readToken('enum');",
             "result.name = @Identifier(false);",
-            "result.extendsToken = undefined;",
-            "result.extends = undefined;",
             "result. = @ExtendsClause();",
             "result.members = @DelimitedList(@EnumMemberDeclaration, '{', '}', true, @isPropertyNameStart);",
             "return result;"
@@ -6196,34 +5999,22 @@
         "parts": [
             {
                 "name": "name",
-                "comment": "获取当前枚举成员声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@PropertyName()",
-                "type": "PropertyName"
-            },
-            {
-                "inlined": true,
-                "name": "=Token",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "initializer",
-                "type": "Expression",
-                "comment": "(可能不存在)"
+                "type": "PropertyName",
+                "partComment": "获取当前枚举成员声明的名字部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前枚举成员声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Initializer()",
-                "type": "Initializer"
+                "type": "Initializer",
+                "partComment": "获取当前枚举成员声明的(可能不存在)。"
             }
         ],
         "codes": [
             "const result = new @EnumMemberDeclaration();",
             "result.name = @PropertyName();",
-            "result.=Token = undefined;",
-            "result.initializer = undefined;",
             "result. = @Initializer();",
             "return result;"
         ],
@@ -6294,30 +6085,34 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前命名空间声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前命名空间声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前命名空间声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前命名空间声明的(可能不存在)。"
             },
             {
                 "name": "namespaceToken",
-                "comment": "获取当前命名空间声明的namespaceToken 的位置。",
+                "comment": " namespace 的位置",
                 "equals": "@readToken('namespace')",
                 "type": "number",
                 "tokens": [
                     "namespace"
-                ]
+                ],
+                "partComment": "获取当前命名空间声明的 namespace 的位置。"
             },
             {
                 "name": "name",
-                "comment": "获取当前命名空间声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@Identifier | MemberCallExpression()",
-                "type": "Identifier | MemberCallExpression"
+                "type": "Identifier | MemberCallExpression",
+                "partComment": "获取当前命名空间声明的名字部分。"
             }
         ],
         "codes": [
@@ -6347,30 +6142,34 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前模块声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前模块声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前模块声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前模块声明的(可能不存在)。"
             },
             {
                 "name": "moduleToken",
-                "comment": "获取当前模块声明的moduleToken 的位置。",
+                "comment": " module 的位置",
                 "equals": "@readToken('module')",
                 "type": "number",
                 "tokens": [
                     "module"
-                ]
+                ],
+                "partComment": "获取当前模块声明的 module 的位置。"
             },
             {
                 "name": "name",
-                "comment": "获取当前模块声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@Identifier | MemberCallExpression | StringLiteral()",
-                "type": "Identifier | MemberCallExpression | StringLiteral"
+                "type": "Identifier | MemberCallExpression | StringLiteral",
+                "partComment": "获取当前模块声明的名字部分。"
             }
         ],
         "codes": [
@@ -6396,7 +6195,6 @@
         "parts": [
             {
                 "name": "statements",
-                "comment": "获取当前语句块主体的undefined。",
                 "equals": "@NodeList(@Statement, '{', '}')",
                 "type": "{ Statement ... }",
                 "list": {
@@ -6408,7 +6206,8 @@
                     "optional": false,
                     "type": "@NodeList<@Statement>",
                     "equals": "@NodeList(@Statement, '{', '}')"
-                }
+                },
+                "partComment": "获取当前语句块主体的undefined。"
             }
         ],
         "codes": [
@@ -6436,84 +6235,55 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前扩展声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Decorators()",
-                "type": "Decorators"
+                "type": "Decorators",
+                "partComment": "获取当前扩展声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前扩展声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前扩展声明的(可能不存在)。"
             },
             {
                 "name": "extendsToken",
-                "comment": "获取当前扩展声明的extendsToken 的位置。",
+                "comment": " extends 的位置",
                 "equals": "@readToken('extends')",
                 "type": "number",
                 "tokens": [
                     "extends"
-                ]
+                ],
+                "partComment": "获取当前扩展声明的 extends 的位置。"
             },
             {
                 "name": "type",
-                "comment": "获取当前扩展声明的类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`。",
+                "comment": "类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`",
                 "equals": "@TypeNode()",
-                "type": "TypeNode"
-            },
-            {
-                "inlined": true,
-                "name": "extendsToken",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "extends",
-                "type": "ClassHeritageNode , ... isExpressionStart",
-                "comment": "(可能不存在)"
+                "type": "TypeNode",
+                "partComment": "获取当前扩展声明的类型。合法的值有：`any`、`number`、`boolean`、`string`、`symbol`、`void`、`never`、`this`、`null`、`undefined`、`char`、`byte`、`int`、`long`、`short`、`uint`、`ulong`、`ushort`、`float`、`double`、`*`、`?`。"
             },
             {
                 "optional": true,
-                "comment": "获取当前扩展声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ExtendsClause()",
-                "type": "ExtendsClause"
-            },
-            {
-                "inlined": true,
-                "name": "implementsToken",
-                "type": "number",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": "implements",
-                "type": "ClassHeritageNode , ... isExpressionStart",
-                "comment": "(可能不存在)"
+                "type": "ExtendsClause",
+                "partComment": "获取当前扩展声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前扩展声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ImplementsClause()",
-                "type": "ImplementsClause"
-            },
-            {
-                "inlined": true,
-                "name": "members",
-                "type": "{ ClassElement ... }",
-                "comment": "(可能不存在)"
-            },
-            {
-                "inlined": true,
-                "name": ";Token",
-                "type": "number",
-                "comment": "(可能不存在)"
+                "type": "ImplementsClause",
+                "partComment": "获取当前扩展声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前扩展声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@ClassBody()",
-                "type": "ClassBody"
+                "type": "ClassBody",
+                "partComment": "获取当前扩展声明的(可能不存在)。"
             }
         ],
         "codes": [
@@ -6522,14 +6292,8 @@
             "result. = @Modifiers();",
             "result.extendsToken = @readToken('extends');",
             "result.type = @TypeNode();",
-            "result.extendsToken = undefined;",
-            "result.extends = undefined;",
             "result. = @ExtendsClause();",
-            "result.implementsToken = undefined;",
-            "result.implements = undefined;",
             "result. = @ImplementsClause();",
-            "result.members = undefined;",
-            "result.;Token = undefined;",
             "result. = @ClassBody();",
             "return result;"
         ],
@@ -6580,7 +6344,7 @@
         "parts": [
             {
                 "name": "decorators",
-                "comment": "获取当前修饰器列表的修饰器列表。",
+                "comment": "修饰器列表",
                 "equals": "@NodeList(@Decorator)",
                 "type": "Decorator ...",
                 "list": {
@@ -6592,7 +6356,8 @@
                     "optional": false,
                     "type": "@NodeList<@Decorator>",
                     "equals": "@NodeList(@Decorator)"
-                }
+                },
+                "partComment": "获取当前修饰器列表的修饰器列表。"
             }
         ],
         "codes": [
@@ -6613,19 +6378,21 @@
         "parts": [
             {
                 "name": "@Token",
-                "comment": "获取当前修饰器的@Token 的位置。",
+                "comment": " @ 的位置",
                 "equals": "@readToken('@')",
                 "type": "number",
                 "tokens": [
                     "@"
-                ]
+                ],
+                "partComment": "获取当前修饰器的 @ 的位置。"
             },
             {
                 "name": "body",
-                "comment": "获取当前修饰器的主体部分。",
+                "comment": "主体部分",
                 "args": "Precedence.leftHandSide",
                 "equals": "@Expression(Precedence.leftHandSide)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前修饰器的主体部分。"
             }
         ],
         "codes": [
@@ -6644,7 +6411,7 @@
         "parts": [
             {
                 "name": "modifiers",
-                "comment": "获取当前修饰符列表的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@NodeList(@Modifier)",
                 "type": "Modifier ...",
                 "list": {
@@ -6656,7 +6423,8 @@
                     "optional": false,
                     "type": "@NodeList<@Modifier>",
                     "equals": "@NodeList(@Modifier)"
-                }
+                },
+                "partComment": "获取当前修饰符列表的(可能不存在)。"
             }
         ],
         "codes": [
@@ -6702,7 +6470,7 @@
         "parts": [
             {
                 "name": "type",
-                "comment": "获取当前修饰符的type 的位置。合法的值有：`export`、`default`、`declare`、`const`、`static`、`abstract`、`readonly`、`async`、`public`、`protected`、`private`。",
+                "comment": " export 的位置。合法的值有：`export`、`default`、`declare`、`const`、`static`、`abstract`、`readonly`、`async`、`public`、`protected`、`private`",
                 "equals": "@read",
                 "type": "number",
                 "tokens": [
@@ -6717,7 +6485,8 @@
                     "public",
                     "protected",
                     "private"
-                ]
+                ],
+                "partComment": "获取当前修饰符的 export 的位置。合法的值有：`export`、`default`、`declare`、`const`、`static`、`abstract`、`readonly`、`async`、`public`、`protected`、`private`。"
             }
         ],
         "codes": [
@@ -6735,43 +6504,48 @@
         "parts": [
             {
                 "name": "typeToken",
-                "comment": "获取当前类型别名声明的typeToken 的位置。",
+                "comment": " type 的位置",
                 "equals": "@readToken('type')",
                 "type": "number",
                 "tokens": [
                     "type"
-                ]
+                ],
+                "partComment": "获取当前类型别名声明的 type 的位置。"
             },
             {
                 "name": "name",
-                "comment": "获取当前类型别名声明的(可能不存在)。",
+                "comment": "名字部分",
                 "equals": "@Identifier()",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前类型别名声明的名字部分。"
             },
             {
                 "optional": true,
-                "comment": "获取当前类型别名声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@TypeParameterDeclaration, '<', '>', false, @isIdentifierName)",
-                "type": "@NodeList<@TypeParameterDeclaration>"
+                "type": "@NodeList<@TypeParameterDeclaration>",
+                "partComment": "获取当前类型别名声明的(可能不存在)。"
             },
             {
                 "name": "=Token",
-                "comment": "获取当前类型别名声明的=Token 的位置。",
+                "comment": " = 的位置",
                 "equals": "@readToken('=')",
                 "type": "number",
                 "tokens": [
                     "="
-                ]
+                ],
+                "partComment": "获取当前类型别名声明的 = 的位置。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前类型别名声明的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前类型别名声明的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -6813,44 +6587,49 @@
         "parts": [
             {
                 "name": "importToken",
-                "comment": "获取当前import 赋值声明的importToken 的位置。",
+                "comment": " import 的位置",
                 "equals": "importToken",
                 "type": "number",
                 "tokens": [
                     "import"
-                ]
+                ],
+                "partComment": "获取当前import 赋值声明的 import 的位置。"
             },
             {
                 "name": "variable",
-                "comment": "获取当前import 赋值声明的别名。",
+                "comment": "别名",
                 "equals": "variable",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前import 赋值声明的别名。"
             },
             {
                 "name": "=Token",
-                "comment": "获取当前import 赋值声明的=Token 的位置。",
+                "comment": " = 的位置",
                 "equals": "@readToken('=')",
                 "type": "number",
                 "tokens": [
                     "="
-                ]
+                ],
+                "partComment": "获取当前import 赋值声明的 = 的位置。"
             },
             {
                 "name": "value",
-                "comment": "获取当前import 赋值声明的值。",
+                "comment": "值",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前import 赋值声明的值。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前import 赋值声明的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前import 赋值声明的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -6884,17 +6663,18 @@
         "parts": [
             {
                 "name": "importToken",
-                "comment": "获取当前import 声明的importToken 的位置。",
+                "comment": " import 的位置",
                 "equals": "importToken",
                 "type": "number",
                 "tokens": [
                     "import"
-                ]
+                ],
+                "partComment": "获取当前import 声明的 import 的位置。"
             },
             {
                 "optional": true,
                 "name": "variables",
-                "comment": "获取当前import 声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@DelimitedList(@ImportClause)",
                 "type": "ImportClause , ...",
                 "list": {
@@ -6906,29 +6686,33 @@
                     "optional": false,
                     "type": "@NodeList<@ImportClause>",
                     "equals": "@DelimitedList(@ImportClause)"
-                }
+                },
+                "partComment": "获取当前import 声明的(可能不存在)。"
             },
             {
                 "optional": true,
-                "comment": "获取当前import 声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "imports ? @readToken(@from) : undefined",
-                "type": "'from' "
+                "type": "'from' ",
+                "partComment": "获取当前import 声明的(可能不存在)。"
             },
             {
                 "name": "from",
-                "comment": "获取当前import 声明的导入模块名。",
+                "comment": "导入模块名",
                 "equals": "@StringLiteral()",
-                "type": "StringLiteral"
+                "type": "StringLiteral",
+                "partComment": "获取当前import 声明的导入模块名。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前import 声明的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前import 声明的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -6969,9 +6753,10 @@
         "parts": [
             {
                 "name": "variable",
-                "comment": "获取当前命名空间导入分句的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Identifier()",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前命名空间导入分句的(可能不存在)。"
             }
         ],
         "codes": [
@@ -6988,7 +6773,7 @@
         "parts": [
             {
                 "name": "elements",
-                "comment": "获取当前对象导入分句的所有元素。",
+                "comment": "所有元素",
                 "equals": "@DelimitedList(@SimpleImportOrExportClause, '{', '}')",
                 "type": "{ SimpleImportOrExportClause , ... }",
                 "list": {
@@ -7000,7 +6785,8 @@
                     "optional": false,
                     "type": "@NodeList<@SimpleImportOrExportClause>",
                     "equals": "@DelimitedList(@SimpleImportOrExportClause, '{', '}')"
-                }
+                },
+                "partComment": "获取当前对象导入分句的所有元素。"
             }
         ],
         "codes": [
@@ -7035,26 +6821,29 @@
             {
                 "optional": true,
                 "name": "name",
-                "comment": "获取当前简单导入或导出分句的导入或导出的名称(可能不存在)。",
+                "comment": "导入或导出的名称(可能不存在)",
                 "args": "true",
                 "equals": "@Identifier(true)",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前简单导入或导出分句的导入或导出的名称(可能不存在)。"
             },
             {
                 "optional": true,
                 "name": "asToken",
-                "comment": "获取当前简单导入或导出分句的asToken 的位置(可能不存在)。",
+                "comment": " as 的位置(可能不存在)",
                 "equals": "@readToken('as')",
                 "type": "number",
                 "tokens": [
                     "as"
-                ]
+                ],
+                "partComment": "获取当前简单导入或导出分句的 as 的位置(可能不存在)。"
             },
             {
                 "name": "variable",
-                "comment": "获取当前简单导入或导出分句的导入或导出的变量。",
+                "comment": "导入或导出的变量",
                 "equals": "@Identifier()",
-                "type": "Identifier"
+                "type": "Identifier",
+                "partComment": "获取当前简单导入或导出分句的导入或导出的变量。"
             }
         ],
         "codes": [
@@ -7134,46 +6923,51 @@
         "parts": [
             {
                 "name": "exportToken",
-                "comment": "获取当前导出列表声明的exportToken 的位置。",
+                "comment": " export 的位置",
                 "equals": "exportToken",
                 "type": "number",
                 "tokens": [
                     "export"
-                ]
+                ],
+                "partComment": "获取当前导出列表声明的 export 的位置。"
             },
             {
                 "name": "*Token",
-                "comment": "获取当前导出列表声明的*Token 的位置。",
+                "comment": " * 的位置",
                 "equals": "@readToken('*')",
                 "type": "number",
                 "tokens": [
                     "*"
-                ]
+                ],
+                "partComment": "获取当前导出列表声明的 * 的位置。"
             },
             {
                 "name": "fromToken",
-                "comment": "获取当前导出列表声明的fromToken 的位置。",
+                "comment": " from 的位置",
                 "equals": "@readToken('from')",
                 "type": "number",
                 "tokens": [
                     "from"
-                ]
+                ],
+                "partComment": "获取当前导出列表声明的 from 的位置。"
             },
             {
                 "name": "from",
-                "comment": "获取当前导出列表声明的导入模块名。",
+                "comment": "导入模块名",
                 "equals": "@StringLiteral()",
-                "type": "StringLiteral"
+                "type": "StringLiteral",
+                "partComment": "获取当前导出列表声明的导入模块名。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前导出列表声明的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前导出列表声明的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -7202,16 +6996,17 @@
         "parts": [
             {
                 "name": "exportToken",
-                "comment": "获取当前导出列表声明的exportToken 的位置。",
+                "comment": " export 的位置",
                 "equals": "exportToken",
                 "type": "number",
                 "tokens": [
                     "export"
-                ]
+                ],
+                "partComment": "获取当前导出列表声明的 export 的位置。"
             },
             {
                 "name": "variables",
-                "comment": "获取当前导出列表声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@NodeList(@SimpleImportOrExportClause, '{', '}')",
                 "type": "{ SimpleImportOrExportClause ... }",
                 "list": {
@@ -7223,32 +7018,36 @@
                     "optional": false,
                     "type": "@NodeList<@SimpleImportOrExportClause>",
                     "equals": "@NodeList(@SimpleImportOrExportClause, '{', '}')"
-                }
+                },
+                "partComment": "获取当前导出列表声明的(可能不存在)。"
             },
             {
                 "name": "fromToken",
-                "comment": "获取当前导出列表声明的fromToken 的位置。",
+                "comment": " from 的位置",
                 "equals": "@readToken('from')",
                 "type": "number",
                 "tokens": [
                     "from"
-                ]
+                ],
+                "partComment": "获取当前导出列表声明的 from 的位置。"
             },
             {
                 "name": "from",
-                "comment": "获取当前导出列表声明的导入模块名。",
+                "comment": "导入模块名",
                 "equals": "@StringLiteral()",
-                "type": "StringLiteral"
+                "type": "StringLiteral",
+                "partComment": "获取当前导出列表声明的导入模块名。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前导出列表声明的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前导出列表声明的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -7277,38 +7076,42 @@
         "parts": [
             {
                 "name": "exportToken",
-                "comment": "获取当前导出赋值声明的exportToken 的位置。",
+                "comment": " export 的位置",
                 "equals": "exportToken",
                 "type": "number",
                 "tokens": [
                     "export"
-                ]
+                ],
+                "partComment": "获取当前导出赋值声明的 export 的位置。"
             },
             {
                 "name": "=Token",
-                "comment": "获取当前导出赋值声明的=Token 的位置。",
+                "comment": " = 的位置",
                 "equals": "@readToken('=')",
                 "type": "number",
                 "tokens": [
                     "="
-                ]
+                ],
+                "partComment": "获取当前导出赋值声明的 = 的位置。"
             },
             {
                 "name": "value",
-                "comment": "获取当前导出赋值声明的值。",
+                "comment": "值",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前导出赋值声明的值。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前导出赋值声明的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前导出赋值声明的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [
@@ -7335,26 +7138,29 @@
         "parts": [
             {
                 "optional": true,
-                "comment": "获取当前export default 声明的(可能不存在)。",
+                "comment": "(可能不存在)",
                 "equals": "@Modifiers()",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "partComment": "获取当前export default 声明的(可能不存在)。"
             },
             {
                 "name": "expression",
-                "comment": "获取当前export default 声明的表达式部分。",
+                "comment": "表达式部分",
                 "args": "Precedence.assignment",
                 "equals": "@Expression(Precedence.assignment)",
-                "type": "Expression"
+                "type": "Expression",
+                "partComment": "获取当前export default 声明的表达式部分。"
             },
             {
                 "optional": true,
                 "name": ";Token",
-                "comment": "获取当前export default 声明的;Token 的位置(可能不存在)。",
+                "comment": " ; 的位置(可能不存在)",
                 "equals": "@readToken(';')",
                 "type": "number",
                 "tokens": [
                     ";"
-                ]
+                ],
+                "partComment": "获取当前export default 声明的 ; 的位置(可能不存在)。"
             }
         ],
         "codes": [

@@ -186,7 +186,7 @@
 								return @PropertySignature(name, questionToken);
 						}
 						@PropertySignature(*, *) doc // 属性签名(`x: number`)
-							name: PropertyName
+							name: PropertyName // 名字部分
 							?'?'
 							?TypeAnnotation
 							ObjectMemberTail
@@ -296,7 +296,7 @@
 	}
 	return result;
 
-@Expression(precedence = Precedence.any/*允许解析的最低操作符优先级*/, allowIn = true/*是否解析 in 表达式。*/) // 表达式
+@Expression(precedence = Precedence.any/*允许解析的最低操作符优先级*/, allowIn = true/*是否解析 in 表达式*/) // 表达式
 	let result: @Expression;
 	switch (@peek) {
 		case 'identifier':

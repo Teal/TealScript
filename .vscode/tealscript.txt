@@ -698,10 +698,11 @@ BindingElementList[Yield] :
 	BindingElementList[?Yield] , BindingElisionElement[?Yield]
 
 BindingElisionElement[Yield] :
-	Elision[opt]  BindingElement[?Yield]
+	Elision[opt] BindingElement[?Yield]
 
 BindingProperty[Yield] :
 	SingleNameBinding[?Yield]
+	PropertyName[?Yield] : BindingElement[?Yield]
 
 PropertyName[?Yield] :
 	BindingElement[?Yield]

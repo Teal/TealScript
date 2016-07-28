@@ -399,19 +399,7 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
             if (!part.equals) {
                 part.equals = part.tokens.length ? part.tokens.length > 1 ? "@read" : "@readToken('" + part.tokens[0] + "')" : "@" + part.type + "(" + (part.args || "") + ")";
             }
-            // 追加内联部分。
-            if (productions[part.type] && productions[part.type].inline) {
-                for (var _i = 0, _a = productions[part.type].parts; _i < _a.length; _i++) {
-                    var part2 = _a[_i];
-                    production.parts.splice(i++, 0, {
-                        inlined: true,
-                        name: part2.name,
-                        type: part2.type,
-                        comment: part.comment
-                    });
-                }
-            }
-            part.comment = "获取当前" + production.comment.replace(/\(.*\)/, "") + "的" + part.comment + "。";
+            part.partComment = "获取当前" + production.comment.replace(/\(.*\)/, "") + "的" + part.comment + "。";
         }
         // 生成解析代码。
         if (production.parts.length && !production.codes.length) {
@@ -435,6 +423,24 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
         production.comment = "解析一个" + production.comment + "。";
         delete production.indent;
         cleanObj(production);
+    });
+    eachProduction(function (production) {
+        // 补全成员的注释
+        for (var i = 0; i < production.parts && production.parts.length; i++) {
+            var part = production.parts[i];
+            // 追加内联部分。
+            if (productions[part.type] && productions[part.type].inline) {
+                for (var _i = 0, _a = productions[part.type].parts; _i < _a.length; _i++) {
+                    var part2 = _a[_i];
+                    production.parts.splice(i++, 0, {
+                        inlined: true,
+                        name: part2.name,
+                        type: part2.type,
+                        comment: "获取当前" + production.comment.replace(/\(.*\)/, "") + "的" + part.comment + "。"
+                    });
+                }
+            }
+        }
     });
     // #endregion
     // #region 生成代码
@@ -684,7 +690,7 @@ function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
             result.tokens = result.type.substring(1, result.type.length - 1).split("'|'");
             result.name = result.name || ((tokenTypes[result.tokens[0]] || result.tokens[0]) + "Token");
             result.type = "number";
-            result.comment = result.comment || (result.name + " 的位置");
+            result.comment = result.comment || (" " + result.tokens[0] + " 的位置");
         }
         if (result.optional) {
             result.comment += "(可能不存在)";

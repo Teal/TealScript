@@ -1,0 +1,1855 @@
+﻿// TealScript 语法解析器
+// 此文件可用于生成 parser.ts、nodes.ts、nodeVisitor.ts
+
+// #region 工具
+
+/**
+ * 生成使用的特殊标记。
+ * - _.xx = T() : 表示新增类型为 T 的节点字段
+ * - _('') : 表示新增类型为 number 的特定标记字段
+ * - _('', '', ...) : 表示新增类型为 number 的多种标记字段
+ */
+declare var _;
+
+/**
+ * 生成使用的特殊标记。
+ * - __.xx = T() : 表示新增类型为 T 的可选节点字段
+ * - __('') : 表示新增类型为 number 的可选特定标记字段
+ * - __('', '', ...) : 表示新增类型为 number 的可选多种标记字段
+ */
+declare var __;
+
+/**
+ * 生成使用的特殊标记，表示获取下一个标记。
+ */
+declare var peek: string;
+
+/**
+ * 生成使用的特殊标记，表示当前标记。
+ */
+declare var current: string;
+
+/**
+ * 生成使用的特殊标记，表示解析列表。
+ */
+declare function list(element, allowEmpty?: boolean, open?: string, close?: string, seperator?: string, continueParse?);
+
+/**
+ * 生成使用的特殊标记，表示类型别名。
+ */
+declare function alias(type);
+
+/**
+ * 生成使用的特殊标记，表示原始标记。
+ */
+declare function raw(type);
+
+/**
+ * 生成使用的特殊标记，表示缓存标记状态。
+ */
+declare function stashSave();
+
+/**
+ * 生成使用的特殊标记，表示恢复标记状态。
+ */
+declare function stashRestore(state);
+
+/**
+ * 生成使用的特殊标记，表示清除标记状态。
+ */
+declare function stashClear(state);
+
+/**
+ * 生成使用的特殊标记，表示当前节点包含文档。
+ */
+declare var doc;
+
+/**
+ * 生成使用的特殊标记，表示读取下一个标记。
+ */
+declare function read(...token: string[]);
+
+/**
+ * 生成使用的特殊标记，表示报告错误。
+ */
+declare function error(location, message, ...args);
+
+
+// #endregion
+
+// #region 解析
+
+function parseSyntax(source: string, tokenNames: {}) {
+
+	const lines = source.split(/\r\n?|\n/);
+	for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+		// 忽略空行、注释、type、declare 开头的行。
+        if (!line || /^(\/\/|\s*(type|declare)\b)/.test(line)) continue;
+
+
+
+	}
+
+	function parseHeader(line) {
+
+	}
+
+	function parseParam(line) {
+
+	}
+
+	function isPart(line) {
+		return /^\s*_/.test(line);
+	}
+
+	/**
+	 * 从指定的代码行中提取字段信息。
+	 * @param production 所属的产生式。
+	 * @param line 行源码。
+	 */
+	function parseCode(production: Production, line: string) {
+
+		// _...
+		if (/^\s*_/.test(line)) {
+			const field: ProductionField = {};
+			line.replace(/\/\/\s*(.+)$/, function (_, value) {
+                field.comment = value.trim();
+                return "";
+            }).replace(/__/, (_) => {
+				field.optional = true;
+				return "_";
+			}).replace(/^\s*_\('(.*?)'\)/, (all, token) => {
+				return "_." + nameOf(token) + " = " + all;
+			}).replace(/_\.(\w+)\s*=\s*(.*)/, (_, name, value) => {
+				field.name = name;
+				if (/_\('/.test(value)) {
+					field.type = "number";
+					const tokens = value.replace(/,\s+/g, ",").replace(/^_\('/g, "").replace(/'\)$/g, "").split(",");
+					if (tokens.length > 1) {
+						field.tokens = tokens;
+						return `result.${field.name} = this.readToken(); // ${field.tokens.join("、")}`;
+					}
+					field.token = tokens[0];
+					return `result.${field.name} = this.expectToken(TokenType.${nameOf(field.token)});`;
+				}
+
+
+				return "";
+			});
+		}
+
+		// Initializer(_);
+		if (line.indexOf("(_)") >= 0) {
+			production.fields.push({
+				inline: getWord(line)
+			});
+			return line.replace("_", "result");
+		}
+
+		return line;
+	}
+
+	function nameOf(token: string) {
+		return (tokenNames[token] || token) + "Token";
+	}
+
+	function getWord(content) {
+		return (/(\w+)/.exec(content) || [""])[0];
+	}
+
+	interface Production {
+		fields: ProductionField[];
+	}
+
+	interface ProductionField {
+		inline?: string;
+		tokens?: string[];
+		token?: string;
+		name?: string;
+		type?: string;
+		optional?: boolean;
+		comment?: string;
+	}
+
+}
+
+// #endregion
+
+// #region 语法
+
+declare function Identifier();
+
+function TypeNode(precedence = Precedence.any) { // 类型节点
+	let result: TypeNode;
+	type TypeNode = any;
+	if (isPredefinedType(peek)) {
+		result = PredefinedTypeNode();
+		function PredefinedTypeNode() { // 内置类型节点(`number`、`string`、...)
+			_.type = _('any', 'number', 'boolean', 'string', 'symbol', 'void', 'never', 'this', 'null', 'undefined', 'char', 'byte', 'int', 'long', 'short', 'uint', 'ulong', 'ushort', 'float', 'double', '*', '?'); // 类型
+		}
+	} else {
+		switch (peek) {
+			//+ case 'identifier':
+			//+ 	result = GenericTypeOrTypeReferenceNode();
+			//+ 	break;
+			case '(':
+				result = FunctionOrParenthesizedTypeNode();
+				function FunctionOrParenthesizedTypeNode() { // 函数(`()=> void`)或括号类型节点(`(x)`)
+					const savedState = stashSave();
+					declare function Parameters();
+					const parameters = Parameters();
+					if (peek === '=>' || peek === ':') {
+						stashClear(savedState);
+						return FunctionTypeNode(undefined, parameters);
+						type TypeParameters = any;
+						type Parameters = any;
+						function FunctionTypeNode(typeParameters?: TypeParameters, parameters?: Parameters) { // 函数类型节点(`(x: number) => void`)
+							function TypeParameters() { // 类型参数列表(`<T>`)
+								list(TypeParameterDeclaration, false, '<', '>', ',', isIdentifierName);
+								function TypeParameterDeclaration() { // 类型参数声明(`T`、`T extends R`)
+									_.name = Identifier();
+									if (peek === 'extends') {
+										__('extends');
+										__.extends = TypeNode();
+									}
+								}
+							}
+							function Parameters() { // 参数列表(`(x, y)`)
+								list(ParameterDeclaration, true, '(', ')', ',', isBindingElementStart);
+								function ParameterDeclaration() { // 参数声明(`x`、`x?: number`)
+									__.modifiers = Modifiers();
+									if (peek === '...') {
+										__('...');
+									}
+									_.name = BindingName();
+									function BindingName() { // 绑定名称(`x`, `[x]`, `{x: x}`)
+										alias(Identifier | ArrayBindingPattern | ObjectBindingPattern);
+										switch (peek) {
+											case '[':
+												return ArrayBindingPattern();
+												function ArrayBindingPattern() { // 数组绑定模式项(`[x]`)
+													_.elements = list(ArrayBindingElement, true, '[', ']', ',', isArrayBindingElementStart);
+													function ArrayBindingElement() { // 数组绑定模式项(`x`)
+														if (peek !== ',' && peek !== ']') {
+															if (peek === '...') {
+																__('...');
+															}
+															_.value = BindingName();
+															Initializer(_);
+														}
+													}
+												}
+											case '{':
+												return ObjectBindingPattern();
+												function ObjectBindingPattern() { // 对象绑定模式项(`{x: x}`)
+													_.elements = list(ObjectBindingElement, true, '{', '}', ',', isObjectBindingElementStart);
+													function ObjectBindingElement() { // 对象绑定模式项(`x`)
+														_.key = PropertyName();
+														function PropertyName() { // 属性名称(`xx`、`"xx"`、`0`、`[xx]`)
+															alias(Identifier | NumericLiteral | StringLiteral | ComputedPropertyName);
+															switch (peek) {
+																//+ case 'identifier':
+																//+ 	return Identifier(true);
+																case 'stringLiteral':
+																	return StringLiteral();
+																case 'numericLiteral':
+																	return NumericLiteral();
+																case '[':
+																	return ComputedPropertyName();
+																	function ComputedPropertyName() { // 已计算的属性名(`[1]`)
+																		_('[');
+																		_.body = Expression(Precedence.assignment);
+																		_(']');
+																	}
+																default:
+																	return Identifier(true);
+															}
+														}
+														if (peek === ':') {
+															__(':');
+															__.value = BindingName();
+														} else if (_.key.constructor !== Identifier) {
+															read(':');
+														}
+														Initializer(_);
+													}
+												}
+											default:
+												return Identifier();
+										}
+									}
+									if (peek === '?') {
+										__('?');
+									}
+									TypeAnnotation(_);
+									function TypeAnnotation(_) { // 类型注解(`: number`)
+										if (peek === ':') {
+											__(':');
+											__.type = TypeNode(); // 类型部分
+										}
+									}
+									Initializer(_);
+									function Initializer(_, allowIn) { // 初始值
+										if (peek === '=') {
+											__('=');
+											__.initializer = Expression(Precedence.assignment, allowIn);
+										}
+									}
+								}
+							}
+							_('=>');
+							_.returnType = TypeNode();
+						}
+					}
+					stashRestore(savedState);
+					return ParenthesizedTypeNode();
+					function ParenthesizedTypeNode() { // 括号类型节点(`(number)`)
+						_('(');
+						_.body = TypeNode(); // 主体部分
+						_(')');
+					}
+				}
+				break;
+			case '[':
+				result = TupleTypeNode();
+				function TupleTypeNode() { // 元祖类型节点(`[string, number]`)
+					return list(TupleTypeElement, true, '[', ']', ',', isTypeNodeStart); // 元素列表
+					function TupleTypeElement() { // 元祖类型节点元素(`x`)
+						_.value = TypeNode(Precedence.assignment);
+					}
+				}
+				break;
+			case '{':
+				result = ObjectTypeNode();
+				function ObjectTypeNode() { // 对象类型节点(`{x: number}`)
+					_.elements = list(TypeMemberSignature, true, '{', '}');
+					function TypeMemberSignature() { // 类型成员签名(`x： y`、`x() {...}`)
+						alias(PropertySignature | CallSignature | ConstructSignature | IndexSignature | MethodSignature | AccessorSignature);
+						switch (peek) {
+							//+ case 'identifier':
+							//+ 	break;
+							case 'get':
+							case 'set':
+								const savedToken = current;
+								read();
+								if (isKeyword(peek) || peek === '[') {
+									return AccessorSignature(savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
+									function AccessorSignature(__0 = __('get'), __1 = __('set')) { // 访问器签名(`get x(): number`、`set x(value): void`)
+										doc
+										_.name = PropertyName();
+										if (peek === '?') {
+											__('?');
+										}
+										_.parameters = Parameters();
+										TypeAnnotation(_);
+										ObjectMemberTail(_);
+									}
+								}
+								current = savedToken;
+								break;
+							case '[':
+								let isIndexSignature: boolean;
+								const savedToken = current;
+								read();
+								if (isIdentifierName(peek)) {
+									read();
+									isIndexSignature = peek === ':';
+								}
+								current = savedToken;
+								if (isIndexSignature) {
+									return IndexSignature();
+									function IndexSignature() { // 索引器声明(`get x() {...}`、`set x(value) {...}`)
+										doc
+										_('[');
+										_.argument = Identifier();
+										TypeAnnotation(_);
+										_(']');
+										TypeAnnotation(_);
+										ObjectMemberTail(_);
+									}
+								}
+								break;
+							case '(':
+							case '<':
+								return CallSignature();
+								function CallSignature() { // 函数签名(`(): number`)
+									doc
+									MethodOrConstructOrCallSignature(_);
+								}
+							case 'new':
+								return ConstructSignature();
+								function ConstructSignature() { // 构造函数签名(`new x(): number`)
+									doc
+									_('new');
+									MethodOrConstructOrCallSignature(_);
+								}
+						}
+						const name = PropertyName();
+						const questionToken = peek === '?' ? read('?') : undefined;
+						switch (peek) {
+							case '(':
+							case '<':
+								return MethodSignature(name, questionToken);
+								function MethodSignature(__name = PropertyName(), __1 = __('?')) {  // 方法签名(`x(): number`)
+									doc
+									MethodOrConstructOrCallSignature(_);
+								}
+							default:
+								return PropertySignature(name, questionToken);
+								function PropertySignature(__name = PropertyName()/* 名字部分 */, __1 = __('?')) { // 属性签名(`x: number`)
+									doc
+									TypeAnnotation(_);
+									ObjectMemberTail(_);
+								}
+						}
+						function MethodOrConstructOrCallSignature(_) { // 方法(`x(): number`)或构造函数(`new x(): number`)或函数(`(): number`)签名
+							__.typeParameters = TypeParameters();
+							_.parameters = Parameters();
+							TypeAnnotation(_);
+							ObjectMemberTail(_);
+							function ObjectMemberTail(_) { // 对象成员尾部
+								if (peek === ';') {
+									__(';');
+								} else if (peek === ',') {
+									__(',');
+								} else if (sameLine) {
+									error({ start: current.end, end: current.end }, "Missing ';' after property.");
+								}
+							}
+						}
+					}
+				}
+				break;
+			case 'new':
+				return ConstructorTypeNode();
+				function ConstructorTypeNode() { // 构造函数类型节点(`new () => void`)
+					_('new');
+					__.typeParameters = TypeParameters();
+					_.parameters = Parameters();
+					_('=>');
+					_.return = TypeNode();
+				}
+			case '<':
+				return FunctionTypeNode(TypeParameters(), Parameters());
+			case 'typeof':
+				result = TypeQueryNode();
+				break;
+				function TypeQueryNode<TypeNode>() { // 类型查询节点(`typeof x`) 
+					_('typeof');
+					_.operand = Expression(Precedence.postfix);
+				}
+			case '=>':
+				return FunctionTypeNode();
+			case 'numericLiteral':
+			case 'stringLiteral':
+			case 'true':
+			case 'false':
+				result = LiteralTypeNode();
+				function LiteralTypeNode() { // 字面量类型节点(`"abc"`、`true`)
+					_.value = Expression(Precedence.primary);
+				}
+				break;
+			default:
+				result = GenericTypeOrTypeReferenceNode();
+				function GenericTypeOrTypeReferenceNode() { // 泛型类型节点(`x<T>`)或类型引用节点(`x`)
+					const result = TypeReferenceNode();
+					function TypeReferenceNode<TypeNode>() { // 类型引用节点(`x`)
+						if (isIdentifierName(peek)) {
+							_.start = read();
+							_.value = <'identifer'>current.data;  // 值部分
+						} else {
+							error(peek(), "Type expected. Unexpected token '{0}'.", getTokenName(peek));
+							_.start = current.end;
+						}
+						_.end = current.end;
+					}
+					if (sameLine && peek === '<') {
+						return GenericTypeNode(result);
+						function GenericTypeNode(_target = TypeReferenceNode()/*目标部分*/, _typeArguments = TypeArguments()/*类型参数部分*/) { // 泛型类型节点(`Array<number>`)
+							function TypeArguments() {// 类型参数列表(`<number>`)
+								list(TypeArgument, '<', '>', ',', isTypeNodeStart);
+								function TypeArgument() { // 类型参数(`number`)
+									_.value = TypeNode(Precedence.assignment); // 值
+								}
+							}
+						}
+					}
+					return result;
+				}
+				break;
+		}
+	}
+	while (getPrecedence(peek) >= precedence) {
+		switch (peek) {
+			case '.':
+				result = QualifiedNameTypeNode(result);
+				continue;
+				function QualifiedNameTypeNode(_target = TypeNode()/*目标部分*/) { // 限定名称类型节点(`"abc"`、`true`)
+					_('.');
+					_.argument = Identifier(true) = MemberCallArgument(); // 参数部分
+				}
+			case '[':
+				if (sameLine) {
+					result = ArrayTypeNode(result);
+				}
+				continue;
+				function ArrayTypeNode(_target = TypeNode()) { // 数组类型节点(`T[]`)
+					_('[');
+					_(']');
+				}
+			case '&':
+			case '|':
+			case 'is':
+				result = BinaryTypeNode(result);
+				continue;
+				function BinaryTypeNode(_left = TypeNode()/*左值部分*/) { // 双目表达式(x + y、x = y、...)
+					_.operator = _('&', '|', 'is'); // 运算类型
+					_.right = TypeNode(getPrecedence(result.operator) + 1); // 右值部分
+				}
+				break;
+		}
+		return result;
+	}
+}
+
+function Expression(precedence = Precedence.any/*允许解析的最低操作符优先级*/, allowIn = true/*是否解析 in 表达式*/) { // 表达式
+	let result: Expression;
+	switch (peek) {
+		case 'identifier':
+			result = ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
+			break;
+			function ArrowFunctionOrGenericExpressionOrIdentifier(allowIn: boolean) { // 箭头函数(`x => y`)或泛型表达式(`x<T>`)或标识符(`x`)
+				let result = Identifier();
+				switch (peek) {
+					case '=>':
+						result = ArrowFunctionExpression(undefined, undefined, result, allowIn);
+						break;
+					case '<':
+						if (sameLine) {
+							const savedState = stashSave();
+							const typeArguments = TypeArguments();
+							if (current === '>' && (isBinaryOperator(peek) || !isUnaryOperator(peek))) {
+								stashClear(savedState);
+								result = GenericExpression(result, typeArguments);
+							} else {
+								stashRestore(savedState);
+							}
+						}
+						break;
+						function GenericExpression(_, _) { // 泛型表达式(`x<number>`)
+							_.target = Identifier(); // 目标部分
+							_.typeArguments = TypeArguments(); // 类型参数部分
+						}
+				}
+				return result;
+				function Identifier<Expression>(allowKeyword = false/*是否允许解析关键字*/) { // 标识符(`x`)
+					_.value = 'identifier'; // 值部分
+					if (isIdentifierName(peek) || (allowKeyword && isKeyword(peek))) {
+						const result = new Identifier();
+						result.start = read;
+						result.value = current.value;
+						result.end = current.end;
+						return result;
+					}
+					error(peek(), isKeyword(peek) ? "Identifier expected; Keyword '{0}' cannot be used as an identifier." : "Identifier expected; Unexpected token '{0}'.", getTokenName(peek));
+					return ErrorIdentifier();
+				}
+				function ErrorIdentifier(start = current.end/*标记的开始位置*/) { // 错误的标识符占位符
+					const result = new ErrorIdentifier();
+					result.start = start;
+					result.end = current.end;
+					return result;
+				}
+			}
+		case 'this':
+		case 'null':
+		case 'true':
+		case 'false':
+		case 'super':
+			result = SimpleLiteral();
+			break;
+			function SimpleLiteral() { // 简单字面量(`null`、`true`、`false`、`this`、`super`)
+				_.type = _('this' | 'null' | 'true' | 'false' | 'super'); // 类型
+			}
+		case '(':
+			result = ArrowFunctionOrParenthesizedExpression(allowIn);
+			break;
+			function ArrowFunctionOrParenthesizedExpression(allowIn) { // 箭头(`()=>...`)或括号表达式(`(x)`)
+				const savedState = stashSave();
+				const parameters = Parameters();
+				if (sameLine && (peek === '=>' || peek === ':' || peek === '{')) {
+					stashClear(savedState);
+					return ArrowFunctionExpression(undefined, undefined, parameters, allowIn);
+					function ArrowFunctionExpression(__modifiers = Modifiers(), __typeParameters = TypeParameters(), _parameters = Parameters | Identifier()/*参数部分*/, allowIn) { // 箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。
+						TypeAnnotation(_);
+						_('=>');
+						_.body = <BlockStatement | Expression>peek === '{' ? BlockStatement() : Expression(Precedence.assignment, allowIn);
+					}
+					stashRestore(savedState);
+					return ParenthesizedExpression();
+					function ParenthesizedExpression() { // 括号表达式(`(x)`)
+						_('(');
+						_.body = Expression(); // 主体部分
+						_(')');
+					}
+				}
+			}
+		case 'numericLiteral':
+			result = NumericLiteral();
+			break;
+			function NumericLiteral() { // 数字字面量(`1`)
+				_.value = 'numericLiteral';
+			}
+		case 'stringLiteral':
+		case 'noSubstitutionTemplateLiteral':
+			result = StringLiteral();
+			function StringLiteral() { // 字符串字面量(`'abc'`、`"abc"`、`\`abc\``)
+				_.value = 'stringLiteral';
+			}
+			break;
+		case '[':
+			result = ArrayLiteral();
+			function ArrayLiteral() { // 数组字面量(`[x, y]`)
+				_.elements = list(ArrayLiteralElement, true, '[', ']', isExpressionStart); // 元素列表
+				function ArrayLiteralElement() { // 数组字面量元素(`x`)
+					if (peek !== ',' && peek !== ']') {
+						if (peek === '...') {
+							__('...');
+						}
+						_.value = Expression(Precedence.assignment);
+					}
+				}
+			}
+			break;
+		case '{':
+			result = ObjectLiteral();
+			break;
+			function ObjectLiteral() { // 对象字面量(`{x: y}`)
+				_.elements = list(ObjectLiteralElement, true, '{', '}', ',', isPropertyNameStart);
+				function ObjectLiteralElement() { // 对象字面量元素(`x: y`、`x() {...}`)
+					alias(ObjectPropertyDeclaration | ObjectMethodDeclaration | ObjectAccessorDeclaration);
+					const modifiers = Modifiers();
+					switch (peek) {
+						//+ case 'identifier':
+						//+ 	break;
+						case 'get':
+						case 'set':
+							const savedToken = current;
+							read();
+							if (isKeyword(peek) || peek === '[') {
+								return ObjectAccessorDeclaration(modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
+								function ObjectAccessorDeclaration(__modifiers = Modifiers(), __1 = __('get'), __2 = __('set')) { // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+									doc
+									_.name = PropertyName();
+									Parameters
+									TypeAnnotation(_);
+									FunctionBody(_);
+									ObjectMemberTail
+								}
+								current = savedToken;
+								break;
+							}
+					}
+				}
+			}
+		case '*':
+			return ObjectMethodDeclaration(modifiers, read, PropertyName());
+	}
+	const name = PropertyName();
+	switch (peek) {
+		case '(':
+		case '<':
+			return ObjectMethodDeclaration(modifiers, undefined, name);
+			function ObjectMethodDeclaration(_, _, *) doc { // 方法声明(`x() {...}`)
+				Modifiers(_);
+				__('*');
+				name(_);: PropertyName
+				TypeParameters(_);
+				Parameters
+				TypeAnnotation(_);
+				FunctionBody(_);
+				ObjectMemberTail
+			}
+		default:
+			return ObjectPropertyDeclaration(modifiers, name);
+			function ObjectPropertyDeclaration(_, _, *) doc { // 属性声明(`x: y`)
+				Modifiers(_);
+				_.key = PropertyName();
+				__(':');
+				__('=');
+				value(_);: Expression(Precedence.assignment)
+				ObjectMemberTail
+				const result = new ObjectPropertyDeclaration();
+				DocComment(result);
+				result.key = key;
+				if (peek === ':') {
+					result.colonToken = readToken(':');
+					result.value = Expression(Precedence.assignment);
+				} else if (peek === '=') {
+					result.equalToken = readToken('=');
+					result.value = Expression(Precedence.assignment);
+				} else if (key.constructor !== Identifier && key.constructor !== MemberCallExpression) {
+					readToken(':');
+				}
+				ObjectMemberTail(result);
+				return result;
+			}
+		case 'function':
+			result = FunctionExpression();
+			break;
+		case 'new':
+			result = NewTargetOrNewExpression();
+			break;
+			function NewTargetOrNewExpression() { // new.target(`new.target`) 或 new 表达式(`new x()`)
+				const newToken = readToken('new');
+				if (peek === '.') {
+					return NewTargetExpression(newToken);
+				}
+				return NewExpression(newToken);
+				function NewTargetExpression(*) { // new.target 表达式(`new.target`)
+					_('new');
+					_('.');
+					target
+					const result = new NewTargetExpression();
+					result.newToken = newToken;
+					result.dotToken = readToken('.');
+					if (peek === 'identifier' && peek().data === "target") {
+						result.targetToken = readToken('identifier');
+						return result;
+					}
+					error(peek(), "'target' expected; Unexpected token '{0}'.", getTokenName(peek));
+					return ErrorIdentifier(newToken);
+					function NewExpression(*) { // new 表达式(`new x()`、`new x`)
+						_('new');
+						_.target = Expression(Precedence.member);
+						__.arguments = Arguments();
+
+					}
+
+				}
+			}
+		case '/':
+		case '/=':
+			result = RegularExpressionLiteral();
+			break;
+			function RegularExpressionLiteral() { // 正则表达式字面量(/abc/)
+				_.value = 'stringLiteral';
+				__.flags = 'stringLiteral' // 标志部分;
+				const result = new RegularExpressionLiteral();
+				const token = lexer.readAsRegularExpressionLiteral();
+				result.start = token.start;
+				result.value = token.data.pattern;
+				result.flags = token.data.flags;
+				result.end = token.end;
+				return result;
+			}
+		case 'templateHead':
+			result = TemplateLiteral();
+			break;
+			function TemplateLiteral() { // 模板字面量(`\`abc\``)
+				_.spans = NodeList<TemplateSpan | Expression>; // 组成部分列表
+				const result = new TemplateLiteral()();
+				result.spans = new NodeList()<Expression>();
+				while (true) {
+					result.spans.push(TemplateSpan());
+					result.spans.push(Expression());
+					if (peek !== '}') {
+						readToken('}');
+						break;
+					}
+					if (lexer.readAsTemplateMiddleOrTail().type === 'templateTail') {
+						result.spans.push(TemplateSpan());
+						break;
+					}
+				}
+				return result;
+			}
+			function TemplateSpan() { // 模板文本区块(`\`abc${`、`}abc${`、`}abc\``)
+				_.value = 'stringLiteral';
+			}
+		case '<':
+			result = ArrowFunctionOrTypeAssertionExpression(allowIn);
+			break;
+			function ArrowFunctionOrTypeAssertionExpression(allowIn) { // 箭头函数(`<T>() => {}`)或类型确认表达式(`<T>fn`)
+				const savedState = stashSave();
+				const typeParameters = TypeParameters();
+				const parameters = peek === '(' ? Parameters() : isIdentifierName(peek) : Identifier(): undefined;
+				if (parameters && sameLine && (peek === '=>' || peek === ':' || peek === '{')) {
+					stashClear(savedState);
+					return ArrowFunctionExpression(undefined, typeParameters, parameters, allowIn);
+				}
+				stashRestore(savedState);
+				return TypeAssertionExpression();
+				function TypeAssertionExpression() { // 类型确认表达式(<T>xx)
+					_('<');
+					_.type = TypeNode();
+					_('>');
+					_.operand = Expression(Precedence.postfix);
+				}
+			}
+		case 'yield':
+			result = YieldExpression(allowIn);
+			break;
+			function YieldExpression(allowIn) { // yield 表达式(`yield xx`)
+				_('yield');
+				__('*');
+				_.operand = Expression(Precedence.assignment, allowIn);
+				const result = new YieldExpression();
+				result.yieldToken = readToken('yield');
+				if (sameLine && peek === '*') result.asteriskToken = readToken('*');
+				if (sameLine && isExpressionStart(peek)) result.operand = Expression(Precedence.assignment, allowIn);
+				return result;
+			}
+		case 'await':
+			result = AwaitExpressionOrIdentifier(allowIn);
+			break;
+			function AwaitExpressionOrIdentifier(allowIn) { // await 表达式(`await xx`)或标识符
+				const savedToken = current;
+				readToken('await');
+				if (sameLine && isExpressionStart(peek)) {
+					return AwaitExpression(allowIn);
+				}
+				current = savedToken;
+				return Identifier();
+				function AwaitExpression(*, allowIn) { // await 表达式(`await xx`)
+					_('await');
+					_.operand = Expression(Precedence.assignment, allowIn);
+				}
+			}
+		case 'class':
+			result = ClassExpression();
+			break;
+		case 'async':
+			result = AsyncFunctionExpressionOrIdentifier(allowIn);
+			break;
+			function AsyncArrowFunctionOrIdentifier(allowIn) { // 异步函数表达式或标识符
+				const savedState = stashSave();
+				const modifiers = Modifiers();
+				const typeParameters = sameLine && peek === '<' ? TypeParameters() : undefined;
+				if (sameLine && (peek === '(' || isIdentifierName(peek))) {
+					const parameters = peek === '(' ? Parameters() : Identifier();
+					if (sameLine && (peek === '=>' || peek === ':' || peek === '{')) {
+						stashClear(savedState);
+						return ArrowFunctionExpression(modifiers, typeParameters, parameters, allowIn);
+					}
+				}
+				stashRestore(savedState);
+				return Identifier();
+			}
+		case '=>':
+			result = ArrowFunctionExpression(undefined, undefined, undefined, allowIn);
+			break;
+		default:
+			if (isUnaryOperator(peek)) {
+				result = UnaryExpression();
+				break;
+				function UnaryExpression() { // 一元运算表达式(`+x`、`typeof x`、...)
+					_.operator = 'delete' | 'void' | 'typeof' | '+' | '-' | '~' | '!' | '++' | '--' | '...';
+					_.operand = Expression(Precedence.postfix);
+				}
+				if (isIdentifierName(peek)) {
+					result = ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);
+					break;
+				}
+				error(peek(), isKeyword(peek) ? "Expression expected; '{0}' is a keyword." : "Expression expected; Unexpected token '{0}'.", getTokenName(peek));
+				return ErrorIdentifier(isStatementStart(peek) ? current.end : read);
+			}
+			while (getPrecedence(peek) >= precedence) {
+				switch (peek) {
+					case '.':
+						result = MemberCallExpression(result);
+						continue;
+						function MemberCallExpression(*) { // 成员调用表达式(x.y)
+							_.target = Expression(); // 目标部分
+							_('.');
+							_.argument = Identifier = MemberCallArgument(); // 参数部分
+							function MemberCallArgument() { // 成员调用参数
+								if (!sameLine && isStatementStart(peek)) {
+									const savedState = stashSave();
+									function Statement();
+									const isStatementStart = !savedState.errors.length;
+									stashRestore(savedState);
+									if (isStatementStart) {
+										return ErrorIdentifier();
+									}
+								}
+								return Identifier(true);
+							}
+						}
+					//+ case '=':
+					//+ 	break;
+					case '(':
+						result = FunctionCallExpression(result);
+						continue;
+						function FunctionCallExpression(*) { // 函数调用表达式(`x()`)
+							_.target = Expression();
+							_.arguments = Arguments();
+							function Arguments list (Argument, ...isArgumentStart) { // 函数调用参数列表
+								function Argument() { // 函数调用参数(`x`)
+									__('...');
+									_.value = Expression(Precedence.assignment);
+								}
+							}
+						}
+					case '[':
+						result = IndexCallExpression(result);
+						continue;
+						function IndexCallExpression(*) { // 索引调用表达式(`x[y]`)
+							_.target = Expression();
+							_('[');
+							_.argument = Expression();
+							_(']');
+						}
+					case '?':
+						result = ConditionalExpression(result, allowIn);
+						continue;
+						function ConditionalExpression(*, allowIn) { // 条件表达式(`x ? y : z`)
+							_.condition = Expression();
+							_('?');
+							then: Expression(Precedence.assignment) // 则部分
+					:
+							_.else = Expression(Precedence.assignment, allowIn); // 否则部分
+						}
+					case '++':
+					case '--':
+						if (!sameLine) {
+							return result;
+						}
+						result = PostfixExpression(result);
+						continue;
+						function PostfixExpression(*) { // 后缀表达式(`x++`、`x--`)
+							_.operand = Expression(Precedence.leftHandSide); // 操作数
+							_.operator = '++' | '--';
+						}
+					case 'noSubstitutionTemplateLiteral':
+						result = TemplateCallExpression(parsed, StringLiteral());
+						continue;
+					case 'templateHead':
+						result = TemplateCallExpression(parsed, TemplateLiteral());
+						continue;
+						function TemplateCallExpression(_, _) { // 模板调用表达式(`x\`abc\``)
+							_.target = Expression();
+							_.argument = TemplateLiteral | StringLiteral;
+						}
+					case '>':
+						const savedToken = current;
+						lexer.readAsGreaterThanTokens();
+						current = savedToken;
+						break;
+					case 'in':
+						if (allowIn === false) {
+							return result;
+						}
+						break;
+				}
+				result = BinaryExpression(result, allowIn);
+				function BinaryExpression(*, allowIn) { // 双目表达式(x + y、x = y、...)
+					_.left = Expression(); // 左值部分
+					_.operator = ',' | '*=' | '/=' | '%=' | '+=' | '‐=' | '<<=' | '>>=' | '>>>=' | '&=' | '^=' | '|=' | '**=' | '=' | '||' | '&&' | '|' | '^' | '&' | '==' | '!=' | '===' | '!==' | '<' | '>' | '<=' | '>=' | 'instanceof' | 'in' | '<<' | '>>' | '>>>' | '+' | '-' | '*' | '/' | '%' | '**'; // 运算类型
+					_.right = Expression(); // 右值部分
+					const result = new BinaryExpression();
+					result.left = left;
+					result.operator = read;
+					result.right = Expression(getPrecedence(result.operator) + (isRightHandOperator(result.operator) ? 0 : 1), allowIn);
+					return result;
+				}
+				return result;
+
+				function Statement() { // 语句
+					switch (peek) {
+						case 'identifier':
+							return LabeledOrExpressionStatement(Identifier());
+							function LabeledOrExpressionStatement(parsed: Expression) { // 表达式或标签语句
+								if (parsed.constructor === Identifier && peek === ':') {
+									return LabelledStatement(<Identifier>parsed);
+								}
+								return ExpressionStatement(parsed);
+								function LabelledStatement(*) doc { // 标签语句(`x: ...`)
+									_.label = Identifier();
+									_(':');
+									_.statement = Statement(); // 主体部分
+									function ExpressionStatement(expression?: Expression) {
+										; // 表达式语句(`x()`)
+										_.expression = Expression(); // 表达式部分
+										const result = new ExpressionStatement();
+										result.expression = expression || Expression();
+										return result;
+									}
+								}
+							}
+						case '{':
+							return BlockStatement();
+							function BlockStatement() { // 语句块(`{...}`)
+								_.statements = { ?Statement ... };
+							}
+						case 'var':
+						case 'const':
+							return VariableStatement();
+							function VariableStatement(*, allowIn): { // 变量声明语句(`var x`、`let x`、`const x`)
+								Modifiers(_);
+								_.type = 'var' | 'let' | 'const';
+								_.variables = VariableDeclaration, ...isBindingNameStart = DelimitedList(allowIn === false ? VariableDeclarationWithoutIn : VariableDeclaration, undefined, undefined, isBindingNameStart);
+								function VariableDeclarationWithoutIn() { // 变量声明（不带 in）
+									return VariableDeclaration(false);
+									function VariableDeclaration(allowIn) { // 变量声明(`x = 1`、`[x] = [1]`、`{a: x} = {a: 1}`)
+										_.mame = BindingName();
+										TypeAnnotation(_);
+										Initializer(_); (allowIn)
+									}
+								}
+							}
+						case 'let':
+							return VariableOrExpressionStatement(true);
+							function VariableOrExpressionStatement(allowIn = true) { // 变量声明(`let x`)或表达式语句(`let(x)`)
+								const savedToken = current;
+								switch (peek) {
+									case 'let':
+									case 'var':
+									case 'const':
+										read();
+										const isBindingName = isBindingNameStart(peek);
+										current = savedToken;
+										if (isBindingName) {
+											return VariableStatement(allowIn);
+										}
+										break;
+								}
+								return ExpressionStatement(Expression(Precedence.any, allowIn));
+							}
+						case 'function':
+							return FunctionDeclaration();
+						case 'if':
+							return IfStatement();
+							function IfStatement() { // if 语句(`if (x) ...`)
+								_('if');
+								Condition
+								_.then = Statement();
+								__('else');
+								__.else = Statement();
+								const result = new IfStatement();
+								result.ifToken = readToken('if');
+								function Condition(result);
+								result.then = EmbeddedStatement();
+								if (peek === 'else') {
+									result.elseToken = readToken('else');
+									result.else = EmbeddedStatement();
+								}
+								return result;
+								function Condition(result) { // 条件表达式
+									__('(');
+									_.condition = Expression();
+									__(')');
+									const hasParan = peek === '(';
+									if (hasParan || options.allowMissingParenthese === false) result.openParanToken = readToken('(');
+									result.condition = Expression();
+									if (hasParan) result.closeParanToken = readToken(')');
+									function EmbeddedStatement() { // 内嵌语句
+										return Statement();
+									}
+								}
+							}
+						case 'for'
+			return ForOrForInOrForOfOrForToStatement();
+							function ForOrForInOrForOfOrForToStatement() { // for 或 for..in 或 for..of 或 for..to 语句
+								const forToken = readToken('for');
+								const openParan = peek === '(' || options.allowMissingParenthese === false ? readToken('(') : undefined;
+								const initializer = peek === ';' ? undefined : VariableOrExpressionStatement(false);
+								let type = peek;
+								switch (type) {
+									//+ case ';':
+									//+    return ForStatement(forToken, openParan, initializer);
+									case 'in':
+										return ForInStatement(forToken, openParan, initializer);
+									case 'of':
+										return ForOfStatement(forToken, openParan, initializer);
+									case 'to':
+										return ForToStatement(forToken, openParan, initializer);
+									default:
+										return ForStatement(forToken, openParan, initializer);
+								}
+								function ForStatement(*,*,*) {
+									; // for 语句(`for(var i = 0; i < 9 i++) ...`)
+									_('for');
+									__('(');
+									initializer(_);: VariableStatement | ExpressionStatement
+									_.firstSemicolon = ';'; // 条件部分中首个分号
+									__.condition = Expression();
+									_.secondSemicolon = ';'; // 条件部分中第二个分号
+									__.iterator = Expression();
+									__(')');
+									_.statement = Statement = EmbeddedStatement();
+									const result = new ForStatement();
+									result.forToken = forToken;
+									if (openParanToken != undefined) result.openParanToken = openParanToken;
+									if (initializer != undefined) result.initializer = initializer;
+									result.firstSemicolonToken = readToken(';');
+									if (peek !== ';') result.condition = Expression();
+									result.secondSemicolonToken = readToken(';');
+									if (openParanToken == undefined ? isExpressionStart(iterator) : peek !== ')') result.iterator = Expression();
+									if (openParanToken != undefined) result.closeParanToken = readToken(')');
+									result.body = EmbeddedStatement();
+									return result;
+									function ForInStatement(*,*,*) { // for..in 语句(`for(var x in y) ...`)
+										_('for');
+										__('(');
+										_.initializer = VariableStatement | ExpressionStatement;
+										_('in');
+										_.condition = Expression();
+										__(')');
+										_.statement = Statement();
+										const result = new ForInStatement();
+										result.forToken = forToken;
+										if (openParanToken != undefined) result.openParanToken = openParanToken;
+										result.initializer = initializer;
+										result.inToken = readToken('in');
+										result.condition = Expression();
+										if (openParanToken != undefined) result.closeParanToken = readToken(')');
+										result.body = EmbeddedStatement();
+										return result;
+										function ForOfStatement(*,*,*) { // for..of 语句(`for(var x of y) ...`)
+											_('for');
+											__('(');
+											_.initializer = VariableStatement | ExpressionStatement;
+											_('of');
+											_.condition = Expression();
+											__(')');
+											_.statement = Statement();
+											const result = new ForInStatement();
+											result.forToken = forToken;
+											if (openParanToken != undefined) result.openParanToken = openParanToken;
+											result.initializer = initializer;
+											result.ofToken = readToken('of');
+											result.condition = Expression();
+											if (openParanToken != undefined) result.closeParanToken = readToken(')');
+											result.body = EmbeddedStatement();
+											return result;
+											function ForToStatement(*,*,*) { // for..to 语句(`for(var x = 0 to 10) ...`)
+												_('for');
+												__('(');
+												_.initializer = VariableStatement | ExpressionStatement;
+												_('to');
+												_.expression = Expression();
+												__(')');
+												_.statement = Statement();
+												const result = new ForInStatement();
+												result.forToken = forToken;
+												if (openParanToken != undefined) result.openParanToken = openParanToken;
+												result.initializer = initializer;
+												result.toToken = readToken('to');
+												result.condition = Expression();
+												if (openParanToken != undefined) result.closeParanToken = readToken(')');
+												result.body = EmbeddedStatement();
+												return result;
+											}
+										}
+									}
+								}
+							}
+						case 'while':
+							return WhileStatement();
+							function WhileStatement() { // while 语句(`while(x) ...`)
+								_('while');
+								Condition
+								_.statement = Statement = EmbeddedStatement();
+							}
+						case 'switch':
+							return SwitchStatement();
+							function SwitchStatement() { // switch 语句(`switch(x) {...}`)
+								_('switch');
+								Condition(_);
+								_.cases = { ?CaseOrDefaultClause ... };
+								const result = new SwitchStatement();
+								result.switchToken = readToken('switch');
+								if (options.allowMissingSwitchCondition === false || peek !== '{') {
+									function Condition(result);
+								}
+								result.cases = NodeList(CaseOrDefaultClause, '{', '}');
+								return result;
+								function CaseOrDefaultClause() { // case(`case x: ...`) 或 default(`default: ...`) 分支
+									switch (peek) {
+										case 'case':
+											return CaseClause();
+										case 'default':
+											return DefaultClause();
+										default:
+											error(peek(), "'case' or 'default' expected; Unexpected token '{0}'.", getTokenName(peek));
+											return;
+									}
+									function CaseClause() { // case 分支(`case x: ...`)
+										_('case');
+										_.labels = CaseClauseLabel, ...isCaseLabelStart; // 标签列表
+										_(':');
+										_.statements = Statement ... = NodeList(CaseStatement);
+										function CaseClauseLabel() { // case 分支标签(`case x: ...`)
+											__('else');
+											label(_);: Expression(Precedence.assignment)
+											const result = new CaseClauseLabel();
+											if (options.allowCaseElse !== false && peek === 'else') {
+												result.elseToken = readToken('else');
+											} else {
+												result.label = Expression(Precedence.assignment);
+											}
+											return result;
+											function DefaultClause() { // default 分支(`default: ...`)
+												_('default');
+												_(':');
+												_.statements = Statement ... = NodeList(CaseStatement);
+												function CaseStatement() { // case 段语句
+													switch (peek) {
+														case 'case':
+														case 'default':
+														case '}':
+														case 'endOfFile':
+															return;
+														default:
+															return Statement();
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+
+						case 'do':
+							return DoWhileStatement();
+							function DoWhileStatement() {
+								; // do..while 语句(`do ... while(x)`)
+								_('do');
+								_.statement = Statement = EmbeddedStatement();
+								_('while');
+								Condition
+								__(';');
+							}
+						case 'break':
+							return BreakStatement();
+							function BreakStatement() {
+								; // break 语句(`break xx`)
+								_('break');
+								__.label = Identifier(false);
+								__(';');
+								const result = new ContinueStatement();
+								function BreakOrContinueStatement(result, 'continue');
+								return result;
+							}
+						case 'continue':
+							return ContinueStatement();
+							function ContinueStatement() {
+								; // continue 语句(`continue xx`)
+								_('continue');
+								__.label = Identifier(false);
+								__(';');
+								const result = new ContinueStatement();
+								function BreakOrContinueStatement(result, 'continue');
+								return result;
+								function BreakOrContinueStatement(result: ContinueStatement, token: TokenType) {
+									; // break(`break xx;`)或 continue(`continue xx`)语句
+									result.start = readToken(token);
+									if (!tryReadSemicolon(result)) {
+										result.label = Identifier();
+										tryReadSemicolon(result);
+									}
+								}
+							}
+						case 'return':
+							return ReturnStatement();
+							function ReturnStatement() {
+								; // return 语句(`return x`)
+								_('return');
+								__.value = Expression();
+								__(';');
+								const result = new ReturnStatement();
+								result.returnToken = readToken('return');
+								if (!tryReadSemicolon(result)) {
+									result.value = Expression();
+									tryReadSemicolon(result);
+								}
+								return result;
+							}
+						case 'throw':
+							return ThrowStatement();
+							ThrowStatement; // throw 语句(`throw x`)
+							_('throw');
+							__.value = Expression();
+							__(';');
+							const result = new ThrowStatement();
+							result.throwToken = readToken('throw');
+							if (options.allowRethrow === false || !tryReadSemicolon(result)) {
+								result.value = Expression();
+								!tryReadSemicolon(result);
+							}
+							return result;
+						case 'try'
+			return TryStatement();
+							function TryStatement() { // try 语句(`try {...} catch(e) {...}`)
+								_('try');
+								_.try = Statement();
+								_.catch = CatchClause();
+								_.finally = FinallyClause();
+								const result = new TryStatement();
+								result.tryToken = readToken('try');
+								result.try = EmbeddedStatement();
+								if (peek === 'catch') result.catch = CatchClause();
+								if (peek === 'finally') result.catch = FinallyClause();
+								if (options.allowSimpleTryBlock === false && !result.catch && !result.finally) {
+									error(peek(), "'catch' or 'finally' expected. Unexpected token '{0}'.", getTokenName(peek()));
+								}
+								return result;
+								function CatchClause() { // catch 分句(`catch(e) {...}`)
+									_('catch');
+									__('(');
+									variable(_);: BindingName
+									__(')');
+									_.statement = Statement();
+									const result = new CatchClause();
+									result.catchToken = readToken('catch');
+									const hasParan = peek === '(';
+									if (hasParan || options.allowMissingParenthese === false) result.openParan = readToken('(');
+									if (options.allowMissingCatchVaribale === false || isBindingName(peek)) {
+										result.variable = BindingName();
+										if (peek === ':') {
+											error(peek, "Catch variable cannot have a type annotation; Unexpected token ':'.");
+											read;
+											if (isTypeNodeStart(peek)) {
+												function TypeNode();
+											}
+										}
+									}
+									if (hasParan) result.closeParan = readToken(')');
+									result.body = EmbeddedStatement();
+									return result;
+									function FinallyClause() { // finally 分句(`finally {...}`)
+										_('finally');
+										_.statement = Statement = EmbeddedStatement();
+									}
+								}
+							}
+						case 'debugger':
+							return DebuggerStatement();
+							function DebuggerStatement() {
+								; // debugger 语句(`debugger`)
+								_('debugger');
+								__(';');
+							}
+						case ';':
+							return EmptyStatement();
+							function EmptyStatement() {
+								; // 空语句(``)
+								_(';');
+							}
+						case 'endOfFile':
+							return ErrorStatement();
+						case 'with':
+							return WithStatement();
+							function WithStatement() { // with 语句(`with (x) ...`)
+								_('with');
+								__('(');
+								_.value = VariableStatement | Expression;
+								__(')');
+								_.body = Statement();
+								const result = new WithStatement();
+								result.start = readToken('with');
+								const hasParan = peek === '(';
+								if (hasParan) result.openParanToken = readToken('(');
+								result.value = options.allowWithVaribale !== false ? VariableOrExpressionStatement() : Expression();
+								if (hasParan) result.closeParanToken = readToken(')');
+								result.body = EmbeddedStatement();
+								return result;
+							}
+						case 'import':
+							return ImportAssignmentOrImportDeclaration();
+						case 'export':
+							return ExportAssignmentOrExportDeclaration();
+						case 'type':
+							return TypeAliasDeclaration();
+						//+ case 'class':
+						//+ 	return ClassDeclaration();
+						default:
+							if (isDeclarationStart(peek)) {
+								return DeclarationOrExpressionStatement();
+							}
+							return ExpressionStatement(Expression());
+					}
+				}
+			}
+
+	}
+}
+
+
+function Declaration<Statement>() { // 声明
+	function FunctionDeclarationOrExpression(result: FunctionDeclaration | FunctionExpression/* 解析的目标节点 */, modifiers: NodeList<Modifier>) { // 函数声明或表达式
+		DocComment(result);
+		if (modifiers) result.modifiers = modifiers;
+		result.functionToken = readToken('function');
+		if (peek === '*') result.asteriskToken = read;
+		if (isIdentifierName(peek)) result.name = Identifier();
+		if (peek === '<') result.typeParameters = TypeParameters();
+		result.parameters = Parameters();
+		TypeAnnotation(result);
+		FunctionBody(result);
+				}
+				function FunctionDeclaration(_, _) doc { // 函数声明(`function fn() {...}`、`function *fn() {...}`)
+		Decorators(_);
+		Modifiers(_);
+		_('function');
+		__('*');
+		name(_);: Identifier
+		TypeParameters(_);
+		Parameters
+		TypeAnnotation(_);
+		FunctionBody(_);
+		const result = new FunctionDeclaration();
+		if (decorators) result.decorators = decorators;
+		FunctionDeclarationOrExpression(result, modifiers);
+		return result;
+				}
+				function FunctionExpression(*) doc { // 函数表达式(`function () {}`)
+		Modifiers(_);
+		_('function');
+		__('*');
+		name(_);: Identifier
+		TypeParameters(_);
+		Parameters
+		TypeAnnotation(_);
+		FunctionBody(_);
+		const result = new FunctionDeclaration();
+		FunctionDeclarationOrExpression(result, modifiers);
+		return result;
+				}
+				function FunctionBody(result) {
+		; // 函数主体(`{...}`、`=> xx`、``)
+		__('=>');
+		body(_);: BlockStatement | Expression
+		__(';');
+		switch (peek) {
+			case '{':
+				result.body = BlockStatement();
+				break;
+			case '=>':
+				result.arrowToken = read;
+				result.body = Expression(Precedence.assignment);
+				break;
+			default:
+				tryReadSemicolon(result);
+				break;
+		}
+		function ClassDeclarationOrExpression(result: ClassDeclaration | ClassExpression) { // 类声明或类表达式
+			DocComment(result);
+			result.classToken = readToken('class');
+			if (isIdentifierName(peek) && peek !== 'extends' && peek !== 'implements') result.name = Identifier();
+			if (peek === '<') result.typeParameters = TypeParameters();
+			ExtendsClause(result);
+			ImplementsClause(result);
+			ClassBody(result);
+		}
+		function ClassDeclaration(_, _) doc { // 类声明(`class xx {}`)
+			Decorators(_);
+			Modifiers(_);
+			_('class');
+			name ?: Identifier
+			TypeParameters(_);
+			ExtendsClause(_);
+			ImplementsClause(_);
+			ClassBody(_);
+			const result = new ClassDeclaration();
+			if (decorators) result.decorators = decorators;
+			if (modifiers) result.modifiers = modifiers;
+			ClassDeclarationOrExpression(result);
+			return result;
+		}
+		function ClassExpression doc { // 类表达式(`class xx {}`)
+			_('class');
+			name ?: Identifier
+			TypeParameters(_);
+			ExtendsClause(_);
+			ImplementsClause(_);
+			ClassBody(_);
+			const result = new ClassExpression();
+			function ClassDeclarationOrExpression(result);
+			return result;
+		}
+		function ExtendsClause(result) { // extends 分句(`extends xx`)
+			__('extends');
+			__.extends = ClassHeritageNode, ... isExpressionStart;
+		}
+		function ImplementsClause(result) { // implements 分句(`implements xx`)
+			__('implements');
+			implements(_);: ClassHeritageNode, ... isExpressionStart
+		}
+		function ClassHeritageNode() { // extends 或 implements 分句项
+			_.value = Expression(Precedence.leftHandSide);
+		}
+		function ClassBody(result) {
+			; // 类主体(`{...}`、``)
+			__.members = { ClassElement ... };
+			__(';');
+			if (peek === '{') {
+				result.members = NodeList(ClassElement, '{', '}');
+			} else {
+				tryReadSemicolon(result);
+			}
+		}
+		function ClassElement alias MethodDeclaration | PropertyDeclaration | AccessorDeclaration { // 类成员
+			const decorators = Decorators();
+			const modifiers = Modifiers();
+			switch (peek) {
+				case 'identifier':
+					break;
+				case 'get':
+				case 'set':
+					const savedToken = current;
+					read();
+					if (isKeyword(peek) || peek === '[') {
+						return AccessorDeclaration(decorators, modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
+						function AccessorDeclaration(_, _, _, _) doc { // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+							Decorators(_);
+							Modifiers(_);
+							__('get');
+							__('set');
+							_.name = PropertyName();
+							Parameters
+							TypeAnnotation(_);
+							FunctionBody(_);
+						}
+					}
+					current = savedToken;
+					break;
+				case '*':
+					return MethodDeclaration(decorators, modifiers, read, PropertyName());
+			}
+			const name = PropertyName();
+			switch (peek) {
+				case '(':
+				case '<':
+					return MethodDeclaration(decorators, modifiers, undefined, name);
+					function MethodDeclaration(_, _, _, _) doc { // 方法声明(`x() {...}`)
+						Decorators(_);
+						Modifiers(_);
+						__('*');
+						name(_);: PropertyName
+						TypeParameters(_);
+						Parameters
+						TypeAnnotation(_);
+						FunctionBody(_);
+					}
+				default:
+					return PropertyDeclaration(decorators, modifiers, name);
+					function PropertyDeclaration(_, _, *) doc { // 属性声明(`x: number`)
+						Decorators(_);
+						Modifiers(_);
+						_.name = PropertyName();
+						TypeAnnotation(_);
+						Initializer(_);
+					}
+			}
+			function InterfaceDeclaration(_, _) doc { // 接口声明(`interface T {...}`)
+				Decorators(_);
+				Modifiers(_);
+				_('interface');
+				_.name = Identifier(false);
+				TypeParameters(_);
+				ExtendsClause(_);
+				_.members = { TypeMemberSignature ... };
+			}
+			function EnumDeclaration(_, _) doc { // 枚举声明(`enum T {}`)
+				Decorators(_);
+				Modifiers(_);
+				_('enum');
+				_.name = Identifier(false);
+				ExtendsClause(_);
+				_.members = { ?EnumMemberDeclaration, ...isPropertyNameStart };
+			}
+			function EnumMemberDeclaration() { // 枚举成员声明(`x`、`x = 1`)
+				_.name = PropertyName();
+				Initializer(_);
+			}
+			function NamespaceOrModuleDeclaration(result: NamespaceDeclaration | ModuleDeclaration, decorators: NodeList<Decorator>, modifiers: NodeList<Modifier>, type: TokenType) doc { // 命名空间或模块声明
+				DocComment(result);
+				if (decorators) result.decorators = decorators;
+				if (modifiers) result.modifiers = modifiers;
+				if (type === namespace) result.namespaceToken = readToken(type);
+				else result.moduleToken = readToken(type);
+				if (type === 'module' && peek === 'stringLiteral') {
+					(<ModuleDeclaration>result).name = StringLiteral();
+				} else {
+					result.name = Identifier();
+					while (peek === '.') {
+						result.name = MemberCallExpression(result.name);
+					}
+				}
+				BlockBody(result);
+			}
+			function NamespaceDeclaration(_, _) doc { // 命名空间声明(`namespace T {}`)
+				Decorators(_);
+				Modifiers(_);
+				_('namespace');
+				_.name = Identifier | MemberCallExpression;
+				BlockBody
+				const result = new NamespaceDeclaration();
+				NamespaceOrModuleDeclaration(result, decorators, modifiers, 'namespace');
+				return result;
+			}
+			function ModuleDeclaration(_, _) doc { // 模块声明(`module T {}`)
+				Decorators(_);
+				Modifiers(_);
+				_('module');
+				_.name = Identifier | MemberCallExpression | StringLiteral;
+				BlockBody
+				const result = new ModuleDeclaration();
+				NamespaceOrModuleDeclaration(result, decorators, modifiers, 'module');
+				return result;
+			}
+			function BlockBody(result) { // 语句块主体(`{...}`)
+				_.statements = { Statement ... };
+				result.statements = NodeList(Statement, '{', '}');
+				function ExtensionDeclaration(_, _) doc { // 扩展声明(`extends T {}`)
+					Decorators(_);
+					Modifiers(_);
+					_('extends');
+					_.type = TypeNode();
+					ExtendsClause(_);
+					ImplementsClause(_);
+					ClassBody(_);
+				}
+				function DeclarationOrExpressionStatement() { // 声明或表达式语句
+					const savedState = stashSave();
+					const decorators = Decorators();
+					const modifiers = Modifiers();
+					switch (peek) {
+						case 'function':
+							stashClear(savedState);
+							return FunctionDeclaration(decorators, modifiers);
+						case 'class':
+							stashClear(savedState);
+							return ClassDeclaration(decorators, modifiers);
+						case 'interface':
+							stashClear(savedState);
+							return InterfaceDeclaration(decorators, modifiers);
+						case 'enum':
+							stashClear(savedState);
+							return EnumDeclaration(decorators, modifiers);
+						case 'namespace':
+							stashClear(savedState);
+							return NamespaceDeclaration(decorators, modifiers);
+						case 'module':
+							stashClear(savedState);
+							return ModuleDeclaration(decorators, modifiers);
+						case 'extends':
+							stashClear(savedState);
+							return ExtensionDeclaration(decorators, modifiers);
+						default:
+							stashRestore(savedState);
+							return ExpressionStatement(Expression());
+					}
+				}
+				function Decorators() { // 修饰器列表
+					_.decorators = Decorator ... ; // 修饰器列表
+					let result: NodeList<Decorator>;
+					while (peek === '') {
+						if (!result) result = new NodeList<Modifier>();
+						result.push(Decorator());
+					}
+					return result;
+					function Decorator() { // 修饰器(`x`)
+						_('');
+						_.body = Expression(Precedence.leftHandSide);
+					}
+				}
+				function Modifiers() { // 修饰符列表
+					_.modifiers = Modifier ...;
+					let result: NodeList<Modifier>;
+					while (isModifier(peek)) {
+						const savedToken = current;
+						const modifier = Modifier();
+						switch (modifier.type) {
+							case 'export':
+								if (!result) result = new NodeList()<Modifier>();
+								result.push(modifier);
+								if (peek === 'default') {
+									result.push(Modifier());
+								}
+								continue;
+							case 'const':
+								if (peek === 'enum') {
+									if (!result) result = new NodeList()<Modifier>();
+									result.push(modifier);
+									continue;
+								}
+								break;
+							default:
+								if (sameLine) {
+									if (!result) result = new NodeList()<Modifier>();
+									result.push(modifier);
+									continue;
+								}
+								break;
+						}
+						current = savedToken;
+						break;
+					}
+					return result;
+				}
+				function Modifier() { // 修饰符(`static`、`private`、...)
+					_.type = 'export' | 'default' | 'declare' | 'const' | 'static' | 'abstract' | 'readonly' | 'async' | 'public' | 'protected' | 'private';
+				}
+			}
+			function TypeAliasDeclaration() {
+				; // 类型别名声明(`type A = number`)
+				_('type');
+				_.name = Identifier();
+				TypeParameters(_);
+				_('=');
+				TypeNode
+				__(';');
+			}
+			function ImportAssignmentOrImportDeclaration() { // import 赋值或 import 声明
+				const importToken = read;
+				const imports = DelimitedList(ImportClause, undefined, undefined, isBindingNameStart);
+				if (peek === '=' && imports.length === 1 && imports[0].constructor === SimpleImportClause && (<SimpleImportClause>imports[0]).name == null) {
+					return ImportAssignmentDeclaration(importToken, (<SimpleImportClause>imports[0]).variable);
+				}
+				return ImportDeclaration(importToken, imports);
+			}
+			function ImportAssignmentDeclaration(_, _) { // import 赋值声明
+				_('import');
+				_.variable = Identifier(); // 别名
+				_('=');
+				_.value = Expression(Precedence.assignment);
+				__(';');
+			}
+			function ImportDeclaration(_, _) {
+				; // import 声明(`import x from '...'`)
+				_('import');
+				__.variables = ImportClause, ...;
+				__('from'); = imports ? readToken(from) : undefined
+				_.from = StringLiteral(); // 导入模块名
+				__(';');
+				const result = new ImportDeclaration();
+				if (variables) {
+					result.variables = variables;
+					result.fromToken = readToken('from');
+				}
+				result.from = StringLiteral();
+				return result;
+			}
+			function ImportClause() { // import 分句(`x`、`{x}`、...)
+				alias(SimpleImportOrExportClause | NamespaceImportClause | NamedImportClause);
+				switch (peek) {
+					//+ case 'identifier':
+					//+		return SimpleImportOrExportClause(true);
+					case '*':
+						return NamespaceImportClause();
+						function NamespaceImportClause() { // 命名空间导入分句(`* as x`)
+							*
+								as
+							_.variable = Identifier();
+						}
+					case '{':
+						return NamedImportClause();
+						function NamedImportClause() { // 对象导入分句(`{x, x as y}`)
+							_.elements = { SimpleImportOrExportClause, ... };
+							const result = new NamedImportClause();
+							result.elements = DelimitedList(SimpleImportClause, '{', '}', isIdentifierName);
+							return result;
+						}
+					default:
+						return SimpleImportClause();
+						function SimpleImportClause() { // 简单导入分句
+							return SimpleImportOrExportClause(true);
+						}
+				}
+			}
+			function SimpleImportOrExportClause(importClause: boolean/* 解析 import 分句*/) { // 简单导入或导出分句(`x`、`x as y`)
+				__.name = Identifier(true) // 导入或导出的名称;
+				__('as');
+				_.variable = Identifier(); // 导入或导出的变量
+				const result = new SimpleImportOrExportClause();
+				const nameOrVariable = Identifier(true);
+				if (peek === as) {
+					result.name = nameOrVariable;
+					result.asToken = read;
+					result.variable = Identifier(!importClause);
+				} else {
+					if (importClause && !isIdentifierName(current)) {
+						error(current, "Identifier expected; Keyword '{0}' cannot be used as an identifier.", getTokenName(current));
+					}
+					result.variable = nameOrVariable;
+				}
+				return result;
+			}
+			function ExportAssignmentOrExportDeclaration() { // export 赋值或 export 声明
+				const savedState = current;
+				const exportToekn = read;
+				switch (peek) {
+					case 'function':
+						current = savedState;
+						return FunctionDeclaration(undefined, Modifiers());
+					case 'class':
+						current = savedState;
+						return ClassDeclaration(undefined, Modifiers());
+					case 'interface':
+						current = savedState;
+						return InterfaceDeclaration(undefined, Modifiers());
+					case 'enum':
+						current = savedState;
+						return EnumDeclaration(undefined, Modifiers());
+					case 'namespace':
+						current = savedState;
+						return NamespaceDeclaration(undefined, Modifiers());
+					case 'module':
+						current = savedState;
+						return ModuleDeclaration(undefined, Modifiers());
+					case 'var':
+					case 'let':
+					case 'const':
+						current = savedState;
+						return VariableStatement(Modifiers());
+					case '*':
+						return ExportNamespaceDeclaration(exportToekn);
+						function ExportNamespaceDeclaration(*) { // 导出列表声明(`export * from ...`)
+							_('export');
+							_('*');
+							_('from');
+							_.from = StringLiteral(); // 导入模块名
+							__(';');
+						}
+					case '{':
+						return ExportListDeclaration(exportToekn);
+						function ExportListDeclaration(*) { // 导出列表声明(`export a from ...`)
+							_('export');
+							_.variables = { SimpleImportOrExportClause ... };
+							_('from');
+							_.from = StringLiteral(); // 导入模块名
+							__(';');
+						}
+					case '=':
+						return ExportAssignmentDeclaration(start);
+						function ExportAssignmentDeclaration(*) {
+							; // 导出赋值声明(`export = 1`)
+							_('export');
+							_('=');
+							_.value = Expression(Precedence.assignment);
+							__(';');
+						}
+					default:
+						// current = savedState;
+						// error(peek, "Declaration or statement expected. Unexpected token '{0}'.", getTokenName(peek));
+						return ExportDefaultDeclaration(Modifiers());
+						function ExportDefaultDeclaration(*)  {
+							; // export default 声明(`export default x = 1`)
+							Modifiers(_);
+							_.expression = Expression(Precedence.assignment);
+							__(';');
+						}
+				}
+			}
+		}
+				}
+}
+
+function DocComment(result) { // 文档注释
+
+// #endregion
