@@ -137,7 +137,7 @@ declare function list(type?, allowEmpty?: boolean, openToken?: string, closeToke
 /**
  * 特殊标记：表示当前产生式包含文档注释。
  */
-declare function doc(_) { }
+declare function doc(_);
 
 ///**
 // * 特殊标记：表示当前产生式由一个简单标记组成。
@@ -301,7 +301,7 @@ function TypeNode(precedence = Precedence.any) { // 类型节点
                         read(')');
                     };
                 }
-                function FunctionTypeNode(typeParameters?= TypeParameters, parameters?= Parameters) { // 函数类型节点(`(x: number) => void`)
+                function FunctionTypeNode(typeParameters = null || TypeParameters, parameters = null || Parameters) { // 函数类型节点(`(x: number) => void`)
                     read('=>');
                     _.return = TypeNode;
                 }
@@ -415,7 +415,7 @@ function TypeMemberSignature() { // 类型成员签名(`x： y`、`x() {...}`)
             lexer.read();
             if (isPropertyNameStart(peek)) {
                 return AccessorSignature(savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
-                function AccessorSignature(getToken?= read('get'), setToken?= read('set')) { // 访问器签名(`get x(): number`、`set x(value): void`)
+                function AccessorSignature(getToken = null || read('get'), setToken = null || read('set')) { // 访问器签名(`get x(): number`、`set x(value): void`)
                     doc(_);
                     _.name = PropertyName;
                     readIf('?');
@@ -469,13 +469,13 @@ function TypeMemberSignature() { // 类型成员签名(`x： y`、`x() {...}`)
         case '(':
         case '<':
             return MethodSignature(name, questionToken);
-            function MethodSignature(name = PropertyName(), questionToken?= read('?')) {  // 方法签名(`x(): number`)
+            function MethodSignature(name = PropertyName(), questionToken = null || read('?')) {  // 方法签名(`x(): number`)
                 doc(_);
                 MethodOrConstructOrCallSignature(_);
             }
         default:
             return PropertySignature(name, questionToken);
-            function PropertySignature(name = PropertyName()/* 名字部分 */, questionToken?= read('?')) { // 属性签名(`x: number`)
+            function PropertySignature(name = PropertyName()/* 名字部分 */, questionToken = null || read('?')) { // 属性签名(`x: number`)
                 doc(_);
                 TypeAnnotation(_);
                 CommaOrSemicolon(_);
@@ -508,7 +508,7 @@ function Parameters(): any { // 参数列表(`(x, y)`)
     function ParameterDeclaration() { // 参数声明(`x`、`x?: number`)
         const modifiers = Modifiers();
         if (modifiers) {
-            _.modifiers = <Modifiers>modifiers;
+            _.modifiers = /*Modifiers*/modifiers;
         }
         readIf('...');
         _.name = BindingName;
@@ -634,9 +634,7 @@ function Expression(precedence = Precedence.any/*允许解析的最低操作符�
             }
             break;
         case 'numericLiteral':
-            result = function NumericLiteral() { // 数字字面量(`1`)
-                _.value = read('numericLiteral');
-            }
+            result = NumericLiteral;
             break;
         case 'stringLiteral':
         case 'noSubstitutionTemplateLiteral':
@@ -668,7 +666,7 @@ function Expression(precedence = Precedence.any/*允许解析的最低操作符�
                             lexer.read();
                             if (isPropertyNameStart(peek)) {
                                 return ObjectAccessorDeclaration(modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
-                                function ObjectAccessorDeclaration(modifiers?= Modifiers, getToken?= read('get'), setToken?= read('set')) { // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+                                function ObjectAccessorDeclaration(modifiers = null || Modifiers, getToken = null || read('get'), setToken = null || read('set')) { // 访问器声明(`get x() {...}`、`set x(value) {...}`)
                                     doc(_);
                                     _.name = PropertyName;
                                     CallSignature(_);
@@ -679,14 +677,14 @@ function Expression(precedence = Precedence.any/*允许解析的最低操作符�
                             lexer.current = savedToken;
                             break;
                         case '*':
-                            return ObjectMethodDeclaration(modifiers, readToken('*'), PropertyName());
+                            return ObjectMethodDeclaration(modifiers, readToken('*'), PropertyName);
                     }
-                    const name = PropertyName();
+                    const name = PropertyName;
                     switch (peek) {
                         case '(':
                         case '<':
                             return ObjectMethodDeclaration(modifiers, undefined, name);
-                            function ObjectMethodDeclaration(modifiers?, _1?= read('*'), name = PropertyName) { // 方法声明(`x() {...}`)
+                            function ObjectMethodDeclaration(modifiers?, _1 = null || read('*'), name = PropertyName) { // 方法声明(`x() {...}`)
                                 doc(_);
                                 CallSignature(_);
                                 FunctionBody(_);
@@ -895,13 +893,6 @@ function Expression(precedence = Precedence.any/*允许解析的最低操作符�
                 result = FunctionCallExpression(result);
                 function FunctionCallExpression(target = Expression()) { // 函数调用表达式(`x()`)
                     _.arguments = Arguments;
-                    function Arguments() { // 函数调用参数列表
-                        list(Argument, true, undefined, undefined, ',', isArgumentStart);
-                        function Argument() { // 函数调用参数(`x`)
-                            readIf('...');
-                            _.value = Expression(Precedence.assignment);
-                        }
-                    }
                 }
                 continue;
             case '[':
@@ -958,7 +949,14 @@ function Expression(precedence = Precedence.any/*允许解析的最低操作符�
         }
     }
     return result;
-    function ArrowFunctionExpression(modifiers?= Modifiers, typeParameters?= TypeParameters(), parameters?= Parameters || Identifier/*参数部分*/, allowIn?) { // 箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。
+    function Arguments() { // 函数调用参数列表
+        list(Argument, true, undefined, undefined, ',', isArgumentStart);
+        function Argument() { // 函数调用参数(`x`)
+            readIf('...');
+            _.value = Expression(Precedence.assignment);
+        }
+    }
+    function ArrowFunctionExpression(modifiers = null || Modifiers, typeParameters = null || TypeParameters(), parameters = null || Parameters || Identifier/*参数部分*/, allowIn?) { // 箭头函数表达式(`x => {...}`、`(x, y) => {...}`)。
         if (parameters.constructor !== Identifier) {
             TypeAnnotation(_);
         }
@@ -972,6 +970,9 @@ function MemberCallExpression(target = Expression()/*目标部分*/) { // 成员
     _.argument = Identifier(true); // 参数部分
 }
 
+function NumericLiteral() { // 数字字面量(`1`)
+    _.value = read('numericLiteral');
+}
 function StringLiteral() { // 字符串字面量(`'abc'`、`"abc"`、`\`abc\``)
     _.value = read('stringLiteral');
 }
@@ -1041,12 +1042,12 @@ function Statement() { // 语句
             return function ForOrForInOrForOfOrForToStatement() { // for 或 for..in 或 for..of 或 for..to 语句
                 const forToken = read('for');
                 const openParanToken = peek === '(' || options.allowMissingParenthese === false ? read('(') : undefined;
-                const initializer = peek === ';' ? undefined : VariableOrExpressionStatement(false);
+                const initializer: any = peek === ';' ? undefined : VariableOrExpressionStatement(false);
                 switch (peek) {
                     //+ case ';':
                     //+    return ForStatement(forToken, openParan, initializer);
                     case 'in':
-                        return function ForInStatement(forToken = read('for'), openParanToken?= read('('), initializer?= VariableStatement || ExpressionStatement) { // for..in 语句(`for(var x in y) ...`)
+                        return function ForInStatement(forToken = read('for'), openParanToken = null || read('('), initializer = null || VariableStatement || ExpressionStatement) { // for..in 语句(`for(var x in y) ...`)
                             read('in');
                             _.condition = Expression;
                             if (openParanToken != undefined) {
@@ -1055,16 +1056,16 @@ function Statement() { // 语句
                             _.body = EmbeddedStatement;
                         }
                     case 'of':
-                        return function ForOfStatement(forToken = read('for'), openParanToken?= read('('), initializer?= VariableStatement || ExpressionStatement) { // for..of 语句(`for(var x of y) ...`)
+                        return function ForOfStatement(forToken = read('for'), openParanToken = null || read('('), initializer = null || VariableStatement || ExpressionStatement) { // for..of 语句(`for(var x of y) ...`)
                             read('of');
-                            result.condition = Expression;
+                            _.condition = Expression;
                             if (openParanToken != undefined) {
                                 read(')');
                             }
                             _.body = EmbeddedStatement;
                         }
                     case 'to':
-                        return function ForToStatement(forToken = read('for'), openParanToken?= read('('), initializer?= VariableStatement || ExpressionStatement) { // for..to 语句(`for(var x = 0 to 10) ...`)
+                        return function ForToStatement(forToken = read('for'), openParanToken = null || read('('), initializer = null || VariableStatement || ExpressionStatement) { // for..to 语句(`for(var x = 0 to 10) ...`)
                             read('to');
                             _.condition = Expression;
                             if (openParanToken != undefined) {
@@ -1073,8 +1074,7 @@ function Statement() { // 语句
                             _.body = EmbeddedStatement;
                         }
                     default:
-                        return ForStatement(forToken, openParanToken, initializer);
-                        function ForStatement(forToken = read('for'), openParanToken?= read('('), initializer?= VariableStatement || ExpressionStatement) { // for 语句(`for(var i = 0; i < 9 i++) ...`)
+                        return function ForStatement(forToken = read('for'), openParanToken = null || read('('), initializer = null || VariableStatement || ExpressionStatement) { // for 语句(`for(var i = 0; i < 9 i++) ...`)
                             _.firstSemicolon = read(';'); // 条件部分中首个分号
                             if (peek !== ';') {
                                 _.condition = Expression;
@@ -1223,7 +1223,7 @@ function Statement() { // 语句
         case 'debugger':
             return function DebuggerStatement() { // debugger 语句(`debugger`)
                 read('debugger');
-                __(';');
+                Semicolon(';');
             }
         case ';':
             return EmptyStatement();
@@ -1409,13 +1409,13 @@ function Modifiers() { // 修饰符列表
         _.type = read('export', 'default', 'declare', 'const', 'static', 'abstract', 'readonly', 'async', 'public', 'protected', 'private');
     }
 }
-function FunctionDeclaration(decorators?= Decorators, modifiers?= Modifiers) { // 函数声明(`function fn() {...}`、`function *fn() {...}`)
+function FunctionDeclaration(decorators = null || Decorators, modifiers = null || Modifiers) { // 函数声明(`function fn() {...}`、`function *fn() {...}`)
     FunctionDeclarationOrExpression(_, modifiers);
 }
-function FunctionExpression(modifiers?= Modifiers) { // 函数表达式(`function () {}`)
+function FunctionExpression(modifiers = null || Modifiers) { // 函数表达式(`function () {}`)
     FunctionDeclarationOrExpression(_, modifiers);
 }
-function FunctionDeclarationOrExpression(_: any = FunctionDeclaration || FunctionExpression/* 解析的目标节点 */, modifiers?= Modifiers) { // 函数声明或表达式
+function FunctionDeclarationOrExpression(_: any = FunctionDeclaration || FunctionExpression/* 解析的目标节点 */, modifiers = null || Modifiers) { // 函数声明或表达式
     doc(_);
     read('function');
     readIf('*');
@@ -1447,7 +1447,7 @@ function FunctionBody(_) { // 函数主体(`{...}`、`=> xx`、``)
             break;
     }
 }
-function ClassDeclaration(decorators?= Decorators, modifiers?= Modifiers) { // 类声明(`class xx {}`)
+function ClassDeclaration(decorators = null || Decorators, modifiers = null || Modifiers) { // 类声明(`class xx {}`)
     ClassDeclarationOrExpression(_);
 }
 function ClassExpression() { // 类表达式(`class xx {}`)
@@ -1482,7 +1482,7 @@ function ClassBody(_) {  // 类主体(`{...}`、``)
                     lexer.read();
                     if (isPropertyNameStart(peek)) {
                         return AccessorDeclaration(decorators, modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);
-                        function AccessorDeclaration(decorators?= Decorators, modifiers?= Modifiers, getToken?= read('get'), setToken?= read('set')) { // 访问器声明(`get x() {...}`、`set x(value) {...}`)
+                        function AccessorDeclaration(decorators = null || Decorators, modifiers = null || Modifiers, getToken = null || read('get'), setToken = null || read('set')) { // 访问器声明(`get x() {...}`、`set x(value) {...}`)
                             doc(_);
                             _.name = PropertyName;
                             Parameters
@@ -1493,21 +1493,21 @@ function ClassBody(_) {  // 类主体(`{...}`、``)
                     lexer.current = savedToken;
                     break;
                 case '*':
-                    return MethodDeclaration(decorators, modifiers, read, PropertyName());
+                    return MethodDeclaration(decorators, modifiers, read, PropertyName);
             }
-            const name = PropertyName();
+            const name = PropertyName;
             switch (peek) {
                 case '(':
                 case '<':
                     return MethodDeclaration(decorators, modifiers, undefined, name);
-                    function MethodDeclaration(decorators?= Decorators, modifiers?= Modifiers, _3?= read('*'), name = PropertyName) { // 方法声明(`x() {...}`)
+                    function MethodDeclaration(decorators = null || Decorators, modifiers = null || Modifiers, _3 = null || read('*'), name = PropertyName) { // 方法声明(`x() {...}`)
                         doc(_);
                         CallSignature(_);
                         FunctionBody(_);
                     }
                 default:
                     return PropertyDeclaration(decorators, modifiers, name);
-                    function PropertyDeclaration(decorators?= Decorators, modifiers?= Modifiers, name = PropertyName) { // 属性声明(`x: number`)
+                    function PropertyDeclaration(decorators = null || Decorators, modifiers = null || Modifiers, name = PropertyName) { // 属性声明(`x: number`)
                         doc(_);
                         TypeAnnotation(_);
                         Initializer(_);
@@ -1518,7 +1518,7 @@ function ClassBody(_) {  // 类主体(`{...}`、``)
         Semicolon(_);
     }
 }
-function InterfaceDeclaration(decorators?= Decorators, modifiers?= Modifiers) { // 接口声明(`interface T {...}`)
+function InterfaceDeclaration(decorators = null || Decorators, modifiers = null || Modifiers) { // 接口声明(`interface T {...}`)
     doc(_);
     read('interface');
     _.name = Identifier(false);
@@ -1528,7 +1528,7 @@ function InterfaceDeclaration(decorators?= Decorators, modifiers?= Modifiers) { 
     ExtendsClause(_);
     _.members = list(TypeMemberSignature, true, '{', '}');
 }
-function EnumDeclaration(decorators?= Decorators, modifiers?= Modifiers) { // 枚举声明(`enum T {}`)
+function EnumDeclaration(decorators = null || Decorators, modifiers = null || Modifiers) { // 枚举声明(`enum T {}`)
     doc(_);
     read('enum');
     _.name = Identifier(false);
@@ -1539,15 +1539,15 @@ function EnumMemberDeclaration() { // 枚举成员声明(`x`、`x = 1`)
     _.name = PropertyName;
     Initializer(_);
 }
-function NamespaceDeclaration(decorators?= Decorators, modifiers?= Modifiers) { // 命名空间声明(`namespace T {}`)
+function NamespaceDeclaration(decorators = null || Decorators, modifiers = null || Modifiers) { // 命名空间声明(`namespace T {}`)
     read('namespace');
     NamespaceOrModuleDeclaration(_, decorators, modifiers);
 }
-function ModuleDeclaration(decorators?= Decorators, modifiers?= Modifiers) { // 模块声明(`module T {}`)
+function ModuleDeclaration(decorators = null || Decorators, modifiers = null || Modifiers) { // 模块声明(`module T {}`)
     read('module');
     NamespaceOrModuleDeclaration(_, decorators, modifiers);
 }
-function NamespaceOrModuleDeclaration(_: any = NamespaceDeclaration || ModuleDeclaration, decorators?= Decorators, modifiers?= Modifiers) { // 命名空间或模块声明
+function NamespaceOrModuleDeclaration(_: any = NamespaceDeclaration || ModuleDeclaration, decorators = null || Decorators, modifiers = null || Modifiers) { // 命名空间或模块声明
     doc(_);
     if (lexer.current.type === 'module' && peek === 'stringLiteral') {
         type ModuleDeclaration = any;
@@ -1560,7 +1560,7 @@ function NamespaceOrModuleDeclaration(_: any = NamespaceDeclaration || ModuleDec
     }
     BlockBody(_);
 }
-function ExtensionDeclaration(decorators?= Decorators, modifiers?= Modifiers) { // 扩展声明(`extends T {}`)
+function ExtensionDeclaration(decorators = null || Decorators, modifiers = null || Modifiers) { // 扩展声明(`extends T {}`)
     doc(_);
     read('extends');
     _.type = TypeNode;
@@ -1599,9 +1599,9 @@ function TypeAliasDeclaration() {  // 类型别名声明(`type A = number`)
 function ImportAssignmentOrImportDeclaration() { // import 赋值或 import 声明
     const importToken = read;
     const imports = list(ImportClause, false, undefined, undefined, ',', isBindingNameStart);
-    type SimpleImportClause = any;
-    if (peek === '=' && imports.length === 1 && imports[0].constructor === SimpleImportClause && (<SimpleImportClause>imports[0]).name == null) {
-        return ImportAssignmentDeclaration(importToken, (<SimpleImportClause>imports[0]).variable);
+    type SimpleImportOrExportClause = any;
+    if (peek === '=' && imports.length === 1 && imports[0].constructor === SimpleImportOrExportClause && (<SimpleImportOrExportClause>imports[0]).name == null) {
+        return ImportAssignmentDeclaration(importToken, (<SimpleImportOrExportClause>imports[0]).variable);
     }
     return ImportDeclaration(importToken, imports);
 }
