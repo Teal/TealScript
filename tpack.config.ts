@@ -257,132 +257,147 @@ tpack.task("gen-nodes", function () {
 
     //    });
 
-    //    tpack.src("src/parser/tokenType.ts").pipe((file, options) => {
+    tpack.src("src/parser/tokenType.ts").pipe((file, options) => {
 
-    //        // 第一步：语法解析。
-    //        const program = ts.createProgram([file.path], options);
-    //        const sourceFile = program.getSourceFiles()[program.getSourceFiles().length - 1];
+        // 第一步：语法解析。
+        const program = ts.createProgram([file.path], options);
+        const sourceFile = program.getSourceFiles()[program.getSourceFiles().length - 1];
 
-    //        // 第二步：提取类型信息。
-    //        const data = {};
-    //        const tokenType = <ts.EnumDeclaration>sourceFile.statements.filter(t => t.kind === ts.SyntaxKind.EnumDeclaration && (<ts.EnumDeclaration>t).name.text === "TokenType")[0];
-    //        let val = 0;
-    //        for (const member of tokenType.members) {
-    //            const summary = getDocComment(member);
-    //            const string = (/关键字\s*(\w+)|\((.+?)\)/.exec(summary) || []).slice(1).join("")
-    //            const info = {
-    //                summary,
-    //                string,
-    //                keyword: /关键字/.test(summary) || /0x0|EOF|\}\.|xx|.\.\.\./.test(string) || !string,
-    //                value: val++
-    //            };
-    //            data[(<ts.Identifier>member.name).text] = info;
-    //        }
+        // 第二步：提取类型信息。
+        const data = {};
+        const tokenType = <ts.EnumDeclaration>sourceFile.statements.filter(t => t.kind === ts.SyntaxKind.EnumDeclaration && (<ts.EnumDeclaration>t).name.text === "TokenType")[0];
+        let val = 0;
+        for (const member of tokenType.members) {
+            const summary = getDocComment(member);
+            const string = (/关键字\s*(\w+)|\((.+?)\)/.exec(summary) || []).slice(1).join("")
+            const info = {
+                summary,
+                string,
+                keyword: /关键字/.test(summary) || /0x0|EOF|\}\.|xx|.\.\.\./.test(string) || !string,
+                value: val++
+            };
+            data[(<ts.Identifier>member.name).text] = info;
+        }
 
-    //        // generateKeywordLexer(data, 0);
+        let ss = [];
+        for (var k in data) {
+            const d = data[k];
+            if (!d.keyword) {
+                d.summary = (d.summary || "").replace(/\((.*)\)/, function (_, n) {
+                    // k = n;
+                    return "";
+                });
+            }
+            ss.push(`'${d.string}': [],`);
+        }
 
-    //        // 第三步：生成优先级数组。
+        // require("fs").writeFileSync("aa.json", JSON.stringify(data, null, 4));
+        require("fs").writeFileSync("aa.js", ss.join("\n"));
 
-    //        // 第四步：生成优先级数组。
+        //generateKeywordLexer(data, 0);
 
-    //        function getDocComment(node: ts.Node, removeSpace = true) {
-    //            const comments: ts.CommentRange[] = (ts as any).getJsDocComments(node, sourceFile);
-    //            if (!comments || !comments.length) return;
-    //            const comment = comments[comments.length - 1];
+        // 第三步：生成优先级数组。
 
-    //            const commentText = sourceFile.text.substring(comment.pos, comment.end);
-    //            return removeSpace ? commentText.substring(3, commentText.length - 2).replace(/^\s*\*\s*/gm, "").trim() : commentText;
-    //        }
+        // 第四步：生成优先级数组。
 
+        function getDocComment(node: ts.Node, removeSpace = true) {
+            const comments: ts.CommentRange[] = (ts as any).getJsDocComments(node, sourceFile);
+            if (!comments || !comments.length) return;
+            const comment = comments[comments.length - 1];
 
-    //        function generateKeywordLexer(data, indent) {
-
-    //            const names = {};
-    //            const items = [];
-    //            for (const name in data) {
-    //                const info = data[name];
-    //                if (info.keyword) {
-    //                    continue;
-    //                }
-    //                names[info.string] = name;
-    //                items.push(info.string);
-    //            }
-    //            items.sort();
-
-    //            let result = '';
-
-    //            for (let i = 0; i < items.length;) {
-    //                const c = items[i];
-
-    //                let hasSameCount = 0;
-    //                for (let j = i + 1; j < items.length; j++) {
-    //                    if (items[j].charAt(0) === c.charAt(0)) {
-    //                        hasSameCount++;
-    //                    }
-    //                }
-
-    //                result += genIndents(indent) + "// " + c;
-    //                for (var j = 0; j < hasSameCount; j++) {
-    //                    result += ", " + items[i + j + 1];
-    //                }
-    //                result += "\n";
-
-    //                result += genIndents(indent) + 'case CharCode.' + names[c] + ':\n';
-
-    //                if (hasSameCount === 0) {
-    //                    result += 'result.type = TokenType.' + names[c] + ';\n';
-    //                    result += 'break;\n';
-    //                    i++;
-    //                }
-
-    //                if (hasSameCount === 1) {
-    //                    result += genIndents(indent) + 'if(this.sourceText.charCodeAt(this.sourceStart) === TokenType.' + names[items[i + 1]] + ') {';
-    //                    result += genIndents(indent + 1) + 'this.sourceStart++;';
-    //                    result += genIndents(indent + 1) + 'result.type = TokenType.' + names[items[i + 1]] + ';\n';
-    //                    result += genIndents(indent + 1) + 'break;\n';
-    //                    result += genIndents(indent) + '}';
-    //                    result += genIndents(indent) + 'result.type = TokenType.' + names[c] + ';\n';
-    //                    result += genIndents(indent) + 'break;\n';
-    //                    i += 2;
-    //                }
-
-    //                if (hasSameCount >= 2) {
-    //                    result += genIndents(indent) + ' switch (this.sourceText.charCodeAt(this.sourceStart)) {\n';
-    //                    for (let j = 0; j < hasSameCount; j++) {
-    //                        result += genIndents(indent + 1) + 'case CharCode.' + names[items[i + j + 1]] + ':\n';
-    //                        result += genIndents(indent + 2) + 'this.sourceStart++;\n';
-    //                        result += genIndents(indent + 2) + 'result.type = TokenType.' + names[items[i + j + 1]] + ';\n';
-    //                        result += genIndents(indent + 2) + 'break;\n';
-    //                    }
-    //                    result += genIndents(indent + 1) + 'default:\n';
-    //                    result += genIndents(indent + 2) + 'result.type = TokenType.' + names[c] + ';\n';
-    //                    result += genIndents(indent + 2) + 'break;\n';
-    //                    result += genIndents(indent) + '}\n';
-    //                    i += hasSameCount + 1;
-
-    //                    result += genIndents(indent) + 'break;\n';
-    //                }
-
-    //                result += genIndents(indent) + '\n';
-    //            }
-
-    //            console.log(result)
-
-    //            function genIndents(indent) {
-    //                var result = '';
-    //                while (indent-- > 0)
-    //                    result += '\t';
-    //                return result;
-    //            }
-
-    //            return result;
-    //        }
+            const commentText = sourceFile.text.substring(comment.pos, comment.end);
+            return removeSpace ? commentText.substring(3, commentText.length - 2).replace(/^\s*\*\s*/gm, "").trim() : commentText;
+        }
 
 
-    //    });
+        function generateKeywordLexer(data, indent) {
+
+            const names = {};
+            const items = [];
+            for (const name in data) {
+                const info = data[name];
+                if (info.keyword) {
+                    continue;
+                }
+                names[info.string] = name;
+                items.push(info.string);
+            }
+            items.sort();
+
+            let result = '';
+
+            for (let i = 0; i < items.length;) {
+                const c = items[i];
+
+                let hasSameCount = 0;
+                for (let j = i + 1; j < items.length; j++) {
+                    if (items[j].charAt(0) === c.charAt(0)) {
+                        hasSameCount++;
+                    }
+                }
+
+                result += genIndents(indent) + "// " + c;
+                for (var j = 0; j < hasSameCount; j++) {
+                    result += ", " + items[i + j + 1];
+                }
+                result += "\n";
+
+                result += genIndents(indent) + 'case CharCode.' + names[c] + ':\n';
+
+                if (hasSameCount === 0) {
+                    result += 'result.type = TokenType.' + names[c] + ';\n';
+                    result += 'break;\n';
+                    i++;
+                }
+
+                if (hasSameCount === 1) {
+                    result += genIndents(indent) + 'if(this.sourceText.charCodeAt(this.sourceStart) === TokenType.' + names[items[i + 1]] + ') {';
+                    result += genIndents(indent + 1) + 'this.sourceStart++;';
+                    result += genIndents(indent + 1) + 'result.type = TokenType.' + names[items[i + 1]] + ';\n';
+                    result += genIndents(indent + 1) + 'break;\n';
+                    result += genIndents(indent) + '}';
+                    result += genIndents(indent) + 'result.type = TokenType.' + names[c] + ';\n';
+                    result += genIndents(indent) + 'break;\n';
+                    i += 2;
+                }
+
+                if (hasSameCount >= 2) {
+                    result += genIndents(indent) + ' switch (this.sourceText.charCodeAt(this.sourceStart)) {\n';
+                    for (let j = 0; j < hasSameCount; j++) {
+                        result += genIndents(indent + 1) + 'case CharCode.' + names[items[i + j + 1]] + ':\n';
+                        result += genIndents(indent + 2) + 'this.sourceStart++;\n';
+                        result += genIndents(indent + 2) + 'result.type = TokenType.' + names[items[i + j + 1]] + ';\n';
+                        result += genIndents(indent + 2) + 'break;\n';
+                    }
+                    result += genIndents(indent + 1) + 'default:\n';
+                    result += genIndents(indent + 2) + 'result.type = TokenType.' + names[c] + ';\n';
+                    result += genIndents(indent + 2) + 'break;\n';
+                    result += genIndents(indent) + '}\n';
+                    i += hasSameCount + 1;
+
+                    result += genIndents(indent) + 'break;\n';
+                }
+
+                result += genIndents(indent) + '\n';
+            }
+
+            console.log(result)
+
+            function genIndents(indent) {
+                var result = '';
+                while (indent-- > 0)
+                    result += '\t';
+                return result;
+            }
+
+            return result;
+        }
+
+
+    });
 
     tpack.src("src/parser/parser.tpl").pipe((file, options) => {
-        generateParser(file.content, 0, "", "", "");
+        //  generateParser(file.content, 0, "", "", "");
     });
 
 });

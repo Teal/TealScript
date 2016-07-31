@@ -1,0 +1,986 @@
+{
+    "unknown": {
+        "summary": "未知标记。",
+        "string": "",
+        "keyword": true,
+        "value": 0
+    },
+    "endOfFile": {
+        "summary": "文件已结束(EOF)。",
+        "string": "EOF",
+        "keyword": true,
+        "value": 1
+    },
+    "closeParen": {
+        "summary": "闭括号())。",
+        "string": ")",
+        "keyword": false,
+        "value": 2
+    },
+    "closeBracket": {
+        "summary": "闭方括号(])。",
+        "string": "]",
+        "keyword": false,
+        "value": 3
+    },
+    "closeBrace": {
+        "summary": "闭花括号(})。",
+        "string": "}",
+        "keyword": false,
+        "value": 4
+    },
+    "colon": {
+        "summary": "冒号(:)。",
+        "string": ":",
+        "keyword": false,
+        "value": 5
+    },
+    "semicolon": {
+        "summary": "分号(;)。",
+        "string": ";",
+        "keyword": false,
+        "value": 6
+    },
+    "templateMiddle": {
+        "summary": "模板字符串主体(}...${)(JavaScript 5 新增)。",
+        "string": "}...${",
+        "keyword": true,
+        "value": 7
+    },
+    "templateTail": {
+        "summary": "模板字符串尾(}...`)(JavaScript 5 新增)。",
+        "string": "}...`",
+        "keyword": true,
+        "value": 8
+    },
+    "MIN_EXPRESSION_START": {
+        "summary": "最小的表达式开头。",
+        "string": "",
+        "keyword": true,
+        "value": 9
+    },
+    "identifier": {
+        "summary": "标识符(x)。",
+        "string": "x",
+        "keyword": false,
+        "value": 10
+    },
+    "numericLiteral": {
+        "summary": "数字字面量(0x0)。",
+        "string": "0x0",
+        "keyword": true,
+        "value": 11
+    },
+    "stringLiteral": {
+        "summary": "字符串字面量('...')。",
+        "string": "'...'",
+        "keyword": true,
+        "value": 12
+    },
+    "regularExpressionLiteral": {
+        "summary": "正则表达式字面量(/.../)。",
+        "string": "/.../",
+        "keyword": true,
+        "value": 13
+    },
+    "noSubstitutionTemplateLiteral": {
+        "summary": "简单模板字符串字面量(`...`)(JavaScript 5 新增)。",
+        "string": "`...`",
+        "keyword": true,
+        "value": 14
+    },
+    "templateHead": {
+        "summary": "模板字符串头(`...${)(JavaScript 5 新增)。",
+        "string": "`...${",
+        "keyword": true,
+        "value": 15
+    },
+    "MIN_SIMPLE_LITERAL": {
+        "summary": "最小的简单字面量。",
+        "string": "",
+        "keyword": true,
+        "value": 16
+    },
+    "undefined": {
+        "summary": "关键字 undefined。",
+        "string": "undefined",
+        "keyword": true,
+        "value": 17
+    },
+    "null": {
+        "summary": "关键字 null。",
+        "string": "null",
+        "keyword": true,
+        "value": 18
+    },
+    "true": {
+        "summary": "关键字 true。",
+        "string": "true",
+        "keyword": true,
+        "value": 19
+    },
+    "false": {
+        "summary": "关键字 false。",
+        "string": "false",
+        "keyword": true,
+        "value": 20
+    },
+    "this": {
+        "summary": "关键字 this。",
+        "string": "this",
+        "keyword": true,
+        "value": 21
+    },
+    "MIN_IDENTIFIER_NAME_1": {
+        "summary": "最小的标识符 1。",
+        "string": "",
+        "keyword": true,
+        "value": 22
+    },
+    "super": {
+        "summary": "关键字 super(JavaScript 3 保留字、JavaScript 5 新增)。",
+        "string": "super",
+        "keyword": true,
+        "value": 23
+    },
+    "MAX_SIMPLE_LITERAL": {
+        "summary": "最大的简单字面量。",
+        "string": "",
+        "keyword": true,
+        "value": 24
+    },
+    "MIN_DECLARATION_START": {
+        "summary": "最小的定义开头。",
+        "string": "",
+        "keyword": true,
+        "value": 25
+    },
+    "MIN_MODIFIER": {
+        "summary": "最小的修饰符前缀。",
+        "string": "",
+        "keyword": true,
+        "value": 26
+    },
+    "async": {
+        "summary": "关键字 async(JavaScript 3 保留字、JavaScript 5 新增)。",
+        "string": "async",
+        "keyword": true,
+        "value": 27
+    },
+    "declare": {
+        "summary": "关键字 declare(TypeScript 1 新增)。",
+        "string": "declare",
+        "keyword": true,
+        "value": 28
+    },
+    "static": {
+        "summary": "关键字 static(JavaScript 3 保留字、JavaScript 5 严格模式保留字)。。",
+        "string": "static",
+        "keyword": true,
+        "value": 29
+    },
+    "abstract": {
+        "summary": "关键字 abstract(JavaScript 3 保留字、TypeScript 1 新增)。",
+        "string": "abstract",
+        "keyword": true,
+        "value": 30
+    },
+    "private": {
+        "summary": "关键字 private(JavaScript 3 保留字、TypeScript 1 新增)。",
+        "string": "private",
+        "keyword": true,
+        "value": 31
+    },
+    "protected": {
+        "summary": "关键字 protected(JavaScript 3 保留字、TypeScript 1 新增)。",
+        "string": "protected",
+        "keyword": true,
+        "value": 32
+    },
+    "public": {
+        "summary": "关键字 public(JavaScript 3 保留字、TypeScript 1 新增)。",
+        "string": "public",
+        "keyword": true,
+        "value": 33
+    },
+    "readonly": {
+        "summary": "关键字 readonly(TypeScript 2 新增)。",
+        "string": "readonly",
+        "keyword": true,
+        "value": 34
+    },
+    "MAX_IDENTIFIER_NAME_1": {
+        "summary": "最大的标识符 1。",
+        "string": "",
+        "keyword": true,
+        "value": 35
+    },
+    "export": {
+        "summary": "关键字 export(JavaScript 3 保留字、JavaScript 5 新增)。",
+        "string": "export",
+        "keyword": true,
+        "value": 36
+    },
+    "const": {
+        "summary": "关键字 const(JavaScript 5 新增)。",
+        "string": "const",
+        "keyword": true,
+        "value": 37
+    },
+    "MAX_MODIFIER": {
+        "summary": "最大的修饰符前缀。",
+        "string": "",
+        "keyword": true,
+        "value": 38
+    },
+    "function": {
+        "summary": "关键字 function。",
+        "string": "function",
+        "keyword": true,
+        "value": 39
+    },
+    "class": {
+        "summary": "关键字 class(JavaScript 3 保留字、JavaScript 5 新增)。",
+        "string": "class",
+        "keyword": true,
+        "value": 40
+    },
+    "enum": {
+        "summary": "关键字 enum(JavaScript 3 保留字、JavaScript 5 严格模式保留字、TypeScript 1 新增)。",
+        "string": "enum",
+        "keyword": true,
+        "value": 41
+    },
+    "MIN_IDENTIFIER_NAME_2": {
+        "summary": "最小的标识符 2。",
+        "string": "",
+        "keyword": true,
+        "value": 42
+    },
+    "namespace": {
+        "summary": "关键字 namespace(TypeScript 新增)。",
+        "string": "namespace",
+        "keyword": true,
+        "value": 43
+    },
+    "module": {
+        "summary": "关键字 module(TypeScript 新增)。",
+        "string": "module",
+        "keyword": true,
+        "value": 44
+    },
+    "interface": {
+        "summary": "关键字 interface(JavaScript 3 保留字、JavaScript 5 严格模式保留字、TypeScript 1 新增)。",
+        "string": "interface",
+        "keyword": true,
+        "value": 45
+    },
+    "MAX_DECLARATION_START": {
+        "summary": "最大的定义开头。",
+        "string": "",
+        "keyword": true,
+        "value": 46
+    },
+    "MIN_UNARY_OPERATOR": {
+        "summary": "最小的单目运算符。",
+        "string": "",
+        "keyword": true,
+        "value": 47
+    },
+    "yield": {
+        "summary": "关键字 yield(JavaScript 5 新增)。",
+        "string": "yield",
+        "keyword": true,
+        "value": 48
+    },
+    "await": {
+        "summary": "关键字 await(JavaScript 7 新增)。",
+        "string": "await",
+        "keyword": true,
+        "value": 49
+    },
+    "MAX_IDENTIFIER_NAME_2": {
+        "summary": "最大的标识符 2。",
+        "string": "",
+        "keyword": true,
+        "value": 50
+    },
+    "openBrace": {
+        "summary": "开花括号({)。",
+        "string": "{",
+        "keyword": false,
+        "value": 51
+    },
+    "exclamation": {
+        "summary": "非(!)。",
+        "string": "!",
+        "keyword": false,
+        "value": 52
+    },
+    "new": {
+        "summary": "关键字 new。",
+        "string": "new",
+        "keyword": true,
+        "value": 53
+    },
+    "delete": {
+        "summary": "关键字 delete。",
+        "string": "delete",
+        "keyword": true,
+        "value": 54
+    },
+    "typeof": {
+        "summary": "关键字 typeof。",
+        "string": "typeof",
+        "keyword": true,
+        "value": 55
+    },
+    "void": {
+        "summary": "关键字 void。",
+        "string": "void",
+        "keyword": true,
+        "value": 56
+    },
+    "dotDotDot": {
+        "summary": "点点点(...)(JavaScript 5 新增)。",
+        "string": "...",
+        "keyword": false,
+        "value": 57
+    },
+    "at": {
+        "summary": "电子邮件符号(@)(TypeScript 1 新增)。",
+        "string": "@",
+        "keyword": false,
+        "value": 58
+    },
+    "tilde": {
+        "summary": "位反(~)。",
+        "string": "~",
+        "keyword": false,
+        "value": 59
+    },
+    "MIN_BINARY_OPERATOR": {
+        "summary": "最小的双目运算符。",
+        "string": "",
+        "keyword": true,
+        "value": 60
+    },
+    "openParen": {
+        "summary": "开括号(()。",
+        "string": "(",
+        "keyword": false,
+        "value": 61
+    },
+    "openBracket": {
+        "summary": "开方括号([)。",
+        "string": "[",
+        "keyword": false,
+        "value": 62
+    },
+    "plus": {
+        "summary": "加(+)。",
+        "string": "+",
+        "keyword": false,
+        "value": 63
+    },
+    "minus": {
+        "summary": "减(-)。",
+        "string": "-",
+        "keyword": false,
+        "value": 64
+    },
+    "slash": {
+        "summary": "斜杠(/)。",
+        "string": "/",
+        "keyword": false,
+        "value": 65
+    },
+    "plusPlus": {
+        "summary": "加加(++)。",
+        "string": "++",
+        "keyword": false,
+        "value": 66
+    },
+    "minusMinus": {
+        "summary": "减减(--)。",
+        "string": "--",
+        "keyword": false,
+        "value": 67
+    },
+    "lessThan": {
+        "summary": "小于(<)。",
+        "string": "<",
+        "keyword": false,
+        "value": 68
+    },
+    "equalsGreaterThan": {
+        "summary": "箭头(=>)(JavaScript 5 新增)。",
+        "string": "=>",
+        "keyword": false,
+        "value": 69
+    },
+    "MIN_RIGHT_HAND_OPERATOR": {
+        "summary": "最小的右值运算符。",
+        "string": "",
+        "keyword": true,
+        "value": 70
+    },
+    "slashEquals": {
+        "summary": "斜杠等于(/=)。",
+        "string": "/=",
+        "keyword": false,
+        "value": 71
+    },
+    "MAX_UNARY_OPERATOR": {
+        "summary": "最大的单目运算符。",
+        "string": "",
+        "keyword": true,
+        "value": 72
+    },
+    "MAX_EXPRESSION_START": {
+        "summary": "最大的表达式开头。",
+        "string": "",
+        "keyword": true,
+        "value": 73
+    },
+    "asteriskAsterisk": {
+        "summary": "星号星号(**)(TypeScript 1 新增)。",
+        "string": "**",
+        "keyword": false,
+        "value": 74
+    },
+    "equals": {
+        "summary": "等于(=)。",
+        "string": "=",
+        "keyword": false,
+        "value": 75
+    },
+    "plusEquals": {
+        "summary": "加等于(+=)。",
+        "string": "+=",
+        "keyword": false,
+        "value": 76
+    },
+    "minusEquals": {
+        "summary": "减等于(-=)。",
+        "string": "-=",
+        "keyword": false,
+        "value": 77
+    },
+    "asteriskEquals": {
+        "summary": "星号等于(*=)。",
+        "string": "*=",
+        "keyword": false,
+        "value": 78
+    },
+    "percentEquals": {
+        "summary": "百分号等于(%=)。",
+        "string": "%=",
+        "keyword": false,
+        "value": 79
+    },
+    "lessThanLessThanEquals": {
+        "summary": "左移等于(<<=)。",
+        "string": "<<=",
+        "keyword": false,
+        "value": 80
+    },
+    "greaterThanGreaterThanEquals": {
+        "summary": "右移等于(>>=)。",
+        "string": ">>=",
+        "keyword": false,
+        "value": 81
+    },
+    "greaterThanGreaterThanGreaterThanEquals": {
+        "summary": "无符右移等于(>>>=)。",
+        "string": ">>>=",
+        "keyword": false,
+        "value": 82
+    },
+    "ampersandEquals": {
+        "summary": "位与等于(&=)。",
+        "string": "&=",
+        "keyword": false,
+        "value": 83
+    },
+    "barEquals": {
+        "summary": "位或等于(|=)。",
+        "string": "|=",
+        "keyword": false,
+        "value": 84
+    },
+    "caretEquals": {
+        "summary": "异或等于(^=)。",
+        "string": "^=",
+        "keyword": false,
+        "value": 85
+    },
+    "asteriskAsteriskEquals": {
+        "summary": "星号星号等于(**=)(TypeScript 1 新增)。",
+        "string": "**=",
+        "keyword": false,
+        "value": 86
+    },
+    "MAX_RIGHT_HAND_OPERATOR": {
+        "summary": "最大的右值运算符。",
+        "string": "",
+        "keyword": true,
+        "value": 87
+    },
+    "dot": {
+        "summary": "点(.)。",
+        "string": ".",
+        "keyword": false,
+        "value": 88
+    },
+    "dotDot": {
+        "summary": "点点(..)(TealScript 新增)。",
+        "string": "..",
+        "keyword": false,
+        "value": 89
+    },
+    "questionDot": {
+        "summary": "问号点(?.)(TealScript 新增)。",
+        "string": "?.",
+        "keyword": false,
+        "value": 90
+    },
+    "asterisk": {
+        "summary": "星号(*)。",
+        "string": "*",
+        "keyword": false,
+        "value": 91
+    },
+    "ampersand": {
+        "summary": "位与(&)。",
+        "string": "&",
+        "keyword": false,
+        "value": 92
+    },
+    "percent": {
+        "summary": "百分号(%)。",
+        "string": "%",
+        "keyword": false,
+        "value": 93
+    },
+    "greaterThan": {
+        "summary": "大于(>)。",
+        "string": ">",
+        "keyword": false,
+        "value": 94
+    },
+    "lessThanEquals": {
+        "summary": "小于等于(<=)。",
+        "string": "<=",
+        "keyword": false,
+        "value": 95
+    },
+    "greaterThanEquals": {
+        "summary": "大于等于(>=)。",
+        "string": ">=",
+        "keyword": false,
+        "value": 96
+    },
+    "equalsEquals": {
+        "summary": "等于等于(==)。",
+        "string": "==",
+        "keyword": false,
+        "value": 97
+    },
+    "exclamationEquals": {
+        "summary": "不等于(!=)。",
+        "string": "!=",
+        "keyword": false,
+        "value": 98
+    },
+    "equalsEqualsEquals": {
+        "summary": "等于等于等于(===)。",
+        "string": "===",
+        "keyword": false,
+        "value": 99
+    },
+    "exclamationEqualsEquals": {
+        "summary": "不等于等于(!==)。",
+        "string": "!==",
+        "keyword": false,
+        "value": 100
+    },
+    "lessThanLessThan": {
+        "summary": "左移(<<)。",
+        "string": "<<",
+        "keyword": false,
+        "value": 101
+    },
+    "greaterThanGreaterThan": {
+        "summary": "右移(>>)。",
+        "string": ">>",
+        "keyword": false,
+        "value": 102
+    },
+    "greaterThanGreaterThanGreaterThan": {
+        "summary": "无符右移(>>>)。",
+        "string": ">>>",
+        "keyword": false,
+        "value": 103
+    },
+    "bar": {
+        "summary": "位或(|)。",
+        "string": "|",
+        "keyword": false,
+        "value": 104
+    },
+    "caret": {
+        "summary": "异或(^)。",
+        "string": "^",
+        "keyword": false,
+        "value": 105
+    },
+    "ampersandAmpersand": {
+        "summary": "与(&&)。",
+        "string": "&&",
+        "keyword": false,
+        "value": 106
+    },
+    "barBar": {
+        "summary": "或(||)。",
+        "string": "||",
+        "keyword": false,
+        "value": 107
+    },
+    "question": {
+        "summary": "问号(?)。",
+        "string": "?",
+        "keyword": false,
+        "value": 108
+    },
+    "comma": {
+        "summary": "逗号(,)。",
+        "string": ",",
+        "keyword": false,
+        "value": 109
+    },
+    "in": {
+        "summary": "关键字 in。",
+        "string": "in",
+        "keyword": true,
+        "value": 110
+    },
+    "instanceOf": {
+        "summary": "关键字 instanceOf。",
+        "string": "instanceOf",
+        "keyword": true,
+        "value": 111
+    },
+    "MIN_IDENTIFIER_NAME_3": {
+        "summary": "最小的标识符 3。",
+        "string": "",
+        "keyword": true,
+        "value": 112
+    },
+    "as": {
+        "summary": "关键字 as(TypeScript 新增)。",
+        "string": "as",
+        "keyword": true,
+        "value": 113
+    },
+    "is": {
+        "summary": "关键字 is(TypeScript 新增)。",
+        "string": "is",
+        "keyword": true,
+        "value": 114
+    },
+    "MAX_BINARY_OPERATOR": {
+        "summary": "最大的双目运算符。",
+        "string": "",
+        "keyword": true,
+        "value": 115
+    },
+    "MIN_PREDEFINED_TYPE": {
+        "summary": "最小的内置类型。",
+        "string": "",
+        "keyword": true,
+        "value": 116
+    },
+    "any": {
+        "summary": "关键字 any(TypeScript 1 新增)。",
+        "string": "any",
+        "keyword": true,
+        "value": 117
+    },
+    "boolean": {
+        "summary": "关键字 boolean(TypeScript 1 新增)。",
+        "string": "boolean",
+        "keyword": true,
+        "value": 118
+    },
+    "number": {
+        "summary": "关键字 number(TypeScript 1 新增)。",
+        "string": "number",
+        "keyword": true,
+        "value": 119
+    },
+    "string": {
+        "summary": "关键字 string(TypeScript 1 新增)。",
+        "string": "string",
+        "keyword": true,
+        "value": 120
+    },
+    "symbol": {
+        "summary": "关键字 symbol(TypeScript 1 新增)。",
+        "string": "symbol",
+        "keyword": true,
+        "value": 121
+    },
+    "never": {
+        "summary": "关键字 never(TypeScript 2 新增)。",
+        "string": "never",
+        "keyword": true,
+        "value": 122
+    },
+    "char": {
+        "summary": "关键字 char(TealScript 1 新增)。",
+        "string": "char",
+        "keyword": true,
+        "value": 123
+    },
+    "byte": {
+        "summary": "关键字 byte(TealScript 1 新增)。",
+        "string": "byte",
+        "keyword": true,
+        "value": 124
+    },
+    "int": {
+        "summary": "关键字 int(TealScript 1 新增)。",
+        "string": "int",
+        "keyword": true,
+        "value": 125
+    },
+    "long": {
+        "summary": "关键字 long(TealScript 1 新增)。",
+        "string": "long",
+        "keyword": true,
+        "value": 126
+    },
+    "short": {
+        "summary": "关键字 short(TealScript 1 新增)。",
+        "string": "short",
+        "keyword": true,
+        "value": 127
+    },
+    "uint": {
+        "summary": "关键字 uint(TealScript 1 新增)。",
+        "string": "uint",
+        "keyword": true,
+        "value": 128
+    },
+    "ulong": {
+        "summary": "关键字 ulong(TealScript 1 新增)。",
+        "string": "ulong",
+        "keyword": true,
+        "value": 129
+    },
+    "ushort": {
+        "summary": "关键字 ushort(TealScript 1 新增)。",
+        "string": "ushort",
+        "keyword": true,
+        "value": 130
+    },
+    "float": {
+        "summary": "关键字 float(TealScript 1 新增)。",
+        "string": "float",
+        "keyword": true,
+        "value": 131
+    },
+    "double": {
+        "summary": "关键字 double(TealScript 1 新增)。",
+        "string": "double",
+        "keyword": true,
+        "value": 132
+    },
+    "MAX_PREDEFINED_TYPE": {
+        "summary": "最大的内置类型。",
+        "string": "",
+        "keyword": true,
+        "value": 133
+    },
+    "MAX_TOKEN": {
+        "summary": "最大的合法标签。",
+        "string": "",
+        "keyword": true,
+        "value": 134
+    },
+    "from": {
+        "summary": "关键字 from(仅在 JavaScript 7)。",
+        "string": "from",
+        "keyword": true,
+        "value": 135
+    },
+    "implements": {
+        "summary": "关键字 implements(JavaScript 3 保留字、JavaScript 3 严格模式保留字、TypeScript 新增)。",
+        "string": "implements",
+        "keyword": true,
+        "value": 136
+    },
+    "of": {
+        "summary": "关键字 of(JavaScript 5 新增)。",
+        "string": "of",
+        "keyword": true,
+        "value": 137
+    },
+    "to": {
+        "summary": "关键字 to(TealScript 1 新增)。",
+        "string": "to",
+        "keyword": true,
+        "value": 138
+    },
+    "MAX_IDENTIFIER_NAME_3": {
+        "summary": "最大的标识符 3。",
+        "string": "",
+        "keyword": true,
+        "value": 139
+    },
+    "else": {
+        "summary": "关键字 else。",
+        "string": "else",
+        "keyword": true,
+        "value": 140
+    },
+    "case": {
+        "summary": "关键字 case。",
+        "string": "case",
+        "keyword": true,
+        "value": 141
+    },
+    "default": {
+        "summary": "关键字 default。",
+        "string": "default",
+        "keyword": true,
+        "value": 142
+    },
+    "catch": {
+        "summary": "关键字 catch。",
+        "string": "catch",
+        "keyword": true,
+        "value": 143
+    },
+    "finally": {
+        "summary": "关键字 finally。",
+        "string": "finally",
+        "keyword": true,
+        "value": 144
+    },
+    "extends": {
+        "summary": "关键字 extends(JavaScript 3 保留字、JavaScript 5 新增)。",
+        "string": "extends",
+        "keyword": true,
+        "value": 145
+    },
+    "MIN_STATEMENT_START": {
+        "summary": "最小的语句开头。",
+        "string": "",
+        "keyword": true,
+        "value": 146
+    },
+    "if": {
+        "summary": "关键字 if。",
+        "string": "if",
+        "keyword": true,
+        "value": 147
+    },
+    "switch": {
+        "summary": "关键字 switch。",
+        "string": "switch",
+        "keyword": true,
+        "value": 148
+    },
+    "for": {
+        "summary": "关键字 for。",
+        "string": "for",
+        "keyword": true,
+        "value": 149
+    },
+    "while": {
+        "summary": "关键字 while。",
+        "string": "while",
+        "keyword": true,
+        "value": 150
+    },
+    "do": {
+        "summary": "关键字 do。",
+        "string": "do",
+        "keyword": true,
+        "value": 151
+    },
+    "continue": {
+        "summary": "关键字 continue。",
+        "string": "continue",
+        "keyword": true,
+        "value": 152
+    },
+    "break": {
+        "summary": "关键字 break。",
+        "string": "break",
+        "keyword": true,
+        "value": 153
+    },
+    "return": {
+        "summary": "关键字 return。",
+        "string": "return",
+        "keyword": true,
+        "value": 154
+    },
+    "throw": {
+        "summary": "关键字 throw。",
+        "string": "throw",
+        "keyword": true,
+        "value": 155
+    },
+    "try": {
+        "summary": "关键字 try。",
+        "string": "try",
+        "keyword": true,
+        "value": 156
+    },
+    "debugger": {
+        "summary": "关键字 debugger。",
+        "string": "debugger",
+        "keyword": true,
+        "value": 157
+    },
+    "with": {
+        "summary": "关键字 with。",
+        "string": "with",
+        "keyword": true,
+        "value": 158
+    },
+    "var": {
+        "summary": "关键字 var。",
+        "string": "var",
+        "keyword": true,
+        "value": 159
+    },
+    "let": {
+        "summary": "关键字 let(JavaScript 5 新增)。",
+        "string": "let",
+        "keyword": true,
+        "value": 160
+    },
+    "import": {
+        "summary": "关键字 import(JavaScript 5 保留字、TypeScript 1 新增)。",
+        "string": "import",
+        "keyword": true,
+        "value": 161
+    },
+    "type": {
+        "summary": "关键字 type(TypeScript 新增)。",
+        "string": "type",
+        "keyword": true,
+        "value": 162
+    },
+    "MAX_STATEMENT_START": {
+        "summary": "最大的语句开头。",
+        "string": "",
+        "keyword": true,
+        "value": 163
+    }
+}
