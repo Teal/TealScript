@@ -245,7 +245,7 @@ tpack.task("gen-nodes", function () {
                     return "";
                 });
             }
-            ss.push("'" + d.string + "': [],");
+            ss.push("'" + (d.string || k) + "': [],");
         }
         // require("fs").writeFileSync("aa.json", JSON.stringify(data, null, 4));
         require("fs").writeFileSync("aa.js", ss.join("\n"));

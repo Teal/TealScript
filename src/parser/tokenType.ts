@@ -1,6 +1,7 @@
 ﻿/**
- * @fileOverview 标记
+ * @fileOverview 标记类型
  * @author xuld@vip.qq.com
+ * @generated 此文件标记为 Generated 的区域使用 `tpack gen-tokenType` 生成。
  */
 
 import {CharCode} from './unicode';
@@ -9,6 +10,8 @@ import {CharCode} from './unicode';
  * 表示一个标记类型。
  */
 export const enum TokenType {
+
+    // #region Generated: TokenType
 
     // #region 控制符(Control)
 
@@ -874,17 +877,24 @@ export const enum TokenType {
 
     // #endregion
 
+    // #endregion Generated: TokenType
+
 }
 
 /**
  * @gernerated 此常量的值使用 `tpack gen-tokenType` 生成。
  */
-const tokenNames = [];
+const tokenNames = [
+
+    // #region Generated: tokenNames
+    // #endregion Generated: tokenNames
+
+];
 
 /**
  * 获取指定标记的名字。
  * @param token 要获取的标记。
- * @returns 返回标记名字。如果标记无效，则返回 undefined。
+ * @returns 返回标记名字。如果标记无效则返回 undefined。
  */
 export function getTokenName(token: TokenType) {
     return tokenNames[token];
@@ -907,7 +917,12 @@ export function getTokenType(value: string) {
 /**
  * @gernerated 此常量的值使用 `tpack gen-tokenType` 生成。
  */
-const keywords: { [key: string]: TokenType } = {};
+const keywords: { [key: string]: TokenType } = {
+
+    // #region Generated: keywords
+    // #endregion Generated: keywords
+
+};
 
 /**
  * 获取指定标识符对应的关键字标记。
@@ -928,9 +943,208 @@ export function getKeyword(value: string) {
  * 但不能作为变量名使用(部分除外)。
  */
 export function isKeyword(token: TokenType) {
-    const ch = (tokenNames[token] || "").charCodeAt(0);
-    return ch >= CharCode.a && ch <= CharCode.z;
+    return value in keywords;
 }
+
+/**
+ * 表示双目操作符优先级。
+ */
+export const enum Precedence {
+
+    /**
+     * 任意优先级。
+     */
+    any,
+
+    /**
+     * 逗号表达式。
+     */
+    comma,
+
+    /**
+     * 赋值表达式。
+     */
+    assignment,
+
+    /**
+     * 问号表达式。
+     */
+    conditional,
+
+    /**
+     * 逻辑或表达式。
+     */
+    logicalOr,
+
+    /**
+     * 逻辑且表达式。
+     */
+    logicalAnd,
+
+    /**
+     * 位或表达式。
+     */
+    bitwiseOr,
+
+    /**
+     * 位异或表达式。
+     */
+    bitwiseXOr,
+
+    /**
+     * 位且表达式。
+     */
+    bitwiseAnd,
+
+    /**
+     * 等于表达式。
+     */
+    equality,
+
+    /**
+     * 比较表达式。
+     */
+    relational,
+
+    /**
+     * 位移表达式。
+     */
+    shift,
+
+    /**
+     * 加减表达式。
+     */
+    additive,
+
+    /**
+     * 乘除表达式。
+     */
+    multiplicative,
+
+    /**
+     * 次方表达式。
+     */
+    exponentiation,
+
+    /**
+     * 后缀表达式。
+     */
+    postfix,
+
+    /**
+     * 左值表达式。
+     */
+    leftHandSide,
+
+    /**
+     * 函数调用表达式。
+     */
+    functionCall,
+
+    /**
+     * 成员表达式。
+     */
+    member,
+
+    /**
+     * 独立表达式。
+     */
+    primary,
+
+}
+
+/**
+ * 存储所有优先级。
+ */
+export const precedences: { [key: number]: Precedence } = {
+
+    // #region Generated: Precedences
+
+    [TokenType.comma]: Precedence.comma,
+
+    [TokenType.equals]: Precedence.assignment,
+    [TokenType.plusEquals]: Precedence.assignment,
+    [TokenType.minusEquals]: Precedence.assignment,
+    [TokenType.asteriskEquals]: Precedence.assignment,
+    [TokenType.slashEquals]: Precedence.assignment,
+    [TokenType.percentEquals]: Precedence.assignment,
+    [TokenType.lessThanLessThanEquals]: Precedence.assignment,
+    [TokenType.greaterThanGreaterThanEquals]: Precedence.assignment,
+    [TokenType.greaterThanGreaterThanGreaterThanEquals]: Precedence.assignment,
+    [TokenType.ampersandEquals]: Precedence.assignment,
+    [TokenType.barEquals]: Precedence.assignment,
+    [TokenType.caretEquals]: Precedence.assignment,
+    [TokenType.asteriskEquals]: Precedence.assignment,
+    [TokenType.asteriskAsteriskEquals]: Precedence.assignment,
+
+    [TokenType.question]: Precedence.conditional,
+    [TokenType.barBar]: Precedence.logicalOr,
+    [TokenType.ampersandAmpersand]: Precedence.logicalAnd,
+    [TokenType.bar]: Precedence.bitwiseOr,
+    [TokenType.caret]: Precedence.bitwiseXOr,
+    [TokenType.ampersand]: Precedence.bitwiseAnd,
+
+    [TokenType.equalsEquals]: Precedence.equality,
+    [TokenType.exclamationEquals]: Precedence.equality,
+    [TokenType.equalsEqualsEquals]: Precedence.equality,
+    [TokenType.exclamationEqualsEquals]: Precedence.equality,
+
+    [TokenType.lessThan]: Precedence.relational,
+    [TokenType.greaterThan]: Precedence.relational,
+    [TokenType.lessThanEquals]: Precedence.relational,
+    [TokenType.greaterThanEquals]: Precedence.relational,
+    [TokenType.instanceOf]: Precedence.relational,
+    [TokenType.in]: Precedence.relational,
+    [TokenType.is]: Precedence.relational,
+    [TokenType.as]: Precedence.relational,
+
+    [TokenType.lessThanLessThan]: Precedence.shift,
+    [TokenType.greaterThanGreaterThan]: Precedence.shift,
+    [TokenType.greaterThanGreaterThanGreaterThan]: Precedence.shift,
+
+    [TokenType.plus]: Precedence.additive,
+    [TokenType.minus]: Precedence.additive,
+
+    [TokenType.asterisk]: Precedence.multiplicative,
+    [TokenType.slash]: Precedence.multiplicative,
+    [TokenType.percent]: Precedence.multiplicative,
+
+    [TokenType.asteriskAsterisk]: Precedence.exponentiation,
+
+    [TokenType.plusPlus]: Precedence.postfix,
+    [TokenType.minusMinus]: Precedence.postfix,
+
+    [TokenType.openParen]: Precedence.functionCall,
+
+    [TokenType.openBracket]: Precedence.member,
+    [TokenType.dot]: Precedence.member,
+    [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
+    [TokenType.templateHead]: Precedence.member,
+
+    // #endregion Generated: Precedences
+
+};
+
+/**
+ * 获取操作符的优先级。
+ * @param token 要判断的标记。
+ * @returns 返回一个数字。数字越大说明优先级越高。如果标记无效则返回 undefined。
+ */
+export function getPrecedence(token: TokenType) {
+    return precedences[token];
+}
+
+/**
+ * 判断指定的标记是否是双目表达式合法的运算符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isBinaryOperator(token: TokenType) {
+    const precedence = getPrecedence(token);
+    return precedence > Precedence.any && precedence < Precedence.postfix;
+}
+
+// #region Generated: checkToken
 
 /**
  * 判断指定的标记是否可作为标志名。
@@ -1048,30 +1262,12 @@ export function isCaseLabelStart(token: TokenType) {
 }
 
 /**
- * 判断指定的标记是否可作为简单字面量。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isSimpleLiteral(token: TokenType) {
-    return token > TokenType.MIN_SIMPLE_LITERAL && token < TokenType.MAX_SIMPLE_LITERAL;
-}
-
-/**
  * 判断指定的标记是否可作为单目运算符。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
  */
 export function isUnaryOperator(token: TokenType) {
     return token > TokenType.MIN_UNARY_OPERATOR && token < TokenType.MAX_UNARY_OPERATOR;
-}
-
-/**
- * 判断指定的标记是否可作为双目运算符。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isBinaryOperator(token: TokenType) {
-    return token > TokenType.MIN_BINARY_OPERATOR && token < TokenType.MAX_BINARY_OPERATOR;
 }
 
 /**
@@ -1120,185 +1316,4 @@ export function isRightHandOperator(token: TokenType) {
     return token > TokenType.MIN_RIGHT_HAND_OPERATOR && token < TokenType.MAX_RIGHT_HAND_OPERATOR;
 }
 
-/**
- * 表示一个优先级。
- */
-export const enum Precedence {
-
-    /**
-     * 任意操作符。
-     */
-    any,
-
-    /**
-     * 逗号。
-     */
-    comma,
-
-    /**
-     * 赋值表达式。
-     */
-    assignment,
-
-    /**
-     * 问号。
-     */
-    conditional,
-
-    /**
-     * 逻辑或。
-     */
-    logicalOr,
-
-    /**
-     * 逻辑且。
-     */
-    logicalAnd,
-
-    /**
-     * 位或。
-     */
-    bitwiseOr,
-
-    /**
-     * 位异或。
-     */
-    bitwiseXOr,
-
-    /**
-     * 位且。
-     */
-    bitwiseAnd,
-
-    /**
-     * 等于判断。
-     */
-    equality,
-
-    /**
-     * 大小比较。
-     */
-    relational,
-
-    /**
-     * 位移。
-     */
-    shift,
-
-    /**
-     * 加减。
-     */
-    additive,
-
-    /**
-     * 乘除。
-     */
-    multiplicative,
-
-    /**
-     * 次方。
-     */
-    exponentiation,
-
-    /**
-     * 后缀表达式。
-     */
-    postfix,
-
-    /**
-     * 左值表达式。
-     */
-    leftHandSide,
-
-    /**
-     * 函数调用表达式。
-     */
-    functionCall,
-
-    /**
-     * 成员表达式。
-     */
-    member,
-
-    /**
-     * 独立表达式。
-     */
-    primary,
-
-}
-
-/**
- * 存储所有优先级。
- */
-export const precedences: { [key: number]: Precedence } = {
-    [TokenType.comma]: Precedence.comma,
-
-    [TokenType.equals]: Precedence.assignment,
-    [TokenType.plusEquals]: Precedence.assignment,
-    [TokenType.minusEquals]: Precedence.assignment,
-    [TokenType.asteriskEquals]: Precedence.assignment,
-    [TokenType.slashEquals]: Precedence.assignment,
-    [TokenType.percentEquals]: Precedence.assignment,
-    [TokenType.lessThanLessThanEquals]: Precedence.assignment,
-    [TokenType.greaterThanGreaterThanEquals]: Precedence.assignment,
-    [TokenType.greaterThanGreaterThanGreaterThanEquals]: Precedence.assignment,
-    [TokenType.ampersandEquals]: Precedence.assignment,
-    [TokenType.barEquals]: Precedence.assignment,
-    [TokenType.caretEquals]: Precedence.assignment,
-    [TokenType.asteriskEquals]: Precedence.assignment,
-    [TokenType.asteriskAsteriskEquals]: Precedence.assignment,
-
-    [TokenType.question]: Precedence.conditional,
-    [TokenType.barBar]: Precedence.logicalOr,
-    [TokenType.ampersandAmpersand]: Precedence.logicalAnd,
-    [TokenType.bar]: Precedence.bitwiseOr,
-    [TokenType.caret]: Precedence.bitwiseXOr,
-    [TokenType.ampersand]: Precedence.bitwiseAnd,
-
-    [TokenType.equalsEquals]: Precedence.equality,
-    [TokenType.exclamationEquals]: Precedence.equality,
-    [TokenType.equalsEqualsEquals]: Precedence.equality,
-    [TokenType.exclamationEqualsEquals]: Precedence.equality,
-
-    [TokenType.lessThan]: Precedence.relational,
-    [TokenType.greaterThan]: Precedence.relational,
-    [TokenType.lessThanEquals]: Precedence.relational,
-    [TokenType.greaterThanEquals]: Precedence.relational,
-    [TokenType.instanceOf]: Precedence.relational,
-    [TokenType.in]: Precedence.relational,
-    [TokenType.is]: Precedence.relational,
-    [TokenType.as]: Precedence.relational,
-
-    [TokenType.lessThanLessThan]: Precedence.shift,
-    [TokenType.greaterThanGreaterThan]: Precedence.shift,
-    [TokenType.greaterThanGreaterThanGreaterThan]: Precedence.shift,
-
-    [TokenType.plus]: Precedence.additive,
-    [TokenType.minus]: Precedence.additive,
-
-    [TokenType.asterisk]: Precedence.multiplicative,
-    [TokenType.slash]: Precedence.multiplicative,
-    [TokenType.percent]: Precedence.multiplicative,
-
-    [TokenType.asteriskAsterisk]: Precedence.exponentiation,
-
-    [TokenType.plusPlus]: Precedence.postfix,
-    [TokenType.minusMinus]: Precedence.postfix,
-
-    [TokenType.openParen]: Precedence.functionCall,
-
-    [TokenType.openBracket]: Precedence.member,
-    [TokenType.dot]: Precedence.member,
-    [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
-    [TokenType.templateHead]: Precedence.member,
-
-};
-
-/**
- * 获取操作符的优先级。
- * @param token 要判断的标记。
- * @returns 返回一个数字。数字越大说明优先级越高。
- */
-export function getPrecedence(token: TokenType) {
-    return precedences[token];
-}
+// #endregion Generated: checkToken
