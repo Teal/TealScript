@@ -3,6 +3,7 @@
  * @author xuld@vip.qq.com
  * @generated 此文件标记为 @generated 的变量和函数内容使用 `tpack gen-tokenType` 生成。
  */
+
 import {CharCode} from './unicode';
 
 /**

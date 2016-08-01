@@ -4,10 +4,10 @@
  */
 
 import {CharCode} from './unicode';
-import {TokenType, getTokenName, isKeyword, isReservedWord, isExpressionStart, isDeclarationStart, isModifier, isBindingNameStart, isPredefinedType} from './tokenType';
+import * as tokens from './tokens';
 import {TextRange} from './location';
-import {Lexer, LexerOptions, Token} from './lexer';
 import * as nodes from './nodes';
+import {Lexer, LexerOptions, Token} from './lexer';
 
 /**
  * 表示一个语法解析器。
@@ -99,33 +99,12 @@ export class Parser {
      * @param token 要读取的标记类型。
      * @returns 如果标记类型匹配则返回读取的标记位置，否则返回当前的结束位置。
      */
-    private readToken(token: TokenType) {
+    private readToken(token: tokens.TokenType) {
         if (this.lexer.peek().type === token) {
             return this.lexer.read().start;
         }
-        this.error(this.lexer.peek(), "'{0}' expected; Unexpected token '{1}'.", getTokenName(token), getTokenName(this.lexer.peek().type));
+        this.error(this.lexer.peek(), "'{0}' expected; Unexpected token '{1}'.", tokens.getTokenName(token), tokens.getTokenName(this.lexer.peek().type));
         return this.lexer.current.end;
-    }
-
-    /**
-     * 尝试读取或自动插入一个分号。
-     * @param result 存放结果的对象。
-     * @return 如果已读取或自动插入一个分号则返回 true，否则返回 false。
-     */
-    private tryReadSemicolon(result: { semicolonToken?: number }) {
-        switch (this.lexer.peek().type) {
-            case TokenType.semicolon:
-                result.semicolonToken = this.lexer.read().start;
-                return true;
-            case TokenType.closeBrace:
-            case TokenType.endOfFile:
-                if (this.options.allowMissingSemicolon !== false) {
-                    return true;
-                }
-                break;
-        }
-        this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "Missing ';' after statement.");
-        return false;
     }
 
     /**
@@ -182,6 +161,27 @@ export class Parser {
         }
         if (closeToken) result.end = this.readToken(closeToken);
         return result;
+    }
+
+    /**
+     * 尝试读取或自动插入一个分号。
+     * @param result 存放结果的对象。
+     * @return 如果已读取或自动插入一个分号则返回 true，否则返回 false。
+     */
+    private tryReadSemicolon(result: { semicolonToken?: number }) {
+        switch (this.lexer.peek().type) {
+            case TokenType.semicolon:
+                result.semicolonToken = this.lexer.read().start;
+                return true;
+            case TokenType.closeBrace:
+            case TokenType.endOfFile:
+                if (this.options.allowMissingSemicolon !== false) {
+                    return true;
+                }
+                break;
+        }
+        this.error({ start: this.lexer.current.end, end: this.lexer.current.end }, "Missing ';' after statement.");
+        return false;
     }
 
     // #endregion

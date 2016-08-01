@@ -1,34 +1,11 @@
 ﻿// TealScript 语法解析器
 // 此文件可用于生成 tokenType.ts、parser.ts、nodes.ts、nodeVisitor.ts
 
-import * as tokens from './tokens.ts';
+import * as tokens from './tokens';
 
 // #region 标记
 
-/** 
- * 标记当前标记是 JavaScript 5 新增关键字。
- */
-declare var addInJs5;
-
-/** 
- * 标记当前标记是 JavaScript 7 新增关键字。
- */
-declare var addInJs7;
-
-/** 
- * 标记当前标记是 TypeScript 1 新增。
- */
-declare var addInTs1;
-
-/** 
- * 标记当前标记是 TypeScript 2 新增。
- */
-declare var addInTs2;
-
-/** 
- * 标记当前标记是 TealScript 1 新增。
- */
-declare var addInTls1;
+declare var addInJs5, addInJs7, addInTs1, addInTs2, addInTls1;
 
 const TokenType = {
 
@@ -313,44 +290,6 @@ declare function stashRestore(state);
  * 清除标记状态。
  */
 declare function stashClear(state);
-
-//declare function Identifier(allowKeyword?);
-//declare function Parameters();
-//declare function Modifiers();
-//declare function StringLiteral();
-//declare function NumericLiteral();
-//declare function PropertyName();
-//declare function TypeAnnotation(_);
-//declare function CommaOrSemicolon(_);
-//declare function TypeParameters();
-//declare function Parameters();
-//declare function TypeArguments();
-//declare function BlockStatement();
-//declare function FunctionExpression(modifiers?);
-//declare function ClassExpression();
-//declare function FunctionBody(_);
-//declare function Initializer(_, allowIn?);
-//declare function Semicolon(_);
-//declare function Condition(_);
-//declare function FunctionTypeNode(typeParameters?, parameters?);
-//declare function ArrowFunctionExpression(modifiers?, typeParameters?, parameters?, allowIn?);
-//declare function ExpressionStatement(expression);
-//declare function FunctionDeclaration();
-//declare function BindingName();
-//declare function EmbeddedStatement();
-//type Modifiers = any;
-//type Parameters = any;
-//type TypeParameters = any;
-//type Identifier = any;
-//
-//type Statement = any;
-//type BlockStatement = any;
-//type MemberCallExpression = any;
-//type TemplateSpan = any;
-//type TemplateLiteral = any;
-//type StringLiteral = any;
-//type VariableStatement = any;
-//type ExpressionStatement = any;
 
 function TypeNode(precedence = tokens.Precedence.any) { // 类型节点
     type TypeNode = any;

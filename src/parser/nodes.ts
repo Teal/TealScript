@@ -4,7 +4,7 @@
  */
 
 import {intern} from '../compiler/compiler';
-import {TokenType, tokenToString} from './tokenType';
+import * as tokens from './tokens';
 import {TextRange} from './location';
 import {NodeVisitor} from './nodeVisitor';
 
