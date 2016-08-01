@@ -48,18 +48,18 @@ const TokenType = {
     // #endregion
 
     // #region 字面量(Literal)
-    '<identifier>': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart], // 标识符(`x`)
     '<numericLiteral>': [tokens.isTypeNodeStart, tokens.isExpressionStart], // 数字字面量(`0x0`)
     '<stringLiteral>': [tokens.isTypeNodeStart, tokens.isExpressionStart], // 字符串字面量(`"..."`、`'...'`)
     '<regularExpressionLiteral>': [tokens.isExpressionStart], // 正则表达式字面量(`/.../`)
     '<noSubstitutionTemplateLiteral>': [tokens.Precedence.member, tokens.isExpressionStart], // 简单模板字符串字面量(`\`...\``)
     '<templateHead>': [tokens.Precedence.member, tokens.isExpressionStart], // 模板字符串头(`\`...${`)
-    'undefined': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
+    'super': [tokens.isSimpleLiteral, tokens.isExpressionStart],
     'null': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'true': [tokens.isSimpleLiteral, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'false': [tokens.isSimpleLiteral, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'this': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'super': [tokens.isSimpleLiteral, tokens.isExpressionStart],
+    '<identifier>': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart], // 标识符(`x`)
+    'undefined': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
     // #endregion
 
     // #region 修饰符(Modifiers)
@@ -1458,7 +1458,7 @@ function Modifiers() { // 修饰符列表
     type NodeList<T> = any;
     type Modifier = any;
     let result: NodeList<Modifier>;
-    while (tokens.isModifier, tokens.isDeclarationStart(peek)) {
+    while (tokens.isModifier(peek)) {
         const savedToken = lexer.current;
         const modifier: any = Modifier;
         switch (modifier.type) {
