@@ -291,6 +291,8 @@ declare function stashRestore(state);
  */
 declare function stashClear(state);
 
+// #region 类型
+
 function TypeNode(precedence = tokens.Precedence.any) { // 类型节点
     type TypeNode = any;
     let result: TypeNode;
@@ -602,6 +604,10 @@ function PropertyName() { // 属性名称(`xx`、`"xx"`、`0`、`[xx]`)
             return Identifier(true);
     }
 }
+
+// #endregion
+
+// #region 表达式
 
 function CommaOrSemicolon(_) { // 对象成员尾部
     switch (peek) {
@@ -1016,6 +1022,10 @@ function Identifier(allowKeyword = false/*是否允许解析关键字*/) { // �
     }
 }
 
+// #endregion
+
+// #region 语句
+
 function Statement(): any { // 语句
     switch (peek) {
         //+ case 'identifier':
@@ -1341,6 +1351,8 @@ function Semicolon(_) { // 分号
     error({ start: lexer.current.end, end: lexer.current.end }, "Missing ';' after statement.");
     return false;
 }
+
+// #endregion
 
 function Declaration() { // 声明
     extend(Statement);
@@ -1730,6 +1742,13 @@ function ExportAssignmentOrExportDeclaration(): any { // export 赋值或 export
     }
 }
 
+// #endregion
+
+// #region 文档注释
+
 function DocComment(result) { // 文档注释
 }
+
 // #endregion
+
+// #endregion 语法
