@@ -38,28 +38,28 @@ const TokenType = {
     // #endregion
 
     // #region 其它运算符(Other Operators)
-    ')': [],
-    ']': [],
-    '}': [],
-    ':': [],
-    ';': [],
-    '<templateMiddle>': [], // 模板字符串主体(`}...${`)
-    '<templateTail>`': [], // 模板字符串尾(`}...\``)
+    ')': [], // 闭圆括号
+    ']': [], // 闭方括号
+    '}': [], // 闭花括号
+    ':': [], // 冒号
+    ';': [], // 分号
+    '<templateMiddle>': [], // 模板字符串中间(`}...${`)
+    '<templateTail>`': [], // 模板字符串结尾(`}...\``)
     // #endregion
 
     // #region 字面量(Literal)
+    '<noSubstitutionTemplateLiteral>': [tokens.Precedence.member, tokens.isExpressionStart], // 简单模板字符串字面量(`\`...\``)
+    '<templateHead>': [tokens.Precedence.member, tokens.isExpressionStart], // 模板字符串开头(`\`...${`)
+    '<regularExpressionLiteral>': [tokens.isExpressionStart], // 正则表达式字面量(`/.../`)
+    'super': [tokens.isSimpleLiteral, tokens.isExpressionStart],
     '<numericLiteral>': [tokens.isTypeNodeStart, tokens.isExpressionStart], // 数字字面量(`0x0`)
     '<stringLiteral>': [tokens.isTypeNodeStart, tokens.isExpressionStart], // 字符串字面量(`"..."`、`'...'`)
-    '<regularExpressionLiteral>': [tokens.isExpressionStart], // 正则表达式字面量(`/.../`)
-    '<noSubstitutionTemplateLiteral>': [tokens.Precedence.member, tokens.isExpressionStart], // 简单模板字符串字面量(`\`...\``)
-    '<templateHead>': [tokens.Precedence.member, tokens.isExpressionStart], // 模板字符串头(`\`...${`)
-    'super': [tokens.isSimpleLiteral, tokens.isExpressionStart],
-    'null': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'true': [tokens.isSimpleLiteral, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'false': [tokens.isSimpleLiteral, tokens.isTypeNodeStart, tokens.isExpressionStart],
+    'null': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'this': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    '<identifier>': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart], // 标识符(`x`)
     'undefined': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
+    '<identifier>': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart], // 标识符(`x`)
     // #endregion
 
     // #region 修饰符(Modifiers)
@@ -87,72 +87,70 @@ const TokenType = {
     // #region 单目运算符(Unary Operators)
     'yield': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
     'await': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    '{': [tokens.isTypeNodeStart, tokens.isExpressionStart],
-    '!': [tokens.isUnaryOperator, tokens.isExpressionStart],
+    '{': [tokens.isTypeNodeStart, tokens.isExpressionStart], // 开花括号
     'new': [tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'delete': [tokens.isUnaryOperator, tokens.isExpressionStart],
     'typeof': [tokens.isUnaryOperator, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'void': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isUnaryOperator, tokens.isExpressionStart],
-    '...': [tokens.isUnaryOperator, tokens.isExpressionStart],
-    '@': [tokens.isUnaryOperator, tokens.isDeclarationStart, tokens.isExpressionStart],
-    '~': [tokens.isUnaryOperator, tokens.isExpressionStart],
+    '!': [tokens.isUnaryOperator, tokens.isExpressionStart], // 非
+    'delete': [tokens.isUnaryOperator, tokens.isExpressionStart],
+    '...': [tokens.isUnaryOperator, tokens.isExpressionStart], // 展开
+    '@': [tokens.isUnaryOperator, tokens.isDeclarationStart, tokens.isExpressionStart], // 电子邮件符号
+    '~': [tokens.isUnaryOperator, tokens.isExpressionStart], // 位反
     // #endregion
 
     // #region 单/双目运算符(Unary & Binary Operators)
-    '(': [tokens.Precedence.functionCall, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    '[': [tokens.Precedence.member, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    '+': [tokens.isUnaryOperator, tokens.Precedence.additive, tokens.isExpressionStart],
-    '-': [tokens.isUnaryOperator, tokens.Precedence.additive, tokens.isExpressionStart],
-    '/': [tokens.Precedence.multiplicative, tokens.isExpressionStart],
-    '++': [tokens.isUnaryOperator, tokens.Precedence.postfix, tokens.isExpressionStart],
-    '--': [tokens.isUnaryOperator, tokens.Precedence.postfix, tokens.isExpressionStart],
-    '<': [tokens.Precedence.relational, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    '=>': [tokens.isExpressionStart],
-    '/=': [tokens.isRightHandOperator, tokens.isExpressionStart],
+    '+': [tokens.isUnaryOperator, tokens.Precedence.additive, tokens.isExpressionStart], // 加
+    '-': [tokens.isUnaryOperator, tokens.Precedence.additive, tokens.isExpressionStart], // 减
+    '++': [tokens.isUnaryOperator, tokens.Precedence.postfix, tokens.isExpressionStart], // 加加
+    '--': [tokens.isUnaryOperator, tokens.Precedence.postfix, tokens.isExpressionStart], // 减减
+    '(': [tokens.Precedence.functionCall, tokens.isTypeNodeStart, tokens.isExpressionStart], // 开圆括号
+    '[': [tokens.Precedence.member, tokens.isTypeNodeStart, tokens.isExpressionStart], // 开方括号
+    '/': [tokens.Precedence.multiplicative, tokens.isExpressionStart], // 除
+    '<': [tokens.Precedence.relational, tokens.isTypeNodeStart, tokens.isExpressionStart], // 小于
+    '=>': [tokens.isExpressionStart], // 箭头
+    '/=': [tokens.isRightHandOperator, tokens.isExpressionStart], // 除等于
     // #endregion
 
     // #region 双目运算符(Binary Operators)
-    '**': [tokens.Precedence.exponentiation, tokens.isRightHandOperator],
-    '=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '+=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '-=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '*=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '%=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '<<=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '>>=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '>>>=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '&=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '|=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '^=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '**=': [tokens.Precedence.assignment, tokens.isRightHandOperator],
-    '.': [tokens.Precedence.member],
-    '..': [tokens.Precedence.member],
-    '?.': [tokens.Precedence.member],
-    '*': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.Precedence.multiplicative],
-    '&': [tokens.Precedence.bitwiseAnd],
-    '%': [tokens.Precedence.multiplicative],
-    '>': [tokens.Precedence.relational],
-    '<=': [tokens.Precedence.relational],
-    '>=': [tokens.Precedence.relational],
-    '==': [tokens.Precedence.equality],
-    '!=': [tokens.Precedence.equality],
-    '===': [tokens.Precedence.equality],
-    '!==': [tokens.Precedence.equality],
-    '<<': [tokens.Precedence.shift],
-    '>>': [tokens.Precedence.shift],
-    '>>>': [tokens.Precedence.shift],
-    '|': [tokens.Precedence.bitwiseOr],
-    '^': [tokens.Precedence.bitwiseXOr],
-    '&&': [tokens.Precedence.logicalAnd],
-    '||': [tokens.Precedence.logicalOr],
-    '?': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.Precedence.conditional],
-    ',': [tokens.Precedence.comma],
+    '**': [tokens.Precedence.exponentiation, tokens.isRightHandOperator], // 乘乘
+    '=': [tokens.Precedence.assignment, tokens.isRightHandOperator],// 等于
+    '+=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 加等于
+    '-=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 减等于
+    '*=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 乘等于
+    '%=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 取余等于
+    '<<=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 左移等于
+    '>>=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 右移等于
+    '>>>=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 无符右移等于
+    '&=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 位与等于
+    '|=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 位或等于
+    '^=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 异或等于
+    '**=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 乘乘等于
+    '.': [tokens.Precedence.member], // 点
+    '..': [tokens.Precedence.member], // 点点
+    '?.': [tokens.Precedence.member], // 问号点
+    '&': [tokens.Precedence.bitwiseAnd], // 位与
+    '%': [tokens.Precedence.multiplicative], // 取余
+    '>': [tokens.Precedence.relational], // 大于
+    '<=': [tokens.Precedence.relational], // 小于等于
+    '>=': [tokens.Precedence.relational], // 大于等于
+    '==': [tokens.Precedence.equality], // 等于
+    '!=': [tokens.Precedence.equality], // 不等于
+    '===': [tokens.Precedence.equality], // 严格等于
+    '!==': [tokens.Precedence.equality], // 不严格等于
+    '<<': [tokens.Precedence.shift], // 左移
+    '>>': [tokens.Precedence.shift], // 右移
+    '>>>': [tokens.Precedence.shift], // 无符右移
+    '|': [tokens.Precedence.bitwiseOr], // 位或
+    '^': [tokens.Precedence.bitwiseXOr],// 异或
+    '&&': [tokens.Precedence.logicalAnd], // 与
+    '||': [tokens.Precedence.logicalOr], // 或
+    ',': [tokens.Precedence.comma], // 逗号
     'in': [tokens.Precedence.relational],
     'instanceOf': [tokens.Precedence.relational],
-    'MIN_IDENTIFIER_NAME_3': [],
     'as': [tokens.Precedence.relational],
     'is': [tokens.Precedence.relational],
-    'MAX_BINARY_OPERATOR': [],
+    '*': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.Precedence.multiplicative], // 乘
+    '?': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.Precedence.conditional], // 问号
     // #endregion
 
     // #region 内置类型(Predefined Types)
@@ -202,8 +200,8 @@ const TokenType = {
     'debugger': [tokens.isStatementStart],
     'with': [tokens.isStatementStart],
     'var': [tokens.isStatementStart],
-    'let': [tokens.isStatementStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord],
     'import': [tokens.isStatementStart],
+    'let': [tokens.isStatementStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord],
     'type': [tokens.isStatementStart, tokens.isIdentifierName, tokens.isTypeNodeStart],
     // #endregion
 
@@ -1795,112 +1793,4 @@ function ExportAssignmentOrExportDeclaration(): any { // export 赋值或 export
 
 function DocComment(result) { // 文档注释
 }
-// #endregion
-
-// #region 解析
-
-function parseSyntax(source: string, tokenNames: {}) {
-
-    const lines = source.split(/\r\n?|\n/);
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        // 忽略空行、注释、type、declare 开头的行。
-        if (!line || /^(\/\/|\s*(type|declare)\b)/.test(line)) continue;
-
-
-
-    }
-
-    function parseHeader(line) {
-
-    }
-
-    function parseParam(line) {
-
-    }
-
-    function isPart(line) {
-        return /^\s*_/.test(line);
-    }
-
-	/**
-	 * 从指定的代码行中提取字段信息。
-	 * @param production 所属的产生式。
-	 * @param line 行源码。
-	 */
-    function parseCode(production: Production, line: string) {
-
-        // _...
-        if (/^\s*_/.test(line)) {
-            const field: ProductionField = {};
-            line.replace(/\/\/\s*(.+)$/, function (_, value) {
-                field.comment = value.trim();
-                return "";
-            }).replace(/__/, (_) => {
-                field.optional = true;
-                return "_";
-            }).replace(/^\s*_\('(.*?)'\)/, (all, token) => {
-                return "_." + nameOf(token) + " = " + all;
-            }).replace(/_\.(\w+)\s*=\s*(.*)/, (_, name, value) => {
-                field.name = name;
-
-                // _.x = read('x', 'x')
-                if (/_\('/.test(value)) {
-                    field.type = "number";
-                    const tokens = value.replace(/,\s+/g, ",").replace(/^_\('/g, "").replace(/'\)$/g, "").split(",");
-                    if (tokens.length > 1) {
-                        field.tokens = tokens;
-                        return `result.${field.name} = this.readToken(); // ${field.tokens.join("、")}`;
-                    }
-                    field.token = tokens[0];
-                    return `result.${field.name} = this.expectToken(TokenType.${nameOf(field.token)});`;
-                }
-
-                // _.x = <'xx'>
-                if (/<'\w'>/) {
-
-                }
-
-                // _.x = T()
-                field.type = getWord(value);
-                return _.replace("_", "result");
-            });
-        }
-
-        // Initializer(_);
-        if (line.indexOf("(_)") >= 0) {
-            production.fields.push({
-                inline: getWord(line)
-            });
-            return line.replace("_", "result");
-        }
-
-        return line;
-    }
-
-    function nameOf(token: string) {
-        return (tokenNames[token] || token) + "Token";
-    }
-
-    function getWord(content) {
-        return (/(\w+)/.exec(content) || [""])[0];
-    }
-
-    interface Production {
-        fields: ProductionField[];
-    }
-
-    interface ProductionField {
-        inline?: string;
-        tokens?: string[];
-        token?: string;
-        name?: string;
-        type?: string;
-        optional?: boolean;
-        comment?: string;
-    }
-
-}
-
 // #endregion
