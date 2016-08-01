@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @fileOverview 标记
  * @author xuld@vip.qq.com
  * @generated 此文件标记为 @generated 的变量和函数内容使用 `tpack gen-tokenType` 生成。
@@ -16,209 +16,263 @@ export const enum TokenType {
     /**
      * 未知标记。
      */
-    unknown,
+    unknown = 0,
 
     /**
      * 文件已结束(EOF)。
      */
-    endOfFile,
+    endOfFile = 1,
 
     // #endregion
 
     // #region 其它运算符(Other Operators)
 
     /**
-     * 闭括号())。
+     * 闭圆括号(`)`)。
      */
-    closeParen,
+    closeParen = 2,
 
     /**
-     * 闭方括号(])。
+     * 闭方括号(`]`)。
      */
-    closeBracket,
+    closeBracket = 3,
 
     /**
-     * 闭花括号(})。
+     * 闭花括号(`}`)。
      */
-    closeBrace,
+    closeBrace = 4,
 
     /**
-     * 冒号(:)。
+     * 冒号(`:`)。
      */
-    colon,
+    colon = 5,
 
     /**
-     * 分号(;)。
+     * 模板字符串中间(`}...${`)(在 EcmaScript 5 新增)。
      */
-    semicolon,
+    templateMiddle = 6,
 
     /**
-     * 模板字符串主体(}...${)(JavaScript 5 新增)。
+     * 模板字符串结尾(`}...\``)(在 EcmaScript 5 新增)。
      */
-    templateMiddle,
-
-    /**
-     * 模板字符串尾(}...`)(JavaScript 5 新增)。
-     */
-    templateTail,
+    templateTail = 7,
 
     // #endregion
 
     // #region 字面量(Literal)
 
     /**
-     * 最小的表达式开头。
+     * 简单模板字符串字面量(`\`...\``)(在 EcmaScript 5 新增)。
      */
-    MIN_EXPRESSION_START,
+    noSubstitutionTemplateLiteral = 8,
 
     /**
-     * 标识符(x)。
+     * 模板字符串开头(`\`...${`)(在 EcmaScript 5 新增)。
      */
-    identifier,
+    templateHead = 9,
 
     /**
-     * 数字字面量(0x0)。
+     * 正则表达式字面量(`/.../`)。
      */
-    numericLiteral,
+    regularExpressionLiteral = 10,
 
     /**
-     * 字符串字面量('...')。
+     * 关键字 super(在 EcmaScript 5 新增)。
      */
-    stringLiteral,
+    super = 11,
 
     /**
-     * 正则表达式字面量(/.../)。
+     * 标识符(`x`)。
      */
-    regularExpressionLiteral,
+    identifier = 12,
 
     /**
-     * 简单模板字符串字面量(`...`)(JavaScript 5 新增)。
+     * 数字字面量(`0x0`)。
      */
-    noSubstitutionTemplateLiteral,
+    numericLiteral = 13,
 
     /**
-     * 模板字符串头(`...${)(JavaScript 5 新增)。
+     * 字符串字面量(`"..."`、`'...'`)。
      */
-    templateHead,
-
-    /**
-     * 最小的简单字面量。
-     */
-    MIN_SIMPLE_LITERAL,
-
-    /**
-     * 关键字 undefined。
-     */
-    undefined,
-
-    /**
-     * 关键字 null。
-     */
-    null,
+    stringLiteral = 14,
 
     /**
      * 关键字 true。
      */
-    true,
+    true = 15,
 
     /**
      * 关键字 false。
      */
-    false,
+    false = 16,
+
+    // #endregion
+
+    // #region 内置类型(Predefined Types)
+
+    /**
+     * 关键字 null。
+     */
+    null = 17,
 
     /**
      * 关键字 this。
      */
-    this,
+    this = 18,
 
     /**
-     * 最小的标识符 1。
+     * 关键字 undefined。
      */
-    MIN_IDENTIFIER_NAME_1,
+    undefined = 19,
 
     /**
-     * 关键字 super(JavaScript 3 保留字、JavaScript 5 新增)。
+     * 关键字 any(在 TypeScript 1 新增)。
      */
-    super,
+    any = 20,
 
     /**
-     * 最大的简单字面量。
+     * 关键字 number(在 TypeScript 1 新增)。
      */
-    MAX_SIMPLE_LITERAL,
+    number = 21,
+
+    /**
+     * 关键字 boolean(在 TypeScript 1 新增)。
+     */
+    boolean = 22,
+
+    /**
+     * 关键字 string(在 TypeScript 1 新增)。
+     */
+    string = 23,
+
+    /**
+     * 关键字 symbol(在 TypeScript 1 新增)。
+     */
+    symbol = 24,
+
+    /**
+     * 关键字 never(在 TypeScript 1 新增)。
+     */
+    never = 25,
+
+    /**
+     * 关键字 char(在 TealScript 1 新增)。
+     */
+    char = 26,
+
+    /**
+     * 关键字 byte(在 TealScript 1 新增)。
+     */
+    byte = 27,
+
+    /**
+     * 关键字 int(在 TealScript 1 新增)。
+     */
+    int = 28,
+
+    /**
+     * 关键字 long(在 TealScript 1 新增)。
+     */
+    long = 29,
+
+    /**
+     * 关键字 short(在 TealScript 1 新增)。
+     */
+    short = 30,
+
+    /**
+     * 关键字 uint(在 TealScript 1 新增)。
+     */
+    uint = 31,
+
+    /**
+     * 关键字 ulong(在 TealScript 1 新增)。
+     */
+    ulong = 32,
+
+    /**
+     * 关键字 ushort(在 TealScript 1 新增)。
+     */
+    ushort = 33,
+
+    /**
+     * 关键字 float(在 TealScript 1 新增)。
+     */
+    float = 34,
+
+    /**
+     * 关键字 double(在 TealScript 1 新增)。
+     */
+    double = 35,
+
+    /**
+     * 关键字 void。
+     */
+    void = 36,
+
+    /**
+     * 乘(`*`)。
+     */
+    asterisk = 37,
+
+    /**
+     * 问号(`?`)。
+     */
+    question = 38,
 
     // #endregion
 
     // #region 修饰符(Modifiers)
 
     /**
-     * 最小的定义开头。
+     * 关键字 async(在 EcmaScript 7 新增)。
      */
-    MIN_DECLARATION_START,
+    async = 39,
 
     /**
-     * 最小的修饰符前缀。
+     * 关键字 declare(在 TypeScript 1 新增)。
      */
-    MIN_MODIFIER,
+    declare = 40,
 
     /**
-     * 关键字 async(JavaScript 3 保留字、JavaScript 5 新增)。
+     * 关键字 static(在 EcmaScript 7 新增)。
      */
-    async,
+    static = 41,
 
     /**
-     * 关键字 declare(TypeScript 1 新增)。
+     * 关键字 abstract(在 TypeScript 1 新增)。
      */
-    declare,
+    abstract = 42,
 
     /**
-     * 关键字 static(JavaScript 3 保留字、JavaScript 5 严格模式保留字)。。
+     * 关键字 private(在 TypeScript 1 新增)。
      */
-    static,
+    private = 43,
 
     /**
-     * 关键字 abstract(JavaScript 3 保留字、TypeScript 1 新增)。
+     * 关键字 protected(在 TypeScript 1 新增)。
      */
-    abstract,
+    protected = 44,
 
     /**
-     * 关键字 private(JavaScript 3 保留字、TypeScript 1 新增)。
+     * 关键字 public(在 TypeScript 1 新增)。
      */
-    private,
+    public = 45,
 
     /**
-     * 关键字 protected(JavaScript 3 保留字、TypeScript 1 新增)。
+     * 关键字 readonly(在 TypeScript 2 新增)。
      */
-    protected,
+    readonly = 46,
 
     /**
-     * 关键字 public(JavaScript 3 保留字、TypeScript 1 新增)。
+     * 关键字 export(在 EcmaScript 5 新增)。
      */
-    public,
+    export = 47,
 
     /**
-     * 关键字 readonly(TypeScript 2 新增)。
+     * 关键字 const(在 EcmaScript 5 新增)。
      */
-    readonly,
-
-    /**
-     * 最大的标识符 1。
-     */
-    MAX_IDENTIFIER_NAME_1,
-
-    /**
-     * 关键字 export(JavaScript 3 保留字、JavaScript 5 新增)。
-     */
-    export,
-
-    /**
-     * 关键字 const(JavaScript 5 新增)。
-     */
-    const,
-
-    /**
-     * 最大的修饰符前缀。
-     */
-    MAX_MODIFIER,
+    const = 48,
 
     // #endregion
 
@@ -227,651 +281,477 @@ export const enum TokenType {
     /**
      * 关键字 function。
      */
-    function,
+    function = 49,
 
     /**
-     * 关键字 class(JavaScript 3 保留字、JavaScript 5 新增)。
+     * 关键字 class(在 EcmaScript 5 新增)。
      */
-    class,
+    class = 50,
 
     /**
-     * 关键字 enum(JavaScript 3 保留字、JavaScript 5 严格模式保留字、TypeScript 1 新增)。
+     * 关键字 enum(在 TypeScript 1 新增)。
      */
-    enum,
+    enum = 51,
 
     /**
-     * 最小的标识符 2。
+     * 关键字 namespace(在 TypeScript 1 新增)。
      */
-    MIN_IDENTIFIER_NAME_2,
+    namespace = 52,
 
     /**
-     * 关键字 namespace(TypeScript 新增)。
+     * 关键字 module(在 TypeScript 1 新增)。
      */
-    namespace,
+    module = 53,
 
     /**
-     * 关键字 module(TypeScript 新增)。
+     * 关键字 interface(在 TypeScript 1 新增)。
      */
-    module,
-
-    /**
-     * 关键字 interface(JavaScript 3 保留字、JavaScript 5 严格模式保留字、TypeScript 1 新增)。
-     */
-    interface,
-
-    /**
-     * 最大的定义开头。
-     */
-    MAX_DECLARATION_START,
+    interface = 54,
 
     // #endregion
 
     // #region 单目运算符(Unary Operators)
 
     /**
-     * 最小的单目运算符。
+     * 关键字 yield(在 EcmaScript 5 新增)。
      */
-    MIN_UNARY_OPERATOR,
+    yield = 55,
 
     /**
-     * 关键字 yield(JavaScript 5 新增)。
+     * 关键字 await(在 EcmaScript 7 新增)。
      */
-    yield,
+    await = 56,
 
     /**
-     * 关键字 await(JavaScript 7 新增)。
+     * 开花括号(`{`)。
      */
-    await,
-
-    /**
-     * 最大的标识符 2。
-     */
-    MAX_IDENTIFIER_NAME_2,
-
-    /**
-     * 开花括号({)。
-     */
-    openBrace,
-
-    /**
-     * 非(!)。
-     */
-    exclamation,
+    openBrace = 57,
 
     /**
      * 关键字 new。
      */
-    new,
-
-    /**
-     * 关键字 delete。
-     */
-    delete,
+    new = 58,
 
     /**
      * 关键字 typeof。
      */
-    typeof,
+    typeof = 59,
 
     /**
-     * 关键字 void。
+     * 电子邮件符号(`@`)(在 EcmaScript 7 新增)。
      */
-    void,
+    at = 60,
 
     /**
-     * 点点点(...)(JavaScript 5 新增)。
+     * 非(`!`)。
      */
-    dotDotDot,
+    exclamation = 61,
 
     /**
-     * 电子邮件符号(@)(TypeScript 1 新增)。
+     * 关键字 delete。
      */
-    at,
+    delete = 62,
 
     /**
-     * 位反(~)。
+     * 展开(`...`)。
      */
-    tilde,
+    dotDotDot = 63,
+
+    /**
+     * 位反(`~`)。
+     */
+    tilde = 64,
 
     // #endregion
 
     // #region 单/双目运算符(Unary & Binary Operators)
 
     /**
-     * 最小的双目运算符。
+     * 加(`+`)。
      */
-    MIN_BINARY_OPERATOR,
+    plus = 65,
 
     /**
-     * 开括号(()。
+     * 减(`-`)。
      */
-    openParen,
+    minus = 66,
 
     /**
-     * 开方括号([)。
+     * 加加(`++`)。
      */
-    openBracket,
+    plusPlus = 67,
 
     /**
-     * 加(+)。
+     * 减减(`--`)。
      */
-    plus,
+    minusMinus = 68,
 
     /**
-     * 减(-)。
+     * 开圆括号(`(`)。
      */
-    minus,
+    openParen = 69,
 
     /**
-     * 斜杠(/)。
+     * 开方括号(`[`)。
      */
-    slash,
+    openBracket = 70,
 
     /**
-     * 加加(++)。
+     * 除(`/`)。
      */
-    plusPlus,
+    slash = 71,
 
     /**
-     * 减减(--)。
+     * 小于(`<`)。
      */
-    minusMinus,
+    lessThan = 72,
 
     /**
-     * 小于(<)。
+     * 箭头(`=>`)(在 EcmaScript 5 新增)。
      */
-    lessThan,
+    equalsGreaterThan = 73,
 
     /**
-     * 箭头(=>)(JavaScript 5 新增)。
+     * 除等于(`/=`)。
      */
-    equalsGreaterThan,
-
-    /**
-     * 最小的右值运算符。
-     */
-    MIN_RIGHT_HAND_OPERATOR,
-
-    /**
-     * 斜杠等于(/=)。
-     */
-    slashEquals,
-
-    /**
-     * 最大的单目运算符。
-     */
-    MAX_UNARY_OPERATOR,
-
-    /**
-     * 最大的表达式开头。
-     */
-    MAX_EXPRESSION_START,
+    slashEquals = 74,
 
     // #endregion
 
     // #region 双目运算符(Binary Operators)
 
     /**
-     * 星号星号(**)(TypeScript 1 新增)。
+     * 乘乘(`**`)(在 EcmaScript 5 新增)。
      */
-    asteriskAsterisk,
+    asteriskAsterisk = 75,
 
     /**
-     * 等于(=)。
+     * 等于(`=`)。
      */
-    equals,
+    equals = 76,
 
     /**
-     * 加等于(+=)。
+     * 加等于(`+=`)。
      */
-    plusEquals,
+    plusEquals = 77,
 
     /**
-     * 减等于(-=)。
+     * 减等于(`-=`)。
      */
-    minusEquals,
+    minusEquals = 78,
 
     /**
-     * 星号等于(*=)。
+     * 乘等于(`*=`)。
      */
-    asteriskEquals,
+    asteriskEquals = 79,
 
     /**
-     * 百分号等于(%=)。
+     * 取余等于(`%=`)。
      */
-    percentEquals,
+    percentEquals = 80,
 
     /**
-     * 左移等于(<<=)。
+     * 左移等于(`<<=`)。
      */
-    lessThanLessThanEquals,
+    lessThanLessThanEquals = 81,
 
     /**
-     * 右移等于(>>=)。
+     * 右移等于(`>>=`)。
      */
-    greaterThanGreaterThanEquals,
+    greaterThanGreaterThanEquals = 82,
 
     /**
-     * 无符右移等于(>>>=)。
+     * 无符右移等于(`>>>=`)。
      */
-    greaterThanGreaterThanGreaterThanEquals,
+    greaterThanGreaterThanGreaterThanEquals = 83,
 
     /**
-     * 位与等于(&=)。
+     * 位与等于(`&=`)。
      */
-    ampersandEquals,
+    ampersandEquals = 84,
 
     /**
-     * 位或等于(|=)。
+     * 位或等于(`|=`)。
      */
-    barEquals,
+    barEquals = 85,
 
     /**
-     * 异或等于(^=)。
+     * 异或等于(`^=`)。
      */
-    caretEquals,
+    caretEquals = 86,
 
     /**
-     * 星号星号等于(**=)(TypeScript 1 新增)。
+     * 乘乘等于(`**=`)。
      */
-    asteriskAsteriskEquals,
+    asteriskAsteriskEquals = 87,
 
     /**
-     * 最大的右值运算符。
+     * 点(`.`)。
      */
-    MAX_RIGHT_HAND_OPERATOR,
+    dot = 88,
 
     /**
-     * 点(.)。
+     * 点点(`..`)(在 TealScript 1 新增)。
      */
-    dot,
+    dotDot = 89,
 
     /**
-     * 点点(..)(TealScript 新增)。
+     * 问号点(`?.`)(在 TealScript 1 新增)。
      */
-    dotDot,
+    questionDot = 90,
 
     /**
-     * 问号点(?.)(TealScript 新增)。
+     * 位与(`&`)。
      */
-    questionDot,
+    ampersand = 91,
 
     /**
-     * 星号(*)。
+     * 取余(`%`)。
      */
-    asterisk,
+    percent = 92,
 
     /**
-     * 位与(&)。
+     * 大于(`>`)。
      */
-    ampersand,
+    greaterThan = 93,
 
     /**
-     * 百分号(%)。
+     * 小于等于(`<=`)。
      */
-    percent,
+    lessThanEquals = 94,
 
     /**
-     * 大于(>)。
+     * 大于等于(`>=`)。
      */
-    greaterThan,
+    greaterThanEquals = 95,
 
     /**
-     * 小于等于(<=)。
+     * 等于(`==`)。
      */
-    lessThanEquals,
+    equalsEquals = 96,
 
     /**
-     * 大于等于(>=)。
+     * 不等于(`!=`)。
      */
-    greaterThanEquals,
+    exclamationEquals = 97,
 
     /**
-     * 等于等于(==)。
+     * 严格等于(`===`)。
      */
-    equalsEquals,
+    equalsEqualsEquals = 98,
 
     /**
-     * 不等于(!=)。
+     * 不严格等于(`!==`)。
      */
-    exclamationEquals,
+    exclamationEqualsEquals = 99,
 
     /**
-     * 等于等于等于(===)。
+     * 左移(`<<`)。
      */
-    equalsEqualsEquals,
+    lessThanLessThan = 100,
 
     /**
-     * 不等于等于(!==)。
+     * 右移(`>>`)。
      */
-    exclamationEqualsEquals,
+    greaterThanGreaterThan = 101,
 
     /**
-     * 左移(<<)。
+     * 无符右移(`>>>`)。
      */
-    lessThanLessThan,
+    greaterThanGreaterThanGreaterThan = 102,
 
     /**
-     * 右移(>>)。
+     * 位或(`|`)。
      */
-    greaterThanGreaterThan,
+    bar = 103,
 
     /**
-     * 无符右移(>>>)。
+     * 异或(`^`)。
      */
-    greaterThanGreaterThanGreaterThan,
+    caret = 104,
 
     /**
-     * 位或(|)。
+     * 与(`&&`)。
      */
-    bar,
+    ampersandAmpersand = 105,
 
     /**
-     * 异或(^)。
+     * 或(`||`)。
      */
-    caret,
+    barBar = 106,
 
     /**
-     * 与(&&)。
+     * 逗号(`,`)。
      */
-    ampersandAmpersand,
-
-    /**
-     * 或(||)。
-     */
-    barBar,
-
-    /**
-     * 问号(?)。
-     */
-    question,
-
-    /**
-     * 逗号(,)。
-     */
-    comma,
+    comma = 107,
 
     /**
      * 关键字 in。
      */
-    in,
+    in = 108,
 
     /**
      * 关键字 instanceOf。
      */
-    instanceOf,
+    instanceOf = 109,
 
     /**
-     * 最小的标识符 3。
+     * 关键字 as(在 TypeScript 1 新增)。
      */
-    MIN_IDENTIFIER_NAME_3,
+    as = 110,
 
     /**
-     * 关键字 as(TypeScript 新增)。
+     * 关键字 is(在 TypeScript 1 新增)。
      */
-    as,
-
-    /**
-     * 关键字 is(TypeScript 新增)。
-     */
-    is,
-
-    /**
-     * 最大的双目运算符。
-     */
-    MAX_BINARY_OPERATOR,
-
-    // #endregion
-
-    // #region 内置类型(Predefined Types)
-
-    /**
-     * 最小的内置类型。
-     */
-    MIN_PREDEFINED_TYPE,
-
-    /**
-     * 关键字 any(TypeScript 1 新增)。
-     */
-    any,
-
-    /**
-     * 关键字 boolean(TypeScript 1 新增)。
-     */
-    boolean,
-
-    /**
-     * 关键字 number(TypeScript 1 新增)。
-     */
-    number,
-
-    /**
-     * 关键字 string(TypeScript 1 新增)。
-     */
-    string,
-
-    /**
-     * 关键字 symbol(TypeScript 1 新增)。
-     */
-    symbol,
-
-    /**
-     * 关键字 never(TypeScript 2 新增)。
-     */
-    never,
-
-    /**
-     * 关键字 char(TealScript 1 新增)。
-     */
-    char,
-
-    /**
-     * 关键字 byte(TealScript 1 新增)。
-     */
-    byte,
-
-    /**
-     * 关键字 int(TealScript 1 新增)。
-     */
-    int,
-
-    /**
-     * 关键字 long(TealScript 1 新增)。
-     */
-    long,
-
-    /**
-     * 关键字 short(TealScript 1 新增)。
-     */
-    short,
-
-    /**
-     * 关键字 uint(TealScript 1 新增)。
-     */
-    uint,
-
-    /**
-     * 关键字 ulong(TealScript 1 新增)。
-     */
-    ulong,
-
-    /**
-     * 关键字 ushort(TealScript 1 新增)。
-     */
-    ushort,
-
-    /**
-     * 关键字 float(TealScript 1 新增)。
-     */
-    float,
-
-    /**
-     * 关键字 double(TealScript 1 新增)。
-     */
-    double,
-
-    /**
-     * 最大的内置类型。
-     */
-    MAX_PREDEFINED_TYPE,
-
-    /**
-     * 最大的合法标签。
-     */
-    MAX_TOKEN,
-
-    // #endregion
-
-    // #region 其它语句(Other Statements)
-
-    /**
-     * 关键字 from(仅在 JavaScript 7)。
-     */
-    from,
-
-    /**
-     * 关键字 implements(JavaScript 3 保留字、JavaScript 3 严格模式保留字、TypeScript 新增)。
-     */
-    implements,
-
-    /**
-     * 关键字 of(JavaScript 5 新增)。
-     */
-    of,
-
-    /**
-     * 关键字 to(TealScript 1 新增)。
-     */
-    to,
-
-    /**
-     * 最大的标识符 3。
-     */
-    MAX_IDENTIFIER_NAME_3,
-
-    /**
-     * 关键字 else。
-     */
-    else,
-
-    /**
-     * 关键字 case。
-     */
-    case,
-
-    /**
-     * 关键字 default。
-     */
-    default,
-
-    /**
-     * 关键字 catch。
-     */
-    catch,
-
-    /**
-     * 关键字 finally。
-     */
-    finally,
-
-    /**
-     * 关键字 extends(JavaScript 3 保留字、JavaScript 5 新增)。
-     */
-    extends,
+    is = 111,
 
     // #endregion
 
     // #region 语句头(Statement Headers)
 
     /**
-     * 最小的语句开头。
+     * 分号(`;`)。
      */
-    MIN_STATEMENT_START,
+    semicolon = 112,
 
     /**
      * 关键字 if。
      */
-    if,
+    if = 113,
 
     /**
      * 关键字 switch。
      */
-    switch,
+    switch = 114,
 
     /**
      * 关键字 for。
      */
-    for,
+    for = 115,
 
     /**
      * 关键字 while。
      */
-    while,
+    while = 116,
 
     /**
      * 关键字 do。
      */
-    do,
+    do = 117,
 
     /**
      * 关键字 continue。
      */
-    continue,
+    continue = 118,
 
     /**
      * 关键字 break。
      */
-    break,
+    break = 119,
 
     /**
      * 关键字 return。
      */
-    return,
+    return = 120,
 
     /**
      * 关键字 throw。
      */
-    throw,
+    throw = 121,
 
     /**
      * 关键字 try。
      */
-    try,
+    try = 122,
 
     /**
      * 关键字 debugger。
      */
-    debugger,
+    debugger = 123,
 
     /**
      * 关键字 with。
      */
-    with,
+    with = 124,
 
     /**
      * 关键字 var。
      */
-    var,
+    var = 125,
 
     /**
-     * 关键字 let(JavaScript 5 新增)。
+     * 关键字 import(在 EcmaScript 5 新增)。
      */
-    let,
+    import = 126,
 
     /**
-     * 关键字 import(JavaScript 5 保留字、TypeScript 1 新增)。
+     * 关键字 let(在 EcmaScript 5 新增)。
      */
-    import,
+    let = 127,
 
     /**
-     * 关键字 type(TypeScript 新增)。
+     * 关键字 type(在 TypeScript 1 新增)。
      */
-    type,
+    type = 128,
+
+    // #endregion
+
+    // #region 其它语句(Other Statements)
 
     /**
-     * 最大的语句开头。
+     * 关键字 from(在 EcmaScript 5 新增)。
      */
-    MAX_STATEMENT_START,
+    from = 129,
+
+    /**
+     * 关键字 implements(在 TypeScript 1 新增)。
+     */
+    implements = 130,
+
+    /**
+     * 关键字 package(在 TealScript 1 新增)。
+     */
+    package = 131,
+
+    /**
+     * 关键字 of(在 EcmaScript 5 新增)。
+     */
+    of = 132,
+
+    /**
+     * 关键字 to(在 TealScript 1 新增)。
+     */
+    to = 133,
+
+    /**
+     * 关键字 else。
+     */
+    else = 134,
+
+    /**
+     * 关键字 case。
+     */
+    case = 135,
+
+    /**
+     * 关键字 default。
+     */
+    default = 136,
+
+    /**
+     * 关键字 catch。
+     */
+    catch = 137,
+
+    /**
+     * 关键字 finally。
+     */
+    finally = 138,
+
+    /**
+     * 关键字 extends(在 EcmaScript 5 新增)。
+     */
+    extends = 139,
 
     // #endregion
 
@@ -882,8 +762,146 @@ export const enum TokenType {
  * @generated
  */
 export const tokenNames = [
-    // #region Generated: tokenNames
-    // #endregion Generated: tokenNames
+	"<unknown>",
+	"<endOfFile>",
+	")",
+	"]",
+	"}",
+	":",
+	"<templateMiddle>",
+	"<templateTail>`",
+	"<noSubstitutionTemplateLiteral>",
+	"<templateHead>",
+	"<regularExpressionLiteral>",
+	"super",
+	"<identifier>",
+	"<numericLiteral>",
+	"<stringLiteral>",
+	"true",
+	"false",
+	"null",
+	"this",
+	"undefined",
+	"any",
+	"number",
+	"boolean",
+	"string",
+	"symbol",
+	"never",
+	"char",
+	"byte",
+	"int",
+	"long",
+	"short",
+	"uint",
+	"ulong",
+	"ushort",
+	"float",
+	"double",
+	"void",
+	"*",
+	"?",
+	"async",
+	"declare",
+	"static",
+	"abstract",
+	"private",
+	"protected",
+	"public",
+	"readonly",
+	"export",
+	"const",
+	"function",
+	"class",
+	"enum",
+	"namespace",
+	"module",
+	"interface",
+	"yield",
+	"await",
+	"{",
+	"new",
+	"typeof",
+	"@",
+	"!",
+	"delete",
+	"...",
+	"~",
+	"+",
+	"-",
+	"++",
+	"--",
+	"(",
+	"[",
+	"/",
+	"<",
+	"=>",
+	"/=",
+	"**",
+	"=",
+	"+=",
+	"-=",
+	"*=",
+	"%=",
+	"<<=",
+	">>=",
+	">>>=",
+	"&=",
+	"|=",
+	"^=",
+	"**=",
+	".",
+	"..",
+	"?.",
+	"&",
+	"%",
+	">",
+	"<=",
+	">=",
+	"==",
+	"!=",
+	"===",
+	"!==",
+	"<<",
+	">>",
+	">>>",
+	"|",
+	"^",
+	"&&",
+	"||",
+	",",
+	"in",
+	"instanceOf",
+	"as",
+	"is",
+	";",
+	"if",
+	"switch",
+	"for",
+	"while",
+	"do",
+	"continue",
+	"break",
+	"return",
+	"throw",
+	"try",
+	"debugger",
+	"with",
+	"var",
+	"import",
+	"let",
+	"type",
+	"from",
+	"implements",
+	"package",
+	"of",
+	"to",
+	"else",
+	"case",
+	"default",
+	"catch",
+	"finally",
+	"extends"
 ];
 
 /**
@@ -914,7 +932,81 @@ export function getTokenType(value: string) {
  * @generated
  */
 export const keywords: { [key: string]: TokenType } = {
-
+	super: TokenType.super,
+	true: TokenType.true,
+	false: TokenType.false,
+	null: TokenType.null,
+	this: TokenType.this,
+	undefined: TokenType.undefined,
+	any: TokenType.any,
+	number: TokenType.number,
+	boolean: TokenType.boolean,
+	string: TokenType.string,
+	symbol: TokenType.symbol,
+	never: TokenType.never,
+	char: TokenType.char,
+	byte: TokenType.byte,
+	int: TokenType.int,
+	long: TokenType.long,
+	short: TokenType.short,
+	uint: TokenType.uint,
+	ulong: TokenType.ulong,
+	ushort: TokenType.ushort,
+	float: TokenType.float,
+	double: TokenType.double,
+	void: TokenType.void,
+	async: TokenType.async,
+	declare: TokenType.declare,
+	static: TokenType.static,
+	abstract: TokenType.abstract,
+	private: TokenType.private,
+	protected: TokenType.protected,
+	public: TokenType.public,
+	readonly: TokenType.readonly,
+	export: TokenType.export,
+	const: TokenType.const,
+	function: TokenType.function,
+	class: TokenType.class,
+	enum: TokenType.enum,
+	namespace: TokenType.namespace,
+	module: TokenType.module,
+	interface: TokenType.interface,
+	yield: TokenType.yield,
+	await: TokenType.await,
+	new: TokenType.new,
+	typeof: TokenType.typeof,
+	delete: TokenType.delete,
+	in: TokenType.in,
+	instanceOf: TokenType.instanceOf,
+	as: TokenType.as,
+	is: TokenType.is,
+	if: TokenType.if,
+	switch: TokenType.switch,
+	for: TokenType.for,
+	while: TokenType.while,
+	do: TokenType.do,
+	continue: TokenType.continue,
+	break: TokenType.break,
+	return: TokenType.return,
+	throw: TokenType.throw,
+	try: TokenType.try,
+	debugger: TokenType.debugger,
+	with: TokenType.with,
+	var: TokenType.var,
+	import: TokenType.import,
+	let: TokenType.let,
+	type: TokenType.type,
+	from: TokenType.from,
+	implements: TokenType.implements,
+	package: TokenType.package,
+	of: TokenType.of,
+	to: TokenType.to,
+	else: TokenType.else,
+	case: TokenType.case,
+	default: TokenType.default,
+	catch: TokenType.catch,
+	finally: TokenType.finally,
+	extends: TokenType.extends
 };
 
 /**
@@ -947,7 +1039,11 @@ export function isKeyword(token: TokenType) {
  * @generated
  */
 export function isIdentifierName(token: TokenType) {
-    return false;
+	return token === TokenType.identifier ||
+		token >= TokenType.undefined && token <= TokenType.double ||
+		token >= TokenType.async && token <= TokenType.readonly ||
+		token >= TokenType.namespace && token <= TokenType.await ||
+		token >= TokenType.let && token <= TokenType.to;
 }
 
 /**
@@ -957,7 +1053,11 @@ export function isIdentifierName(token: TokenType) {
  * @generated
  */
 export function isReservedWord(token: TokenType) {
-
+	return token === TokenType.static ||
+		token >= TokenType.private && token <= TokenType.public ||
+		token === TokenType.interface || token === TokenType.yield ||
+		token === TokenType.let ||
+		token === TokenType.implements || token === TokenType.package;
 }
 
 /**
@@ -998,18 +1098,11 @@ export function isPropertyNameStart(token: TokenType) {
  * @returns 如果是则返回 true，否则返回 false。
  */
 export function isTypeNodeStart(token: TokenType) {
-    return isIdentifierName(token) ||
-        isPredefinedType(token) ||
-        token === TokenType.openParen ||
-        token === TokenType.openBracket ||
-        token === TokenType.openBrace ||
-        token === TokenType.new ||
-        token === TokenType.lessThan ||
-        token === TokenType.typeof ||
-        token === TokenType.numericLiteral ||
-        token === TokenType.stringLiteral ||
-        token === TokenType.true ||
-        token === TokenType.false;
+	return token >= TokenType.identifier && token <= TokenType.readonly ||
+		token >= TokenType.namespace && token <= TokenType.typeof ||
+		token === TokenType.openParen || token === TokenType.openBracket ||
+		token === TokenType.lessThan ||
+		token >= TokenType.let && token <= TokenType.to;
 }
 
 /**
@@ -1019,7 +1112,7 @@ export function isTypeNodeStart(token: TokenType) {
  * @generated
  */
 export function isPredefinedType(token: TokenType) {
-
+	return token >= TokenType.null && token <= TokenType.question;
 }
 
 /**
@@ -1029,7 +1122,10 @@ export function isPredefinedType(token: TokenType) {
  * @generated
  */
 export function isExpressionStart(token: TokenType) {
-
+	return token >= TokenType.noSubstitutionTemplateLiteral && token <= TokenType.void ||
+		token >= TokenType.async && token <= TokenType.readonly ||
+		token >= TokenType.function && token <= TokenType.slashEquals ||
+		token >= TokenType.from && token <= TokenType.to;
 }
 
 /**
@@ -1039,7 +1135,8 @@ export function isExpressionStart(token: TokenType) {
  * @generated
  */
 export function isSimpleLiteral(token: TokenType) {
-
+	return token === TokenType.super ||
+		token >= TokenType.true && token <= TokenType.undefined;
 }
 
 /**
@@ -1049,7 +1146,8 @@ export function isSimpleLiteral(token: TokenType) {
  * @generated
  */
 export function isUnaryOperator(token: TokenType) {
-
+	return token === TokenType.void ||
+		token >= TokenType.typeof && token <= TokenType.minusMinus;
 }
 
 /**
@@ -1177,68 +1275,55 @@ export function isBinaryOperator(token: TokenType) {
  * @generated
  */
 export const precedences: { [key: number]: Precedence } = {
-
-    [TokenType.comma]: Precedence.comma,
-
-    [TokenType.equals]: Precedence.assignment,
-    [TokenType.plusEquals]: Precedence.assignment,
-    [TokenType.minusEquals]: Precedence.assignment,
-    [TokenType.asteriskEquals]: Precedence.assignment,
-    [TokenType.slashEquals]: Precedence.assignment,
-    [TokenType.percentEquals]: Precedence.assignment,
-    [TokenType.lessThanLessThanEquals]: Precedence.assignment,
-    [TokenType.greaterThanGreaterThanEquals]: Precedence.assignment,
-    [TokenType.greaterThanGreaterThanGreaterThanEquals]: Precedence.assignment,
-    [TokenType.ampersandEquals]: Precedence.assignment,
-    [TokenType.barEquals]: Precedence.assignment,
-    [TokenType.caretEquals]: Precedence.assignment,
-    [TokenType.asteriskEquals]: Precedence.assignment,
-    [TokenType.asteriskAsteriskEquals]: Precedence.assignment,
-
-    [TokenType.question]: Precedence.conditional,
-    [TokenType.barBar]: Precedence.logicalOr,
-    [TokenType.ampersandAmpersand]: Precedence.logicalAnd,
-    [TokenType.bar]: Precedence.bitwiseOr,
-    [TokenType.caret]: Precedence.bitwiseXOr,
-    [TokenType.ampersand]: Precedence.bitwiseAnd,
-
-    [TokenType.equalsEquals]: Precedence.equality,
-    [TokenType.exclamationEquals]: Precedence.equality,
-    [TokenType.equalsEqualsEquals]: Precedence.equality,
-    [TokenType.exclamationEqualsEquals]: Precedence.equality,
-
-    [TokenType.lessThan]: Precedence.relational,
-    [TokenType.greaterThan]: Precedence.relational,
-    [TokenType.lessThanEquals]: Precedence.relational,
-    [TokenType.greaterThanEquals]: Precedence.relational,
-    [TokenType.instanceOf]: Precedence.relational,
-    [TokenType.in]: Precedence.relational,
-    [TokenType.is]: Precedence.relational,
-    [TokenType.as]: Precedence.relational,
-
-    [TokenType.lessThanLessThan]: Precedence.shift,
-    [TokenType.greaterThanGreaterThan]: Precedence.shift,
-    [TokenType.greaterThanGreaterThanGreaterThan]: Precedence.shift,
-
-    [TokenType.plus]: Precedence.additive,
-    [TokenType.minus]: Precedence.additive,
-
-    [TokenType.asterisk]: Precedence.multiplicative,
-    [TokenType.slash]: Precedence.multiplicative,
-    [TokenType.percent]: Precedence.multiplicative,
-
-    [TokenType.asteriskAsterisk]: Precedence.exponentiation,
-
-    [TokenType.plusPlus]: Precedence.postfix,
-    [TokenType.minusMinus]: Precedence.postfix,
-
-    [TokenType.openParen]: Precedence.functionCall,
-
-    [TokenType.openBracket]: Precedence.member,
-    [TokenType.dot]: Precedence.member,
-    [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
-    [TokenType.templateHead]: Precedence.member,
-
+	8/*TokenType.noSubstitutionTemplateLiteral*/: Precedence.member,
+	9/*TokenType.templateHead*/: Precedence.member,
+	37/*TokenType.asterisk*/: Precedence.multiplicative,
+	38/*TokenType.question*/: Precedence.conditional,
+	65/*TokenType.plus*/: Precedence.additive,
+	66/*TokenType.minus*/: Precedence.additive,
+	67/*TokenType.plusPlus*/: Precedence.postfix,
+	68/*TokenType.minusMinus*/: Precedence.postfix,
+	69/*TokenType.openParen*/: Precedence.functionCall,
+	70/*TokenType.openBracket*/: Precedence.member,
+	71/*TokenType.slash*/: Precedence.multiplicative,
+	72/*TokenType.lessThan*/: Precedence.relational,
+	75/*TokenType.asteriskAsterisk*/: Precedence.exponentiation,
+	76/*TokenType.equals*/: Precedence.assignment,
+	77/*TokenType.plusEquals*/: Precedence.assignment,
+	78/*TokenType.minusEquals*/: Precedence.assignment,
+	79/*TokenType.asteriskEquals*/: Precedence.assignment,
+	80/*TokenType.percentEquals*/: Precedence.assignment,
+	81/*TokenType.lessThanLessThanEquals*/: Precedence.assignment,
+	82/*TokenType.greaterThanGreaterThanEquals*/: Precedence.assignment,
+	83/*TokenType.greaterThanGreaterThanGreaterThanEquals*/: Precedence.assignment,
+	84/*TokenType.ampersandEquals*/: Precedence.assignment,
+	85/*TokenType.barEquals*/: Precedence.assignment,
+	86/*TokenType.caretEquals*/: Precedence.assignment,
+	87/*TokenType.asteriskAsteriskEquals*/: Precedence.assignment,
+	88/*TokenType.dot*/: Precedence.member,
+	89/*TokenType.dotDot*/: Precedence.member,
+	90/*TokenType.questionDot*/: Precedence.member,
+	91/*TokenType.ampersand*/: Precedence.bitwiseAnd,
+	92/*TokenType.percent*/: Precedence.multiplicative,
+	93/*TokenType.greaterThan*/: Precedence.relational,
+	94/*TokenType.lessThanEquals*/: Precedence.relational,
+	95/*TokenType.greaterThanEquals*/: Precedence.relational,
+	96/*TokenType.equalsEquals*/: Precedence.equality,
+	97/*TokenType.exclamationEquals*/: Precedence.equality,
+	98/*TokenType.equalsEqualsEquals*/: Precedence.equality,
+	99/*TokenType.exclamationEqualsEquals*/: Precedence.equality,
+	100/*TokenType.lessThanLessThan*/: Precedence.shift,
+	101/*TokenType.greaterThanGreaterThan*/: Precedence.shift,
+	102/*TokenType.greaterThanGreaterThanGreaterThan*/: Precedence.shift,
+	103/*TokenType.bar*/: Precedence.bitwiseOr,
+	104/*TokenType.caret*/: Precedence.bitwiseXOr,
+	105/*TokenType.ampersandAmpersand*/: Precedence.logicalAnd,
+	106/*TokenType.barBar*/: Precedence.logicalOr,
+	107/*TokenType.comma*/: Precedence.comma,
+	108/*TokenType.in*/: Precedence.relational,
+	109/*TokenType.instanceOf*/: Precedence.relational,
+	110/*TokenType.as*/: Precedence.relational,
+	111/*TokenType.is*/: Precedence.relational
 };
 
 /**
@@ -1257,7 +1342,7 @@ export function getPrecedence(token: TokenType) {
  * @generated
  */
 export function isRightHandOperator(token: TokenType) {
-
+	return token >= TokenType.slashEquals && token <= TokenType.asteriskAsteriskEquals;
 }
 
 /**
@@ -1276,7 +1361,7 @@ export function isArgumentStart(token: TokenType) {
  * @generated
  */
 export function isStatementStart(token: TokenType) {
-
+	return token >= TokenType.semicolon && token <= TokenType.type;
 }
 
 /**
@@ -1295,7 +1380,9 @@ export function isCaseLabelStart(token: TokenType) {
  * @generated
  */
 export function isDeclarationStart(token: TokenType) {
-
+	return token >= TokenType.async && token <= TokenType.interface ||
+		token === TokenType.at ||
+		token === TokenType.extends;
 }
 
 /**
@@ -1305,7 +1392,7 @@ export function isDeclarationStart(token: TokenType) {
  * @generated
  */
 export function isModifier(token: TokenType) {
-
+	return token >= TokenType.async && token <= TokenType.const;
 }
 
 /**

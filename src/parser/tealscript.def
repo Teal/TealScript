@@ -6,29 +6,29 @@ import * as tokens from './tokens.ts';
 // #region 标记
 
 /** 
- * 标记当前标记是 JavaScript 3 保留字。
- */
-declare var js3ReserverdWord;
-
-/** 
  * 标记当前标记是 JavaScript 5 新增关键字。
  */
-declare var js5Keyword;
+declare var addInJs5;
 
 /** 
- * 标记当前标记是 JavaScript 5 严格模式关键字。
+ * 标记当前标记是 JavaScript 7 新增关键字。
  */
-declare var js5StrictKeyword;
+declare var addInJs7;
 
 /** 
- * 标记当前标记是 TypeScript 1 关键字。
+ * 标记当前标记是 TypeScript 1 新增。
  */
-declare var ts1Keyword;
+declare var addInTs1;
 
 /** 
- * 标记当前标记是 TealScript 1 关键字。
+ * 标记当前标记是 TypeScript 2 新增。
  */
-declare var tls1Keyword;
+declare var addInTs2;
+
+/** 
+ * 标记当前标记是 TealScript 1 新增。
+ */
+declare var addInTls1;
 
 const TokenType = {
 
@@ -42,59 +42,79 @@ const TokenType = {
     ']': [], // 闭方括号
     '}': [], // 闭花括号
     ':': [], // 冒号
-    ';': [], // 分号
-    '<templateMiddle>': [], // 模板字符串中间(`}...${`)
-    '<templateTail>`': [], // 模板字符串结尾(`}...\``)
+    '<templateMiddle>': [addInJs5], // 模板字符串中间(`}...${`)
+    '<templateTail>`': [addInJs5], // 模板字符串结尾(`}...\``)
     // #endregion
 
     // #region 字面量(Literal)
-    '<noSubstitutionTemplateLiteral>': [tokens.Precedence.member, tokens.isExpressionStart], // 简单模板字符串字面量(`\`...\``)
-    '<templateHead>': [tokens.Precedence.member, tokens.isExpressionStart], // 模板字符串开头(`\`...${`)
+    '<noSubstitutionTemplateLiteral>': [tokens.Precedence.member, tokens.isExpressionStart, addInJs5], // 简单模板字符串字面量(`\`...\``)
+    '<templateHead>': [tokens.Precedence.member, tokens.isExpressionStart, addInJs5], // 模板字符串开头(`\`...${`)
     '<regularExpressionLiteral>': [tokens.isExpressionStart], // 正则表达式字面量(`/.../`)
-    'super': [tokens.isSimpleLiteral, tokens.isExpressionStart],
+    'super': [tokens.isSimpleLiteral, tokens.isExpressionStart, addInJs5],
+    '<identifier>': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart], // 标识符(`x`)
     '<numericLiteral>': [tokens.isTypeNodeStart, tokens.isExpressionStart], // 数字字面量(`0x0`)
     '<stringLiteral>': [tokens.isTypeNodeStart, tokens.isExpressionStart], // 字符串字面量(`"..."`、`'...'`)
     'true': [tokens.isSimpleLiteral, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'false': [tokens.isSimpleLiteral, tokens.isTypeNodeStart, tokens.isExpressionStart],
+    // #endregion
+
+    // #region 内置类型(Predefined Types)
     'null': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'this': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isExpressionStart],
     'undefined': [tokens.isSimpleLiteral, tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    '<identifier>': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart], // 标识符(`x`)
+    'any': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'number': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'boolean': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'string': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'symbol': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'never': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'char': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'byte': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'int': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'long': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'short': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'uint': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'ulong': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'ushort': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'float': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'double': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'void': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isUnaryOperator, tokens.isExpressionStart],
+    '*': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.Precedence.multiplicative], // 乘
+    '?': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.Precedence.conditional], // 问号
     // #endregion
 
     // #region 修饰符(Modifiers)
-    'async': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'declare': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'static': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
-    'abstract': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'private': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
-    'protected': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
-    'public': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
-    'readonly': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'export': [tokens.isModifier, tokens.isDeclarationStart],
-    'const': [tokens.isModifier, tokens.isDeclarationStart],
+    'async': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInJs7],
+    'declare': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'static': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart, addInJs7],
+    'abstract': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'private': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart, addInTs1],
+    'protected': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart, addInTs1],
+    'public': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart, addInTs1],
+    'readonly': [tokens.isModifier, tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs2],
+    'export': [tokens.isModifier, tokens.isDeclarationStart, addInJs5],
+    'const': [tokens.isModifier, tokens.isDeclarationStart, addInJs5],
     // #endregion
 
     // #region 声明(Declarations)
     'function': [tokens.isDeclarationStart, tokens.isExpressionStart],
-    'class': [tokens.isDeclarationStart, tokens.isExpressionStart],
-    'enum': [tokens.isDeclarationStart, tokens.isExpressionStart],
-    'namespace': [tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'module': [tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'interface': [tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
+    'class': [tokens.isDeclarationStart, tokens.isExpressionStart, addInJs5],
+    'enum': [tokens.isDeclarationStart, tokens.isExpressionStart, addInTs1],
+    'namespace': [tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'module': [tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTs1],
+    'interface': [tokens.isDeclarationStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart, addInTs1],
     // #endregion
 
     // #region 单目运算符(Unary Operators)
-    'yield': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
-    'await': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
+    'yield': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart, addInJs5],
+    'await': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInJs7],
     '{': [tokens.isTypeNodeStart, tokens.isExpressionStart], // 开花括号
     'new': [tokens.isTypeNodeStart, tokens.isExpressionStart],
     'typeof': [tokens.isUnaryOperator, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'void': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.isUnaryOperator, tokens.isExpressionStart],
+    '@': [tokens.isUnaryOperator, tokens.isDeclarationStart, tokens.isExpressionStart, addInJs7], // 电子邮件符号
     '!': [tokens.isUnaryOperator, tokens.isExpressionStart], // 非
     'delete': [tokens.isUnaryOperator, tokens.isExpressionStart],
     '...': [tokens.isUnaryOperator, tokens.isExpressionStart], // 展开
-    '@': [tokens.isUnaryOperator, tokens.isDeclarationStart, tokens.isExpressionStart], // 电子邮件符号
     '~': [tokens.isUnaryOperator, tokens.isExpressionStart], // 位反
     // #endregion
 
@@ -107,12 +127,12 @@ const TokenType = {
     '[': [tokens.Precedence.member, tokens.isTypeNodeStart, tokens.isExpressionStart], // 开方括号
     '/': [tokens.Precedence.multiplicative, tokens.isExpressionStart], // 除
     '<': [tokens.Precedence.relational, tokens.isTypeNodeStart, tokens.isExpressionStart], // 小于
-    '=>': [tokens.isExpressionStart], // 箭头
+    '=>': [tokens.isExpressionStart, addInJs5], // 箭头
     '/=': [tokens.isRightHandOperator, tokens.isExpressionStart], // 除等于
     // #endregion
 
     // #region 双目运算符(Binary Operators)
-    '**': [tokens.Precedence.exponentiation, tokens.isRightHandOperator], // 乘乘
+    '**': [tokens.Precedence.exponentiation, tokens.isRightHandOperator, addInJs5], // 乘乘
     '=': [tokens.Precedence.assignment, tokens.isRightHandOperator],// 等于
     '+=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 加等于
     '-=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 减等于
@@ -126,8 +146,8 @@ const TokenType = {
     '^=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 异或等于
     '**=': [tokens.Precedence.assignment, tokens.isRightHandOperator], // 乘乘等于
     '.': [tokens.Precedence.member], // 点
-    '..': [tokens.Precedence.member], // 点点
-    '?.': [tokens.Precedence.member], // 问号点
+    '..': [tokens.Precedence.member, addInTls1], // 点点
+    '?.': [tokens.Precedence.member, addInTls1], // 问号点
     '&': [tokens.Precedence.bitwiseAnd], // 位与
     '%': [tokens.Precedence.multiplicative], // 取余
     '>': [tokens.Precedence.relational], // 大于
@@ -147,46 +167,12 @@ const TokenType = {
     ',': [tokens.Precedence.comma], // 逗号
     'in': [tokens.Precedence.relational],
     'instanceOf': [tokens.Precedence.relational],
-    'as': [tokens.Precedence.relational],
-    'is': [tokens.Precedence.relational],
-    '*': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.Precedence.multiplicative], // 乘
-    '?': [tokens.isPredefinedType, tokens.isTypeNodeStart, tokens.Precedence.conditional], // 问号
-    // #endregion
-
-    // #region 内置类型(Predefined Types)
-    'any': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'number': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'boolean': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'string': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'symbol': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'never': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'char': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'byte': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'int': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'long': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'short': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'uint': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'ulong': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'ushort': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'float': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'double': [tokens.isPredefinedType, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    // #endregion
-
-    // #region 其它语句(Other Statements)
-    'from': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'implements': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
-    'package': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart],
-    'of': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'to': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart],
-    'else': [],
-    'case': [],
-    'default': [],
-    'catch': [],
-    'finally': [],
-    'extends': [tokens.isDeclarationStart],
+    'as': [tokens.Precedence.relational, addInTs1],
+    'is': [tokens.Precedence.relational, addInTs1],
     // #endregion
 
     // #region 语句头(Statement Headers)
+    ';': [tokens.isStatementStart], // 分号
     'if': [tokens.isStatementStart],
     'switch': [tokens.isStatementStart],
     'for': [tokens.isStatementStart],
@@ -200,9 +186,23 @@ const TokenType = {
     'debugger': [tokens.isStatementStart],
     'with': [tokens.isStatementStart],
     'var': [tokens.isStatementStart],
-    'import': [tokens.isStatementStart],
-    'let': [tokens.isStatementStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord],
-    'type': [tokens.isStatementStart, tokens.isIdentifierName, tokens.isTypeNodeStart],
+    'import': [tokens.isStatementStart, addInJs5],
+    'let': [tokens.isStatementStart, tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, addInJs5],
+    'type': [tokens.isStatementStart, tokens.isIdentifierName, tokens.isTypeNodeStart, addInTs1],
+    // #endregion
+
+    // #region 其它语句(Other Statements)
+    'from': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInJs5],
+    'implements': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart, addInTs1],
+    'package': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isReservedWord, tokens.isExpressionStart, addInTls1],
+    'of': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInJs5],
+    'to': [tokens.isIdentifierName, tokens.isTypeNodeStart, tokens.isExpressionStart, addInTls1],
+    'else': [],
+    'case': [],
+    'default': [],
+    'catch': [],
+    'finally': [],
+    'extends': [tokens.isDeclarationStart, addInJs5],
     // #endregion
 
 };
