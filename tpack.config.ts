@@ -964,6 +964,15 @@ function parseTokens(source: string, tokenSource: string) {
     }
     tokenSource = setRange(tokenSource, "keywords", "\n" + keywords.join("\n").replace(/,$/, "") + "\n");
 
+    // 生成优先级。
+    const precedences = [];
+    for (const token in tokens) {
+        if (tokens[token].precedence) {
+            precedences.push("\t" + tokens[token].value + "/*TokenType." + tokens[token].field + "*/: " + tokens[token].precedence + ",");
+        }
+    }
+    tokenSource = setRange(tokenSource, "precedences", "\n" + precedences.join("\n").replace(/,$/, "") + "\n");
+
     // 生成每个判断逻辑。
     for (const prop of allProps) {
         let parts = [];
@@ -990,6 +999,7 @@ function parseTokens(source: string, tokenSource: string) {
             i += c;
         }
 
+        parts.sort((x, y) => y.length - x.length);
 
         tokenSource = setRange(tokenSource, prop, "\n\treturn " + parts.join(" ||\n\t\t") + ";\n");
     }
@@ -1805,6 +1815,7 @@ function resortTokens(tokens: { [key: string]: TokenInfo }) {
     const list = [];
     for (const token in tokens) {
         put(token);
+        //  list.push(token);
     }
     return list;
 
@@ -1812,12 +1823,20 @@ function resortTokens(tokens: { [key: string]: TokenInfo }) {
         const t = tokens[token]; // 获取当前标记的所属类别列表。
 
         // 找到满足的类别数最多的位置。
-        let max = -1, p = 0;
+        let max = -1, p = 0, s;
         for (let i = 0; i <= list.length; i++) {
-            const v = calcPropValue(i, t);
-            if (v >= max) {
+            // 取满足数最高的位置。如果满足数相同，取满足的属性在前面的位置。
+            const {result: v, subvalue} = calcPropValue(i, t);
+            if (v > max) {
                 max = v;
                 p = i;
+                s = subvalue;
+            } else if (v === max) {
+                if (subvalue <= s) {
+                    max = v;
+                    p = i;
+                    s = subvalue;
+                }
             }
         }
 
@@ -1828,14 +1847,18 @@ function resortTokens(tokens: { [key: string]: TokenInfo }) {
      * 计算将标记放在指定位置时满足的类别数。
      */
     function calcPropValue(i, t) {
-        let result = 0;
-        for (const prop of t.props) {
+        let result = 0, subvalue = -1;
+        for (let i = 0; i < t.props.length; i++) {
+            const prop = t.props[i];
             // 只要左右边任一个和当前属于同一个分类，则认为当前位置是属于同一个分类。
-            if (list[i - 1] && tokens[list[i - 1]].props.indexOf(t.props) >= 0 || list[i] && tokens[list[i]].props.indexOf(t.props) >= 0) {
+            if (list[i - 1] && tokens[list[i - 1]].props.indexOf(prop) >= 0 || list[i] && tokens[list[i]].props.indexOf(prop) >= 0) {
                 result++;
+                if (subvalue < 0) {
+                    subvalue = i;
+                }
             }
         }
-        return result;
+        return { result, subvalue };
     }
 
 }

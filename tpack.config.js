@@ -829,6 +829,14 @@ function parseTokens(source, tokenSource) {
         }
     }
     tokenSource = setRange(tokenSource, "keywords", "\n" + keywords.join("\n").replace(/,$/, "") + "\n");
+    // 生成优先级。
+    var precedences = [];
+    for (var token in tokens) {
+        if (tokens[token].precedence) {
+            precedences.push("\t" + tokens[token].value + "/*TokenType." + tokens[token].field + "*/: " + tokens[token].precedence + ",");
+        }
+    }
+    tokenSource = setRange(tokenSource, "precedences", "\n" + precedences.join("\n").replace(/,$/, "") + "\n");
     // 生成每个判断逻辑。
     for (var _i = 0, allProps_1 = allProps; _i < allProps_1.length; _i++) {
         var prop = allProps_1[_i];
@@ -854,6 +862,7 @@ function parseTokens(source, tokenSource) {
             }
             i += c;
         }
+        parts.sort(function (x, y) { return y.length - x.length; });
         tokenSource = setRange(tokenSource, prop, "\n\treturn " + parts.join(" ||\n\t\t") + ";\n");
     }
     require("fs").writeFileSync("codes.ts", tokenSource);
@@ -1500,12 +1509,21 @@ function resortTokens(tokens) {
     function put(token) {
         var t = tokens[token]; // 获取当前标记的所属类别列表。
         // 找到满足的类别数最多的位置。
-        var max = -1, p = 0;
+        var max = -1, p = 0, s;
         for (var i = 0; i <= list.length; i++) {
-            var v = calcPropValue(i, t);
-            if (v >= max) {
+            // 取满足数最高的位置。如果满足数相同，取满足的属性在前面的位置。
+            var _a = calcPropValue(i, t), v = _a.result, subvalue = _a.subvalue;
+            if (v > max) {
                 max = v;
                 p = i;
+                s = subvalue;
+            }
+            else if (v === max) {
+                if (subvalue <= s) {
+                    max = v;
+                    p = i;
+                    s = subvalue;
+                }
             }
         }
         list.splice(p, 0, token);
@@ -1514,15 +1532,18 @@ function resortTokens(tokens) {
      * 计算将标记放在指定位置时满足的类别数。
      */
     function calcPropValue(i, t) {
-        var result = 0;
-        for (var _i = 0, _a = t.props; _i < _a.length; _i++) {
-            var prop = _a[_i];
+        var result = 0, subvalue = -1;
+        for (var i_1 = 0; i_1 < t.props.length; i_1++) {
+            var prop = t.props[i_1];
             // 只要左右边任一个和当前属于同一个分类，则认为当前位置是属于同一个分类。
-            if (list[i - 1] && tokens[list[i - 1]].props.indexOf(t.props) >= 0 || list[i] && tokens[list[i]].props.indexOf(t.props) >= 0) {
+            if (list[i_1 - 1] && tokens[list[i_1 - 1]].props.indexOf(prop) >= 0 || list[i_1] && tokens[list[i_1]].props.indexOf(prop) >= 0) {
                 result++;
+                if (subvalue < 0) {
+                    subvalue = i_1;
+                }
             }
         }
-        return result;
+        return { result: result, subvalue: subvalue };
     }
 }
 /**

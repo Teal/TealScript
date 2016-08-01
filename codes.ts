@@ -1041,8 +1041,8 @@ export function isKeyword(token: TokenType) {
 export function isIdentifierName(token: TokenType) {
 	return token >= TokenType.undefined && token <= TokenType.readonly ||
 		token >= TokenType.namespace && token <= TokenType.await ||
-		token >= TokenType.any && token <= TokenType.to ||
-		token === TokenType.let || token === TokenType.type;
+		token === TokenType.let || token === TokenType.type ||
+		token >= TokenType.any && token <= TokenType.to;
 }
 
 /**
@@ -1052,10 +1052,10 @@ export function isIdentifierName(token: TokenType) {
  * @generated
  */
 export function isReservedWord(token: TokenType) {
-	return token === TokenType.static ||
-		token >= TokenType.private && token <= TokenType.public ||
+	return token === TokenType.implements || token === TokenType.package ||
 		token === TokenType.interface || token === TokenType.yield ||
-		token === TokenType.implements || token === TokenType.package ||
+		token >= TokenType.private && token <= TokenType.public ||
+		token === TokenType.static ||
 		token === TokenType.let;
 }
 
@@ -1098,11 +1098,11 @@ export function isPropertyNameStart(token: TokenType) {
  */
 export function isTypeNodeStart(token: TokenType) {
 	return token >= TokenType.numericLiteral && token <= TokenType.readonly ||
-		token >= TokenType.namespace && token <= TokenType.void ||
 		token === TokenType.openParen || token === TokenType.openBracket ||
-		token === TokenType.lessThan ||
+		token >= TokenType.namespace && token <= TokenType.void ||
 		token >= TokenType.asterisk && token <= TokenType.to ||
-		token === TokenType.let || token === TokenType.type;
+		token === TokenType.let || token === TokenType.type ||
+		token === TokenType.lessThan;
 }
 
 /**
@@ -1112,9 +1112,9 @@ export function isTypeNodeStart(token: TokenType) {
  * @generated
  */
 export function isPredefinedType(token: TokenType) {
-	return token >= TokenType.null && token <= TokenType.undefined ||
-		token === TokenType.void ||
-		token >= TokenType.asterisk && token <= TokenType.double;
+	return token >= TokenType.asterisk && token <= TokenType.double ||
+		token >= TokenType.null && token <= TokenType.undefined ||
+		token === TokenType.void;
 }
 
 /**
@@ -1136,8 +1136,8 @@ export function isExpressionStart(token: TokenType) {
  * @generated
  */
 export function isSimpleLiteral(token: TokenType) {
-	return token === TokenType.super ||
-		token >= TokenType.true && token <= TokenType.undefined;
+	return token >= TokenType.true && token <= TokenType.undefined ||
+		token === TokenType.super;
 }
 
 /**
@@ -1275,68 +1275,55 @@ export function isBinaryOperator(token: TokenType) {
  * @generated
  */
 export const precedences: { [key: number]: Precedence } = {
-
-    [TokenType.comma]: Precedence.comma,
-
-    [TokenType.equals]: Precedence.assignment,
-    [TokenType.plusEquals]: Precedence.assignment,
-    [TokenType.minusEquals]: Precedence.assignment,
-    [TokenType.asteriskEquals]: Precedence.assignment,
-    [TokenType.slashEquals]: Precedence.assignment,
-    [TokenType.percentEquals]: Precedence.assignment,
-    [TokenType.lessThanLessThanEquals]: Precedence.assignment,
-    [TokenType.greaterThanGreaterThanEquals]: Precedence.assignment,
-    [TokenType.greaterThanGreaterThanGreaterThanEquals]: Precedence.assignment,
-    [TokenType.ampersandEquals]: Precedence.assignment,
-    [TokenType.barEquals]: Precedence.assignment,
-    [TokenType.caretEquals]: Precedence.assignment,
-    [TokenType.asteriskEquals]: Precedence.assignment,
-    [TokenType.asteriskAsteriskEquals]: Precedence.assignment,
-
-    [TokenType.question]: Precedence.conditional,
-    [TokenType.barBar]: Precedence.logicalOr,
-    [TokenType.ampersandAmpersand]: Precedence.logicalAnd,
-    [TokenType.bar]: Precedence.bitwiseOr,
-    [TokenType.caret]: Precedence.bitwiseXOr,
-    [TokenType.ampersand]: Precedence.bitwiseAnd,
-
-    [TokenType.equalsEquals]: Precedence.equality,
-    [TokenType.exclamationEquals]: Precedence.equality,
-    [TokenType.equalsEqualsEquals]: Precedence.equality,
-    [TokenType.exclamationEqualsEquals]: Precedence.equality,
-
-    [TokenType.lessThan]: Precedence.relational,
-    [TokenType.greaterThan]: Precedence.relational,
-    [TokenType.lessThanEquals]: Precedence.relational,
-    [TokenType.greaterThanEquals]: Precedence.relational,
-    [TokenType.instanceOf]: Precedence.relational,
-    [TokenType.in]: Precedence.relational,
-    [TokenType.is]: Precedence.relational,
-    [TokenType.as]: Precedence.relational,
-
-    [TokenType.lessThanLessThan]: Precedence.shift,
-    [TokenType.greaterThanGreaterThan]: Precedence.shift,
-    [TokenType.greaterThanGreaterThanGreaterThan]: Precedence.shift,
-
-    [TokenType.plus]: Precedence.additive,
-    [TokenType.minus]: Precedence.additive,
-
-    [TokenType.asterisk]: Precedence.multiplicative,
-    [TokenType.slash]: Precedence.multiplicative,
-    [TokenType.percent]: Precedence.multiplicative,
-
-    [TokenType.asteriskAsterisk]: Precedence.exponentiation,
-
-    [TokenType.plusPlus]: Precedence.postfix,
-    [TokenType.minusMinus]: Precedence.postfix,
-
-    [TokenType.openParen]: Precedence.functionCall,
-
-    [TokenType.openBracket]: Precedence.member,
-    [TokenType.dot]: Precedence.member,
-    [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
-    [TokenType.templateHead]: Precedence.member,
-
+	9/*TokenType.noSubstitutionTemplateLiteral*/: Precedence.member,
+	10/*TokenType.templateHead*/: Precedence.member,
+	48/*TokenType.plus*/: Precedence.additive,
+	49/*TokenType.minus*/: Precedence.additive,
+	50/*TokenType.plusPlus*/: Precedence.postfix,
+	51/*TokenType.minusMinus*/: Precedence.postfix,
+	52/*TokenType.openParen*/: Precedence.functionCall,
+	53/*TokenType.openBracket*/: Precedence.member,
+	54/*TokenType.slash*/: Precedence.multiplicative,
+	55/*TokenType.lessThan*/: Precedence.relational,
+	58/*TokenType.asteriskAsterisk*/: Precedence.exponentiation,
+	59/*TokenType.equals*/: Precedence.assignment,
+	60/*TokenType.plusEquals*/: Precedence.assignment,
+	61/*TokenType.minusEquals*/: Precedence.assignment,
+	62/*TokenType.asteriskEquals*/: Precedence.assignment,
+	63/*TokenType.percentEquals*/: Precedence.assignment,
+	64/*TokenType.lessThanLessThanEquals*/: Precedence.assignment,
+	65/*TokenType.greaterThanGreaterThanEquals*/: Precedence.assignment,
+	66/*TokenType.greaterThanGreaterThanGreaterThanEquals*/: Precedence.assignment,
+	67/*TokenType.ampersandEquals*/: Precedence.assignment,
+	68/*TokenType.barEquals*/: Precedence.assignment,
+	69/*TokenType.caretEquals*/: Precedence.assignment,
+	70/*TokenType.asteriskAsteriskEquals*/: Precedence.assignment,
+	71/*TokenType.dot*/: Precedence.member,
+	72/*TokenType.dotDot*/: Precedence.member,
+	73/*TokenType.questionDot*/: Precedence.member,
+	74/*TokenType.ampersand*/: Precedence.bitwiseAnd,
+	75/*TokenType.percent*/: Precedence.multiplicative,
+	76/*TokenType.greaterThan*/: Precedence.relational,
+	77/*TokenType.lessThanEquals*/: Precedence.relational,
+	78/*TokenType.greaterThanEquals*/: Precedence.relational,
+	79/*TokenType.equalsEquals*/: Precedence.equality,
+	80/*TokenType.exclamationEquals*/: Precedence.equality,
+	81/*TokenType.equalsEqualsEquals*/: Precedence.equality,
+	82/*TokenType.exclamationEqualsEquals*/: Precedence.equality,
+	83/*TokenType.lessThanLessThan*/: Precedence.shift,
+	84/*TokenType.greaterThanGreaterThan*/: Precedence.shift,
+	85/*TokenType.greaterThanGreaterThanGreaterThan*/: Precedence.shift,
+	86/*TokenType.bar*/: Precedence.bitwiseOr,
+	87/*TokenType.caret*/: Precedence.bitwiseXOr,
+	88/*TokenType.ampersandAmpersand*/: Precedence.logicalAnd,
+	89/*TokenType.barBar*/: Precedence.logicalOr,
+	90/*TokenType.comma*/: Precedence.comma,
+	91/*TokenType.in*/: Precedence.relational,
+	92/*TokenType.instanceOf*/: Precedence.relational,
+	93/*TokenType.as*/: Precedence.relational,
+	94/*TokenType.is*/: Precedence.relational,
+	95/*TokenType.asterisk*/: Precedence.multiplicative,
+	96/*TokenType.question*/: Precedence.conditional
 };
 
 /**
@@ -1394,8 +1381,8 @@ export function isCaseLabelStart(token: TokenType) {
  */
 export function isDeclarationStart(token: TokenType) {
 	return token >= TokenType.async && token <= TokenType.interface ||
-		token === TokenType.at ||
-		token === TokenType.extends;
+		token === TokenType.extends ||
+		token === TokenType.at;
 }
 
 /**
