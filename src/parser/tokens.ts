@@ -1,17 +1,15 @@
 ﻿/**
- * @fileOverview 标记类型
+ * @fileOverview 标记
  * @author xuld@vip.qq.com
- * @generated 此文件标记为 Generated 的区域使用 `tpack gen-tokenType` 生成。
+ * @generated 此文件标记为 @generated 的变量和函数内容使用 `tpack gen-tokenType` 生成。
  */
-
 import {CharCode} from './unicode';
 
 /**
- * 表示一个标记类型。
+ * 表示标记类型。
+ * @generated
  */
 export const enum TokenType {
-
-    // #region Generated: TokenType
 
     // #region 控制符(Control)
 
@@ -877,18 +875,15 @@ export const enum TokenType {
 
     // #endregion
 
-    // #endregion Generated: TokenType
-
 }
 
 /**
- * @gernerated 此常量的值使用 `tpack gen-tokenType` 生成。
+ * 存储所有标记的类型名称映射。
+ * @generated
  */
-const tokenNames = [
-
+export const tokenNames = [
     // #region Generated: tokenNames
     // #endregion Generated: tokenNames
-
 ];
 
 /**
@@ -915,12 +910,10 @@ export function getTokenType(value: string) {
 }
 
 /**
- * @gernerated 此常量的值使用 `tpack gen-tokenType` 生成。
+ * 存储所有关键字的名称类型映射。
+ * @generated
  */
-const keywords: { [key: string]: TokenType } = {
-
-    // #region Generated: keywords
-    // #endregion Generated: keywords
+export const keywords: { [key: string]: TokenType } = {
 
 };
 
@@ -943,11 +936,124 @@ export function getKeyword(value: string) {
  * 但不能作为变量名使用(部分除外)。
  */
 export function isKeyword(token: TokenType) {
-    return value in keywords;
+    return getTokenName(token) in keywords;
 }
 
 /**
- * 表示双目操作符优先级。
+ * 判断指定的标记是否可作为标志名。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ * @remark 为了兼容历史代码，部分关键字允许被作为变量名使用。
+ * @generated
+ */
+export function isIdentifierName(token: TokenType) {
+    return false;
+}
+
+/**
+ * 判断指定的标记是否是严格模式下的标识符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ * @generated
+ */
+export function isReservedWord(token: TokenType) {
+
+}
+
+/**
+ * 判断指定的标记是否可作为绑定名称开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isBindingNameStart(token: TokenType) {
+    return isIdentifierName(token) ||
+        token === TokenType.openBracket ||
+        token === TokenType.openBrace;
+}
+
+/**
+ * 判断指定的标记是否可作为数组绑定元素开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isArrayBindingElementStart(token: TokenType) {
+    return isBindingNameStart(token) || token === TokenType.dotDotDot;
+}
+
+/**
+ * 判断指定的标记是否可作为属性名开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isPropertyNameStart(token: TokenType) {
+    return isKeyword(token) ||
+        token === TokenType.numericLiteral ||
+        token === TokenType.stringLiteral ||
+        token === TokenType.openBracket;
+}
+
+/**
+ * 判断指定的标记是否可作为类型节点开始。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isTypeNodeStart(token: TokenType) {
+    return isIdentifierName(token) ||
+        isPredefinedType(token) ||
+        token === TokenType.openParen ||
+        token === TokenType.openBracket ||
+        token === TokenType.openBrace ||
+        token === TokenType.new ||
+        token === TokenType.lessThan ||
+        token === TokenType.typeof ||
+        token === TokenType.numericLiteral ||
+        token === TokenType.stringLiteral ||
+        token === TokenType.true ||
+        token === TokenType.false;
+}
+
+/**
+ * 判断指定的标记是否可作为内置类型。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ * @generated
+ */
+export function isPredefinedType(token: TokenType) {
+
+}
+
+/**
+ * 判断指定的标记是否可作为表达式开头。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ * @generated
+ */
+export function isExpressionStart(token: TokenType) {
+
+}
+
+/**
+ * 判断指定的标记是否可作为简单字面量。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ * @generated
+ */
+export function isSimpleLiteral(token: TokenType) {
+
+}
+
+/**
+ * 判断指定的标记是否可作为单目运算符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ * @generated
+ */
+export function isUnaryOperator(token: TokenType) {
+
+}
+
+/**
+ * 表示操作符优先级。
  */
 export const enum Precedence {
 
@@ -1054,11 +1160,23 @@ export const enum Precedence {
 }
 
 /**
+ * 判断指定的标记是否是双目表达式合法的运算符。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ */
+export function isBinaryOperator(token: TokenType) {
+    if (token === TokenType.question) {
+        return false;
+    }
+    const precedence = getPrecedence(token);
+    return precedence > Precedence.any && precedence < Precedence.postfix;
+}
+
+/**
  * 存储所有优先级。
+ * @generated
  */
 export const precedences: { [key: number]: Precedence } = {
-
-    // #region Generated: Precedences
 
     [TokenType.comma]: Precedence.comma,
 
@@ -1121,8 +1239,6 @@ export const precedences: { [key: number]: Precedence } = {
     [TokenType.noSubstitutionTemplateLiteral]: Precedence.member,
     [TokenType.templateHead]: Precedence.member,
 
-    // #endregion Generated: Precedences
-
 };
 
 /**
@@ -1135,112 +1251,13 @@ export function getPrecedence(token: TokenType) {
 }
 
 /**
- * 判断指定的标记是否是双目表达式合法的运算符。
+ * 判断指定的运算符是否是从右往左优先计算。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
+ * @generated
  */
-export function isBinaryOperator(token: TokenType) {
-    const precedence = getPrecedence(token);
-    return precedence > Precedence.any && precedence < Precedence.postfix;
-}
+export function isRightHandOperator(token: TokenType) {
 
-// #region Generated: checkToken
-
-/**
- * 判断指定的标记是否可作为标志名。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- * @remark 为了兼容历史代码，部分关键字允许被作为变量名使用。
- */
-export function isIdentifierName(token: TokenType) {
-    return token === TokenType.identifier ||
-        token > TokenType.MIN_IDENTIFIER_NAME_1 && token < TokenType.MAX_IDENTIFIER_NAME_1 ||
-        token > TokenType.MIN_IDENTIFIER_NAME_2 && token < TokenType.MAX_IDENTIFIER_NAME_2 ||
-        token > TokenType.MIN_IDENTIFIER_NAME_3 && token < TokenType.MAX_IDENTIFIER_NAME_3;
-}
-
-/**
- * 判断指定的标记是否是严格模式下的标识符。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isReservedWord(token: TokenType) {
-    return token === TokenType.class ||
-        token === TokenType.enum ||
-        token === TokenType.extends ||
-        token === TokenType.super ||
-        token === TokenType.const ||
-        token === TokenType.export ||
-        token === TokenType.import;
-}
-
-/**
- * 判断指定的标记是否可作为内置类型。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isPredefinedType(token: TokenType) {
-    return token > TokenType.MIN_PREDEFINED_TYPE && token < TokenType.MAX_PREDEFINED_TYPE || token === TokenType.null || token === TokenType.undefined || token === TokenType.asterisk || token === TokenType.question;
-}
-
-/**
- * 判断指定的标记是否可作为类型节点开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isTypeNodeStart(token: TokenType) {
-    return isIdentifierName(token) ||
-        token === TokenType.openParen ||
-        token === TokenType.openBracket ||
-        token === TokenType.openBrace ||
-        token === TokenType.new ||
-        token === TokenType.lessThan ||
-        token === TokenType.typeof ||
-        token === TokenType.numericLiteral ||
-        token === TokenType.stringLiteral ||
-        token === TokenType.true ||
-        token === TokenType.false;
-}
-
-/**
- * 判断指定的标记是否可作为数组绑定元素开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isArrayBindingElementStart(token: TokenType) {
-    return isBindingNameStart(token) || token === TokenType.dotDotDot;
-}
-
-/**
- * 判断指定的标记是否是绑定名称开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isBindingNameStart(token: TokenType) {
-    return isIdentifierName(token) ||
-        token === TokenType.openBracket ||
-        token === TokenType.openBrace;
-}
-
-/**
- * 判断指定的标记是否可作为对象绑定元素开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isObjectBindingElementStart(token: TokenType) {
-    return isPropertyNameStart(token) || token === TokenType.dotDotDot;
-}
-
-/**
- * 判断指定的标记是否可作为属性名开始。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isPropertyNameStart(token: TokenType) {
-    return isKeyword(token) ||
-        token === TokenType.numericLiteral ||
-        token === TokenType.stringLiteral ||
-        token === TokenType.openBracket;
 }
 
 /**
@@ -1253,7 +1270,17 @@ export function isArgumentStart(token: TokenType) {
 }
 
 /**
- * 判断指定的标记是否可作为参数开始。
+ * 判断指定的标记是否可作为语句开头。
+ * @param token 要判断的标记。
+ * @returns 如果是则返回 true，否则返回 false。
+ * @generated
+ */
+export function isStatementStart(token: TokenType) {
+
+}
+
+/**
+ * 判断指定的标记是否可作为 case 标签开始。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
  */
@@ -1262,58 +1289,30 @@ export function isCaseLabelStart(token: TokenType) {
 }
 
 /**
- * 判断指定的标记是否可作为单目运算符。
+ * 判断指定的标记是否可作为定义开头。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
+ * @generated
  */
-export function isUnaryOperator(token: TokenType) {
-    return token > TokenType.MIN_UNARY_OPERATOR && token < TokenType.MAX_UNARY_OPERATOR;
-}
+export function isDeclarationStart(token: TokenType) {
 
-/**
- * 判断指定的标记是否可作为表达式开头。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isExpressionStart(token: TokenType) {
-    return token > TokenType.MIN_EXPRESSION_START && token < TokenType.MAX_EXPRESSION_START ||
-        token > TokenType.MIN_IDENTIFIER_NAME_3 && token < TokenType.MAX_IDENTIFIER_NAME_3;
-}
-
-/**
- * 判断指定的标记是否可作为语句开头。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isStatementStart(token: TokenType) {
-    return token > TokenType.MIN_STATEMENT_START && token < TokenType.MAX_STATEMENT_START;
 }
 
 /**
  * 判断指定的标记是否可作为修饰符。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
+ * @generated
  */
 export function isModifier(token: TokenType) {
-    return token > TokenType.MIN_MODIFIER && token < TokenType.MAX_MODIFIER || token === TokenType.const;
+
 }
 
 /**
- * 判断指定的标记是否可作为定义开头。
+ * 判断指定的标记是否可作为参数开始。
  * @param token 要判断的标记。
  * @returns 如果是则返回 true，否则返回 false。
  */
-export function isDeclarationStart(token: TokenType) {
-    return token > TokenType.MIN_DECLARATION_START && token < TokenType.MAX_DECLARATION_START;
+export function isParameterStart(token: TokenType) {
+    return isModifier(token) || isBindingNameStart(token) || token === TokenType.dotDotDot;
 }
-
-/**
- * 判断指定的运算符是否是从右往左优先计算。
- * @param token 要判断的标记。
- * @returns 如果是则返回 true，否则返回 false。
- */
-export function isRightHandOperator(token: TokenType) {
-    return token > TokenType.MIN_RIGHT_HAND_OPERATOR && token < TokenType.MAX_RIGHT_HAND_OPERATOR;
-}
-
-// #endregion Generated: checkToken
