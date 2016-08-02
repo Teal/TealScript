@@ -3,6 +3,7 @@
 /// <reference path=".vscode/typings/tpack/tpack.d.ts" />
 var tpack = require("tpack");
 tpack.task("gen-parser", function () {
+    tpack.allowOverwriting = true;
     tpack.src("src/parser/tealscript.def").pipe(function (file, options) {
         var result = parseTokens(file.content, tpack.getFile("src/parser/tokens.ts").content);
         tpack.getFile("src/parser/tokens.ts").content = result.tokenSource;
@@ -846,64 +847,85 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
                 codes: [],
                 extend: "",
                 abstract: false,
-                doc: false,
                 list: null,
                 alias: "",
             };
-            //if (line.replace(/function\s(\w+)\((.*?)\)\s*\{[^\/]*(?:\/\/(.*))?/, (_, name: string, params: string, comment: string) => {
-            //    currentProduction.name = name;
-            //    params.split(/,\s*/).forEach(line => {
-            //        if (!line) {
-            //            return;
-            //        }
-            //        const param: ParamInfo = {
-            //            name: "",
-            //            type: "",
-            //            comment: "",
-            //            value: "",
-            //            optional: false
-            //        };
-            //        if (line.replace(/(\w+)\s*(\?)?\s*(?::\s*(.*))?\s*(?:=\s*(.*))?\s*(?:\/\*(.*?)\*\/)?/, (_, name, optional, type, value, comment) => {
-            //            // = null || ...
-            //            if (/^\s*null\s*\|\|/.exec(value)) {
-            //                optional = true;
-            //                value = value.replace(/^\s*null\s*\|\|/, "");
-            //            }
-            //            // = Expression, = read()
-            //            if (/^\s*[A-Z]/.exec(value)) {
-            //                if (name !== "_") {
-            //                    addCode(`_.${name} = ${value}`);
-            //                }
-            //                type = value.replace(/\|\|/g, "|");
-            //                value = "";
-            //            } else if (/^\s*read\('(.*?)'\)/.exec(value)) {
-            //                addCode(value);
-            //                name = tokens[/^\s*read\('(.*?)'\)/.exec(value)[1]].field + "Token";
-            //                type = "number";
-            //                value = "";
-            //            }
-            //            param.name = name;
-            //            param.optional = !!optional;
-            //            param.type = type;
-            //            param.value = value;
-            //            param.comment = comment;
-            //            return "";
-            //        }) === line) {
-            //            tpack.error("解析参数错误：" + line);
-            //        }
-            //        currentProduction.params.push(param);
-            //    });
-            //    currentProduction.comment = comment ? comment.trim() : "";
-            //    return "";
-            //}) === line) {
-            //    tpack.error("解析定义错误：" + line);
-            //}
-            //// result = function AA() { => result = parseAA();
-            //if (!/^\s*function/.test(line)) {
-            //    currentProduction._last.codes.push(removeIndent(line.replace(/function\s.*$/, _ => "this.parse" + currentProduction.name + "(" + currentProduction.params.map(t => t.name).join(", ") + ");"), currentProduction._last.indent + 1));
-            //}
-            //productions[currentProduction.name] = currentProduction;
-            //currentRegion.productions.push(currentProduction.name);
+            if (line.replace(/function\s(\w+)\((.*?)\)\s*:?\s*\w*\s*\{[^\/]*(?:\/\/(.*))?/, function (_, name, params, comment) {
+                currentProduction.name = name;
+                params.split(/,\s*/).forEach(function (line) {
+                    if (!line) {
+                        return;
+                    }
+                    if (line.replace(/(\w+)\s*(\?)?\s*(?::\s*([^=]*))?\s*(?:=\s*([^/]*))?\s*(?:\/\*(.*?)\*\/)?/, function (_, name, optional, type, value, comment) {
+                        var param = {
+                            name: "",
+                            type: "",
+                            comment: "",
+                            value: "",
+                            optional: false
+                        };
+                        // = null || ...
+                        if (/^\s*null\s*\|\|/.exec(value)) {
+                            optional = true;
+                            value = value.replace(/^\s*null\s*\|\|/, "");
+                        }
+                        var v = parseSpecailValue(value);
+                        if (v) {
+                            if (v.readSingle || v.readAny) {
+                                type = "number";
+                                if (v.readSingle) {
+                                    name = tokens[v.readSingle].field + "Token";
+                                    comment = comment || "标记 '" + v.readSingle + "' 的位置";
+                                }
+                            }
+                            else if (v.list) {
+                                type = "nodes.NodeList<" + v.list.element + ">";
+                            }
+                            else if (v.expression) {
+                                type = v.expression;
+                            }
+                            value = "";
+                        }
+                        param.name = name;
+                        param.optional = !!optional;
+                        param.type = type && type.trim();
+                        param.value = value && value.trim();
+                        param.comment = comment;
+                        if (v) {
+                            currentProduction.fields.push({
+                                inline: "",
+                                optional: param.optional,
+                                name: param.name,
+                                comment: comment,
+                                type: param.type
+                            });
+                            if (param.optional) {
+                                currentProduction.codes.push("if (" + name + " != undefined) {");
+                                currentProduction.codes.push("\t_." + name + " = " + name + ";");
+                                currentProduction.codes.push("}");
+                            }
+                            else {
+                                currentProduction.codes.push("_." + name + " = " + name + ";");
+                            }
+                        }
+                        param.comment = comment;
+                        currentProduction.params.push(param);
+                        return "";
+                    }) === line) {
+                        tpack.error("解析参数错误：" + line);
+                    }
+                });
+                currentProduction.comment = comment ? comment.trim() : "";
+                return "";
+            }) === line) {
+                tpack.error("解析定义错误：" + line);
+            }
+            // result = function AA() { => result = parseAA();
+            if (!/^\s*function/.test(line)) {
+                currentProduction._last.codes.push(removeIndent(line.replace(/function\s.*$/, function (_) { return "this.parse" + currentProduction.name + "(" + currentProduction.params.map(function (t) { return t.name; }).join(", ") + ");"; }), currentProduction._last.indent + 1));
+            }
+            productions[currentProduction.name] = currentProduction;
+            currentRegion.productions.push(currentProduction.name);
             return;
         }
         // 处理定义底。
@@ -932,13 +954,174 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
         }
         // 删除缩进。
         line = removeIndent(line, currentProduction.indent + 1);
-        var indent = line.substring(getIndent(line));
+        var indent = line.substring(0, getIndent(line));
         // 独立列表。
         if (/^\s*list\((.*?)\)/.exec(line)) {
             var value = parseSpecailValue(line);
             currentProduction.list = value.list;
-            currentProduction.codes.push(indent + "return " + value.code + ";");
+            currentProduction.codes.push(indent + "return " + value.code);
             return;
+        }
+        // 独立可选标记。
+        if (/^\s*readIf\((.*?)\)/.exec(line)) {
+            var value = parseSpecailValue(line.replace("readIf", "read"));
+            var name_1 = tokens[value.readSingle].field + "Token";
+            currentProduction.fields.push({
+                optional: true,
+                inline: "",
+                name: name_1,
+                type: "number",
+                comment: "",
+            });
+            currentProduction.codes.push(indent + "if (peek === '" + value.readSingle + "') {");
+            currentProduction.codes.push("\t" + indent + "_." + name_1 + " = " + value.code + ";");
+            currentProduction.codes.push(indent + "}");
+            return;
+        }
+        // 独立标记。
+        if (/^\s*read\((.*?)\)/.exec(line)) {
+            var value = parseSpecailValue(line);
+            var name_2 = tokens[value.readSingle].field + "Token";
+            currentProduction.fields.push({
+                optional: getIndent(line) > 0,
+                inline: "",
+                name: name_2,
+                type: "number",
+                comment: "标记 '" + value.readSingle + "' 的位置",
+            });
+            currentProduction.codes.push(indent + "_." + name_2 + " = " + value.code);
+            return;
+        }
+        // _.xx = 
+        if (/^\s*_\./.exec(line)) {
+            line.replace(/_\.(\w+)\s*=\s*(.*?);?\s*(?:\/\/(.*))?$/, function (_, name, value, comment) {
+                var v = parseSpecailValue(value);
+                if (!v) {
+                    return "";
+                }
+                if (v.readSingle) {
+                    currentProduction.fields.push({
+                        optional: getIndent(line) > 0,
+                        inline: "",
+                        name: name,
+                        type: "number",
+                        comment: comment,
+                    });
+                    currentProduction.codes.push(indent + "_." + name + " = " + v.code);
+                    return "";
+                }
+                if (v.readAny) {
+                    currentProduction.fields.push({
+                        optional: getIndent(line) > 0,
+                        inline: "",
+                        name: name,
+                        type: "number",
+                        comment: comment,
+                    });
+                    currentProduction.codes.push(indent + "_." + name + " = " + v.code);
+                    return "";
+                }
+                if (v.list) {
+                    currentProduction.fields.push({
+                        optional: getIndent(line) > 0,
+                        inline: "",
+                        name: name,
+                        type: "nodes.NodeList<" + v.list.element + ">",
+                        comment: comment,
+                    });
+                    currentProduction.codes.push(indent + "_." + name + " = " + v.code);
+                    return "";
+                }
+                if (v.expression) {
+                    currentProduction.fields.push({
+                        optional: getIndent(line) > 0,
+                        inline: "",
+                        name: name,
+                        type: v.expression,
+                        comment: comment,
+                    });
+                    currentProduction.codes.push(indent + "_." + name + " = " + v.code);
+                    return "";
+                }
+                return "";
+            });
+            return;
+        }
+        // XX(_)
+        if (/^\w+\(_\)/.exec(line)) {
+            currentProduction.fields.push({
+                optional: getIndent(line) > 0,
+                inline: line.replace(/\(.*/, ""),
+                comment: "",
+                name: "",
+                type: ""
+            });
+            currentProduction.codes.push("this.parse" + line);
+            return;
+        }
+        currentProduction.codes.push(line);
+        /**
+         * 解析特殊的值。
+         * @param value
+         */
+        function parseSpecailValue(value) {
+            var result = {
+                readSingle: "",
+                readAny: null,
+                list: null,
+                expression: "",
+                code: ""
+            };
+            // read('x')
+            if (/^\s*read\('([^']*?)'\)/.exec(value)) {
+                var token = /^\s*read\('([^']*?)'\)/.exec(value)[1];
+                result.readSingle = token;
+                result.code = "readToken(tokens.TokenType." + tokens[token].field + ");";
+                return result;
+            }
+            // read('x', 'y')
+            if (/^\s*read\((.*?)\)/.exec(value)) {
+                result.readAny = /read\('(.*?)'\)/.exec(value)[1].split("', '");
+                result.code = "this.lexer.read(); // " + result.readAny.join("、");
+                return result;
+            }
+            // list()
+            if (/^\s*list\((.*?)\)/.exec(value)) {
+                var p = /\s*list\((.*?)\)/.exec(value)[1].split(/,\s+/);
+                result.list = {
+                    element: p[0],
+                    allowEmpty: !p[1] || p[1] == "true",
+                    open: !p[2] || p[2] == "undefined" ? "" : p[2],
+                    close: !p[3] || p[3] == "undefined" ? "" : p[3],
+                    seperator: p[4] || "",
+                    continue: p[5] || "",
+                };
+                if (result.list.seperator && result.list.seperator !== "','") {
+                    tpack.error("只支持逗号分隔符:" + value);
+                }
+                var header = result.list.element;
+                if (/\/\*(.*)\*\//.exec(result.list.element)) {
+                    result.list.element = /\/\*(.*)\*\//[1];
+                    header = header.replace(/\/\*(.*)\*\//, "");
+                }
+                result.code = (result.list.seperator ? "this.parseDelimitedList(" + header + ", " + result.list.open + ", " + result.list.close + ", " + result.list.allowEmpty + ", " + result.list.continue + ");" : "this.parseNodeList(" + header + ", " + result.list.open + ", " + result.list.close + ")").replace(', undefined)', ');')
+                    .replace(', false)', ')')
+                    .replace(', undefined)', ')')
+                    .replace(', undefined)', ')');
+                return result;
+            }
+            // Expression || Statement
+            if (/^\s*[A-Z]/.exec(value)) {
+                result.expression = value.replace(/\(.*$/, "").replace(/\|\|/g, "|").trim();
+                result.code = value + (!/\)/.test(value) ? "()" : "") + ";";
+                return result;
+            }
+            // /**/foo()
+            if (/^\/\*(.*)\*\//.exec(value)) {
+                result.expression = /^\/\*(.*)\*\//.exec(value)[1].trim();
+                result.code = value.replace(/^\/\*(.*)\*\//, "") + ";";
+                return result;
+            }
         }
         function getIndent(line) {
             return (/\S/.exec(line.replace(/    /g, "\t")) || { index: 0 }).index;
@@ -947,26 +1130,75 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
             return line.replace(/    /g, "\t").substring(count);
         }
     });
-    // 展开 inline
+    // 设置基类
+    var abstracts = [];
     eachProduction(function (p) {
+        if (p.abstract)
+            abstracts.push(p.name);
     });
-    function expandFields(production) {
-        for (var i = 0; i < production.fields.length; i++) {
+    eachProduction(function (p) {
+        if (!p.extend) {
+            p.extend = "Node";
+            for (var _i = 0, abstracts_1 = abstracts; _i < abstracts_1.length; _i++) {
+                var a = abstracts_1[_i];
+                if (p.name.indexOf(a) > 0) {
+                    p.extend = a;
+                    break;
+                }
+            }
         }
+    });
+    // 展开 inline
+    eachProduction(expandFields);
+    function expandFields(production) {
+        for (var i = 0; i < production.fields.length;) {
+            if (production.fields[i].inline) {
+                var allFields = expandFields(productions[production.fields[i].inline]);
+                (_a = production.fields).splice.apply(_a, [i, 1].concat(allFields));
+                i += allFields.length;
+                continue;
+            }
+            i++;
+        }
+        return production.fields;
+        var _a;
     }
+    // 展开 list 类型
+    eachProduction(function (p) {
+        for (var _i = 0, _a = p.fields; _i < _a.length; _i++) {
+            var f = _a[_i];
+            if (productions[f.type] && productions[f.type].list) {
+                f.type = "nodes.NodeList<" + productions[f.type].list.element + ">";
+            }
+        }
+        for (var _b = 0, _c = p.params; _b < _c.length; _b++) {
+            var f = _c[_b];
+            if (productions[f.type] && productions[f.type].list) {
+                f.type = "nodes.NodeList<" + productions[f.type].list.element + ">";
+            }
+        }
+    });
     // 提取公共注释。
     var comments = {};
     var types = {};
     eachProduction(function (p) {
         for (var _i = 0, _a = p.fields; _i < _a.length; _i++) {
             var f = _a[_i];
-            comments[f.name] = comments[f.name] || f.comment;
-            types[f.name] = types[f.name] || f.type;
+            if (f.comment) {
+                comments[f.name] = comments[f.name] || f.comment;
+            }
+            if (f.type) {
+                types[f.name] = types[f.name] || f.type;
+            }
         }
         for (var _b = 0, _c = p.params; _b < _c.length; _b++) {
             var f = _c[_b];
-            comments[f.name] = comments[f.name] || f.comment;
-            types[f.name] = types[f.name] || f.type;
+            if (f.comment) {
+                comments[f.name] = comments[f.name] || f.comment;
+            }
+            if (f.type) {
+                types[f.name] = types[f.name] || f.type;
+            }
         }
     });
     eachProduction(function (p) {
@@ -982,14 +1214,67 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
         }
     });
     // 生成 parser。
-    parserSource;
+    for (var _i = 0, allRegions_1 = allRegions; _i < allRegions_1.length; _i++) {
+        var region = allRegions_1[_i];
+        var codes = [];
+        for (var _a = 0, _b = region.productions; _a < _b.length; _a++) {
+            var p = _b[_a];
+            var pp = productions[p];
+            codes.push("");
+            codes.push("    /**");
+            codes.push("     * \u89E3\u6790\u4E00\u4E2A" + (/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment) + "\u3002");
+            for (var _c = 0, _d = pp.params; _c < _d.length; _c++) {
+                var param = _d[_c];
+                codes.push("     * @param " + param.name + " " + param.comment + "\u3002");
+            }
+            codes.push("     */");
+            codes.push("    private parse" + pp.name + "(" + formatCode(pp.params.map(function (t) { return ("" + t.name + (t.value ? " = " + t.value : (t.optional ? "?" : "") + (t.type ? ": " + t.type : ""))); }).join(", ")) + ") {");
+            var wrap = pp.fields.length && (!pp.params[0] || pp.params[0].name !== "_");
+            if (wrap) {
+                codes.push("        const result = new nodes." + pp.name + ";");
+            }
+            for (var _e = 0, _f = pp.codes; _e < _f.length; _e++) {
+                var code = _f[_e];
+                codes.push("        " + formatCode(code));
+            }
+            if (wrap) {
+                codes.push("        return result;");
+            }
+            codes.push("    }");
+        }
+        var regionD = region.start.replace(/\/\/\s*#region\s*/, "").trim();
+        parserSource = setRegion(parserSource, regionD, codes.join("\n"));
+    }
+    require("fs").writeFileSync("aa.ts", parserSource);
     // 生成 nodes。
     // 生成 nodesVisitor。
     require("fs").writeFileSync("aa.json", JSON.stringify(productions, null, 4));
+    return {
+        productions: productions,
+        allRegions: allRegions,
+        parserSource: parserSource,
+        nodesSource: nodesSource,
+        nodeVisitorSource: nodeVisitorSource
+    };
     function eachProduction(callback) {
-        for (var name_1 in productions) {
-            callback(productions[name_1]);
+        for (var name_3 in productions) {
+            callback(productions[name_3]);
         }
+    }
+    function formatCode(code) {
+        return code.replace(/([:<|]\s*)([A-Z])/g, "$1nodes.$2")
+            .replace(/(^|[^\.\w])([A-Z]\w*)/g, "$1this.parse$2()")
+            .replace(/(this.parse\w+)\(\)(\()/g, "$1$2")
+            .replace(/(^|[^\.\w])lexer\b/g, "$1this.lexer")
+            .replace(/(^|[^\.\w])peek\b/g, "$1this.lexer.peek().type")
+            .replace(/(^|[^\.\w])sameLine\b/g, "$1!this.lexer.peek().hasLineBreakBeforeStart")
+            .replace(/(^|[^\.\w])options\b/g, "$1this.options")
+            .replace(/(^|[^\.\w])error\b/g, "$1this.error")
+            .replace(/(^|[^\.\w])readToken\b/g, "$1this.readToken")
+            .replace(/(^|[^\.\w])current\b/g, "$1this.lexer.current.type")
+            .replace(/:\s*any/g, "")
+            .replace(/'(.*?)'/g, function (all, t) { return tokens[t] ? "tokens.TokenType." + tokens[t].field : all; })
+            .replace(/\b_\b/g, "result");
     }
 }
 ;
@@ -1015,7 +1300,15 @@ function setRange(source, rangeName, value) {
  * @param rangeName
  */
 function getRegion(source, rangeName) {
-    return (new RegExp("^\\s*//\\s*#region\\s*" + rangeName + ".*([\\s\\S]*?)^//\\s*#endregion\\s*" + rangeName, "m").exec(source) || ["", ""])[1];
+    return (new RegExp("^\\s*//\\s*#region\\s*" + rangeName + "\\s*$([\\s\\S]*?)^\\s*//\\s*#endregion\\s*" + rangeName, "m").exec(source) || ["", ""])[1];
+}
+/**
+ * 获取源码中指定区域的内容。
+ * @param source
+ * @param rangeName
+ */
+function setRegion(source, rangeName, value) {
+    return source.replace(new RegExp("^(\\s*//\\s*#region\\s*" + rangeName + "\\s*$)([\\s\\S]*?)^(\\s*//\\s*#endregion\\s*)", "m"), function (_, prefix, body, postfix) { return prefix + value + postfix; });
 }
 /**
  * 将源码拆分为多行。
