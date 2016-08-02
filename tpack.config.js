@@ -11,10 +11,10 @@ tpack.task("gen-parser", function () {
         var result2 = parseNodes(file.content, result.tokens, tpack.getFile("src/parser/nodes.ts").content, tpack.getFile("src/parser/parser.ts").content, tpack.getFile("src/parser/nodeVisitor.ts").content);
         tpack.getFile("src/parser/nodes.ts").content = result2.nodesSource;
         tpack.getFile("src/parser/parser.ts").content = result2.parserSource;
-        //tpack.getFile("src/parser/nodeVisitor.ts").content = result2.nodeVisitorSource;
-        //tpack.getFile("src/parser/nodes.ts").save();
+        tpack.getFile("src/parser/nodeVisitor.ts").content = result2.nodeVisitorSource;
+        tpack.getFile("src/parser/nodes.ts").save();
         tpack.getFile("src/parser/parser.ts").save();
-        //tpack.getFile("src/parser/nodeVisitor.ts").save();
+        tpack.getFile("src/parser/nodeVisitor.ts").save();
     });
 });
 // #region 解析 .def 文件
@@ -1339,8 +1339,6 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
         }
         nodeVisitorSource = setRegion(nodeVisitorSource, region.name, codes.join("\n"));
     }
-    require("fs").writeFileSync("aa.ts", nodeVisitorSource);
-    require("fs").writeFileSync("aa.json", JSON.stringify(productions, null, 4));
     return {
         productions: productions,
         allRegions: allRegions,

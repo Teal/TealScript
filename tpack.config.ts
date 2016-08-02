@@ -17,10 +17,10 @@ tpack.task("gen-parser", function () {
 
         tpack.getFile("src/parser/nodes.ts").content = result2.nodesSource;
         tpack.getFile("src/parser/parser.ts").content = result2.parserSource;
-        //tpack.getFile("src/parser/nodeVisitor.ts").content = result2.nodeVisitorSource;
-        //tpack.getFile("src/parser/nodes.ts").save();
+        tpack.getFile("src/parser/nodeVisitor.ts").content = result2.nodeVisitorSource;
+        tpack.getFile("src/parser/nodes.ts").save();
         tpack.getFile("src/parser/parser.ts").save();
-        //tpack.getFile("src/parser/nodeVisitor.ts").save();
+        tpack.getFile("src/parser/nodeVisitor.ts").save();
     });
 });
 
@@ -1594,9 +1594,6 @@ ${memberList.join("\n")}
         }
         nodeVisitorSource = setRegion(nodeVisitorSource, region.name, codes.join("\n"));
     }
-
-    require("fs").writeFileSync("aa.ts", nodeVisitorSource);
-    require("fs").writeFileSync("aa.json", JSON.stringify(productions, null, 4));
 
     return {
         productions,
