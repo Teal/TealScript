@@ -1,7 +1,7 @@
 /**
  * @fileOverview 标记
  * @author xuld@vip.qq.com
- * @generated 此文件标记为 @generated 的变量和函数内容使用 `tpack gen-tokenType` 生成。
+ * @generated 此文件标记为 @generated 的变量和函数内容使用 `tpack gen-parser` 生成。
  */
 
 import {CharCode} from './unicode';
@@ -12,7 +12,7 @@ import {CharCode} from './unicode';
  */
 export const enum TokenType {
 
-    // #region 控制符(Control)
+	// #region 控制符(Control)
 
     /**
      * 未知标记。
@@ -24,9 +24,9 @@ export const enum TokenType {
      */
     endOfFile = 1,
 
-    // #endregion
+	// #endregion
 
-    // #region 其它运算符(Other Operators)
+	// #region 其它运算符(Other Operators)
 
     /**
      * 闭圆括号(`)`)。
@@ -58,9 +58,9 @@ export const enum TokenType {
      */
     templateTail = 7,
 
-    // #endregion
+	// #endregion
 
-    // #region 字面量(Literal)
+	// #region 字面量(Literal)
 
     /**
      * 简单模板字符串字面量(`\`...\``)(在 EcmaScript 5 新增)。
@@ -107,9 +107,9 @@ export const enum TokenType {
      */
     false = 16,
 
-    // #endregion
+	// #endregion
 
-    // #region 内置类型(Predefined Types)
+	// #region 内置类型(Predefined Types)
 
     /**
      * 关键字 null。
@@ -221,9 +221,9 @@ export const enum TokenType {
      */
     question = 38,
 
-    // #endregion
+	// #endregion
 
-    // #region 修饰符(Modifiers)
+	// #region 修饰符(Modifiers)
 
     /**
      * 关键字 async(在 EcmaScript 7 新增)。
@@ -275,9 +275,9 @@ export const enum TokenType {
      */
     const = 48,
 
-    // #endregion
+	// #endregion
 
-    // #region 声明(Declarations)
+	// #region 声明(Declarations)
 
     /**
      * 关键字 function。
@@ -309,9 +309,9 @@ export const enum TokenType {
      */
     interface = 54,
 
-    // #endregion
+	// #endregion
 
-    // #region 单目运算符(Unary Operators)
+	// #region 单目运算符(Unary Operators)
 
     /**
      * 关键字 yield(在 EcmaScript 5 新增)。
@@ -363,9 +363,9 @@ export const enum TokenType {
      */
     tilde = 64,
 
-    // #endregion
+	// #endregion
 
-    // #region 单/双目运算符(Unary & Binary Operators)
+	// #region 单/双目运算符(Unary & Binary Operators)
 
     /**
      * 加(`+`)。
@@ -417,9 +417,9 @@ export const enum TokenType {
      */
     slashEquals = 74,
 
-    // #endregion
+	// #endregion
 
-    // #region 双目运算符(Binary Operators)
+	// #region 双目运算符(Binary Operators)
 
     /**
      * 乘乘(`**`)(在 EcmaScript 5 新增)。
@@ -606,9 +606,9 @@ export const enum TokenType {
      */
     is = 111,
 
-    // #endregion
+	// #endregion
 
-    // #region 语句头(Statement Headers)
+	// #region 语句头(Statement Headers)
 
     /**
      * 分号(`;`)。
@@ -695,9 +695,9 @@ export const enum TokenType {
      */
     type = 128,
 
-    // #endregion
+	// #endregion
 
-    // #region 其它语句(Other Statements)
+	// #region 其它语句(Other Statements)
 
     /**
      * 关键字 from(在 EcmaScript 5 新增)。
@@ -725,36 +725,46 @@ export const enum TokenType {
     to = 133,
 
     /**
+     * 关键字 get。
+     */
+    get = 134,
+
+    /**
+     * 关键字 set。
+     */
+    set = 135,
+
+    /**
      * 关键字 else。
      */
-    else = 134,
+    else = 136,
 
     /**
      * 关键字 case。
      */
-    case = 135,
+    case = 137,
 
     /**
      * 关键字 default。
      */
-    default = 136,
+    default = 138,
 
     /**
      * 关键字 catch。
      */
-    catch = 137,
+    catch = 139,
 
     /**
      * 关键字 finally。
      */
-    finally = 138,
+    finally = 140,
 
     /**
      * 关键字 extends(在 EcmaScript 5 新增)。
      */
-    extends = 139,
+    extends = 141,
 
-    // #endregion
+	// #endregion
 
 }
 
@@ -897,6 +907,8 @@ export const tokenNames = [
 	"package",
 	"of",
 	"to",
+	"get",
+	"set",
 	"else",
 	"case",
 	"default",
@@ -1002,6 +1014,8 @@ export const keywords: { [key: string]: TokenType } = {
 	package: TokenType.package,
 	of: TokenType.of,
 	to: TokenType.to,
+	get: TokenType.get,
+	set: TokenType.set,
 	else: TokenType.else,
 	case: TokenType.case,
 	default: TokenType.default,
@@ -1044,7 +1058,7 @@ export function isIdentifierName(token: TokenType) {
 		token >= TokenType.undefined && token <= TokenType.double ||
 		token >= TokenType.async && token <= TokenType.readonly ||
 		token >= TokenType.namespace && token <= TokenType.await ||
-		token >= TokenType.let && token <= TokenType.to;
+		token >= TokenType.let && token <= TokenType.set;
 }
 
 /**
@@ -1103,7 +1117,7 @@ export function isTypeNodeStart(token: TokenType) {
 		token >= TokenType.namespace && token <= TokenType.typeof ||
 		token === TokenType.openParen || token === TokenType.openBracket ||
 		token === TokenType.lessThan ||
-		token >= TokenType.let && token <= TokenType.to;
+		token >= TokenType.let && token <= TokenType.set;
 }
 
 /**
@@ -1126,7 +1140,7 @@ export function isExpressionStart(token: TokenType) {
 	return token >= TokenType.noSubstitutionTemplateLiteral && token <= TokenType.void ||
 		token >= TokenType.async && token <= TokenType.readonly ||
 		token >= TokenType.function && token <= TokenType.slashEquals ||
-		token >= TokenType.from && token <= TokenType.to;
+		token >= TokenType.let && token <= TokenType.set;
 }
 
 /**

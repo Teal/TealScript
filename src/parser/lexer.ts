@@ -1028,6 +1028,28 @@ export class Lexer {
 
     // #endregion
 
+    /**
+     * 保存当前读取的进度。保存之后可以通过 {@link stashRestore} 恢复进度。
+     */
+    stashSave() {
+        return this.current;
+    }
+
+    /**
+     * 恢复之前保存的进度。
+     */
+    stashRestore(state) {
+        this.current = this.stash;
+        delete this.stash;
+    }
+
+    /**
+     * 清除之前保存的进度。
+     */
+    stashClear(state) {
+        delete this.stash;
+    }
+
 }
 
 /**
@@ -1074,7 +1096,7 @@ export interface LexerOptions {
 /**
  * 表示一个标记。
  */
-export interface Token {
+export interface Token  {
 
     /**
      * 获取下一个标记。如果下一个标记未解析则返回 undefined。

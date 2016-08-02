@@ -2,756 +2,20 @@
 /// <reference path=".vscode/typings/node/node.d.ts" />
 /// <reference path=".vscode/typings/tpack/tpack.d.ts" />
 var tpack = require("tpack");
-var ts = require("typescript");
-// nodes.ts => nodes.ts & nodeVisitor.ts
-tpack.task("gen-nodes", function () {
-    tpack.allowOverwriting = true;
+tpack.task("gen-parser", function () {
     tpack.src("src/parser/tealscript.def").pipe(function (file, options) {
         var result = parseTokens(file.content, tpack.getFile("src/parser/tokens.ts").content);
         tpack.getFile("src/parser/tokens.ts").content = result.tokenSource;
         tpack.getFile("src/parser/tokens.ts").save();
-    });
-    return;
-    //    tpack.src("src/parser/nodes.ts").pipe((file, options) => {
-    //        // 第一步：语法解析。
-    //        const program = ts.createProgram([file.path], options);
-    //        const sourceFile = program.getSourceFiles()[program.getSourceFiles().length - 1];
-    //        // 第二步：提取类型信息。
-    //        const nodes = {};
-    //        for (const statement of sourceFile.statements) {
-    //            if (statement.kind !== ts.SyntaxKind.ClassDeclaration || !(statement.flags & ts.NodeFlags.Export)) {
-    //                continue;
-    //            }
-    //            const clazz = <ts.ClassDeclaration>statement;
-    //            const baseClazzType = clazz.heritageClauses && clazz.heritageClauses.length && clazz.heritageClauses[0].types[0];
-    //            let members = {};
-    //            let optional = {};
-    //            for (const member of clazz.members) {
-    //                if (member.kind !== ts.SyntaxKind.PropertyDeclaration) {
-    //                    continue;
-    //                }
-    //                const prop = <ts.PropertyDeclaration>member;
-    //                if (!prop.type) {
-    //                    continue;
-    //                }
-    //                members = members || {};
-    //                const type = sourceFile.text.substring(prop.type.pos, prop.type.end).trim();
-    //                members[(<ts.Identifier>prop.name).text] = type;
-    //                if (getDocComment(prop, false).indexOf("undefined") >= 0 || getDocComment(prop, false).indexOf("可能不存在") >= 0/* || isArrayType(type)*/) {
-    //                    optional[(<ts.Identifier>prop.name).text] = true;
-    //                }
-    //            }
-    //            nodes[clazz.name.text] = {
-    //                summary: getDocComment(clazz),
-    //                isAbstract: clazz.modifiers && clazz.modifiers.some(t => t.kind === ts.SyntaxKind.AbstractKeyword),
-    //                name: clazz.name.text,
-    //                extends: baseClazzType && sourceFile.text.substring(baseClazzType.pos, baseClazzType.end).trim() || null,
-    //                members,
-    //                optional,
-    //                node: clazz,
-    //            };
-    //        }
-    //        // 第三步：删除非节点类。
-    //        for (const name in nodes) {
-    //            const type = nodes[name];
-    //            if (!isNodeType(name)) {
-    //                delete nodes[name];
-    //                continue;
-    //            }
-    //            for (const member in type.members) {
-    //                if (!isNodeType(type.members[member])) {
-    //                    delete type.members[member];
-    //                }
-    //            }
-    //        }
-    //        // 第四步：继承父节点信息。
-    //        for (const name in nodes) {
-    //            const type = nodes[name];
-    //            if (type.isAbstract) continue;
-    //            let p = type;
-    //            while (p = nodes[p.extends]) {
-    //                var r = {};
-    //                for (const m in p.members) {
-    //                    r[m] = p.members[m];
-    //                }
-    //                for (const m in type.members) {
-    //                    r[m] = type.members[m];
-    //                }
-    //                type.members = r;
-    //                for (const m in p.optional) {
-    //                    if (!type.optional[m]) {
-    //                        type.optional[m] = p.optional[m];
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        // 第五步：修复类型信息。
-    //        let acceptSummary = getDocComment(getMember(nodes["Node"].node, "accept"), false);
-    //        let eachSummary = getDocComment(getMember(nodes["Node"].node, "each"), false);
-    //        let changes = [];
-    //        for (const name in nodes) {
-    //            const type = nodes[name];
-    //            if (type.isAbstract) {
-    //                continue;
-    //            }
-    //            const each = getMember(type.node, "each");
-    //            if (each) {
-    //                changes.push({
-    //                    remove: true,
-    //                    pos: each.pos,
-    //                    end: each.end,
-    //                });
-    //            }
-    //            const eachContentItems = [];
-    //            for (const member in type.members) {
-    //                const memberType = type.members[member];
-    //                let tpl = isArrayType(memberType) ? `this.${member}.each(callback, scope)` : `callback.call(scope, this.${member}, "${member}", this) !== false`;
-    //                if (type.optional[member]) {
-    //                    tpl = `(!this.${member} || ${tpl})`;
-    //                }
-    //                eachContentItems.push(tpl);
-    //            }
-    //            if (eachContentItems.length) {
-    //                const eachContent = `
-    //    ${eachSummary}
-    //    each(callback: EachCallback, scope?: any) {
-    //        return ${eachContentItems.join(" &&\n            ")};
-    //    }`;
-    //                changes.push({
-    //                    insert: true,
-    //                    pos: each ? each.pos : (<ts.ClassDeclaration>type.node).members.end,
-    //                    content: eachContent
-    //                });
-    //            }
-    //            const accept = getMember(type.node, "accept");
-    //            if (accept) {
-    //                changes.push({
-    //                    remove: true,
-    //                    pos: accept.pos,
-    //                    end: accept.end,
-    //                });
-    //            }
-    //            const content = `
-    //    ${acceptSummary}
-    //    accept(vistior: NodeVisitor) {
-    //        return vistior.visit${type.name}(this);
-    //    }`;
-    //            changes.push({
-    //                insert: true,
-    //                pos: accept ? accept.pos : (<ts.ClassDeclaration>type.node).members.end,
-    //                content: content
-    //            });
-    //        }
-    //        // 第六步：应用修复。
-    //        let source = sourceFile.text;
-    //        changes.sort((x, y) => y.pos > x.pos ? 1 : y.pos < x.pos ? -1 : y.remove ? 1 : -1);
-    //        for (const change of changes) {
-    //            if (change.remove) {
-    //                source = source.substr(0, change.pos) + source.substr(change.end);
-    //            } else {
-    //                source = source.substr(0, change.pos) + change.content + source.substr(change.pos);
-    //            }
-    //        }
-    //        file.content = source;
-    //        // 第七步：生成 NodeVistior。
-    //        var result = `/**
-    // * @fileOverview 节点访问器
-    // * @generated 此文件可使用 \`$ tpack gen-nodes\` 命令生成。
-    // */
-    //import * as nodes from './nodes';
-    ///**
-    // * 表示一个节点访问器。
-    // */
-    //export abstract class NodeVisitor {
-    //    /**
-    //     * 访问一个逗号隔开的节点列表(<..., ...>。
-    //     * @param nodes 要访问的节点列表。
-    //     */
-    //    visitNodeList<T extends nodes.Node>(nodes: nodes.NodeList<T>) {
-    //        for(const node of nodes) {
-    //            node.accept(this);
-    //        }
-    //    }
-    //`;
-    //        for (const name in nodes) {
-    //            const type = nodes[name];
-    //            if (type.isAbstract) {
-    //                continue;
-    //            }
-    //            let memberList = [];
-    //            for (const member in type.members) {
-    //                memberList.push(`        ${type.optional[member] ? "node." + member + " && " : ""}node.${member}.accept(this);`);
-    //            }
-    //            result += `
-    //    /**
-    //     * ${type.summary.replace("表示", "访问")}
-    //     * @param node 要访问的节点。
-    //     */
-    //    visit${type.name}(node: nodes.${type.name}) {
-    //${memberList.join("\n")}
-    //    }
-    //`
-    //            function getNodeMembers(type) {
-    //                let r = [];
-    //                return r;
-    //            }
-    //        }
-    //        result += `
-    //}`;
-    //        require("fs").writeFileSync("src/parser/nodeVisitor.ts", result);
-    //        function getDocComment(node: ts.Node, removeSpace = true) {
-    //            const comments: ts.CommentRange[] = (ts as any).getJsDocComments(node, sourceFile);
-    //            if (!comments || !comments.length) return;
-    //            const comment = comments[comments.length - 1];
-    //            const commentText = sourceFile.text.substring(comment.pos, comment.end);
-    //            return removeSpace ? commentText.substring(3, commentText.length - 2).replace(/^\s*\*\s*/gm, "").trim() : commentText;
-    //        }
-    //        function getMember(node: ts.ClassDeclaration, name: string) {
-    //            return (<ts.ClassDeclaration>node).members.filter(x => (<ts.Identifier>x.name).text == name)[0];
-    //        }
-    //        function isNodeType(type: string) {
-    //            if (/^NodeList</.test(type)) return true;
-    //            let p = nodes[type.replace(/\s*\|.*$/, "")];
-    //            while (p) {
-    //                if (p.name === "Node") return true;
-    //                p = nodes[p.extends];
-    //            }
-    //            return false;
-    //        }
-    //        function isArrayType(type: string) {
-    //            return /<.*>|\[\]/.test(type);
-    //        }
-    //    });
-    tpack.src("src/parser/tokens.ts").pipe(function (file, options) {
-        // 第一步：语法解析。
-        var program = ts.createProgram([file.path], options);
-        var sourceFile = program.getSourceFiles()[program.getSourceFiles().length - 1];
-        // 第二步：提取类型信息。
-        var data = {};
-        var tokenType = sourceFile.statements.filter(function (t) { return t.kind === ts.SyntaxKind.EnumDeclaration && t.name.text === "TokenType"; })[0];
-        var val = 0;
-        for (var _i = 0, _a = tokenType.members; _i < _a.length; _i++) {
-            var member = _a[_i];
-            var summary = getDocComment(member);
-            var string = (/关键字\s*(\w+)|\((.+?)\)/.exec(summary) || []).slice(1).join("");
-            var info = {
-                summary: summary,
-                string: string,
-                keyword: /关键字/.test(summary) || /0x0|EOF|\}\.|xx|.\.\.\./.test(string) || !string,
-                value: val++
-            };
-            data[member.name.text] = info;
-        }
-        var ss = [];
-        for (var k in data) {
-            var d = data[k];
-            if (!d.keyword) {
-                d.summary = (d.summary || "").replace(/\((.*)\)/, function (_, n) {
-                    // k = n;
-                    return "";
-                });
-            }
-            ss.push("'" + (d.string || k) + "': [], // " + d.summary);
-        }
-        // require("fs").writeFileSync("aa.json", JSON.stringify(data, null, 4));
-        require("fs").writeFileSync("aa.js", ss.join("\n"));
-        //generateKeywordLexer(data, 0);
-        // 第三步：生成优先级数组。
-        // 第四步：生成优先级数组。
-        function getDocComment(node, removeSpace) {
-            if (removeSpace === void 0) { removeSpace = true; }
-            var comments = ts.getJsDocComments(node, sourceFile);
-            if (!comments || !comments.length)
-                return;
-            var comment = comments[comments.length - 1];
-            var commentText = sourceFile.text.substring(comment.pos, comment.end);
-            return removeSpace ? commentText.substring(3, commentText.length - 2).replace(/^\s*\*\s*/gm, "").trim() : commentText;
-        }
-        function generateKeywordLexer(data, indent) {
-            var names = {};
-            var items = [];
-            for (var name_1 in data) {
-                var info = data[name_1];
-                if (info.keyword) {
-                    continue;
-                }
-                names[info.string] = name_1;
-                items.push(info.string);
-            }
-            items.sort();
-            var result = '';
-            for (var i = 0; i < items.length;) {
-                var c = items[i];
-                var hasSameCount = 0;
-                for (var j_1 = i + 1; j_1 < items.length; j_1++) {
-                    if (items[j_1].charAt(0) === c.charAt(0)) {
-                        hasSameCount++;
-                    }
-                }
-                result += genIndents(indent) + "// " + c;
-                for (var j = 0; j < hasSameCount; j++) {
-                    result += ", " + items[i + j + 1];
-                }
-                result += "\n";
-                result += genIndents(indent) + 'case CharCode.' + names[c] + ':\n';
-                if (hasSameCount === 0) {
-                    result += 'result.type = TokenType.' + names[c] + ';\n';
-                    result += 'break;\n';
-                    i++;
-                }
-                if (hasSameCount === 1) {
-                    result += genIndents(indent) + 'if(this.sourceText.charCodeAt(this.sourceStart) === TokenType.' + names[items[i + 1]] + ') {';
-                    result += genIndents(indent + 1) + 'this.sourceStart++;';
-                    result += genIndents(indent + 1) + 'result.type = TokenType.' + names[items[i + 1]] + ';\n';
-                    result += genIndents(indent + 1) + 'break;\n';
-                    result += genIndents(indent) + '}';
-                    result += genIndents(indent) + 'result.type = TokenType.' + names[c] + ';\n';
-                    result += genIndents(indent) + 'break;\n';
-                    i += 2;
-                }
-                if (hasSameCount >= 2) {
-                    result += genIndents(indent) + ' switch (this.sourceText.charCodeAt(this.sourceStart)) {\n';
-                    for (var j_2 = 0; j_2 < hasSameCount; j_2++) {
-                        result += genIndents(indent + 1) + 'case CharCode.' + names[items[i + j_2 + 1]] + ':\n';
-                        result += genIndents(indent + 2) + 'this.sourceStart++;\n';
-                        result += genIndents(indent + 2) + 'result.type = TokenType.' + names[items[i + j_2 + 1]] + ';\n';
-                        result += genIndents(indent + 2) + 'break;\n';
-                    }
-                    result += genIndents(indent + 1) + 'default:\n';
-                    result += genIndents(indent + 2) + 'result.type = TokenType.' + names[c] + ';\n';
-                    result += genIndents(indent + 2) + 'break;\n';
-                    result += genIndents(indent) + '}\n';
-                    i += hasSameCount + 1;
-                    result += genIndents(indent) + 'break;\n';
-                }
-                result += genIndents(indent) + '\n';
-            }
-            console.log(result);
-            function genIndents(indent) {
-                var result = '';
-                while (indent-- > 0)
-                    result += '\t';
-                return result;
-            }
-            return result;
-        }
-    });
-    tpack.src("src/parser/parser.tpl").pipe(function (file, options) {
-        //  generateParser(file.content, 0, "", "", "");
+        var result2 = parseNodes(file.content, result.tokens, tpack.getFile("src/parser/nodes.ts").content, tpack.getFile("src/parser/parser.ts").content, tpack.getFile("src/parser/nodeVisitor.ts").content);
+        //tpack.getFile("src/parser/nodes.ts").content = result2.nodesSource;
+        //tpack.getFile("src/parser/parser.ts").content = result2.parserSource;
+        //tpack.getFile("src/parser/nodeVisitor.ts").content = result2.nodeVisitorSource;
+        //tpack.getFile("src/parser/nodes.ts").save();
+        //tpack.getFile("src/parser/parser.ts").save();
+        //tpack.getFile("src/parser/nodeVisitor.ts").save();
     });
 });
-/**
- * 生成解析器。
- * @param source 源文件内容。
- * @param tokenTypes 所有标记类型。
- * @param parser 输入 parser.ts 源文件。
- * @param nodes 输入 nodes.ts 源文件。
- * @param nodeVisitor 输入 nodeVisitor.ts 源文件。
- * @returns 返回生成的结果。
- */
-function generateParser(source, tokenTypes, parser, nodes, nodeVisitor) {
-    // #region 解析源
-    var rootProductions = [];
-    var productions = {};
-    var comments = {};
-    var types = {};
-    var listItems = [];
-    var stack = [];
-    var lines = source.split(/\r\n?|\n/);
-    for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        if (!line || /^\/\//.test(line))
-            continue;
-        if (/^\s*@\w/.test(line) && !/;$/.test(line)) {
-            var production = parseHeader(line);
-            productions[production.name] = production;
-            stack.push(production);
-            if (production.indent == 0) {
-                production.region = production.comment;
-                rootProductions.push(production.comment);
-            }
-        }
-        else {
-            var production = stack[stack.length - 1];
-            while (production && getIndent(line) <= production.indent) {
-                stack.pop();
-                production = stack[stack.length - 1];
-            }
-            if (!production)
-                continue;
-            if (isPart(line)) {
-                production.parts.push(parsePart(line.trim()));
-            }
-            else {
-                production.codes.push(parseCode(removeIndent(line, production.indent + 1)));
-            }
-        }
-    }
-    // #endregion
-    // #region 补全和生成信息
-    eachProduction(function (production) {
-        if (production.inline) {
-            production.params[0].type = "{" +
-                production.parts.map(function (p) { return p.tokens.length ? "'" + p.tokens[0] + "'?: number" : p.name + "?: " + p.type; }).join(", ") +
-                "}";
-        }
-        // 补全参数注释
-        for (var i = 0; i < production.params.length; i++) {
-            var param = production.params[i];
-            param.comment = param.comment || comments[param.name];
-            param.type = param.type || types[param.name];
-            param.comment += "。";
-        }
-        // 补全成员的注释
-        for (var i = 0; i < production.parts.length; i++) {
-            var part = production.parts[i];
-            part.comment = part.comment || comments[part.name];
-            part.type = part.type || types[part.name];
-            if (production.params[i] && production.params[i].name === "*") {
-                production.params[i].name = part.name;
-                production.params[i].type = part.type;
-                production.params[i].comment = production.params[i].comment || ("当前" + production.comment.replace(/\(.*\)/, "") + "的" + part.comment + "。");
-                part.equals = part.equals || part.name;
-            }
-            // 如果目标节点是列表，则按列表解析。
-            if (productions[part.type] && productions[part.type].list) {
-                part.equals = part.equals || productions[part.type].list.equals;
-                part.type = productions[part.type].list.type;
-            }
-            // 自动生成 equals
-            if (!part.equals) {
-                part.equals = part.tokens.length ? part.tokens.length > 1 ? "@read" : "@readToken('" + part.tokens[0] + "')" : "@" + part.type + "(" + (part.args || "") + ")";
-            }
-            part.partComment = "获取当前" + production.comment.replace(/\(.*\)/, "") + "的" + part.comment + "。";
-        }
-        // 生成解析代码。
-        if (production.parts.length && !production.codes.length) {
-            if (!production.inline) {
-                production.codes.push("const result = new @" + production.name + "();");
-            }
-            for (var i = 0; i < production.parts.length; i++) {
-                var equals = "result." + production.parts[i].name + " = " + production.parts[i].equals + ";";
-                if (production.parts[i].optional && production.parts[i].tokens.length) {
-                    equals = "if (@peek === '" + production.parts[i].tokens[0] + "') " + equals;
-                }
-                production.codes.push(equals);
-            }
-            if (!production.inline) {
-                production.codes.push("return result;");
-            }
-        }
-        if (production.parts.length) {
-            production.classComment = "表示一个" + production.comment + "。";
-        }
-        production.comment = "解析一个" + production.comment + "。";
-        delete production.indent;
-        cleanObj(production);
-    });
-    eachProduction(function (production) {
-        // 补全成员的注释
-        for (var i = 0; i < production.parts && production.parts.length; i++) {
-            var part = production.parts[i];
-            // 追加内联部分。
-            if (productions[part.type] && productions[part.type].inline) {
-                for (var _i = 0, _a = productions[part.type].parts; _i < _a.length; _i++) {
-                    var part2 = _a[_i];
-                    production.parts.splice(i++, 0, {
-                        inlined: true,
-                        name: part2.name,
-                        type: part2.type,
-                        comment: "获取当前" + production.comment.replace(/\(.*\)/, "") + "的" + part.comment + "。"
-                    });
-                }
-            }
-        }
-    });
-    // #endregion
-    // #region 生成代码
-    var regions = {};
-    eachProduction(function (production) {
-        var data = regions[production.region] = {
-            parser: "",
-            nodes: "",
-            nodeVisitor: ""
-        };
-        // 生成解析器。
-        data.parser += "\n";
-        data.parser += "\t/**\n";
-        data.parser += "\t * " + production.comment + "\n";
-        data.parser += production.params ? production.params.map(function (p) { return "\t * @param " + p.name + " " + p.comment + "\n"; }).join("") : "";
-        data.parser += "\t */";
-        data.parser += "\tprivate parse" + production.name + "(" + (production.params ? production.params.map(function (p) { return p.name + (p.equal ? " = " + p.equal : p.type ? " : " + p.type : ""); }).join(", ") : "") + ") {";
-        production.codes && production.codes.forEach(function (code) {
-            data.parser += "\t\t" + code;
-        });
-        data.parser += "\t}";
-        // 生成节点。
-    });
-    // #endregion
-    var s = tpack.createFile("d.json");
-    s.content = JSON.stringify(productions, null, 4);
-    s.save();
-    function getIndent(line) {
-        return (/\S/.exec(line.replace(/    /g, "\t")) || { index: 0 }).index;
-    }
-    function removeIndent(line, count) {
-        return line.replace(/    /g, "\t").substring(count);
-    }
-    function split2(line, sepeator) {
-        var p = line.indexOf(sepeator);
-        return p >= 0 ? [line.substring(0, p), line.substring(p + sepeator.length)] : [line, ""];
-    }
-    function isPart(line) {
-        line = line.trim();
-        return /^\?|^'.*'$|^\w+:\s*.+/.test(line);
-    }
-    function parseHeader(line) {
-        // @Name(p:T=v/*comment*/) doc extends Foo alias A | B list ... a // title
-        // 当参数 0 为 result 表示 inline；当参数为 * 表示映射成员。
-        var result = {
-            region: rootProductions[rootProductions.length - 1],
-            indent: getIndent(line),
-            name: "",
-            params: [],
-            doc: false,
-            extends: "",
-            alias: "",
-            list: null,
-            comment: "",
-            parts: [],
-            codes: [],
-            inline: false
-        };
-        result.name = line.replace(/^\s*@/, "")
-            .replace(/\/\/\s*(.+)$/, function (_, value) {
-            result.comment = value.trim();
-            return "";
-        })
-            .replace(/\bdoc\b/, function (_, value) {
-            result.doc = true;
-            return "";
-        })
-            .replace(/extends\s+(\w+)/, function (_, value) {
-            result.extends = value.trim();
-            return "";
-        })
-            .replace(/alias\s+(.+)/, function (_, value) {
-            result.alias = value.trim();
-            return "";
-        })
-            .replace(/list\s+(.+)/, function (_, value) {
-            result.list = parseList(value);
-            return "";
-        })
-            .replace(/\(([^)]+?)\)/, function (_, params) {
-            result.params = params.split(/,\s*/).map(parseParam);
-            return "";
-        })
-            .trim();
-        // 填充 extends
-        if (!result.extends) {
-            result.extends = "Node";
-            var extendsMap = {
-                "Expression": "Expression",
-                "Statement": "Statement",
-                "Literal": "Expression",
-                "Declaration": "Declaration",
-            };
-            for (var n in extendsMap) {
-                if (result.name.indexOf(n) >= 0 && result.name !== n) {
-                    result.extends = extendsMap[n];
-                    break;
-                }
-            }
-        }
-        // @产生式(result)
-        if (result.params && result.params.length && result.params[0].name === "result") {
-            result.inline = true;
-            result.params[0].comment = result.params[0].comment || "存放结果的目标节点";
-        }
-        return result;
-    }
-    function parseParam(line) {
-        var result = {
-            comment: "",
-            name: "",
-            equal: "",
-            question: false,
-            type: ""
-        };
-        result.name = line
-            .replace(/\/\*(.+)\*\//, function (_, comment) {
-            result.comment = comment.trim();
-            return "";
-        })
-            .replace(/=(.+)/, function (_, value) {
-            result.equal = value.trim();
-            return "";
-        })
-            .replace(/:(.+)/, function (_, type) {
-            result.type = type.trim();
-            return "";
-        })
-            .replace(/\?/, function (_) {
-            result.question = true;
-            return "";
-        })
-            .trim();
-        // 未提供注释和类型时，可以使用已提供的注释和类型。
-        if (result.comment && !comments[result.name]) {
-            comments[result.name] = result.comment;
-        }
-        if (result.type && !types[result.name]) {
-            types[result.name] = result.type;
-        }
-        return result;
-    }
-    function parseList(line) {
-        // [ ?TupleTypeElement , ...isTypeNodeStart ]
-        var result = {
-            element: "",
-            open: "",
-            close: "",
-            continue: "",
-            seperator: "",
-            optional: false,
-            type: "",
-            equals: ""
-        };
-        var dotDotDot = "";
-        var parts = line.trim().split(/\s+/);
-        if (parts.length >= 5) {
-            result.open = parts[0];
-            result.element = parts[1];
-            result.seperator = parts[2];
-            dotDotDot = parts[3];
-            result.close = parts[4];
-        }
-        else if (parts.length === 4) {
-            result.open = parts[0];
-            result.element = parts[1];
-            dotDotDot = parts[2];
-            result.close = parts[3];
-        }
-        else if (parts.length === 3) {
-            result.element = parts[0];
-            result.seperator = parts[1];
-            dotDotDot = parts[2];
-        }
-        else if (parts.length === 2) {
-            result.element = parts[0];
-            dotDotDot = parts[1];
-        }
-        if (/^\?/.test(result.element)) {
-            result.optional = true;
-            result.element = result.element.substring(1);
-        }
-        if (dotDotDot.length > 3) {
-            result.continue = dotDotDot.substring(3);
-        }
-        if (result.seperator) {
-            result.equals = "@DelimitedList(@" + result.element + ", " + (result.open ? "'" + result.open + "'" : undefined) + ", " + (result.close ? "'" + result.close + "'" : undefined) + ", " + result.optional + ", " + (result.continue ? "@" + result.continue : undefined) + ")";
-        }
-        else {
-            result.equals = "@NodeList(@" + result.element + ", " + (result.open ? "'" + result.open + "'" : undefined) + ", " + (result.close ? "'" + result.close + "'" : undefined) + ")";
-        }
-        result.type = "@NodeList<@" + result.element + ">";
-        result.equals = result.equals.replace(', undefined)', ')')
-            .replace(', false)', ')')
-            .replace(', undefined)', ')')
-            .replace(', undefined)', ')');
-        listItems.push(result.element);
-        return result;
-    }
-    function parseCode(line) {
-        return line.replace(/@peek/g, "this.lexer.peek().type");
-        //.replace(/@read/g, "this.lexer.read().start")
-        //.replace(/'(.+)'/g, function (_, t) {
-        //    if (!/^a-z/.test(t)) t = tokenTypes[t];
-        //    return "TokenType." + t;
-        //})
-        //.replace(/@([A-Z])/g, "this.parse$1")
-        //.replace(/@/g, "this.");
-    }
-    function parsePart(line) {
-        var result = {
-            optional: false,
-            name: "",
-            comment: "",
-            args: "",
-            equals: "",
-            type: "",
-            tokens: [],
-            list: null
-        };
-        result.name = line.trim()
-            .replace(/\/\/\s*(.+)$/, function (_, name) {
-            result.comment = name.trim();
-            return "";
-        })
-            .replace(/=\s(.+)/, function (_, value) {
-            result.equals = value.trim();
-            return "";
-        })
-            .replace(/\(([^)]+?)\)/, function (_, value) {
-            result.args = value.trim();
-            return "";
-        })
-            .replace(/:\s(.+)/, function (_, value) {
-            result.type = value.trim();
-            return "";
-        })
-            .replace(/^\?/g, function () {
-            result.optional = true;
-            return "";
-        });
-        if (!result.type) {
-            result.type = result.name;
-            result.name = "";
-        }
-        if (/^'.*'$/.test(result.type)) {
-            result.tokens = result.type.substring(1, result.type.length - 1).split("'|'");
-            result.name = result.name || ((tokenTypes[result.tokens[0]] || result.tokens[0]) + "Token");
-            result.type = "number";
-            result.comment = result.comment || (" " + result.tokens[0] + " 的位置");
-        }
-        if (result.optional) {
-            result.comment += "(可能不存在)";
-        }
-        if (result.tokens && result.tokens.length > 1) {
-            result.comment += "。合法的值有：`" + result.tokens.join("`、`") + "`";
-        }
-        if (result.comment && !comments[result.name]) {
-            comments[result.name] = result.comment;
-        }
-        if (result.type.indexOf(" ...") >= 0) {
-            result.list = parseList(result.type);
-            result.equals = result.equals || result.list.equals;
-            result.type = result.type || result.list.type;
-        }
-        return result;
-    }
-    function eachProduction(callback) {
-        for (var name_2 in productions) {
-            callback(productions[name_2]);
-        }
-    }
-    function cleanObj(obj) {
-        for (var k in obj) {
-            if (!obj[k]) {
-                delete obj[k];
-            }
-            else if (Array.isArray(obj[k])) {
-                if (!obj[k].length) {
-                    delete obj[k];
-                }
-                else {
-                    obj[k].forEach(cleanObj);
-                }
-            }
-        }
-    }
-}
 // #region 解析 .def 文件
 /**
  * 解析 tokens 段。
@@ -1536,75 +800,199 @@ function parseTokens(source, tokenSource) {
         }
     }
 }
-function parseSyntax(source, tokenNames) {
-    var lines = source.split(/\r\n?|\n/);
-    for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        // 忽略空行、注释、type、declare 开头的行。
-        if (!line || /^(\/\/|\s*(type|declare)\b)/.test(line))
-            continue;
-    }
-    function parseHeader(line) {
-    }
-    function parseParam(line) {
-    }
-    function isPart(line) {
-        return /^\s*_/.test(line);
-    }
-    /**
-     * 从指定的代码行中提取字段信息。
-     * @param production 所属的产生式。
-     * @param line 行源码。
-     */
-    function parseCode(production, line) {
-        // _...
-        if (/^\s*_/.test(line)) {
-            var field_1 = {};
-            line.replace(/\/\/\s*(.+)$/, function (_, value) {
-                field_1.comment = value.trim();
-                return "";
-            }).replace(/__/, function (_) {
-                field_1.optional = true;
-                return "_";
-            }).replace(/^\s*_\('(.*?)'\)/, function (all, token) {
-                return "_." + nameOf(token) + " = " + all;
-            }).replace(/_\.(\w+)\s*=\s*(.*)/, function (_, name, value) {
-                field_1.name = name;
-                // _.x = read('x', 'x')
-                if (/_\('/.test(value)) {
-                    field_1.type = "number";
-                    var tokens = value.replace(/,\s+/g, ",").replace(/^_\('/g, "").replace(/'\)$/g, "").split(",");
-                    if (tokens.length > 1) {
-                        field_1.tokens = tokens;
-                        return "result." + field_1.name + " = this.readToken(); // " + field_1.tokens.join("、");
-                    }
-                    field_1.token = tokens[0];
-                    return "result." + field_1.name + " = this.expectToken(TokenType." + nameOf(field_1.token) + ");";
-                }
-                // _.x = <'xx'>
-                if (/<'\w'>/) {
-                }
-                // _.x = T()
-                field_1.type = getWord(value);
-                return _.replace("_", "result");
-            });
+/**
+ * 解析 nodes 段。
+ */
+function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource) {
+    // 存储所有节点信息。
+    var productions = {};
+    // 存储所有区域。
+    var allRegions = [];
+    // 解析所有行。
+    var currentRegion;
+    var currentProduction;
+    parseLines(getRegion(source, "语法")).forEach(function (line) {
+        // 处理 region
+        if (/^\s*\/\/\s*#region/.test(line)) {
+            currentRegion = {
+                start: line,
+                end: "",
+                productions: []
+            };
+            allRegions.push(currentRegion);
+            return;
         }
-        // Initializer(_);
-        if (line.indexOf("(_)") >= 0) {
-            production.fields.push({
-                inline: getWord(line)
-            });
-            return line.replace("_", "result");
+        if (!currentRegion) {
+            tpack.error("发现不属于任何 region 的代码：" + line);
+            return;
         }
-        return line;
+        if (/^\s*\/\/\s*#endregion/.test(line)) {
+            currentRegion.end = line;
+            currentRegion = null;
+            return;
+        }
+        // 忽略注释、type、declare 开头的行。
+        if (/^\s*(\/\/|\/\*|\*|(type|declare)\b)/.test(line))
+            return;
+        // 处理定义头。
+        if (/function\s/.test(line)) {
+            currentProduction = {
+                _last: currentProduction,
+                indent: getIndent(line),
+                fields: [],
+                params: [],
+                name: "",
+                comment: "",
+                codes: [],
+                extend: "",
+                abstract: false,
+                doc: false,
+                list: null,
+                alias: "",
+            };
+            //if (line.replace(/function\s(\w+)\((.*?)\)\s*\{[^\/]*(?:\/\/(.*))?/, (_, name: string, params: string, comment: string) => {
+            //    currentProduction.name = name;
+            //    params.split(/,\s*/).forEach(line => {
+            //        if (!line) {
+            //            return;
+            //        }
+            //        const param: ParamInfo = {
+            //            name: "",
+            //            type: "",
+            //            comment: "",
+            //            value: "",
+            //            optional: false
+            //        };
+            //        if (line.replace(/(\w+)\s*(\?)?\s*(?::\s*(.*))?\s*(?:=\s*(.*))?\s*(?:\/\*(.*?)\*\/)?/, (_, name, optional, type, value, comment) => {
+            //            // = null || ...
+            //            if (/^\s*null\s*\|\|/.exec(value)) {
+            //                optional = true;
+            //                value = value.replace(/^\s*null\s*\|\|/, "");
+            //            }
+            //            // = Expression, = read()
+            //            if (/^\s*[A-Z]/.exec(value)) {
+            //                if (name !== "_") {
+            //                    addCode(`_.${name} = ${value}`);
+            //                }
+            //                type = value.replace(/\|\|/g, "|");
+            //                value = "";
+            //            } else if (/^\s*read\('(.*?)'\)/.exec(value)) {
+            //                addCode(value);
+            //                name = tokens[/^\s*read\('(.*?)'\)/.exec(value)[1]].field + "Token";
+            //                type = "number";
+            //                value = "";
+            //            }
+            //            param.name = name;
+            //            param.optional = !!optional;
+            //            param.type = type;
+            //            param.value = value;
+            //            param.comment = comment;
+            //            return "";
+            //        }) === line) {
+            //            tpack.error("解析参数错误：" + line);
+            //        }
+            //        currentProduction.params.push(param);
+            //    });
+            //    currentProduction.comment = comment ? comment.trim() : "";
+            //    return "";
+            //}) === line) {
+            //    tpack.error("解析定义错误：" + line);
+            //}
+            //// result = function AA() { => result = parseAA();
+            //if (!/^\s*function/.test(line)) {
+            //    currentProduction._last.codes.push(removeIndent(line.replace(/function\s.*$/, _ => "this.parse" + currentProduction.name + "(" + currentProduction.params.map(t => t.name).join(", ") + ");"), currentProduction._last.indent + 1));
+            //}
+            //productions[currentProduction.name] = currentProduction;
+            //currentRegion.productions.push(currentProduction.name);
+            return;
+        }
+        // 处理定义底。
+        if (/^\s*};?\s*$/.test(line) && getIndent(line) === currentProduction.indent) {
+            var prev = currentProduction;
+            currentProduction = currentProduction._last;
+            delete prev._last;
+            return;
+        }
+        // 处理定义正文。
+        if (!currentProduction) {
+            tpack.error("发现不属于任何产生式的代码：" + line);
+            return;
+        }
+        if (/\s*extend\((.*?)\)/.exec(line)) {
+            currentProduction.extend = /\s*extend\((.*?)\)/.exec(line)[1];
+            return;
+        }
+        if (/\s*alias\((.*?)\)/.exec(line)) {
+            currentProduction.alias = /\s*alias\((.*?)\)/.exec(line)[1];
+            return;
+        }
+        if (/\s*abstract\((.*?)\)/.exec(line)) {
+            currentProduction.abstract = true;
+            return;
+        }
+        // 删除缩进。
+        line = removeIndent(line, currentProduction.indent + 1);
+        var indent = line.substring(getIndent(line));
+        // 独立列表。
+        if (/^\s*list\((.*?)\)/.exec(line)) {
+            var value = parseSpecailValue(line);
+            currentProduction.list = value.list;
+            currentProduction.codes.push(indent + "return " + value.code + ";");
+            return;
+        }
+        function getIndent(line) {
+            return (/\S/.exec(line.replace(/    /g, "\t")) || { index: 0 }).index;
+        }
+        function removeIndent(line, count) {
+            return line.replace(/    /g, "\t").substring(count);
+        }
+    });
+    // 展开 inline
+    eachProduction(function (p) {
+    });
+    function expandFields(production) {
+        for (var i = 0; i < production.fields.length; i++) {
+        }
     }
-    function nameOf(token) {
-        return (tokenNames[token] || token) + "Token";
-    }
-    function getWord(content) {
-        return (/(\w+)/.exec(content) || [""])[0];
+    // 提取公共注释。
+    var comments = {};
+    var types = {};
+    eachProduction(function (p) {
+        for (var _i = 0, _a = p.fields; _i < _a.length; _i++) {
+            var f = _a[_i];
+            comments[f.name] = comments[f.name] || f.comment;
+            types[f.name] = types[f.name] || f.type;
+        }
+        for (var _b = 0, _c = p.params; _b < _c.length; _b++) {
+            var f = _c[_b];
+            comments[f.name] = comments[f.name] || f.comment;
+            types[f.name] = types[f.name] || f.type;
+        }
+    });
+    eachProduction(function (p) {
+        for (var _i = 0, _a = p.fields; _i < _a.length; _i++) {
+            var f = _a[_i];
+            f.comment = f.comment || comments[f.name];
+            f.type = f.type || types[f.name];
+        }
+        for (var _b = 0, _c = p.params; _b < _c.length; _b++) {
+            var f = _c[_b];
+            f.comment = f.comment || comments[f.name];
+            f.type = f.type || types[f.name];
+        }
+    });
+    // 生成 parser。
+    parserSource;
+    // 生成 nodes。
+    // 生成 nodesVisitor。
+    require("fs").writeFileSync("aa.json", JSON.stringify(productions, null, 4));
+    function eachProduction(callback) {
+        for (var name_1 in productions) {
+            callback(productions[name_1]);
+        }
     }
 }
+;
 /**
  * 获取源码中指定区域的内容。
  * @param source
@@ -1620,6 +1008,14 @@ function getRange(source, rangeName) {
  */
 function setRange(source, rangeName, value) {
     return source.replace(new RegExp("^(.*" + rangeName + ".*[\\{\\[])([\\s\\S]*?)(^[\\}\\]];?)", "m"), function (_, prefix, body, postfix) { return prefix + value + postfix; });
+}
+/**
+ * 获取源码中指定区域的内容。
+ * @param source
+ * @param rangeName
+ */
+function getRegion(source, rangeName) {
+    return (new RegExp("^\\s*//\\s*#region\\s*" + rangeName + ".*([\\s\\S]*?)^//\\s*#endregion\\s*" + rangeName, "m").exec(source) || ["", ""])[1];
 }
 /**
  * 将源码拆分为多行。

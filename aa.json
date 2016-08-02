@@ -1,986 +1,4137 @@
 {
-    "unknown": {
-        "summary": "未知标记。",
-        "string": "",
-        "keyword": true,
-        "value": 0
-    },
-    "endOfFile": {
-        "summary": "文件已结束(EOF)。",
-        "string": "EOF",
-        "keyword": true,
-        "value": 1
-    },
-    "closeParen": {
-        "summary": "闭括号())。",
-        "string": ")",
-        "keyword": false,
-        "value": 2
-    },
-    "closeBracket": {
-        "summary": "闭方括号(])。",
-        "string": "]",
-        "keyword": false,
-        "value": 3
-    },
-    "closeBrace": {
-        "summary": "闭花括号(})。",
-        "string": "}",
-        "keyword": false,
-        "value": 4
-    },
-    "colon": {
-        "summary": "冒号(:)。",
-        "string": ":",
-        "keyword": false,
-        "value": 5
-    },
-    "semicolon": {
-        "summary": "分号(;)。",
-        "string": ";",
-        "keyword": false,
-        "value": 6
-    },
-    "templateMiddle": {
-        "summary": "模板字符串主体(}...${)(JavaScript 5 新增)。",
-        "string": "}...${",
-        "keyword": true,
-        "value": 7
-    },
-    "templateTail": {
-        "summary": "模板字符串尾(}...`)(JavaScript 5 新增)。",
-        "string": "}...`",
-        "keyword": true,
-        "value": 8
-    },
-    "MIN_EXPRESSION_START": {
-        "summary": "最小的表达式开头。",
-        "string": "",
-        "keyword": true,
-        "value": 9
-    },
-    "identifier": {
-        "summary": "标识符(x)。",
-        "string": "x",
-        "keyword": false,
-        "value": 10
-    },
-    "numericLiteral": {
-        "summary": "数字字面量(0x0)。",
-        "string": "0x0",
-        "keyword": true,
-        "value": 11
-    },
-    "stringLiteral": {
-        "summary": "字符串字面量('...')。",
-        "string": "'...'",
-        "keyword": true,
-        "value": 12
-    },
-    "regularExpressionLiteral": {
-        "summary": "正则表达式字面量(/.../)。",
-        "string": "/.../",
-        "keyword": true,
-        "value": 13
-    },
-    "noSubstitutionTemplateLiteral": {
-        "summary": "简单模板字符串字面量(`...`)(JavaScript 5 新增)。",
-        "string": "`...`",
-        "keyword": true,
-        "value": 14
-    },
-    "templateHead": {
-        "summary": "模板字符串头(`...${)(JavaScript 5 新增)。",
-        "string": "`...${",
-        "keyword": true,
-        "value": 15
-    },
-    "MIN_SIMPLE_LITERAL": {
-        "summary": "最小的简单字面量。",
-        "string": "",
-        "keyword": true,
-        "value": 16
-    },
-    "undefined": {
-        "summary": "关键字 undefined。",
-        "string": "undefined",
-        "keyword": true,
-        "value": 17
-    },
-    "null": {
-        "summary": "关键字 null。",
-        "string": "null",
-        "keyword": true,
-        "value": 18
-    },
-    "true": {
-        "summary": "关键字 true。",
-        "string": "true",
-        "keyword": true,
-        "value": 19
-    },
-    "false": {
-        "summary": "关键字 false。",
-        "string": "false",
-        "keyword": true,
-        "value": 20
-    },
-    "this": {
-        "summary": "关键字 this。",
-        "string": "this",
-        "keyword": true,
-        "value": 21
-    },
-    "MIN_IDENTIFIER_NAME_1": {
-        "summary": "最小的标识符 1。",
-        "string": "",
-        "keyword": true,
-        "value": 22
-    },
-    "super": {
-        "summary": "关键字 super(JavaScript 3 保留字、JavaScript 5 新增)。",
-        "string": "super",
-        "keyword": true,
-        "value": 23
-    },
-    "MAX_SIMPLE_LITERAL": {
-        "summary": "最大的简单字面量。",
-        "string": "",
-        "keyword": true,
-        "value": 24
-    },
-    "MIN_DECLARATION_START": {
-        "summary": "最小的定义开头。",
-        "string": "",
-        "keyword": true,
-        "value": 25
-    },
-    "MIN_MODIFIER": {
-        "summary": "最小的修饰符前缀。",
-        "string": "",
-        "keyword": true,
-        "value": 26
-    },
-    "async": {
-        "summary": "关键字 async(JavaScript 3 保留字、JavaScript 5 新增)。",
-        "string": "async",
-        "keyword": true,
-        "value": 27
-    },
-    "declare": {
-        "summary": "关键字 declare(TypeScript 1 新增)。",
-        "string": "declare",
-        "keyword": true,
-        "value": 28
-    },
-    "static": {
-        "summary": "关键字 static(JavaScript 3 保留字、JavaScript 5 严格模式保留字)。。",
-        "string": "static",
-        "keyword": true,
-        "value": 29
-    },
-    "abstract": {
-        "summary": "关键字 abstract(JavaScript 3 保留字、TypeScript 1 新增)。",
-        "string": "abstract",
-        "keyword": true,
-        "value": 30
-    },
-    "private": {
-        "summary": "关键字 private(JavaScript 3 保留字、TypeScript 1 新增)。",
-        "string": "private",
-        "keyword": true,
-        "value": 31
-    },
-    "protected": {
-        "summary": "关键字 protected(JavaScript 3 保留字、TypeScript 1 新增)。",
-        "string": "protected",
-        "keyword": true,
-        "value": 32
-    },
-    "public": {
-        "summary": "关键字 public(JavaScript 3 保留字、TypeScript 1 新增)。",
-        "string": "public",
-        "keyword": true,
-        "value": 33
-    },
-    "readonly": {
-        "summary": "关键字 readonly(TypeScript 2 新增)。",
-        "string": "readonly",
-        "keyword": true,
-        "value": 34
-    },
-    "MAX_IDENTIFIER_NAME_1": {
-        "summary": "最大的标识符 1。",
-        "string": "",
-        "keyword": true,
-        "value": 35
-    },
-    "export": {
-        "summary": "关键字 export(JavaScript 3 保留字、JavaScript 5 新增)。",
-        "string": "export",
-        "keyword": true,
-        "value": 36
-    },
-    "const": {
-        "summary": "关键字 const(JavaScript 5 新增)。",
-        "string": "const",
-        "keyword": true,
-        "value": 37
-    },
-    "MAX_MODIFIER": {
-        "summary": "最大的修饰符前缀。",
-        "string": "",
-        "keyword": true,
-        "value": 38
-    },
-    "function": {
-        "summary": "关键字 function。",
-        "string": "function",
-        "keyword": true,
-        "value": 39
-    },
-    "class": {
-        "summary": "关键字 class(JavaScript 3 保留字、JavaScript 5 新增)。",
-        "string": "class",
-        "keyword": true,
-        "value": 40
-    },
-    "enum": {
-        "summary": "关键字 enum(JavaScript 3 保留字、JavaScript 5 严格模式保留字、TypeScript 1 新增)。",
-        "string": "enum",
-        "keyword": true,
-        "value": 41
-    },
-    "MIN_IDENTIFIER_NAME_2": {
-        "summary": "最小的标识符 2。",
-        "string": "",
-        "keyword": true,
-        "value": 42
-    },
-    "namespace": {
-        "summary": "关键字 namespace(TypeScript 新增)。",
-        "string": "namespace",
-        "keyword": true,
-        "value": 43
-    },
-    "module": {
-        "summary": "关键字 module(TypeScript 新增)。",
-        "string": "module",
-        "keyword": true,
-        "value": 44
-    },
-    "interface": {
-        "summary": "关键字 interface(JavaScript 3 保留字、JavaScript 5 严格模式保留字、TypeScript 1 新增)。",
-        "string": "interface",
-        "keyword": true,
-        "value": 45
-    },
-    "MAX_DECLARATION_START": {
-        "summary": "最大的定义开头。",
-        "string": "",
-        "keyword": true,
-        "value": 46
-    },
-    "MIN_UNARY_OPERATOR": {
-        "summary": "最小的单目运算符。",
-        "string": "",
-        "keyword": true,
-        "value": 47
-    },
-    "yield": {
-        "summary": "关键字 yield(JavaScript 5 新增)。",
-        "string": "yield",
-        "keyword": true,
-        "value": 48
-    },
-    "await": {
-        "summary": "关键字 await(JavaScript 7 新增)。",
-        "string": "await",
-        "keyword": true,
-        "value": 49
-    },
-    "MAX_IDENTIFIER_NAME_2": {
-        "summary": "最大的标识符 2。",
-        "string": "",
-        "keyword": true,
-        "value": 50
-    },
-    "openBrace": {
-        "summary": "开花括号({)。",
-        "string": "{",
-        "keyword": false,
-        "value": 51
-    },
-    "exclamation": {
-        "summary": "非(!)。",
-        "string": "!",
-        "keyword": false,
-        "value": 52
-    },
-    "new": {
-        "summary": "关键字 new。",
-        "string": "new",
-        "keyword": true,
-        "value": 53
-    },
-    "delete": {
-        "summary": "关键字 delete。",
-        "string": "delete",
-        "keyword": true,
-        "value": 54
-    },
-    "typeof": {
-        "summary": "关键字 typeof。",
-        "string": "typeof",
-        "keyword": true,
-        "value": 55
-    },
-    "void": {
-        "summary": "关键字 void。",
-        "string": "void",
-        "keyword": true,
-        "value": 56
-    },
-    "dotDotDot": {
-        "summary": "点点点(...)(JavaScript 5 新增)。",
-        "string": "...",
-        "keyword": false,
-        "value": 57
-    },
-    "at": {
-        "summary": "电子邮件符号(@)(TypeScript 1 新增)。",
-        "string": "@",
-        "keyword": false,
-        "value": 58
-    },
-    "tilde": {
-        "summary": "位反(~)。",
-        "string": "~",
-        "keyword": false,
-        "value": 59
-    },
-    "MIN_BINARY_OPERATOR": {
-        "summary": "最小的双目运算符。",
-        "string": "",
-        "keyword": true,
-        "value": 60
-    },
-    "openParen": {
-        "summary": "开括号(()。",
-        "string": "(",
-        "keyword": false,
-        "value": 61
-    },
-    "openBracket": {
-        "summary": "开方括号([)。",
-        "string": "[",
-        "keyword": false,
-        "value": 62
-    },
-    "plus": {
-        "summary": "加(+)。",
-        "string": "+",
-        "keyword": false,
-        "value": 63
-    },
-    "minus": {
-        "summary": "减(-)。",
-        "string": "-",
-        "keyword": false,
-        "value": 64
-    },
-    "slash": {
-        "summary": "斜杠(/)。",
-        "string": "/",
-        "keyword": false,
-        "value": 65
-    },
-    "plusPlus": {
-        "summary": "加加(++)。",
-        "string": "++",
-        "keyword": false,
-        "value": 66
-    },
-    "minusMinus": {
-        "summary": "减减(--)。",
-        "string": "--",
-        "keyword": false,
-        "value": 67
-    },
-    "lessThan": {
-        "summary": "小于(<)。",
-        "string": "<",
-        "keyword": false,
-        "value": 68
-    },
-    "equalsGreaterThan": {
-        "summary": "箭头(=>)(JavaScript 5 新增)。",
-        "string": "=>",
-        "keyword": false,
-        "value": 69
-    },
-    "MIN_RIGHT_HAND_OPERATOR": {
-        "summary": "最小的右值运算符。",
-        "string": "",
-        "keyword": true,
-        "value": 70
-    },
-    "slashEquals": {
-        "summary": "斜杠等于(/=)。",
-        "string": "/=",
-        "keyword": false,
-        "value": 71
-    },
-    "MAX_UNARY_OPERATOR": {
-        "summary": "最大的单目运算符。",
-        "string": "",
-        "keyword": true,
-        "value": 72
-    },
-    "MAX_EXPRESSION_START": {
-        "summary": "最大的表达式开头。",
-        "string": "",
-        "keyword": true,
-        "value": 73
-    },
-    "asteriskAsterisk": {
-        "summary": "星号星号(**)(TypeScript 1 新增)。",
-        "string": "**",
-        "keyword": false,
-        "value": 74
-    },
-    "equals": {
-        "summary": "等于(=)。",
-        "string": "=",
-        "keyword": false,
-        "value": 75
-    },
-    "plusEquals": {
-        "summary": "加等于(+=)。",
-        "string": "+=",
-        "keyword": false,
-        "value": 76
-    },
-    "minusEquals": {
-        "summary": "减等于(-=)。",
-        "string": "-=",
-        "keyword": false,
-        "value": 77
-    },
-    "asteriskEquals": {
-        "summary": "星号等于(*=)。",
-        "string": "*=",
-        "keyword": false,
-        "value": 78
-    },
-    "percentEquals": {
-        "summary": "百分号等于(%=)。",
-        "string": "%=",
-        "keyword": false,
-        "value": 79
-    },
-    "lessThanLessThanEquals": {
-        "summary": "左移等于(<<=)。",
-        "string": "<<=",
-        "keyword": false,
-        "value": 80
-    },
-    "greaterThanGreaterThanEquals": {
-        "summary": "右移等于(>>=)。",
-        "string": ">>=",
-        "keyword": false,
-        "value": 81
-    },
-    "greaterThanGreaterThanGreaterThanEquals": {
-        "summary": "无符右移等于(>>>=)。",
-        "string": ">>>=",
-        "keyword": false,
-        "value": 82
-    },
-    "ampersandEquals": {
-        "summary": "位与等于(&=)。",
-        "string": "&=",
-        "keyword": false,
-        "value": 83
-    },
-    "barEquals": {
-        "summary": "位或等于(|=)。",
-        "string": "|=",
-        "keyword": false,
-        "value": 84
-    },
-    "caretEquals": {
-        "summary": "异或等于(^=)。",
-        "string": "^=",
-        "keyword": false,
-        "value": 85
-    },
-    "asteriskAsteriskEquals": {
-        "summary": "星号星号等于(**=)(TypeScript 1 新增)。",
-        "string": "**=",
-        "keyword": false,
-        "value": 86
-    },
-    "MAX_RIGHT_HAND_OPERATOR": {
-        "summary": "最大的右值运算符。",
-        "string": "",
-        "keyword": true,
-        "value": 87
-    },
-    "dot": {
-        "summary": "点(.)。",
-        "string": ".",
-        "keyword": false,
-        "value": 88
-    },
-    "dotDot": {
-        "summary": "点点(..)(TealScript 新增)。",
-        "string": "..",
-        "keyword": false,
-        "value": 89
-    },
-    "questionDot": {
-        "summary": "问号点(?.)(TealScript 新增)。",
-        "string": "?.",
-        "keyword": false,
-        "value": 90
-    },
-    "asterisk": {
-        "summary": "星号(*)。",
-        "string": "*",
-        "keyword": false,
-        "value": 91
-    },
-    "ampersand": {
-        "summary": "位与(&)。",
-        "string": "&",
-        "keyword": false,
-        "value": 92
-    },
-    "percent": {
-        "summary": "百分号(%)。",
-        "string": "%",
-        "keyword": false,
-        "value": 93
-    },
-    "greaterThan": {
-        "summary": "大于(>)。",
-        "string": ">",
-        "keyword": false,
-        "value": 94
-    },
-    "lessThanEquals": {
-        "summary": "小于等于(<=)。",
-        "string": "<=",
-        "keyword": false,
-        "value": 95
-    },
-    "greaterThanEquals": {
-        "summary": "大于等于(>=)。",
-        "string": ">=",
-        "keyword": false,
-        "value": 96
-    },
-    "equalsEquals": {
-        "summary": "等于等于(==)。",
-        "string": "==",
-        "keyword": false,
-        "value": 97
-    },
-    "exclamationEquals": {
-        "summary": "不等于(!=)。",
-        "string": "!=",
-        "keyword": false,
-        "value": 98
-    },
-    "equalsEqualsEquals": {
-        "summary": "等于等于等于(===)。",
-        "string": "===",
-        "keyword": false,
-        "value": 99
-    },
-    "exclamationEqualsEquals": {
-        "summary": "不等于等于(!==)。",
-        "string": "!==",
-        "keyword": false,
-        "value": 100
-    },
-    "lessThanLessThan": {
-        "summary": "左移(<<)。",
-        "string": "<<",
-        "keyword": false,
-        "value": 101
-    },
-    "greaterThanGreaterThan": {
-        "summary": "右移(>>)。",
-        "string": ">>",
-        "keyword": false,
-        "value": 102
-    },
-    "greaterThanGreaterThanGreaterThan": {
-        "summary": "无符右移(>>>)。",
-        "string": ">>>",
-        "keyword": false,
-        "value": 103
-    },
-    "bar": {
-        "summary": "位或(|)。",
-        "string": "|",
-        "keyword": false,
-        "value": 104
-    },
-    "caret": {
-        "summary": "异或(^)。",
-        "string": "^",
-        "keyword": false,
-        "value": 105
-    },
-    "ampersandAmpersand": {
-        "summary": "与(&&)。",
-        "string": "&&",
-        "keyword": false,
-        "value": 106
-    },
-    "barBar": {
-        "summary": "或(||)。",
-        "string": "||",
-        "keyword": false,
-        "value": 107
-    },
-    "question": {
-        "summary": "问号(?)。",
-        "string": "?",
-        "keyword": false,
-        "value": 108
-    },
-    "comma": {
-        "summary": "逗号(,)。",
-        "string": ",",
-        "keyword": false,
-        "value": 109
-    },
-    "in": {
-        "summary": "关键字 in。",
-        "string": "in",
-        "keyword": true,
-        "value": 110
-    },
-    "instanceOf": {
-        "summary": "关键字 instanceOf。",
-        "string": "instanceOf",
-        "keyword": true,
-        "value": 111
-    },
-    "MIN_IDENTIFIER_NAME_3": {
-        "summary": "最小的标识符 3。",
-        "string": "",
-        "keyword": true,
-        "value": 112
-    },
-    "as": {
-        "summary": "关键字 as(TypeScript 新增)。",
-        "string": "as",
-        "keyword": true,
-        "value": 113
-    },
-    "is": {
-        "summary": "关键字 is(TypeScript 新增)。",
-        "string": "is",
-        "keyword": true,
-        "value": 114
-    },
-    "MAX_BINARY_OPERATOR": {
-        "summary": "最大的双目运算符。",
-        "string": "",
-        "keyword": true,
-        "value": 115
-    },
-    "MIN_PREDEFINED_TYPE": {
-        "summary": "最小的内置类型。",
-        "string": "",
-        "keyword": true,
-        "value": 116
-    },
-    "any": {
-        "summary": "关键字 any(TypeScript 1 新增)。",
-        "string": "any",
-        "keyword": true,
-        "value": 117
-    },
-    "boolean": {
-        "summary": "关键字 boolean(TypeScript 1 新增)。",
-        "string": "boolean",
-        "keyword": true,
-        "value": 118
-    },
-    "number": {
-        "summary": "关键字 number(TypeScript 1 新增)。",
-        "string": "number",
-        "keyword": true,
-        "value": 119
-    },
-    "string": {
-        "summary": "关键字 string(TypeScript 1 新增)。",
-        "string": "string",
-        "keyword": true,
-        "value": 120
-    },
-    "symbol": {
-        "summary": "关键字 symbol(TypeScript 1 新增)。",
-        "string": "symbol",
-        "keyword": true,
-        "value": 121
-    },
-    "never": {
-        "summary": "关键字 never(TypeScript 2 新增)。",
-        "string": "never",
-        "keyword": true,
-        "value": 122
-    },
-    "char": {
-        "summary": "关键字 char(TealScript 1 新增)。",
-        "string": "char",
-        "keyword": true,
-        "value": 123
-    },
-    "byte": {
-        "summary": "关键字 byte(TealScript 1 新增)。",
-        "string": "byte",
-        "keyword": true,
-        "value": 124
-    },
-    "int": {
-        "summary": "关键字 int(TealScript 1 新增)。",
-        "string": "int",
-        "keyword": true,
-        "value": 125
-    },
-    "long": {
-        "summary": "关键字 long(TealScript 1 新增)。",
-        "string": "long",
-        "keyword": true,
-        "value": 126
-    },
-    "short": {
-        "summary": "关键字 short(TealScript 1 新增)。",
-        "string": "short",
-        "keyword": true,
-        "value": 127
-    },
-    "uint": {
-        "summary": "关键字 uint(TealScript 1 新增)。",
-        "string": "uint",
-        "keyword": true,
-        "value": 128
-    },
-    "ulong": {
-        "summary": "关键字 ulong(TealScript 1 新增)。",
-        "string": "ulong",
-        "keyword": true,
-        "value": 129
-    },
-    "ushort": {
-        "summary": "关键字 ushort(TealScript 1 新增)。",
-        "string": "ushort",
-        "keyword": true,
-        "value": 130
-    },
-    "float": {
-        "summary": "关键字 float(TealScript 1 新增)。",
-        "string": "float",
-        "keyword": true,
-        "value": 131
-    },
-    "double": {
-        "summary": "关键字 double(TealScript 1 新增)。",
-        "string": "double",
-        "keyword": true,
-        "value": 132
-    },
-    "MAX_PREDEFINED_TYPE": {
-        "summary": "最大的内置类型。",
-        "string": "",
-        "keyword": true,
-        "value": 133
-    },
-    "MAX_TOKEN": {
-        "summary": "最大的合法标签。",
-        "string": "",
-        "keyword": true,
-        "value": 134
-    },
-    "from": {
-        "summary": "关键字 from(仅在 JavaScript 7)。",
-        "string": "from",
-        "keyword": true,
-        "value": 135
-    },
-    "implements": {
-        "summary": "关键字 implements(JavaScript 3 保留字、JavaScript 3 严格模式保留字、TypeScript 新增)。",
-        "string": "implements",
-        "keyword": true,
-        "value": 136
-    },
-    "of": {
-        "summary": "关键字 of(JavaScript 5 新增)。",
-        "string": "of",
-        "keyword": true,
-        "value": 137
-    },
-    "to": {
-        "summary": "关键字 to(TealScript 1 新增)。",
-        "string": "to",
-        "keyword": true,
-        "value": 138
-    },
-    "MAX_IDENTIFIER_NAME_3": {
-        "summary": "最大的标识符 3。",
-        "string": "",
-        "keyword": true,
-        "value": 139
-    },
-    "else": {
-        "summary": "关键字 else。",
-        "string": "else",
-        "keyword": true,
-        "value": 140
-    },
-    "case": {
-        "summary": "关键字 case。",
-        "string": "case",
-        "keyword": true,
-        "value": 141
-    },
-    "default": {
-        "summary": "关键字 default。",
-        "string": "default",
-        "keyword": true,
-        "value": 142
-    },
-    "catch": {
-        "summary": "关键字 catch。",
-        "string": "catch",
-        "keyword": true,
-        "value": 143
-    },
-    "finally": {
-        "summary": "关键字 finally。",
-        "string": "finally",
-        "keyword": true,
-        "value": 144
-    },
-    "extends": {
-        "summary": "关键字 extends(JavaScript 3 保留字、JavaScript 5 新增)。",
-        "string": "extends",
-        "keyword": true,
-        "value": 145
-    },
-    "MIN_STATEMENT_START": {
-        "summary": "最小的语句开头。",
-        "string": "",
-        "keyword": true,
-        "value": 146
-    },
-    "if": {
-        "summary": "关键字 if。",
-        "string": "if",
-        "keyword": true,
-        "value": 147
-    },
-    "switch": {
-        "summary": "关键字 switch。",
-        "string": "switch",
-        "keyword": true,
-        "value": 148
-    },
-    "for": {
-        "summary": "关键字 for。",
-        "string": "for",
-        "keyword": true,
-        "value": 149
-    },
-    "while": {
-        "summary": "关键字 while。",
-        "string": "while",
-        "keyword": true,
-        "value": 150
-    },
-    "do": {
-        "summary": "关键字 do。",
-        "string": "do",
-        "keyword": true,
-        "value": 151
-    },
-    "continue": {
-        "summary": "关键字 continue。",
-        "string": "continue",
-        "keyword": true,
-        "value": 152
-    },
-    "break": {
-        "summary": "关键字 break。",
-        "string": "break",
-        "keyword": true,
-        "value": 153
-    },
-    "return": {
-        "summary": "关键字 return。",
-        "string": "return",
-        "keyword": true,
-        "value": 154
-    },
-    "throw": {
-        "summary": "关键字 throw。",
-        "string": "throw",
-        "keyword": true,
-        "value": 155
-    },
-    "try": {
-        "summary": "关键字 try。",
-        "string": "try",
-        "keyword": true,
-        "value": 156
-    },
-    "debugger": {
-        "summary": "关键字 debugger。",
-        "string": "debugger",
-        "keyword": true,
-        "value": 157
-    },
-    "with": {
-        "summary": "关键字 with。",
-        "string": "with",
-        "keyword": true,
-        "value": 158
-    },
-    "var": {
-        "summary": "关键字 var。",
-        "string": "var",
-        "keyword": true,
-        "value": 159
-    },
-    "let": {
-        "summary": "关键字 let(JavaScript 5 新增)。",
-        "string": "let",
-        "keyword": true,
-        "value": 160
-    },
-    "import": {
-        "summary": "关键字 import(JavaScript 5 保留字、TypeScript 1 新增)。",
-        "string": "import",
-        "keyword": true,
-        "value": 161
-    },
-    "type": {
-        "summary": "关键字 type(TypeScript 新增)。",
-        "string": "type",
-        "keyword": true,
-        "value": 162
-    },
-    "MAX_STATEMENT_START": {
-        "summary": "最大的语句开头。",
-        "string": "",
-        "keyword": true,
-        "value": 163
+    "TypeNode": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "precedence",
+                "value": "tokens.Precedence.any",
+                "optional": false
+            }
+        ],
+        "name": "TypeNode",
+        "comment": "类型节点",
+        "codes": [
+            "let result: TypeNode;",
+            "if (tokens.isPredefinedType(peek)) {",
+            "\tresult = this.parsePredefinedTypeNode();",
+            "} else {",
+            "\tswitch (peek) {",
+            "\t\tcase '(':",
+            "\t\t\tresult = this.parseFunctionOrParenthesizedTypeNode();",
+            "\t\t\tbreak;",
+            "\t\tcase '[':",
+            "\t\t\tresult = this.parseTupleTypeNode();",
+            "\t\t\tbreak;",
+            "\t\tcase '{':",
+            "\t\t\tresult = this.parseObjectTypeNode();",
+            "\t\t\tbreak;",
+            "\t\tcase 'new':",
+            "\t\t\treturn this.parseConstructorTypeNode();",
+            "\t\tcase '<':",
+            "\t\t\treturn FunctionTypeNode(TypeParameters, Parameters);",
+            "\t\tcase 'typeof':",
+            "\t\t\tresult = this.parseTypeQueryNode();",
+            "\t\t\tbreak;",
+            "\t\tcase '=>':",
+            "\t\t\treturn FunctionTypeNode();",
+            "\t\tcase '<numericLiteral>':",
+            "\t\tcase '<stringLiteral>':",
+            "\t\tcase 'true':",
+            "\t\tcase 'false':",
+            "\t\t\tresult = this.parseLiteralTypeNode();",
+            "\t\t\tbreak;",
+            "\t\tdefault:",
+            "\t\t\tresult = this.parseGenericTypeOrTypeReferenceNode();",
+            "\t\t\tbreak;",
+            "\t}",
+            "}",
+            "while (tokens.getPrecedence(peek) >= precedence) {",
+            "\tswitch (peek) {",
+            "\t\tcase '.':",
+            "\t\t\tresult = QualifiedNameTypeNode(result);",
+            "\t\t\tcontinue;",
+            "\t\tcase '[':",
+            "\t\t\tif (sameLine) {",
+            "\t\t\t\tresult = ArrayTypeNode(result);",
+            "\t\t\t}",
+            "\t\t\tcontinue;",
+            "\t\tcase '&':",
+            "\t\tcase '|':",
+            "\t\tcase 'is':",
+            "\t\t\tresult = BinaryTypeNode(result);",
+            "\t\t\tcontinue;",
+            "\t}",
+            "\treturn result;",
+            "}"
+        ]
+    },
+    "PredefinedTypeNode": {
+        "indent": 2,
+        "fields": [],
+        "params": [],
+        "name": "PredefinedTypeNode",
+        "comment": "内置类型节点(`number`、`string`、...)",
+        "codes": []
+    },
+    "FunctionOrParenthesizedTypeNode": {
+        "indent": 4,
+        "fields": [],
+        "params": [],
+        "name": "FunctionOrParenthesizedTypeNode",
+        "comment": "函数或括号类型节点(`() => void`、`(x)`)",
+        "codes": [
+            "const savedState = lexer.stashSave();",
+            "const parameters = Parameters;",
+            "if (peek === '=>' || peek === ':') {",
+            "\tlexer.stashClear(savedState);",
+            "\treturn FunctionTypeNode(undefined, parameters);",
+            "}",
+            "lexer.stashRestore(savedState);",
+            "return this.parseParenthesizedTypeNode();"
+        ]
+    },
+    "ParenthesizedTypeNode": {
+        "indent": 5,
+        "fields": [
+            {
+                "name": "openParenToken",
+                "type": "number",
+                "comment": "获取当前括号类型节点的标记 '(' 的位置。"
+            },
+            {
+                "name": "body",
+                "type": "TypeNode",
+                "comment": ""
+            },
+            {
+                "name": "closeParenToken",
+                "type": "number",
+                "comment": "获取当前括号类型节点的标记 ')' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "ParenthesizedTypeNode",
+        "comment": "括号类型节点(`(number)`)",
+        "codes": [
+            "result.openParenToken = this.readToken(TokenType.openParen);",
+            "result.body = TypeNode; // 主体部分;",
+            "result.closeParenToken = this.readToken(TokenType.closeParen);"
+        ]
+    },
+    "FunctionTypeNode": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "equalsGreaterThanToken",
+                "type": "number",
+                "comment": "获取当前函数类型节点的标记 '=>' 的位置。"
+            },
+            {
+                "name": "return",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "typeParameters",
+                "value": "null || TypeParameters",
+                "optional": false
+            },
+            {
+                "name": "parameters",
+                "value": "null || Parameters",
+                "optional": false
+            }
+        ],
+        "name": "FunctionTypeNode",
+        "comment": "函数类型节点(`(x: number) => void`)",
+        "codes": [
+            "result.equalsGreaterThanToken = this.readToken(TokenType.equalsGreaterThan);",
+            "result.return = TypeNode;;"
+        ]
+    },
+    "TupleTypeNode": {
+        "indent": 4,
+        "fields": [],
+        "params": [],
+        "name": "TupleTypeNode",
+        "comment": "元祖类型节点(`[string, number]`)",
+        "codes": [
+            "return this.parseDelimitedList(TupleTypeElement, '[', ']', true, tokens.isTypeNodeStart);"
+        ],
+        "list": {
+            "element": "TupleTypeElement",
+            "allowEmpty": true,
+            "open": "'['",
+            "close": "']'",
+            "seperator": "','",
+            "continue": "tokens.isTypeNodeStart",
+            "code": "this.parseDelimitedList(TupleTypeElement, '[', ']', true, tokens.isTypeNodeStart)"
+        }
+    },
+    "TupleTypeElement": {
+        "indent": 5,
+        "fields": [
+            {
+                "name": "value",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "TupleTypeElement",
+        "comment": "元祖类型节点元素(`x`)",
+        "codes": [
+            "result.value = TypeNode(tokens.Precedence.assignment); // 值部分;"
+        ]
+    },
+    "ObjectTypeNode": {
+        "indent": 4,
+        "fields": [],
+        "params": [],
+        "name": "ObjectTypeNode",
+        "comment": "对象类型节点(`{x: number}`)",
+        "codes": []
+    },
+    "ConstructorTypeNode": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "newToken",
+                "type": "number",
+                "comment": "获取当前构造函数类型节点的标记 'new' 的位置。"
+            },
+            {
+                "name": "typeParameters",
+                "type": "TypeParameters",
+                "comment": ""
+            },
+            {
+                "name": "parameters",
+                "type": "Parameters",
+                "comment": ""
+            },
+            {
+                "name": "equalsGreaterThanToken",
+                "type": "number",
+                "comment": "获取当前构造函数类型节点的标记 '=>' 的位置。"
+            },
+            {
+                "name": "return",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "ConstructorTypeNode",
+        "comment": "构造函数类型节点(`new () => void`)",
+        "codes": [
+            "result.newToken = this.readToken(TokenType.new);",
+            "if (peek === '<') {",
+            "result.typeParameters = TypeParameters();;",
+            "}",
+            "result.parameters = Parameters;;",
+            "result.equalsGreaterThanToken = this.readToken(TokenType.equalsGreaterThan);",
+            "result.return = TypeNode;;"
+        ]
+    },
+    "TypeQueryNode": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "typeofToken",
+                "type": "number",
+                "comment": "获取当前类型查询节点的标记 'typeof' 的位置。"
+            },
+            {
+                "name": "operand",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "TypeQueryNode",
+        "comment": "类型查询节点(`typeof x`)",
+        "codes": [
+            "result.typeofToken = this.readToken(TokenType.typeof);",
+            "result.operand = Expression(tokens.Precedence.postfix);;"
+        ],
+        "extend": "TypeNode"
+    },
+    "LiteralTypeNode": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "LiteralTypeNode",
+        "comment": "字面量类型节点(`\"abc\"`、`true`)",
+        "codes": [
+            "result.value = Expression(tokens.Precedence.primary);;"
+        ]
+    },
+    "GenericTypeOrTypeReferenceNode": {
+        "indent": 4,
+        "fields": [],
+        "params": [],
+        "name": "GenericTypeOrTypeReferenceNode",
+        "comment": "泛型类型节点(`x<T>`)或类型引用节点(`x`)",
+        "codes": [
+            "const result = TypeReferenceNode;",
+            "if (sameLine && peek === '<') {",
+            "\treturn GenericTypeNode(result);",
+            "}",
+            "return result;"
+        ]
+    },
+    "TypeReferenceNode": {
+        "indent": 5,
+        "fields": [],
+        "params": [],
+        "name": "TypeReferenceNode",
+        "comment": "类型引用节点(`x`)",
+        "codes": [
+            "if (tokens.isIdentifierName, tokens.isTypeNodeStart(peek)) {",
+            "} else {",
+            "\terror(lexer.peek(), \"Type expected. Unexpected token '{0}'.\", tokens.getTokenName(peek));",
+            "}"
+        ],
+        "extend": "TypeNode"
+    },
+    "GenericTypeNode": {
+        "indent": 6,
+        "fields": [
+            {
+                "name": "typeArguments",
+                "type": "TypeArguments",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "target",
+                "value": "TypeReferenceNode/*目标部分*/",
+                "optional": false
+            }
+        ],
+        "name": "GenericTypeNode",
+        "comment": "泛型类型节点(`Array<number>`)",
+        "codes": [
+            "result.typeArguments = TypeArguments() // 类型参数部分;"
+        ]
+    },
+    "QualifiedNameTypeNode": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "dotToken",
+                "type": "number",
+                "comment": "获取当前限定名称类型节点的标记 '.' 的位置。"
+            },
+            {
+                "name": "argument",
+                "type": "Identifier",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "target",
+                "value": "TypeNode/*目标部分*/",
+                "optional": false
+            }
+        ],
+        "name": "QualifiedNameTypeNode",
+        "comment": "限定名称类型节点(`\"abc\"`、`true`)",
+        "codes": [
+            "result.dotToken = this.readToken(TokenType.dot);",
+            "result.argument = Identifier(true); // 参数部分;"
+        ]
+    },
+    "ArrayTypeNode": {
+        "indent": 5,
+        "fields": [
+            {
+                "name": "openBracketToken",
+                "type": "number",
+                "comment": "获取当前数组类型节点的标记 '[' 的位置。"
+            },
+            {
+                "name": "closeBracketToken",
+                "type": "number",
+                "comment": "获取当前数组类型节点的标记 ']' 的位置。"
+            }
+        ],
+        "params": [
+            {
+                "name": "target",
+                "value": "TypeNode",
+                "optional": false
+            }
+        ],
+        "name": "ArrayTypeNode",
+        "comment": "数组类型节点(`T[]`)",
+        "codes": [
+            "result.openBracketToken = this.readToken(TokenType.openBracket);",
+            "result.closeBracketToken = this.readToken(TokenType.closeBracket);"
+        ]
+    },
+    "BinaryTypeNode": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "right",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "left",
+                "value": "TypeNode/*左值部分*/",
+                "optional": false
+            }
+        ],
+        "name": "BinaryTypeNode",
+        "comment": "双目表达式(`x + y`、`x = y`、...)",
+        "codes": [
+            "result.right = TypeNode(tokens.getPrecedence(result.operator) + 1); // 右值部分;"
+        ]
+    },
+    "TypeMemberSignature": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "TypeMemberSignature",
+        "comment": "类型成员签名(`x： y`、`x() {...}`)",
+        "codes": [
+            "switch (peek) {",
+            "\tcase 'get':",
+            "\tcase 'set':",
+            "\t\tconst savedToken = lexer.current;",
+            "\t\tlexer.read();",
+            "\t\tif (tokens.isPropertyNameStart(peek)) {",
+            "\t\t\treturn AccessorSignature(savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);",
+            "\t\t}",
+            "\t\tlexer.current = savedToken;",
+            "\t\tbreak;",
+            "\tcase '[':",
+            "\t\tlet isIndexSignature: boolean;",
+            "\t\tconst savedToken2 = lexer.current;",
+            "\t\tlexer.read();",
+            "\t\tif (tokens.isIdentifierName, tokens.isTypeNodeStart(peek)) {",
+            "\t\t\tlexer.read();",
+            "\t\t\tisIndexSignature = peek === ':';",
+            "\t\t}",
+            "\t\tlexer.current = savedToken2;",
+            "\t\tif (isIndexSignature) {",
+            "\t\t\treturn IndexSignature();",
+            "\t\t}",
+            "\t\tbreak;",
+            "\tcase '(':",
+            "\tcase '<':",
+            "\t\treturn FunctionSignature();",
+            "\tcase 'new':",
+            "\t\treturn ConstructSignature();",
+            "}",
+            "const name = PropertyName();",
+            "const questionToken = peek === '?' ? read('?') : undefined;",
+            "switch (peek) {",
+            "\tcase '(':",
+            "\tcase '<':",
+            "\t\treturn MethodSignature(name, questionToken);",
+            "\tdefault:",
+            "\t\treturn PropertySignature(name, questionToken);",
+            "}"
+        ],
+        "alias": "PropertySignature, FunctionSignature, ConstructSignature, IndexSignature, MethodSignature, AccessorSignature"
+    },
+    "AccessorSignature": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "name",
+                "type": "PropertyName",
+                "comment": ""
+            },
+            {
+                "name": "questionToken",
+                "type": "number",
+                "comment": "获取当前访问器签名的标记 '?' 的位置(可能不存在)。"
+            },
+            {
+                "name": "parameters",
+                "type": "Parameters",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "getToken",
+                "value": "null || read('get'",
+                "optional": false
+            }
+        ],
+        "name": "AccessorSignature",
+        "comment": "访问器签名(`get x(): number`、`set x(value): void`)",
+        "codes": [
+            "result.name = PropertyName;;",
+            "result.questionToken = this.readToken(TokenType.question);",
+            "result.parameters = Parameters;;",
+            "TypeAnnotation(_);",
+            "CommaOrSemicolon(_);"
+        ],
+        "doc": true
+    },
+    "IndexSignature": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "openBracketToken",
+                "type": "number",
+                "comment": "获取当前索引器声明的标记 '[' 的位置。"
+            },
+            {
+                "name": "argument",
+                "type": "Identifier",
+                "comment": ""
+            },
+            {
+                "name": "closeBracketToken",
+                "type": "number",
+                "comment": "获取当前索引器声明的标记 ']' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "IndexSignature",
+        "comment": "索引器声明(`[key: string]: string``)",
+        "codes": [
+            "result.openBracketToken = this.readToken(TokenType.openBracket);",
+            "result.argument = Identifier;;",
+            "TypeAnnotation(_);",
+            "result.closeBracketToken = this.readToken(TokenType.closeBracket);",
+            "TypeAnnotation(_);",
+            "CommaOrSemicolon(_);"
+        ],
+        "doc": true
+    },
+    "FunctionSignature": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "FunctionSignature",
+        "comment": "函数签名(`(): number`)",
+        "codes": [
+            "MethodOrConstructOrCallSignature(_);"
+        ],
+        "doc": true
+    },
+    "ConstructSignature": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "newToken",
+                "type": "number",
+                "comment": "获取当前构造函数签名的标记 'new' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "ConstructSignature",
+        "comment": "构造函数签名(`new x(): number`)",
+        "codes": [
+            "result.newToken = this.readToken(TokenType.new);",
+            "MethodOrConstructOrCallSignature(_);"
+        ],
+        "doc": true
+    },
+    "MethodSignature": {
+        "indent": 3,
+        "fields": [],
+        "params": [
+            {
+                "name": "name",
+                "value": "PropertyName(",
+                "optional": false
+            }
+        ],
+        "name": "MethodSignature",
+        "comment": "方法签名(`x(): number`)",
+        "codes": [
+            "MethodOrConstructOrCallSignature(_);"
+        ],
+        "doc": true
+    },
+    "PropertySignature": {
+        "indent": 3,
+        "fields": [],
+        "params": [
+            {
+                "name": "name",
+                "value": "PropertyName(",
+                "optional": false
+            }
+        ],
+        "name": "PropertySignature",
+        "comment": "",
+        "codes": [
+            "TypeAnnotation(_);",
+            "CommaOrSemicolon(_);"
+        ],
+        "doc": true
+    },
+    "MethodOrConstructOrCallSignature": {
+        "indent": 1,
+        "fields": [],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "MethodOrConstructOrCallSignature",
+        "comment": "方法(`x(): number`)或构造函数(`new x(): number`)或函数(`(): number`)签名",
+        "codes": [
+            "CallSignature(_);",
+            "CommaOrSemicolon(_);"
+        ]
+    },
+    "TypeParameters": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "TypeParameters",
+        "comment": "类型参数列表(`<T>`)",
+        "codes": [
+            "return this.parseDelimitedList(TypeParameterDeclaration, '<', '>', false, tokens.isIdentifierName);"
+        ],
+        "list": {
+            "element": "TypeParameterDeclaration",
+            "allowEmpty": false,
+            "open": "'<'",
+            "close": "'>'",
+            "seperator": "','",
+            "continue": "tokens.isIdentifierName",
+            "code": "this.parseDelimitedList(TypeParameterDeclaration, '<', '>', false, tokens.isIdentifierName)"
+        }
+    },
+    "TypeParameterDeclaration": {
+        "indent": 1,
+        "fields": [
+            {
+                "name": "name",
+                "type": "Identifier",
+                "comment": ""
+            },
+            {
+                "name": "extendsToken",
+                "type": "number",
+                "comment": "获取当前类型参数声明的标记 'extends' 的位置(可能不存在)。"
+            },
+            {
+                "name": "extends",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "TypeParameterDeclaration",
+        "comment": "类型参数声明(`T`、`T extends R`)",
+        "codes": [
+            "result.name = Identifier;;",
+            "if (peek === 'extends') {",
+            "result.extendsToken = this.readToken(TokenType.extends);",
+            "result.extends = TypeNode;;",
+            "}"
+        ]
+    },
+    "TypeArguments": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "TypeArguments",
+        "comment": "类型参数列表(`<number>`)",
+        "codes": [
+            "return this.parseDelimitedList(TypeArgument, '<', '>', false, tokens.isTypeNodeStart);"
+        ],
+        "list": {
+            "element": "TypeArgument",
+            "allowEmpty": false,
+            "open": "'<'",
+            "close": "'>'",
+            "seperator": "','",
+            "continue": "tokens.isTypeNodeStart",
+            "code": "this.parseDelimitedList(TypeArgument, '<', '>', false, tokens.isTypeNodeStart)"
+        }
+    },
+    "TypeArgument": {
+        "indent": 1,
+        "fields": [
+            {
+                "name": "value",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "TypeArgument",
+        "comment": "类型参数(`number`)",
+        "codes": [
+            "result.value = TypeNode(tokens.Precedence.assignment); // 值部分;"
+        ]
+    },
+    "Parameters": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "Parameters",
+        "comment": "参数列表(`(x, y)`)",
+        "codes": [
+            "return this.parseNodeList(ParameterDeclaration, '(', ');"
+        ],
+        "list": {
+            "element": "ParameterDeclaration",
+            "allowEmpty": true,
+            "open": "'('",
+            "close": "'",
+            "seperator": "",
+            "continue": "",
+            "code": "this.parseNodeList(ParameterDeclaration, '(', ')"
+        }
+    },
+    "ParameterDeclaration": {
+        "indent": 1,
+        "fields": [
+            {
+                "name": "dotDotDotToken",
+                "type": "number",
+                "comment": "获取当前参数声明的标记 '...' 的位置(可能不存在)。"
+            },
+            {
+                "name": "name",
+                "type": "BindingName",
+                "comment": ""
+            },
+            {
+                "name": "questionToken",
+                "type": "number",
+                "comment": "获取当前参数声明的标记 '?' 的位置(可能不存在)。"
+            }
+        ],
+        "params": [],
+        "name": "ParameterDeclaration",
+        "comment": "参数声明(`x`、`x?: number`)",
+        "codes": [
+            "const modifiers = Modifiers();",
+            "if (modifiers) {",
+            "}",
+            "result.dotDotDotToken = this.readToken(TokenType.dotDotDot);",
+            "result.name = BindingName;;",
+            "result.questionToken = this.readToken(TokenType.question);",
+            "TypeAnnotation(_);",
+            "Initializer(_);"
+        ]
+    },
+    "BindingName": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "BindingName",
+        "comment": "绑定名称(`x`, `[x]`, `{x: x}`)",
+        "codes": [
+            "switch (peek) {",
+            "\tcase '[':",
+            "\t\treturn ArrayBindingPattern();",
+            "\tcase '{':",
+            "\t\treturn ObjectBindingPattern();",
+            "\tdefault:",
+            "\t\treturn Identifier();",
+            "}"
+        ],
+        "alias": "Identifier, ArrayBindingPattern, ObjectBindingPattern"
+    },
+    "ArrayBindingPattern": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "ArrayBindingPattern",
+        "comment": "数组绑定模式项(`[x]`)",
+        "codes": []
+    },
+    "ArrayBindingElement": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "dotDotDotToken",
+                "type": "number",
+                "comment": "获取当前数组绑定模式项的标记 '...' 的位置(可能不存在)。"
+            },
+            {
+                "name": "value",
+                "type": "BindingName",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "ArrayBindingElement",
+        "comment": "数组绑定模式项(`x`)",
+        "codes": [
+            "if (peek !== ',' && peek !== ']') {",
+            "result.dotDotDotToken = this.readToken(TokenType.dotDotDot);",
+            "result.value = BindingName;;",
+            "\tInitializer(_);",
+            "}"
+        ]
+    },
+    "ObjectBindingPattern": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "ObjectBindingPattern",
+        "comment": "对象绑定模式项(`{x: x}`)",
+        "codes": []
+    },
+    "ObjectBindingElement": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "key",
+                "type": "PropertyName",
+                "comment": ""
+            },
+            {
+                "name": "colonToken",
+                "type": "number",
+                "comment": "获取当前对象绑定模式项的标记 ':' 的位置(可能不存在)。"
+            },
+            {
+                "name": "value",
+                "type": "BindingName",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "ObjectBindingElement",
+        "comment": "对象绑定模式项(`x`)",
+        "codes": [
+            "const keyToken = peek;",
+            "result.key = PropertyName;;",
+            "if (peek === ':') {",
+            "result.colonToken = this.readToken(TokenType.colon);",
+            "result.value = BindingName;;",
+            "} else if (!tokens.isIdentifierName, tokens.isTypeNodeStart(keyToken)) {",
+            "\treadToken(':');",
+            "}",
+            "Initializer(_);"
+        ]
+    },
+    "TypeAnnotation": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "colonToken",
+                "type": "number",
+                "comment": "获取当前类型注解的标记 ':' 的位置(可能不存在)。"
+            },
+            {
+                "name": "type",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "TypeAnnotation",
+        "comment": "类型注解(`: number`)",
+        "codes": [
+            "if (peek === ':') {",
+            "result.colonToken = this.readToken(TokenType.colon);",
+            "result.type = TypeNode; // 类型部分;",
+            "}"
+        ]
+    },
+    "Initializer": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "equalsToken",
+                "type": "number",
+                "comment": "获取当前初始值的标记 '=' 的位置(可能不存在)。"
+            },
+            {
+                "name": "initializer",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            },
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "Initializer",
+        "comment": "初始值",
+        "codes": [
+            "if (peek === '=') {",
+            "result.equalsToken = this.readToken(TokenType.equals);",
+            "result.initializer = Expression(tokens.Precedence.assignment, allowIn); // 初始值部分;",
+            "}"
+        ]
+    },
+    "PropertyName": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "PropertyName",
+        "comment": "属性名称(`xx`、`\"xx\"`、`0`、`[xx]`)",
+        "codes": [
+            "switch (peek) {",
+            "\tcase 'stringLiteral':",
+            "\t\treturn StringLiteral();",
+            "\tcase 'numericLiteral':",
+            "\t\treturn NumericLiteral();",
+            "\tcase '[':",
+            "\t\treturn ComputedPropertyName();",
+            "\tdefault:",
+            "\t\treturn Identifier(true);",
+            "}"
+        ],
+        "alias": "Identifier, NumericLiteral, StringLiteral, ComputedPropertyName"
+    },
+    "ComputedPropertyName": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "openBracketToken",
+                "type": "number",
+                "comment": "获取当前已计算的属性名的标记 '[' 的位置。"
+            },
+            {
+                "name": "body",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "closeBracketToken",
+                "type": "number",
+                "comment": "获取当前已计算的属性名的标记 ']' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "ComputedPropertyName",
+        "comment": "已计算的属性名(`[1]`)",
+        "codes": [
+            "result.openBracketToken = this.readToken(TokenType.openBracket);",
+            "result.body = Expression(tokens.Precedence.assignment);;",
+            "result.closeBracketToken = this.readToken(TokenType.closeBracket);"
+        ]
+    },
+    "CommaOrSemicolon": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "获取当前对象成员尾部的标记 ';' 的位置(可能不存在)。"
+            },
+            {
+                "name": "commaToken",
+                "type": "number",
+                "comment": "获取当前对象成员尾部的标记 ',' 的位置(可能不存在)。"
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "CommaOrSemicolon",
+        "comment": "对象成员尾部",
+        "codes": [
+            "switch (peek) {",
+            "\tcase ';':",
+            "result.semicolonToken = this.readToken(TokenType.semicolon);",
+            "\tcase ',':",
+            "result.commaToken = this.readToken(TokenType.comma);",
+            "\t\tbreak;",
+            "\tdefault:",
+            "\t\tif (sameLine) {",
+            "\t\t\terror({ start: lexer.current.end, end: lexer.current.end }, \"Missing ';' after property.\");",
+            "\t\t}",
+            "\t\tbreak;",
+            "}"
+        ]
+    },
+    "Expression": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "precedence",
+                "value": "tokens.Precedence.any/*允许解析的最低操作符优先级*/",
+                "optional": false
+            },
+            {
+                "name": "allowIn",
+                "type": "boolean = true/*是否解析 in 表达式*/",
+                "optional": false
+            }
+        ],
+        "name": "Expression",
+        "comment": "表达式",
+        "codes": [
+            "let result: Expression;",
+            "switch (peek) {",
+            "\tcase 'this':",
+            "\tcase 'null':",
+            "\tcase 'true':",
+            "\tcase 'false':",
+            "\tcase 'super':",
+            "\t\tresult = this.parseSimpleLiteral();",
+            "\t\tbreak;",
+            "\tcase '(':",
+            "\t\tresult = this.parseArrowFunctionOrParenthesizedExpression(allowIn);",
+            "\t\tbreak;",
+            "\tcase 'numericLiteral':",
+            "\t\tresult = NumericLiteral;",
+            "\t\tbreak;",
+            "\tcase 'stringLiteral':",
+            "\tcase 'noSubstitutionTemplateLiteral':",
+            "\t\tresult = StringLiteral;",
+            "\t\tbreak;",
+            "\tcase '[':",
+            "\t\tresult = this.parseArrayLiteral();",
+            "\t\tbreak;",
+            "\tcase '{':",
+            "\t\tresult = this.parseObjectLiteral();",
+            "\t\tbreak;",
+            "\tcase 'function':",
+            "\t\tresult = FunctionExpression;",
+            "\t\tbreak;",
+            "\tcase 'new':",
+            "\t\tresult = this.parseNewTargetOrNewExpression();",
+            "\t\tbreak;",
+            "\tcase '/':",
+            "\tcase '/=':",
+            "\t\tresult = this.parseRegularExpressionLiteral();",
+            "\t\tbreak;",
+            "\tcase 'templateHead':",
+            "\t\tresult = TemplateLiteral;",
+            "\t\tbreak;",
+            "\tcase '<':",
+            "\t\tresult = this.parseArrowFunctionOrTypeAssertionExpression(allowIn);",
+            "\t\tbreak;",
+            "\tcase 'yield':",
+            "\t\tresult = this.parseYieldExpression(allowIn);",
+            "\t\tbreak;",
+            "\tcase 'await':",
+            "\t\tresult = this.parseAwaitExpressionOrIdentifier(allowIn);",
+            "\t\tbreak;",
+            "\tcase 'class':",
+            "\t\tresult = ClassExpression();",
+            "\t\tbreak;",
+            "\tcase 'async':",
+            "\t\tresult = this.parseAsyncFunctionExpressionOrIdentifier(allowIn);",
+            "\t\tbreak;",
+            "\tcase '=>':",
+            "\t\tresult = ArrowFunctionExpression(undefined, undefined, undefined, allowIn);",
+            "\t\tbreak;",
+            "\tdefault:",
+            "\t\tif (tokens.isUnaryOperator(peek)) {",
+            "\t\t\tresult = this.parseUnaryExpression();",
+            "\t\t\tbreak;",
+            "\t\t}",
+            "\t\tif (tokens.isIdentifierName, tokens.isTypeNodeStart(peek)) {",
+            "\t\t\tresult = ArrowFunctionOrGenericExpressionOrIdentifier(allowIn);",
+            "\t\t\tbreak;",
+            "\t\t}",
+            "\t\terror(lexer.peek(), tokens.isKeyword(peek) ? \"Expression expected; '{0}' is a keyword.\" : \"Expression expected; Unexpected token '{0}'.\", tokens.getTokenName(peek));",
+            "\t\treturn MissingExpression(tokens.isStatementStart(peek) ? lexer.current.end : lexer.read().type);",
+            "}",
+            "while (tokens.getPrecedence(peek) >= precedence) {",
+            "\tswitch (peek) {",
+            "\t\tcase '.':",
+            "\t\t\tresult = MemberCallExpression(result);",
+            "\t\t\tcontinue;",
+            "\t\tcase '(':",
+            "\t\t\tresult = FunctionCallExpression(result);",
+            "\t\t\tcontinue;",
+            "\t\tcase '[':",
+            "\t\t\tresult = IndexCallExpression(result);",
+            "\t\t\tcontinue;",
+            "\t\tcase '?':",
+            "\t\t\tresult = ConditionalExpression(result, allowIn);",
+            "\t\t\tcontinue;",
+            "\t\tcase '++':",
+            "\t\tcase '--':",
+            "\t\t\tif (!sameLine) {",
+            "\t\t\t\treturn result;",
+            "\t\t\t}",
+            "\t\t\tresult = PostfixExpression(result);",
+            "\t\t\tcontinue;",
+            "\t\tcase 'noSubstitutionTemplateLiteral':",
+            "\t\t\tresult = TemplateCallExpression(result, StringLiteral);",
+            "\t\t\tcontinue;",
+            "\t\tcase 'templateHead':",
+            "\t\t\tresult = TemplateCallExpression(result, TemplateLiteral);",
+            "\t\t\tcontinue;",
+            "\t\tcase '>':",
+            "\t\t\tconst savedToken = lexer.current;",
+            "\t\t\tlexer.readAsGreaterThanTokens();",
+            "\t\t\tlexer.current = savedToken;",
+            "\t\t\tbreak;",
+            "\t\tcase 'in':",
+            "\t\t\tif (allowIn === false) {",
+            "\t\t\t\treturn result;",
+            "\t\t\t}",
+            "\t\t\tbreak;",
+            "\t}",
+            "\tresult = BinaryExpression(result, allowIn);",
+            "}",
+            "return result;"
+        ]
+    },
+    "SimpleLiteral": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "SimpleLiteral",
+        "comment": "简单字面量(`null`、`true`、`false`、`this`、`super`)",
+        "codes": []
+    },
+    "ArrowFunctionOrParenthesizedExpression": {
+        "indent": 3,
+        "fields": [],
+        "params": [
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "ArrowFunctionOrParenthesizedExpression",
+        "comment": "箭头或括号表达式(`()=>...`、`(x)`)",
+        "codes": [
+            "const savedState = lexer.stashSave();",
+            "const parameters = Parameters();",
+            "if (sameLine && (peek === '=>' || peek === ':' || peek === '{')) {",
+            "\tlexer.stashClear(savedState);",
+            "\treturn ArrowFunctionExpression(undefined, undefined, parameters, allowIn);",
+            "}",
+            "lexer.stashRestore(savedState);",
+            "return this.parseParenthesizedExpression();"
+        ]
+    },
+    "ParenthesizedExpression": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "openParenToken",
+                "type": "number",
+                "comment": "获取当前括号表达式的标记 '(' 的位置。"
+            },
+            {
+                "name": "body",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "closeParenToken",
+                "type": "number",
+                "comment": "获取当前括号表达式的标记 ')' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "ParenthesizedExpression",
+        "comment": "括号表达式(`(x)`)",
+        "codes": [
+            "result.openParenToken = this.readToken(TokenType.openParen);",
+            "result.body = Expression; // 主体部分;",
+            "result.closeParenToken = this.readToken(TokenType.closeParen);"
+        ]
+    },
+    "ArrayLiteral": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "ArrayLiteral",
+        "comment": "数组字面量(`[x, y]`)",
+        "codes": []
+    },
+    "ArrayLiteralElement": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "dotDotDotToken",
+                "type": "number",
+                "comment": "获取当前数组字面量元素的标记 '...' 的位置(可能不存在)。"
+            },
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "ArrayLiteralElement",
+        "comment": "数组字面量元素(`x`)",
+        "codes": [
+            "if (peek !== ',' && peek !== ']') {",
+            "result.dotDotDotToken = this.readToken(TokenType.dotDotDot);",
+            "result.value = Expression(tokens.Precedence.assignment);;",
+            "}"
+        ]
+    },
+    "ObjectLiteral": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "ObjectLiteral",
+        "comment": "对象字面量(`{x: y}`)",
+        "codes": []
+    },
+    "ObjectLiteralElement": {
+        "indent": 4,
+        "fields": [],
+        "params": [],
+        "name": "ObjectLiteralElement",
+        "comment": "对象字面量元素(`x: y`、`x() {...}`)",
+        "codes": [
+            "const modifiers = Modifiers;",
+            "switch (peek) {",
+            "\tcase 'get':",
+            "\tcase 'set':",
+            "\t\tconst savedToken = lexer.current;",
+            "\t\tlexer.read();",
+            "\t\tif (tokens.isPropertyNameStart(peek)) {",
+            "\t\t\treturn ObjectAccessorDeclaration(modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);",
+            "\t\t}",
+            "\t\tlexer.current = savedToken;",
+            "\t\tbreak;",
+            "\tcase '*':",
+            "\t\treturn ObjectMethodDeclaration(modifiers, readToken('*'), PropertyName);",
+            "}",
+            "const name = PropertyName;",
+            "switch (peek) {",
+            "\tcase '(':",
+            "\tcase '<':",
+            "\t\treturn ObjectMethodDeclaration(modifiers, undefined, name);",
+            "\tdefault:",
+            "\t\treturn ObjectPropertyDeclaration(modifiers, name);",
+            "}"
+        ],
+        "alias": "ObjectPropertyDeclaration, ObjectMethodDeclaration, ObjectAccessorDeclaration"
+    },
+    "ObjectAccessorDeclaration": {
+        "indent": 8,
+        "fields": [
+            {
+                "name": "name",
+                "type": "PropertyName",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            },
+            {
+                "name": "getToken",
+                "value": "null || read('get'",
+                "optional": false
+            }
+        ],
+        "name": "ObjectAccessorDeclaration",
+        "comment": "访问器声明(`get x() {...}`、`set x(value) {...}`)",
+        "codes": [
+            "result.name = PropertyName;;",
+            "CallSignature(_);",
+            "FunctionBody(_);",
+            "CommaOrSemicolon(_);"
+        ],
+        "doc": true
+    },
+    "ObjectMethodDeclaration": {
+        "indent": 7,
+        "fields": [],
+        "params": [
+            {
+                "name": "modifiers",
+                "optional": true
+            },
+            {
+                "name": "_1",
+                "value": "null || read('*'",
+                "optional": false
+            }
+        ],
+        "name": "ObjectMethodDeclaration",
+        "comment": "方法声明(`x() {...}`)",
+        "codes": [
+            "CallSignature(_);",
+            "FunctionBody(_);",
+            "CommaOrSemicolon(_);"
+        ],
+        "doc": true
+    },
+    "ObjectPropertyDeclaration": {
+        "indent": 7,
+        "fields": [
+            {
+                "name": "colonToken",
+                "type": "number",
+                "comment": "获取当前属性声明的标记 ':' 的位置(可能不存在)。"
+            },
+            {
+                "name": "equalsToken",
+                "type": "number",
+                "comment": "获取当前属性声明的标记 '=' 的位置(可能不存在)。"
+            },
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "modifiers",
+                "optional": true
+            },
+            {
+                "name": "key",
+                "value": "PropertyName",
+                "optional": false
+            }
+        ],
+        "name": "ObjectPropertyDeclaration",
+        "comment": "属性声明(`x: y`)",
+        "codes": [
+            "if (peek === ':' || peek === '=') {",
+            "\tif (peek === ':') {",
+            "result.colonToken = this.readToken(TokenType.colon);",
+            "\t} else {",
+            "result.equalsToken = this.readToken(TokenType.equals);",
+            "\t}",
+            "result.value = Expression(tokens.Precedence.assignment);;",
+            "} else if (key.constructor === Identifier ? !utility.isIdentifier((<Identifier>key).value) :",
+            "\tkey.constructor === MemberCallExpression ? !utility.isIdentifier((<MemberCallExpression>key).argument) :",
+            "\t\ttrue) {",
+            "\treadToken(':');",
+            "}",
+            "CommaOrSemicolon(_);"
+        ],
+        "doc": true
+    },
+    "NewTargetOrNewExpression": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "NewTargetOrNewExpression",
+        "comment": "new.target(`new.target`) 或 new 表达式(`new x()`)",
+        "codes": [
+            "const newToken = read('new');",
+            "if (peek === '.') {",
+            "\treturn this.parseNewTargetExpression(newToken);",
+            "}",
+            "return this.parseNewExpression(newToken);"
+        ]
+    },
+    "NewTargetExpression": {
+        "indent": 5,
+        "fields": [
+            {
+                "name": "dotToken",
+                "type": "number",
+                "comment": "获取当前new.target 表达式的标记 '.' 的位置。"
+            }
+        ],
+        "params": [
+            {
+                "name": "newToken",
+                "value": "read('new'",
+                "optional": false
+            }
+        ],
+        "name": "NewTargetExpression",
+        "comment": "new.target 表达式(`new.target`)",
+        "codes": [
+            "result.dotToken = this.readToken(TokenType.dot);",
+            "if (peek === 'identifier' && lexer.peek().data === \"target\") {",
+            "} else {",
+            "\terror(lexer.peek(), \"'target' expected; Unexpected token '{0}'.\", tokens.getTokenName(peek));",
+            "}"
+        ]
+    },
+    "NewExpression": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "target",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "arguments",
+                "type": "Arguments",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "newToken",
+                "value": "read('new'",
+                "optional": false
+            }
+        ],
+        "name": "NewExpression",
+        "comment": "new 表达式(`new x()`、`new x`)",
+        "codes": [
+            "result.target = Expression(tokens.Precedence.member);;",
+            "if (peek === '(') {",
+            "result.arguments = Arguments;;",
+            "}"
+        ]
+    },
+    "RegularExpressionLiteral": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "RegularExpressionLiteral",
+        "comment": "正则表达式字面量(/abc/)",
+        "codes": []
+    },
+    "TemplateLiteral": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "TemplateLiteral",
+        "comment": "模板字面量(`\\`abc\\``)",
+        "codes": [
+            "while (true) {",
+            "\tresult.spans.push(TemplateSpan());",
+            "\tresult.spans.push(Expression());",
+            "\tif (peek !== '}') {",
+            "\t\treadToken('}');",
+            "\t\tbreak;",
+            "\t}",
+            "\tif (lexer.readAsTemplateMiddleOrTail().type === 'templateTail') {",
+            "\t\tresult.spans.push(TemplateSpan());",
+            "\t\tbreak;",
+            "\t}",
+            "}"
+        ]
+    },
+    "TemplateSpan": {
+        "indent": 5,
+        "fields": [],
+        "params": [],
+        "name": "TemplateSpan",
+        "comment": "模板文本区块(`\\`abc${`、`}abc${`、`}abc\\``)",
+        "codes": []
+    },
+    "ArrowFunctionOrTypeAssertionExpression": {
+        "indent": 3,
+        "fields": [],
+        "params": [
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "ArrowFunctionOrTypeAssertionExpression",
+        "comment": "箭头函数(`<T>() => {}`)或类型确认表达式(`<T>fn`)",
+        "codes": [
+            "const savedState = lexer.stashSave();",
+            "const typeParameters = TypeParameters();",
+            "const parameters = peek === '(' ? Parameters() : tokens.isIdentifierName(peek) ? Identifier() : undefined;",
+            "if (parameters && sameLine && (peek === '=>' || peek === ':' || peek === '{')) {",
+            "\tlexer.stashClear(savedState);",
+            "\treturn ArrowFunctionExpression(undefined, typeParameters, parameters, allowIn);",
+            "}",
+            "lexer.stashRestore(savedState);",
+            "return this.parseTypeAssertionExpression();"
+        ]
+    },
+    "TypeAssertionExpression": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "lessThanToken",
+                "type": "number",
+                "comment": "获取当前类型确认表达式的标记 '<' 的位置。"
+            },
+            {
+                "name": "type",
+                "type": "TypeNode",
+                "comment": ""
+            },
+            {
+                "name": "greaterThanToken",
+                "type": "number",
+                "comment": "获取当前类型确认表达式的标记 '>' 的位置。"
+            },
+            {
+                "name": "operand",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "TypeAssertionExpression",
+        "comment": "类型确认表达式(<T>xx)",
+        "codes": [
+            "result.lessThanToken = this.readToken(TokenType.lessThan);",
+            "result.type = TypeNode;;",
+            "result.greaterThanToken = this.readToken(TokenType.greaterThan);",
+            "result.operand = Expression(tokens.Precedence.postfix);;"
+        ]
+    },
+    "YieldExpression": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "yieldToken",
+                "type": "number",
+                "comment": "获取当前yield 表达式的标记 'yield' 的位置。"
+            },
+            {
+                "name": "asteriskToken",
+                "type": "number",
+                "comment": "获取当前yield 表达式的标记 '*' 的位置(可能不存在)。"
+            },
+            {
+                "name": "operand",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "YieldExpression",
+        "comment": "yield 表达式(`yield xx`)",
+        "codes": [
+            "result.yieldToken = this.readToken(TokenType.yield);",
+            "if (sameLine && peek === '*') {",
+            "result.asteriskToken = this.readToken(TokenType.asterisk);",
+            "}",
+            "if (sameLine && tokens.isExpressionStart(peek)) {",
+            "result.operand = Expression(tokens.Precedence.assignment, allowIn);;",
+            "}"
+        ]
+    },
+    "AwaitExpressionOrIdentifier": {
+        "indent": 3,
+        "fields": [],
+        "params": [
+            {
+                "name": "allowIn",
+                "optional": false
+            }
+        ],
+        "name": "AwaitExpressionOrIdentifier",
+        "comment": "await 表达式(`await xx`)或标识符",
+        "codes": [
+            "const savedToken = lexer.current;",
+            "const awaitToken = read('await');",
+            "if (sameLine && tokens.isExpressionStart(peek)) {",
+            "\treturn this.parseAwaitExpression(awaitToken);",
+            "}",
+            "lexer.current = savedToken;",
+            "return Identifier;"
+        ]
+    },
+    "AwaitExpression": {
+        "indent": 5,
+        "fields": [
+            {
+                "name": "operand",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "awaitToken",
+                "value": "read('await'",
+                "optional": false
+            }
+        ],
+        "name": "AwaitExpression",
+        "comment": "await 表达式(`await xx`)",
+        "codes": [
+            "result.operand = Expression(tokens.Precedence.assignment, allowIn);;"
+        ]
+    },
+    "AsyncFunctionExpressionOrIdentifier": {
+        "indent": 3,
+        "fields": [],
+        "params": [
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "AsyncFunctionExpressionOrIdentifier",
+        "comment": "异步函数表达式或标识符",
+        "codes": [
+            "const savedState = lexer.stashSave();",
+            "const modifiers = Modifiers;",
+            "const typeParameters = sameLine && peek === '<' ? TypeParameters() : undefined;",
+            "if (sameLine) {",
+            "\tif (peek === 'function') {",
+            "\t\treturn FunctionExpression(modifiers);",
+            "\t}",
+            "\tif ((peek === '(' || tokens.isIdentifierName, tokens.isTypeNodeStart(peek))) {",
+            "\t\tconst parameters = peek === '(' ? Parameters() : Identifier();",
+            "\t\tif (sameLine && (peek === '=>' || peek === ':' || peek === '{')) {",
+            "\t\t\tlexer.stashClear(savedState);",
+            "\t\t\treturn ArrowFunctionExpression(modifiers, typeParameters, parameters, allowIn);",
+            "\t\t}",
+            "\t}",
+            "}",
+            "lexer.stashRestore(savedState);",
+            "return Identifier();"
+        ]
+    },
+    "UnaryExpression": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "operand",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "UnaryExpression",
+        "comment": "一元运算表达式(`+x`、`typeof x`、...)",
+        "codes": [
+            "result.operand = Expression(tokens.Precedence.postfix); // 操作数;"
+        ]
+    },
+    "ArrowFunctionOrGenericExpressionOrIdentifier": {
+        "indent": 4,
+        "fields": [],
+        "params": [
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "ArrowFunctionOrGenericExpressionOrIdentifier",
+        "comment": "箭头函数或泛型表达式或标识符(`x => y`、`x<T>`、`x`)",
+        "codes": [
+            "let result: any = Identifier;",
+            "switch (peek) {",
+            "\tcase '=>':",
+            "\t\tresult = ArrowFunctionExpression(undefined, undefined, result, allowIn);",
+            "\t\tbreak;",
+            "\tcase '<':",
+            "\t\tif (sameLine) {",
+            "\t\t\tconst savedState = lexer.stashSave();",
+            "\t\t\tconst typeArguments = TypeArguments;",
+            "\t\t\tif (current === '>') {",
+            "\t\t\t\tlexer.stashClear(savedState);",
+            "\t\t\t\tresult = GenericExpression(result, typeArguments);",
+            "\t\t\t} else {",
+            "\t\t\t\tlexer.stashRestore(savedState);",
+            "\t\t\t}",
+            "\t\t}",
+            "\t\tbreak;",
+            "}",
+            "return result;"
+        ]
+    },
+    "GenericExpression": {
+        "indent": 9,
+        "fields": [],
+        "params": [
+            {
+                "name": "target",
+                "value": "Identifier/*目标部分*/",
+                "optional": false
+            },
+            {
+                "name": "typeArguments",
+                "value": "TypeArguments/*类型参数部分*/",
+                "optional": false
+            }
+        ],
+        "name": "GenericExpression",
+        "comment": "泛型表达式(`x<number>`)",
+        "codes": []
+    },
+    "MissingExpression": {
+        "indent": 3,
+        "fields": [],
+        "params": [
+            {
+                "name": "start",
+                "type": "number/*标记的开始位置*/",
+                "optional": false
+            }
+        ],
+        "name": "MissingExpression",
+        "comment": "错误的表达式占位符",
+        "codes": []
+    },
+    "FunctionCallExpression": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "arguments",
+                "type": "Arguments",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "target",
+                "value": "Expression(",
+                "optional": false
+            }
+        ],
+        "name": "FunctionCallExpression",
+        "comment": "函数调用表达式(`x()`)",
+        "codes": [
+            "result.arguments = Arguments;;"
+        ]
+    },
+    "IndexCallExpression": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "openBracketToken",
+                "type": "number",
+                "comment": "获取当前索引调用表达式的标记 '[' 的位置。"
+            },
+            {
+                "name": "argument",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "closeBracketToken",
+                "type": "number",
+                "comment": "获取当前索引调用表达式的标记 ']' 的位置。"
+            }
+        ],
+        "params": [
+            {
+                "name": "target",
+                "value": "Expression(",
+                "optional": false
+            }
+        ],
+        "name": "IndexCallExpression",
+        "comment": "索引调用表达式(`x[y]`)",
+        "codes": [
+            "result.openBracketToken = this.readToken(TokenType.openBracket);",
+            "result.argument = Expression;;",
+            "result.closeBracketToken = this.readToken(TokenType.closeBracket);"
+        ]
+    },
+    "ConditionalExpression": {
+        "indent": 4,
+        "fields": [
+            {
+                "name": "questionToken",
+                "type": "number",
+                "comment": "获取当前条件表达式的标记 '?' 的位置。"
+            },
+            {
+                "name": "then",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "colonToken",
+                "type": "number",
+                "comment": "获取当前条件表达式的标记 ':' 的位置。"
+            },
+            {
+                "name": "else",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "condition",
+                "value": "Expression(",
+                "optional": false
+            }
+        ],
+        "name": "ConditionalExpression",
+        "comment": "条件表达式(`x ? y : z`)",
+        "codes": [
+            "result.questionToken = this.readToken(TokenType.question);",
+            "result.then = Expression(tokens.Precedence.assignment) // 则部分;",
+            "result.colonToken = this.readToken(TokenType.colon);",
+            "result.else = Expression(tokens.Precedence.assignment, allowIn); // 否则部分;"
+        ]
+    },
+    "PostfixExpression": {
+        "indent": 4,
+        "fields": [],
+        "params": [
+            {
+                "name": "operand",
+                "value": "Expression(tokens.Precedence.leftHandSide",
+                "optional": false
+            }
+        ],
+        "name": "PostfixExpression",
+        "comment": "后缀表达式(`x++`、`x--`)",
+        "codes": []
+    },
+    "TemplateCallExpression": {
+        "indent": 4,
+        "fields": [],
+        "params": [
+            {
+                "name": "target",
+                "value": "Expression",
+                "optional": false
+            },
+            {
+                "name": "argument",
+                "value": "TemplateLiteral || StringLiteral",
+                "optional": false
+            }
+        ],
+        "name": "TemplateCallExpression",
+        "comment": "模板调用表达式(`x\\`abc\\``)",
+        "codes": []
+    },
+    "BinaryExpression": {
+        "indent": 2,
+        "fields": [
+            {
+                "name": "right",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "left",
+                "value": "Expression/*左值部分*/",
+                "optional": false
+            },
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "BinaryExpression",
+        "comment": "双目表达式(x + y、x = y、...)",
+        "codes": [
+            "result.right = Expression(tokens.getPrecedence(result.operator) + (tokens.isRightHandOperator(_.operator) ? 0 : 1), allowIn); // 右值部分;",
+            "return result;"
+        ]
+    },
+    "Arguments": {
+        "indent": 1,
+        "fields": [],
+        "params": [],
+        "name": "Arguments",
+        "comment": "函数调用参数列表",
+        "codes": [
+            "return this.parseDelimitedList(Argument, , , true, tokens.isArgumentStart);"
+        ],
+        "list": {
+            "element": "Argument",
+            "allowEmpty": true,
+            "open": "",
+            "close": "",
+            "seperator": "','",
+            "continue": "tokens.isArgumentStart",
+            "code": "this.parseDelimitedList(Argument, , , true, tokens.isArgumentStart)"
+        }
+    },
+    "Argument": {
+        "indent": 2,
+        "fields": [
+            {
+                "name": "dotDotDotToken",
+                "type": "number",
+                "comment": "获取当前函数调用参数的标记 '...' 的位置(可能不存在)。"
+            },
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "Argument",
+        "comment": "函数调用参数(`x`)",
+        "codes": [
+            "result.dotDotDotToken = this.readToken(TokenType.dotDotDot);",
+            "result.value = Expression(tokens.Precedence.assignment);;"
+        ]
+    },
+    "ArrowFunctionExpression": {
+        "indent": 1,
+        "fields": [
+            {
+                "name": "equalsGreaterThanToken",
+                "type": "number",
+                "comment": "获取当前的标记 '=>' 的位置。"
+            }
+        ],
+        "params": [
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            },
+            {
+                "name": "typeParameters",
+                "value": "null || TypeParameters(",
+                "optional": false
+            }
+        ],
+        "name": "ArrowFunctionExpression",
+        "comment": "",
+        "codes": [
+            "if (parameters.constructor !== Identifier) {",
+            "\tTypeAnnotation(_);",
+            "}",
+            "result.equalsGreaterThanToken = this.readToken(TokenType.equalsGreaterThan);"
+        ]
+    },
+    "MemberCallExpression": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "dotToken",
+                "type": "number",
+                "comment": "获取当前的标记 '.' 的位置。"
+            },
+            {
+                "name": "argument",
+                "type": "Identifier",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "target",
+                "value": "Expression(",
+                "optional": false
+            }
+        ],
+        "name": "MemberCallExpression",
+        "comment": "",
+        "codes": [
+            "result.dotToken = this.readToken(TokenType.dot);",
+            "result.argument = Identifier(true); // 参数部分;"
+        ]
+    },
+    "NumericLiteral": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "NumericLiteral",
+        "comment": "数字字面量(`1`)",
+        "codes": []
+    },
+    "StringLiteral": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "StringLiteral",
+        "comment": "字符串字面量(`'abc'`、`\"abc\"`、`\\`abc\\``)",
+        "codes": []
+    },
+    "Identifier": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "allowKeyword",
+                "value": "false/*是否允许解析关键字*/",
+                "optional": false
+            }
+        ],
+        "name": "Identifier",
+        "comment": "标识符(`x`)",
+        "codes": [
+            "let isIdentifier = tokens.isIdentifierName(peek);",
+            "if (!isIdentifier && allowKeyword && tokens.isKeyword(peek)) {",
+            "\tisIdentifier = true;",
+            "\tif (!sameLine && tokens.isStatementStart(peek)) {",
+            "\t\tconst savedState = lexer.stashSave();",
+            "\t\tStatement();",
+            "\t\tif (!savedState.errors.length) {",
+            "\t\t\tisIdentifier = false;",
+            "\t\t}",
+            "\t}",
+            "}",
+            "if (isIdentifier) {",
+            "} else {",
+            "\terror(lexer.peek(), tokens.isKeyword(peek) ? \"Identifier expected; Keyword '{0}' cannot be used as an identifier.\" : \"Identifier expected; Unexpected token '{0}'.\", tokens.getTokenName(peek));",
+            "}"
+        ],
+        "extend": "Expression"
+    },
+    "Statement": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "Statement",
+        "comment": "语句",
+        "codes": [
+            "switch (peek) {",
+            "\tcase '{':",
+            "\t\treturn BlockStatement;",
+            "\tcase 'var':",
+            "\tcase 'const':",
+            "\t\treturn VariableStatement;",
+            "\tcase 'let':",
+            "\t\treturn VariableOrExpressionStatement();",
+            "\tcase 'if':",
+            "\t\treturn this.parseIfStatement();",
+            "\tcase 'for':",
+            "\t\treturn this.parseForOrForInOrForOfOrForToStatement();",
+            "\tcase 'while':",
+            "\t\treturn this.parseWhileStatement();",
+            "\tcase 'switch':",
+            "\t\treturn this.parseSwitchStatement();",
+            "\tcase 'do':",
+            "\t\treturn this.parseDoWhileStatement();",
+            "\tcase 'break':",
+            "\t\treturn BreakStatement;",
+            "\tcase 'continue':",
+            "\t\treturn ContinueStatement;",
+            "\tcase 'return':",
+            "\t\treturn this.parseReturnStatement();",
+            "\tcase 'throw':",
+            "\t\treturn this.parseThrowStatement();",
+            "\tcase 'try':",
+            "\t\treturn this.parseTryStatement();",
+            "\tcase 'debugger':",
+            "\t\treturn this.parseDebuggerStatement();",
+            "\tcase ';':",
+            "\t\treturn EmptyStatement;",
+            "\tcase 'endOfFile':",
+            "\t\treturn this.parseMissingStatement();",
+            "\tcase 'with':",
+            "\t\treturn this.parseWithStatement();",
+            "\tcase 'import':",
+            "\t\treturn ImportAssignmentOrImportDeclaration;",
+            "\tcase 'export':",
+            "\t\treturn ExportAssignmentOrExportDeclaration;",
+            "\tcase 'type':",
+            "\t\treturn TypeAliasDeclaration;",
+            "\tdefault:",
+            "\t\tif (tokens.isDeclarationStart(peek)) {",
+            "\t\t\treturn DeclarationOrLabeledOrExpressionStatement;",
+            "\t\t}",
+            "\t\treturn LabeledOrExpressionStatement;",
+            "}"
+        ]
+    },
+    "VariableOrExpressionStatement": {
+        "indent": 3,
+        "fields": [],
+        "params": [
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "VariableOrExpressionStatement",
+        "comment": "变量声明(`let x`)或表达式语句(`let(x)`)",
+        "codes": [
+            "const savedToken = lexer.current;",
+            "switch (peek) {",
+            "\tcase 'let':",
+            "\tcase 'var':",
+            "\tcase 'const':",
+            "\t\tlexer.read();",
+            "\t\tconst isBindingName = tokens.isBindingNameStart(peek);",
+            "\t\tlexer.current = savedToken;",
+            "\t\tif (isBindingName) {",
+            "\t\t\treturn VariableStatement(allowIn);",
+            "\t\t}",
+            "\t\tbreak;",
+            "}",
+            "return ExpressionStatement(Expression(tokens.Precedence.any, allowIn));"
+        ]
+    },
+    "IfStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "ifToken",
+                "type": "number",
+                "comment": "获取当前if 语句的标记 'if' 的位置。"
+            },
+            {
+                "name": "then",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            },
+            {
+                "name": "elseToken",
+                "type": "number",
+                "comment": "获取当前if 语句的标记 'else' 的位置(可能不存在)。"
+            },
+            {
+                "name": "else",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "IfStatement",
+        "comment": "if 语句(`if (x) ...`)",
+        "codes": [
+            "result.ifToken = this.readToken(TokenType.if);",
+            "Condition(_);",
+            "result.then = EmbeddedStatement;;",
+            "if (peek === 'else') {",
+            "result.elseToken = this.readToken(TokenType.else);",
+            "result.else = EmbeddedStatement;;",
+            "}"
+        ]
+    },
+    "ForOrForInOrForOfOrForToStatement": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "ForOrForInOrForOfOrForToStatement",
+        "comment": "for 或 for..in 或 for..of 或 for..to 语句",
+        "codes": [
+            "const forToken = read('for');",
+            "const openParanToken = peek === '(' || options.allowMissingParenthese === false ? read('(') : undefined;",
+            "const initializer: any = peek === ';' ? undefined : VariableOrExpressionStatement(false);",
+            "switch (peek) {",
+            "\tcase 'in':",
+            "\t\treturn this.parseForInStatement(forToken);",
+            "\tcase 'of':",
+            "\t\treturn this.parseForOfStatement(forToken);",
+            "\tcase 'to':",
+            "\t\treturn this.parseForToStatement(forToken);",
+            "\tdefault:",
+            "\t\treturn this.parseForStatement(forToken);",
+            "}"
+        ]
+    },
+    "ForInStatement": {
+        "indent": 6,
+        "fields": [
+            {
+                "name": "inToken",
+                "type": "number",
+                "comment": "获取当前for..in 语句的标记 'in' 的位置。"
+            },
+            {
+                "name": "condition",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "closeParenToken",
+                "type": "number",
+                "comment": "获取当前for..in 语句的标记 ')' 的位置(可能不存在)。"
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "forToken",
+                "value": "read('for'",
+                "optional": false
+            }
+        ],
+        "name": "ForInStatement",
+        "comment": "for..in 语句(`for(var x in y) ...`)",
+        "codes": [
+            "result.inToken = this.readToken(TokenType.in);",
+            "result.condition = Expression;;",
+            "if (openParanToken != undefined) {",
+            "result.closeParenToken = this.readToken(TokenType.closeParen);",
+            "}",
+            "result.body = EmbeddedStatement;;"
+        ]
+    },
+    "ForOfStatement": {
+        "indent": 6,
+        "fields": [
+            {
+                "name": "ofToken",
+                "type": "number",
+                "comment": "获取当前for..of 语句的标记 'of' 的位置。"
+            },
+            {
+                "name": "condition",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "closeParenToken",
+                "type": "number",
+                "comment": "获取当前for..of 语句的标记 ')' 的位置(可能不存在)。"
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "forToken",
+                "value": "read('for'",
+                "optional": false
+            }
+        ],
+        "name": "ForOfStatement",
+        "comment": "for..of 语句(`for(var x of y) ...`)",
+        "codes": [
+            "result.ofToken = this.readToken(TokenType.of);",
+            "result.condition = Expression;;",
+            "if (openParanToken != undefined) {",
+            "result.closeParenToken = this.readToken(TokenType.closeParen);",
+            "}",
+            "result.body = EmbeddedStatement;;"
+        ]
+    },
+    "ForToStatement": {
+        "indent": 6,
+        "fields": [
+            {
+                "name": "toToken",
+                "type": "number",
+                "comment": "获取当前for..to 语句的标记 'to' 的位置。"
+            },
+            {
+                "name": "condition",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "closeParenToken",
+                "type": "number",
+                "comment": "获取当前for..to 语句的标记 ')' 的位置(可能不存在)。"
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "forToken",
+                "value": "read('for'",
+                "optional": false
+            }
+        ],
+        "name": "ForToStatement",
+        "comment": "for..to 语句(`for(var x = 0 to 10) ...`)",
+        "codes": [
+            "result.toToken = this.readToken(TokenType.to);",
+            "result.condition = Expression;;",
+            "if (openParanToken != undefined) {",
+            "result.closeParenToken = this.readToken(TokenType.closeParen);",
+            "}",
+            "result.body = EmbeddedStatement;;"
+        ]
+    },
+    "ForStatement": {
+        "indent": 6,
+        "fields": [
+            {
+                "name": "condition",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "iterator",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "closeParenToken",
+                "type": "number",
+                "comment": "获取当前for 语句的标记 ')' 的位置(可能不存在)。"
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "forToken",
+                "value": "read('for'",
+                "optional": false
+            }
+        ],
+        "name": "ForStatement",
+        "comment": "for 语句(`for(var i = 0; i < 9 i++) ...`)",
+        "codes": [
+            "if (peek !== ';') {",
+            "result.condition = Expression;;",
+            "}",
+            "if (openParanToken == undefined ? tokens.isExpressionStart(peek) : peek !== ')') {",
+            "result.iterator = Expression;;",
+            "}",
+            "if (openParanToken != undefined) {",
+            "result.closeParenToken = this.readToken(TokenType.closeParen);",
+            "}",
+            "result.body = EmbeddedStatement;;"
+        ]
+    },
+    "WhileStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "whileToken",
+                "type": "number",
+                "comment": "获取当前while 语句的标记 'while' 的位置。"
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "WhileStatement",
+        "comment": "while 语句(`while(x) ...`)",
+        "codes": [
+            "result.whileToken = this.readToken(TokenType.while);",
+            "Condition(_);",
+            "result.body = EmbeddedStatement;;"
+        ]
+    },
+    "SwitchStatement": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "SwitchStatement",
+        "comment": "switch 语句(`switch(x) {...}`)",
+        "codes": [
+            "if (options.allowMissingSwitchCondition === false || peek !== '{') {",
+            "\tCondition(_);",
+            "}"
+        ]
+    },
+    "CaseOrDefaultClause": {
+        "indent": 4,
+        "fields": [],
+        "params": [],
+        "name": "CaseOrDefaultClause",
+        "comment": "case(`case x: ...`) 或 default(`default: ...`) 分支",
+        "codes": [
+            "switch (peek) {",
+            "\tcase 'case':",
+            "\t\treturn this.parseCaseClause();",
+            "\tcase 'default':",
+            "\t\treturn this.parseDefaultClause();",
+            "\tdefault:",
+            "\t\terror(lexer.peek(), \"'case' or 'default' expected; Unexpected token '{0}'.\", tokens.getTokenName(peek));",
+            "\t\treturn;",
+            "}"
+        ]
+    },
+    "CaseClause": {
+        "indent": 7,
+        "fields": [
+            {
+                "name": "caseToken",
+                "type": "number",
+                "comment": "获取当前case 分支的标记 'case' 的位置。"
+            },
+            {
+                "name": "colonToken",
+                "type": "number",
+                "comment": "获取当前case 分支的标记 ':' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "CaseClause",
+        "comment": "case 分支(`case x: ...`)",
+        "codes": [
+            "result.caseToken = this.readToken(TokenType.case);",
+            "result.colonToken = this.readToken(TokenType.colon);"
+        ]
+    },
+    "CaseClauseLabel": {
+        "indent": 8,
+        "fields": [
+            {
+                "name": "elseToken",
+                "type": "number",
+                "comment": "获取当前case 分支标签的标记 'else' 的位置(可能不存在)。"
+            },
+            {
+                "name": "label",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "CaseClauseLabel",
+        "comment": "case 分支标签(`case x: ...`)",
+        "codes": [
+            "if (peek === 'else') {",
+            "result.elseToken = this.readToken(TokenType.else);",
+            "} else {",
+            "result.label = Expression(tokens.Precedence.assignment);;",
+            "}"
+        ]
+    },
+    "DefaultClause": {
+        "indent": 7,
+        "fields": [
+            {
+                "name": "defaultToken",
+                "type": "number",
+                "comment": "获取当前default 分支的标记 'default' 的位置。"
+            },
+            {
+                "name": "colonToken",
+                "type": "number",
+                "comment": "获取当前default 分支的标记 ':' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "DefaultClause",
+        "comment": "default 分支(`default: ...`)",
+        "codes": [
+            "result.defaultToken = this.readToken(TokenType.default);",
+            "result.colonToken = this.readToken(TokenType.colon);"
+        ]
+    },
+    "CaseStatement": {
+        "indent": 5,
+        "fields": [],
+        "params": [],
+        "name": "CaseStatement",
+        "comment": "case 段语句",
+        "codes": [
+            "switch (peek) {",
+            "\tcase 'case':",
+            "\tcase 'default':",
+            "\tcase '}':",
+            "\tcase 'endOfFile':",
+            "\t\treturn;",
+            "\tdefault:",
+            "\t\treturn Statement();",
+            "}"
+        ]
+    },
+    "DoWhileStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "doToken",
+                "type": "number",
+                "comment": "获取当前do..while 语句的标记 'do' 的位置。"
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            },
+            {
+                "name": "whileToken",
+                "type": "number",
+                "comment": "获取当前do..while 语句的标记 'while' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "DoWhileStatement",
+        "comment": "do..while 语句(`do ... while(x)`)",
+        "codes": [
+            "result.doToken = this.readToken(TokenType.do);",
+            "result.body = EmbeddedStatement;;",
+            "result.whileToken = this.readToken(TokenType.while);",
+            "Condition(_);",
+            "Semicolon(_);"
+        ]
+    },
+    "BreakStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "breakToken",
+                "type": "number",
+                "comment": "获取当前break 语句的标记 'break' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "BreakStatement",
+        "comment": "break 语句(`break xx`)",
+        "codes": [
+            "result.breakToken = this.readToken(TokenType.break);",
+            "BreakOrContinueStatement(_);"
+        ]
+    },
+    "ContinueStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "continueToken",
+                "type": "number",
+                "comment": "获取当前continue 语句的标记 'continue' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "ContinueStatement",
+        "comment": "continue 语句(`continue xx`)",
+        "codes": [
+            "result.continueToken = this.readToken(TokenType.continue);",
+            "BreakOrContinueStatement(_);"
+        ]
+    },
+    "BreakOrContinueStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "label",
+                "type": "Identifier",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "type": "any = BreakStatement || ContinueStatement",
+                "optional": false
+            }
+        ],
+        "name": "BreakOrContinueStatement",
+        "comment": "break 或 continue语句(`break xx;`、`continue xx`)",
+        "codes": [
+            "if (!Semicolon(_)) {",
+            "result.label = Identifier;;",
+            "\tSemicolon(_);",
+            "}"
+        ]
+    },
+    "ReturnStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "returnToken",
+                "type": "number",
+                "comment": "获取当前return 语句的标记 'return' 的位置。"
+            },
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "ReturnStatement",
+        "comment": "return 语句(`return x`)",
+        "codes": [
+            "result.returnToken = this.readToken(TokenType.return);",
+            "if (!Semicolon(_)) {",
+            "result.value = Expression;;",
+            "\tSemicolon(_);",
+            "}"
+        ]
+    },
+    "ThrowStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "throwToken",
+                "type": "number",
+                "comment": "获取当前throw 语句的标记 'throw' 的位置。"
+            },
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "ThrowStatement",
+        "comment": "throw 语句(`throw x`)",
+        "codes": [
+            "result.throwToken = this.readToken(TokenType.throw);",
+            "if (!Semicolon(_)) {",
+            "result.value = Expression;;",
+            "\t!Semicolon(_);",
+            "}"
+        ]
+    },
+    "TryStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "tryToken",
+                "type": "number",
+                "comment": "获取当前try 语句的标记 'try' 的位置。"
+            },
+            {
+                "name": "try",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "TryStatement",
+        "comment": "try 语句(`try {...} catch(e) {...}`)",
+        "codes": [
+            "result.tryToken = this.readToken(TokenType.try);",
+            "result.try = EmbeddedStatement;;",
+            "if (peek === 'catch') {",
+            "\t_.catch = this.parseCatchClause();",
+            "}",
+            "if (peek === 'finally') {",
+            "\t_.finally = this.parseFinallyClause();",
+            "}",
+            "if (options.allowSimpleTryBlock === false && !_.catch && !_.finally) {",
+            "\terror(lexer.peek(), \"'catch' or 'finally' expected. Unexpected token '{0}'.\", tokens.getTokenName(peek));",
+            "}"
+        ]
+    },
+    "CatchClause": {
+        "indent": 5,
+        "fields": [
+            {
+                "name": "catchToken",
+                "type": "number",
+                "comment": "获取当前catch 分句的标记 'catch' 的位置。"
+            },
+            {
+                "name": "variable",
+                "type": "BindingName",
+                "comment": ""
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "CatchClause",
+        "comment": "catch 分句(`catch(e) {...}`)",
+        "codes": [
+            "result.catchToken = this.readToken(TokenType.catch);",
+            "const hasParan = peek === '(';",
+            "if (hasParan || options.allowMissingParenthese === false) {",
+            "\t_('(');",
+            "}",
+            "if (tokens.isBindingNameStart(peek)) {",
+            "result.variable = BindingName;;",
+            "\tif (peek === ':') {",
+            "\t\terror(peek, \"Catch variable cannot have a type annotation; Unexpected token ':'.\");",
+            "\t\tlexer.read();",
+            "\t\tif (tokens.isTypeNodeStart(peek)) {",
+            "\t\t\tTypeNode;",
+            "\t\t}",
+            "\t}",
+            "}",
+            "if (hasParan) {",
+            "\t_(')');",
+            "}",
+            "result.body = EmbeddedStatement;;"
+        ]
+    },
+    "FinallyClause": {
+        "indent": 5,
+        "fields": [
+            {
+                "name": "finallyToken",
+                "type": "number",
+                "comment": "获取当前finally 分句的标记 'finally' 的位置。"
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "FinallyClause",
+        "comment": "finally 分句(`finally {...}`)",
+        "codes": [
+            "result.finallyToken = this.readToken(TokenType.finally);",
+            "result.body = EmbeddedStatement;;"
+        ]
+    },
+    "DebuggerStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "debuggerToken",
+                "type": "number",
+                "comment": "获取当前debugger 语句的标记 'debugger' 的位置。"
+            }
+        ],
+        "params": [],
+        "name": "DebuggerStatement",
+        "comment": "debugger 语句(`debugger`)",
+        "codes": [
+            "result.debuggerToken = this.readToken(TokenType.debugger);",
+            "Semicolon(';');"
+        ]
+    },
+    "EmptyStatement": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "EmptyStatement",
+        "comment": "",
+        "codes": [
+            "; // 空语句(``)",
+            "Semicolon(_);"
+        ]
+    },
+    "MissingStatement": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "MissingStatement",
+        "comment": "缺少语句",
+        "codes": [
+            "error(lexer.peek(), \"Statement Or Declaration expected. Unexpected end of file.\");"
+        ]
+    },
+    "WithStatement": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "withToken",
+                "type": "number",
+                "comment": "获取当前with 语句的标记 'with' 的位置。"
+            },
+            {
+                "name": "value",
+                "type": "VariableOrExpressionStatement",
+                "comment": ""
+            },
+            {
+                "name": "body",
+                "type": "EmbeddedStatement",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "WithStatement",
+        "comment": "with 语句(`with (x) ...`)",
+        "codes": [
+            "result.withToken = this.readToken(TokenType.with);",
+            "const hasParan = peek === '(';",
+            "if (hasParan) {",
+            "\t_('(');",
+            "}",
+            "result.value = VariableOrExpressionStatement;;",
+            "if (hasParan) {",
+            "\t_(')');",
+            "}",
+            "result.body = EmbeddedStatement;;"
+        ]
+    },
+    "Condition": {
+        "indent": 1,
+        "fields": [
+            {
+                "name": "openParenToken",
+                "type": "number",
+                "comment": "获取当前条件表达式的标记 '(' 的位置(可能不存在)。"
+            },
+            {
+                "name": "condition",
+                "type": "Expression",
+                "comment": ""
+            },
+            {
+                "name": "closeParenToken",
+                "type": "number",
+                "comment": "获取当前条件表达式的标记 ')' 的位置(可能不存在)。"
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "Condition",
+        "comment": "条件表达式",
+        "codes": [
+            "const hasParan = peek === '(';",
+            "if (hasParan || options.allowMissingParenthese === false) {",
+            "result.openParenToken = this.readToken(TokenType.openParen);",
+            "}",
+            "result.condition = Expression;;",
+            "if (hasParan) {",
+            "result.closeParenToken = this.readToken(TokenType.closeParen);",
+            "}"
+        ]
+    },
+    "EmbeddedStatement": {
+        "indent": 1,
+        "fields": [],
+        "params": [],
+        "name": "EmbeddedStatement",
+        "comment": "内嵌语句",
+        "codes": [
+            "return Statement;"
+        ],
+        "alias": "Statement"
+    },
+    "LabeledOrExpressionStatement": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "LabeledOrExpressionStatement",
+        "comment": "表达式或标签语句",
+        "codes": [
+            "const parsed = Expression;",
+            "if (parsed.constructor === Identifier && peek === ':') {",
+            "\treturn LabelledStatement(<Identifier>parsed);",
+            "}",
+            "return ExpressionStatement(parsed);"
+        ]
+    },
+    "LabelledStatement": {
+        "indent": 2,
+        "fields": [
+            {
+                "name": "colonToken",
+                "type": "number",
+                "comment": "获取当前标签语句的标记 ':' 的位置。"
+            },
+            {
+                "name": "statement",
+                "type": "Statement",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "label",
+                "value": "Identifier(",
+                "optional": false
+            }
+        ],
+        "name": "LabelledStatement",
+        "comment": "标签语句(`x: ...`)",
+        "codes": [
+            "result.colonToken = this.readToken(TokenType.colon);",
+            "result.statement = Statement; // 主体部分;"
+        ],
+        "doc": true
+    },
+    "VariableStatement": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "modifiers",
+                "optional": true
+            },
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "VariableStatement",
+        "comment": "变量声明语句(`var x`、`let x`、`const x`)",
+        "codes": []
+    },
+    "VariableDeclaration": {
+        "indent": 1,
+        "fields": [
+            {
+                "name": "mame",
+                "type": "BindingName",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "allowIn",
+                "optional": true
+            }
+        ],
+        "name": "VariableDeclaration",
+        "comment": "变量声明(`x = 1`、`[x] = [1]`、`{a: x} = {a: 1}`)",
+        "codes": [
+            "result.mame = BindingName;;",
+            "TypeAnnotation(_);",
+            "Initializer(_, allowIn);"
+        ]
+    },
+    "ExpressionStatement": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "expression",
+                "value": "Expression/*表达式部分*/",
+                "optional": false
+            }
+        ],
+        "name": "ExpressionStatement",
+        "comment": "表达式语句(`x()`)",
+        "codes": [
+            "Semicolon(_);"
+        ]
+    },
+    "BlockStatement": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "BlockStatement",
+        "comment": "语句块(`{...}`)",
+        "codes": []
+    },
+    "Semicolon": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "获取当前分号的标记 ';' 的位置(可能不存在)。"
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "Semicolon",
+        "comment": "分号",
+        "codes": [
+            "switch (this.lexer.peek().type) {",
+            "\tcase ';':",
+            "result.semicolonToken = this.readToken(TokenType.semicolon);",
+            "\t\treturn true;",
+            "\tcase '}':",
+            "\tcase 'endOfFile':",
+            "\t\tif (this.options.allowMissingSemicolon !== false) {",
+            "\t\t\treturn true;",
+            "\t\t}",
+            "\t\tbreak;",
+            "}",
+            "error({ start: lexer.current.end, end: lexer.current.end }, \"Missing ';' after statement.\");",
+            "return false;"
+        ]
+    },
+    "Declaration": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "Declaration",
+        "comment": "声明",
+        "codes": [],
+        "extend": "Statement"
+    },
+    "DeclarationOrLabeledOrExpressionStatement": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "DeclarationOrLabeledOrExpressionStatement",
+        "comment": "声明或表达式语句",
+        "codes": [
+            "const savedState = lexer.stashSave();",
+            "const decorators = Decorators();",
+            "const modifiers = Modifiers();",
+            "switch (peek) {",
+            "\tcase 'function':",
+            "\t\tlexer.stashClear(savedState);",
+            "\t\treturn FunctionDeclaration(decorators, modifiers);",
+            "\tcase 'class':",
+            "\t\tlexer.stashClear(savedState);",
+            "\t\treturn ClassDeclaration(decorators, modifiers);",
+            "\tcase 'interface':",
+            "\t\tlexer.stashClear(savedState);",
+            "\t\treturn InterfaceDeclaration(decorators, modifiers);",
+            "\tcase 'enum':",
+            "\t\tlexer.stashClear(savedState);",
+            "\t\treturn EnumDeclaration(decorators, modifiers);",
+            "\tcase 'namespace':",
+            "\t\tlexer.stashClear(savedState);",
+            "\t\treturn NamespaceDeclaration(decorators, modifiers);",
+            "\tcase 'module':",
+            "\t\tlexer.stashClear(savedState);",
+            "\t\treturn ModuleDeclaration(decorators, modifiers);",
+            "\tcase 'extends':",
+            "\t\tlexer.stashClear(savedState);",
+            "\t\treturn ExtensionDeclaration(decorators, modifiers);",
+            "\tdefault:",
+            "\t\tlexer.stashRestore(savedState);",
+            "\t\treturn LabeledOrExpressionStatement;",
+            "}"
+        ]
+    },
+    "Decorators": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "Decorators",
+        "comment": "修饰器列表",
+        "codes": [
+            "let result: NodeList<Decorator>;",
+            "while (peek === '') {",
+            "\tif (!result) result = list(Decorator);",
+            "\tresult.push(Decorator());",
+            "}",
+            "return result;"
+        ]
+    },
+    "Decorator": {
+        "indent": 1,
+        "fields": [
+            {
+                "name": "atToken",
+                "type": "number",
+                "comment": "获取当前修饰器的标记 '@' 的位置。"
+            },
+            {
+                "name": "body",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "Decorator",
+        "comment": "修饰器(`x`)",
+        "codes": [
+            "result.atToken = this.readToken(TokenType.at);",
+            "result.body = Expression(tokens.Precedence.leftHandSide);;"
+        ]
+    },
+    "Modifiers": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "Modifiers",
+        "comment": "修饰符列表",
+        "codes": [
+            "let result: NodeList<Modifier>;",
+            "while (tokens.isModifier(peek)) {",
+            "\tconst savedToken = lexer.current;",
+            "\tconst modifier: any = Modifier;",
+            "\tswitch (modifier.type) {",
+            "\t\tcase 'export':",
+            "\t\t\tif (!result) result = list(Modifier);",
+            "\t\t\tresult.push(modifier);",
+            "\t\t\tif (peek === 'default') {",
+            "\t\t\t\tresult.push(Modifier);",
+            "\t\t\t}",
+            "\t\t\tcontinue;",
+            "\t\tcase 'const':",
+            "\t\t\tif (peek === 'enum') {",
+            "\t\t\t\tif (!result) result = list(Modifier);",
+            "\t\t\t\tresult.push(modifier);",
+            "\t\t\t\tcontinue;",
+            "\t\t\t}",
+            "\t\t\tbreak;",
+            "\t\tdefault:",
+            "\t\t\tif (sameLine) {",
+            "\t\t\t\tif (!result) result = list(Modifier);",
+            "\t\t\t\tresult.push(modifier);",
+            "\t\t\t\tcontinue;",
+            "\t\t\t}",
+            "\t\t\tbreak;",
+            "\t}",
+            "\tlexer.current = savedToken;",
+            "\tbreak;",
+            "}",
+            "return result;"
+        ]
+    },
+    "Modifier": {
+        "indent": 1,
+        "fields": [],
+        "params": [],
+        "name": "Modifier",
+        "comment": "修饰符(`static`、`private`、...)",
+        "codes": []
+    },
+    "FunctionDeclaration": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "FunctionDeclaration",
+        "comment": "函数声明(`function fn() {...}`、`function *fn() {...}`)",
+        "codes": [
+            "FunctionDeclarationOrExpression(_, modifiers);"
+        ]
+    },
+    "FunctionExpression": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "FunctionExpression",
+        "comment": "函数表达式(`function () {}`)",
+        "codes": [
+            "FunctionDeclarationOrExpression(_, modifiers);"
+        ]
+    },
+    "FunctionDeclarationOrExpression": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "functionToken",
+                "type": "number",
+                "comment": "获取当前函数声明或表达式的标记 'function' 的位置。"
+            },
+            {
+                "name": "asteriskToken",
+                "type": "number",
+                "comment": "获取当前函数声明或表达式的标记 '*' 的位置(可能不存在)。"
+            },
+            {
+                "name": "name",
+                "type": "Identifier",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "type": "any = FunctionDeclaration || FunctionExpression/* 解析的目标节点 */",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "FunctionDeclarationOrExpression",
+        "comment": "函数声明或表达式",
+        "codes": [
+            "result.functionToken = this.readToken(TokenType.function);",
+            "result.asteriskToken = this.readToken(TokenType.asterisk);",
+            "if (tokens.isIdentifierName, tokens.isTypeNodeStart(peek)) {",
+            "result.name = Identifier;;",
+            "}",
+            "TypeAnnotation(_);",
+            "CallSignature(_);",
+            "FunctionBody(_);"
+        ],
+        "doc": true
+    },
+    "CallSignature": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "typeParameters",
+                "type": "TypeParameters",
+                "comment": ""
+            },
+            {
+                "name": "parameters",
+                "type": "Parameters",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "CallSignature",
+        "comment": "函数签名(`(): number`)",
+        "codes": [
+            "if (peek === '<') {",
+            "result.typeParameters = TypeParameters();;",
+            "}",
+            "result.parameters = Parameters;;",
+            "TypeAnnotation(_);"
+        ]
+    },
+    "FunctionBody": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "equalsGreaterThanToken",
+                "type": "number",
+                "comment": "获取当前函数主体的标记 '=>' 的位置(可能不存在)。"
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "FunctionBody",
+        "comment": "函数主体(`{...}`、`=> xx`、``)",
+        "codes": [
+            "switch (peek) {",
+            "\tcase '{':",
+            "\t\tbreak;",
+            "\tcase '=>':",
+            "result.equalsGreaterThanToken = this.readToken(TokenType.equalsGreaterThan);",
+            "\t\tbreak;",
+            "\tdefault:",
+            "\t\tSemicolon(_);",
+            "\t\tbreak;",
+            "}"
+        ]
+    },
+    "ClassDeclaration": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "ClassDeclaration",
+        "comment": "类声明(`class xx {}`)",
+        "codes": [
+            "ClassDeclarationOrExpression(_);"
+        ]
+    },
+    "ClassExpression": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "ClassExpression",
+        "comment": "类表达式(`class xx {}`)",
+        "codes": [
+            "ClassDeclarationOrExpression(_);"
+        ]
+    },
+    "ClassDeclarationOrExpression": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "classToken",
+                "type": "number",
+                "comment": "获取当前类声明或类表达式的标记 'class' 的位置。"
+            },
+            {
+                "name": "name",
+                "type": "Identifier",
+                "comment": ""
+            },
+            {
+                "name": "typeParameters",
+                "type": "TypeParameters",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "type": "any = ClassDeclaration || ClassExpression",
+                "optional": false
+            }
+        ],
+        "name": "ClassDeclarationOrExpression",
+        "comment": "类声明或类表达式",
+        "codes": [
+            "result.classToken = this.readToken(TokenType.class);",
+            "if (tokens.isIdentifierName, tokens.isTypeNodeStart(peek) && peek !== 'extends' && peek !== 'implements') {",
+            "result.name = Identifier;;",
+            "}",
+            "if (peek === '<') {",
+            "result.typeParameters = TypeParameters;;",
+            "}",
+            "ExtendsClause(_);",
+            "ImplementsClause(_);",
+            "ClassBody(_);"
+        ],
+        "doc": true
+    },
+    "ClassBody": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "ClassBody",
+        "comment": "类主体(`{...}`、``)",
+        "codes": [
+            "if (peek === '{') {",
+            "} else {",
+            "\tSemicolon(_);",
+            "}"
+        ]
+    },
+    "ClassElement": {
+        "indent": 2,
+        "fields": [],
+        "params": [],
+        "name": "ClassElement",
+        "comment": "类成员",
+        "codes": [
+            "const decorators = Decorators;",
+            "const modifiers = Modifiers;",
+            "switch (peek) {",
+            "\tcase 'identifier':",
+            "\t\tbreak;",
+            "\tcase 'get':",
+            "\tcase 'set':",
+            "\t\tconst savedToken = lexer.current;",
+            "\t\tlexer.read();",
+            "\t\tif (tokens.isPropertyNameStart(peek)) {",
+            "\t\t\treturn AccessorDeclaration(decorators, modifiers, savedToken.type === 'get' ? savedToken.start : undefined, savedToken.type === 'set' ? savedToken.start : undefined);",
+            "\t\t}",
+            "\t\tlexer.current = savedToken;",
+            "\t\tbreak;",
+            "\tcase '*':",
+            "\t\treturn MethodDeclaration(decorators, modifiers, read, PropertyName);",
+            "}",
+            "const name = PropertyName;",
+            "switch (peek) {",
+            "\tcase '(':",
+            "\tcase '<':",
+            "\t\treturn MethodDeclaration(decorators, modifiers, undefined, name);",
+            "\tdefault:",
+            "\t\treturn PropertyDeclaration(decorators, modifiers, name);",
+            "}"
+        ],
+        "alias": "MethodDeclaration, PropertyDeclaration, AccessorDeclaration"
+    },
+    "AccessorDeclaration": {
+        "indent": 6,
+        "fields": [
+            {
+                "name": "name",
+                "type": "PropertyName",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            },
+            {
+                "name": "getToken",
+                "value": "null || read('get'",
+                "optional": false
+            }
+        ],
+        "name": "AccessorDeclaration",
+        "comment": "访问器声明(`get x() {...}`、`set x(value) {...}`)",
+        "codes": [
+            "result.name = PropertyName;;",
+            "Parameters",
+            "TypeAnnotation(_);",
+            "FunctionBody(_);"
+        ],
+        "doc": true
+    },
+    "MethodDeclaration": {
+        "indent": 5,
+        "fields": [],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            },
+            {
+                "name": "_3",
+                "value": "null || read('*'",
+                "optional": false
+            }
+        ],
+        "name": "MethodDeclaration",
+        "comment": "方法声明(`x() {...}`)",
+        "codes": [
+            "CallSignature(_);",
+            "FunctionBody(_);"
+        ],
+        "doc": true
+    },
+    "PropertyDeclaration": {
+        "indent": 5,
+        "fields": [],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            },
+            {
+                "name": "name",
+                "value": "PropertyName",
+                "optional": false
+            }
+        ],
+        "name": "PropertyDeclaration",
+        "comment": "属性声明(`x: number`)",
+        "codes": [
+            "TypeAnnotation(_);",
+            "Initializer(_);"
+        ],
+        "doc": true
+    },
+    "InterfaceDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "interfaceToken",
+                "type": "number",
+                "comment": "获取当前接口声明的标记 'interface' 的位置。"
+            },
+            {
+                "name": "name",
+                "type": "Identifier",
+                "comment": ""
+            },
+            {
+                "name": "typeParameters",
+                "type": "TypeParameters",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "InterfaceDeclaration",
+        "comment": "接口声明(`interface T {...}`)",
+        "codes": [
+            "result.interfaceToken = this.readToken(TokenType.interface);",
+            "result.name = Identifier(false);;",
+            "if (peek === '<') {",
+            "result.typeParameters = TypeParameters;;",
+            "}",
+            "ExtendsClause(_);"
+        ],
+        "doc": true
+    },
+    "EnumDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "enumToken",
+                "type": "number",
+                "comment": "获取当前枚举声明的标记 'enum' 的位置。"
+            },
+            {
+                "name": "name",
+                "type": "Identifier",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "EnumDeclaration",
+        "comment": "枚举声明(`enum T {}`)",
+        "codes": [
+            "result.enumToken = this.readToken(TokenType.enum);",
+            "result.name = Identifier(false);;",
+            "ExtendsClause(_);"
+        ],
+        "doc": true
+    },
+    "EnumMemberDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "name",
+                "type": "PropertyName",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "EnumMemberDeclaration",
+        "comment": "枚举成员声明(`x`、`x = 1`)",
+        "codes": [
+            "result.name = PropertyName;;",
+            "Initializer(_);"
+        ]
+    },
+    "NamespaceDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "namespaceToken",
+                "type": "number",
+                "comment": "获取当前命名空间声明的标记 'namespace' 的位置。"
+            }
+        ],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "NamespaceDeclaration",
+        "comment": "命名空间声明(`namespace T {}`)",
+        "codes": [
+            "result.namespaceToken = this.readToken(TokenType.namespace);",
+            "NamespaceOrModuleDeclaration(_, decorators, modifiers);"
+        ]
+    },
+    "ModuleDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "moduleToken",
+                "type": "number",
+                "comment": "获取当前模块声明的标记 'module' 的位置。"
+            }
+        ],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "ModuleDeclaration",
+        "comment": "模块声明(`module T {}`)",
+        "codes": [
+            "result.moduleToken = this.readToken(TokenType.module);",
+            "NamespaceOrModuleDeclaration(_, decorators, modifiers);"
+        ]
+    },
+    "NamespaceOrModuleDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "name",
+                "type": "Identifier",
+                "comment": ""
+            },
+            {
+                "name": "name",
+                "type": "MemberCallExpression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "type": "any = NamespaceDeclaration || ModuleDeclaration",
+                "optional": false
+            },
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "NamespaceOrModuleDeclaration",
+        "comment": "命名空间或模块声明",
+        "codes": [
+            "if (lexer.current.type === 'module' && peek === 'stringLiteral') {",
+            "\t(<ModuleDeclaration>_).name = StringLiteral;",
+            "} else {",
+            "result.name = Identifier;;",
+            "\twhile (peek === '.') {",
+            "result.name = MemberCallExpression(_.name);;",
+            "\t}",
+            "}",
+            "BlockBody(_);"
+        ],
+        "doc": true
+    },
+    "ExtensionDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "extendsToken",
+                "type": "number",
+                "comment": "获取当前扩展声明的标记 'extends' 的位置。"
+            },
+            {
+                "name": "type",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "decorators",
+                "value": "null || Decorators",
+                "optional": false
+            },
+            {
+                "name": "modifiers",
+                "value": "null || Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "ExtensionDeclaration",
+        "comment": "扩展声明(`extends T {}`)",
+        "codes": [
+            "result.extendsToken = this.readToken(TokenType.extends);",
+            "result.type = TypeNode;;",
+            "ExtendsClause(_);",
+            "ImplementsClause(_);",
+            "ClassBody(_);"
+        ],
+        "doc": true
+    },
+    "ExtendsClause": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "extendsToken",
+                "type": "number",
+                "comment": "获取当前extends 分句的标记 'extends' 的位置(可能不存在)。"
+            }
+        ],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "ExtendsClause",
+        "comment": "extends 分句(`extends xx`)",
+        "codes": [
+            "if (peek === 'extends') {",
+            "result.extendsToken = this.readToken(TokenType.extends);",
+            "}"
+        ]
+    },
+    "ImplementsClause": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "implementsToken",
+                "type": "number",
+                "comment": "获取当前implements 分句的标记 'implements' 的位置(可能不存在)。"
+            }
+        ],
+        "params": [
+            {
+                "name": "result",
+                "optional": false
+            }
+        ],
+        "name": "ImplementsClause",
+        "comment": "implements 分句(`implements xx`)",
+        "codes": [
+            "if (peek === 'implements') {",
+            "result.implementsToken = this.readToken(TokenType.implements);",
+            "}"
+        ]
+    },
+    "ClassHeritageNode": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "ClassHeritageNode",
+        "comment": "extends 或 implements 分句项",
+        "codes": [
+            "result.value = Expression(tokens.Precedence.leftHandSide);;"
+        ]
+    },
+    "BlockBody": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "_",
+                "optional": false
+            }
+        ],
+        "name": "BlockBody",
+        "comment": "语句块主体(`{...}`)",
+        "codes": []
+    },
+    "TypeAliasDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "typeToken",
+                "type": "number",
+                "comment": "获取当前类型别名声明的标记 'type' 的位置。"
+            },
+            {
+                "name": "name",
+                "type": "Identifier",
+                "comment": ""
+            },
+            {
+                "name": "typeParameters",
+                "type": "TypeParameters",
+                "comment": ""
+            },
+            {
+                "name": "equalsToken",
+                "type": "number",
+                "comment": "获取当前类型别名声明的标记 '=' 的位置。"
+            },
+            {
+                "name": "value",
+                "type": "TypeNode",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "TypeAliasDeclaration",
+        "comment": "类型别名声明(`type A = number`)",
+        "codes": [
+            "result.typeToken = this.readToken(TokenType.type);",
+            "result.name = Identifier;;",
+            "if (peek === '<') {",
+            "result.typeParameters = TypeParameters;;",
+            "}",
+            "result.equalsToken = this.readToken(TokenType.equals);",
+            "result.value = TypeNode;",
+            "Semicolon(';');"
+        ]
+    },
+    "ImportAssignmentOrImportDeclaration": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "ImportAssignmentOrImportDeclaration",
+        "comment": "import 赋值或 import 声明",
+        "codes": [
+            "const importToken = read;",
+            "const imports = list(ImportClause, false, undefined, undefined, ',', tokens.isBindingNameStart);",
+            "if (peek === '=' && imports.length === 1 && imports[0].constructor === SimpleImportOrExportClause && (<SimpleImportOrExportClause>imports[0]).name == null) {",
+            "\treturn ImportAssignmentDeclaration(importToken, (<SimpleImportOrExportClause>imports[0]).variable);",
+            "}",
+            "return ImportDeclaration(importToken, imports);"
+        ]
+    },
+    "ImportAssignmentDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "equalsToken",
+                "type": "number",
+                "comment": "获取当前的标记 '=' 的位置。"
+            },
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "importToken",
+                "value": "read('import'",
+                "optional": false
+            }
+        ],
+        "name": "ImportAssignmentDeclaration",
+        "comment": "",
+        "codes": [
+            "result.equalsToken = this.readToken(TokenType.equals);",
+            "result.value = Expression(tokens.Precedence.assignment);;",
+            "Semicolon(_);"
+        ]
+    },
+    "ImportDeclaration": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "fromToken",
+                "type": "number",
+                "comment": "获取当前的标记 'from' 的位置(可能不存在)。"
+            },
+            {
+                "name": "from",
+                "type": "StringLiteral",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "importToken",
+                "value": "read('import'",
+                "optional": false
+            }
+        ],
+        "name": "ImportDeclaration",
+        "comment": "",
+        "codes": [
+            "; // import 声明(`import x from '...'`)",
+            "if (variables) {",
+            "result.fromToken = this.readToken(TokenType.from);",
+            "}",
+            "result.from = StringLiteral; // 导入模块名;",
+            "Semicolon(_);"
+        ]
+    },
+    "ImportClause": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "ImportClause",
+        "comment": "import 分句(`x`、`{x}`、...)",
+        "codes": [
+            "switch (peek) {",
+            "\tcase '*':",
+            "\t\treturn NamespaceImportClause;",
+            "\tcase '{':",
+            "\t\treturn NamedImportClause;",
+            "\tdefault:",
+            "\t\treturn SimpleImportOrExportClause(true);",
+            "}"
+        ],
+        "alias": "SimpleImportOrExportClause, NamespaceImportClause, NamedImportClause"
+    },
+    "NamespaceImportClause": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "asteriskToken",
+                "type": "number",
+                "comment": "获取当前命名空间导入分句的标记 '*' 的位置。"
+            },
+            {
+                "name": "asToken",
+                "type": "number",
+                "comment": "获取当前命名空间导入分句的标记 'as' 的位置。"
+            },
+            {
+                "name": "variable",
+                "type": "Identifier",
+                "comment": ""
+            }
+        ],
+        "params": [],
+        "name": "NamespaceImportClause",
+        "comment": "命名空间导入分句(`* as x`)",
+        "codes": [
+            "result.asteriskToken = this.readToken(TokenType.asterisk);",
+            "result.asToken = this.readToken(TokenType.as);",
+            "result.variable = Identifier;;"
+        ]
+    },
+    "NamedImportClause": {
+        "indent": 3,
+        "fields": [],
+        "params": [],
+        "name": "NamedImportClause",
+        "comment": "对象导入分句(`{x, x as y}`)",
+        "codes": []
+    },
+    "SimpleImportOrExportClause": {
+        "indent": 0,
+        "fields": [
+            {
+                "name": "asToken",
+                "type": "number",
+                "comment": "获取当前简单导入或导出分句的标记 'as' 的位置(可能不存在)。"
+            },
+            {
+                "name": "variable",
+                "type": "Identifier",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "importClause",
+                "type": "boolean/* 解析 import 分句*/",
+                "optional": false
+            }
+        ],
+        "name": "SimpleImportOrExportClause",
+        "comment": "简单导入或导出分句(`x`、`x as y`)",
+        "codes": [
+            "const nameOrVariable = Identifier(true);",
+            "if (peek === 'as') {",
+            "result.asToken = this.readToken(TokenType.as);",
+            "result.variable = Identifier(!importClause); // 导入或导出的变量;",
+            "} else {",
+            "\tif (importClause && !tokens.isIdentifierName, tokens.isTypeNodeStart(current)) {",
+            "\t\terror(lexer.current, \"Identifier expected; Keyword '{0}' cannot be used as an identifier.\", tokens.getTokenName(current));",
+            "\t}",
+            "}"
+        ]
+    },
+    "ExportAssignmentOrExportDeclaration": {
+        "indent": 0,
+        "fields": [],
+        "params": [],
+        "name": "ExportAssignmentOrExportDeclaration",
+        "comment": "export 赋值或 export 声明",
+        "codes": [
+            "const savedState = lexer.current;",
+            "const exportToekn = read;",
+            "switch (peek) {",
+            "\tcase 'function':",
+            "\t\tlexer.current = savedState;",
+            "\t\treturn FunctionDeclaration(undefined, Modifiers);",
+            "\tcase 'class':",
+            "\t\tlexer.current = savedState;",
+            "\t\treturn ClassDeclaration(undefined, Modifiers);",
+            "\tcase 'interface':",
+            "\t\tlexer.current = savedState;",
+            "\t\treturn InterfaceDeclaration(undefined, Modifiers);",
+            "\tcase 'enum':",
+            "\t\tlexer.current = savedState;",
+            "\t\treturn EnumDeclaration(undefined, Modifiers);",
+            "\tcase 'namespace':",
+            "\t\tlexer.current = savedState;",
+            "\t\treturn NamespaceDeclaration(undefined, Modifiers);",
+            "\tcase 'module':",
+            "\t\tlexer.current = savedState;",
+            "\t\treturn ModuleDeclaration(undefined, Modifiers);",
+            "\tcase 'var':",
+            "\tcase 'let':",
+            "\tcase 'const':",
+            "\t\tlexer.current = savedState;",
+            "\t\treturn VariableStatement(Modifiers);",
+            "\tcase '*':",
+            "\t\treturn this.parseExportNamespaceDeclaration(exportToekn);",
+            "\tcase '{':",
+            "\t\treturn this.parseExportListDeclaration(exportToekn);",
+            "\tcase '=':",
+            "\t\treturn this.parseExportAssignmentDeclaration(exportToekn);",
+            "\tdefault:",
+            "\t\treturn ExportDefaultDeclaration(Modifiers());",
+            "}"
+        ]
+    },
+    "ExportNamespaceDeclaration": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "asteriskToken",
+                "type": "number",
+                "comment": "获取当前导出列表声明的标记 '*' 的位置。"
+            },
+            {
+                "name": "fromToken",
+                "type": "number",
+                "comment": "获取当前导出列表声明的标记 'from' 的位置。"
+            },
+            {
+                "name": "from",
+                "type": "StringLiteral",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "exportToekn",
+                "value": "read('export'",
+                "optional": false
+            }
+        ],
+        "name": "ExportNamespaceDeclaration",
+        "comment": "导出列表声明(`export * from ...`)",
+        "codes": [
+            "result.asteriskToken = this.readToken(TokenType.asterisk);",
+            "result.fromToken = this.readToken(TokenType.from);",
+            "result.from = StringLiteral; // 导入模块名;",
+            "Semicolon(_);"
+        ]
+    },
+    "ExportListDeclaration": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "fromToken",
+                "type": "number",
+                "comment": "获取当前导出列表声明的标记 'from' 的位置。"
+            },
+            {
+                "name": "from",
+                "type": "StringLiteral",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "exportToekn",
+                "value": "read('export'",
+                "optional": false
+            }
+        ],
+        "name": "ExportListDeclaration",
+        "comment": "导出列表声明(`export a from ...`)",
+        "codes": [
+            "result.fromToken = this.readToken(TokenType.from);",
+            "result.from = StringLiteral; // 导入模块名;",
+            "Semicolon(_);"
+        ]
+    },
+    "ExportAssignmentDeclaration": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "equalsToken",
+                "type": "number",
+                "comment": "获取当前导出赋值声明的标记 '=' 的位置。"
+            },
+            {
+                "name": "value",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "exportToekn",
+                "value": "read('export'",
+                "optional": false
+            }
+        ],
+        "name": "ExportAssignmentDeclaration",
+        "comment": "导出赋值声明(`export = 1`)",
+        "codes": [
+            "result.equalsToken = this.readToken(TokenType.equals);",
+            "result.value = Expression(tokens.Precedence.assignment);;",
+            "Semicolon(_);"
+        ]
+    },
+    "ExportDefaultDeclaration": {
+        "indent": 3,
+        "fields": [
+            {
+                "name": "expression",
+                "type": "Expression",
+                "comment": ""
+            }
+        ],
+        "params": [
+            {
+                "name": "modifiers",
+                "value": "Modifiers",
+                "optional": false
+            }
+        ],
+        "name": "ExportDefaultDeclaration",
+        "comment": "export default 声明(`export default x = 1`)",
+        "codes": [
+            "result.expression = Expression(tokens.Precedence.assignment);;",
+            "Semicolon(_);"
+        ]
+    },
+    "DocComment": {
+        "indent": 0,
+        "fields": [],
+        "params": [
+            {
+                "name": "result",
+                "optional": false
+            }
+        ],
+        "name": "DocComment",
+        "comment": "文档注释",
+        "codes": []
     }
 }
