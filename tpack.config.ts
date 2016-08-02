@@ -1014,6 +1014,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
         // 处理 region
         if (/^\s*\/\/\s*#region/.test(line)) {
             currentRegion = {
+                name: line.replace(/\/\/\s*#region\s*/, "").trim(),
                 start: line,
                 end: "",
                 productions: []
@@ -1083,7 +1084,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
                                     comment = comment || "标记 '" + v.readSingle + "' 的位置";
                                 }
                             } else if (v.list) {
-                                type = "nodes.NodeList<" + v.list.element + ">";
+                                type = "NodeList<" + v.list.element + ">";
                             } else if (v.expression) {
                                 type = v.expression;
                             }
@@ -1094,7 +1095,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
                         param.optional = !!optional;
                         param.type = type && type.trim();
                         param.value = value && value.trim();
-                        param.comment = comment;
+                        param.comment = comment && comment.trim();
 
                         if (v) {
                             currentProduction.fields.push({
@@ -1113,7 +1114,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
                             }
                         }
 
-                        param.comment = comment;
+                        param.comment = comment && comment.trim();
                         currentProduction.params.push(param);
                         return "";
                     }) === line) {
@@ -1242,13 +1243,13 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
                     currentProduction.codes.push(`${indent}_.${name} = ${v.code}`);
                     return "";
                 }
-                
+
                 if (v.list) {
                     currentProduction.fields.push({
                         optional: getIndent(line) > 0,
                         inline: "",
                         name: name,
-                        type: "nodes.NodeList<" + v.list.element + ">",
+                        type: "NodeList<" + v.list.element + ">",
                         comment: comment,
                     });
                     currentProduction.codes.push(`${indent}_.${name} = ${v.code}`);
@@ -1286,7 +1287,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
         }
 
         currentProduction.codes.push(line);
-        
+
         /**
          * 解析特殊的值。
          * @param value
@@ -1303,8 +1304,8 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
             // read('x')
             if (/^\s*read\('([^']*?)'\)/.exec(value)) {
                 const token = /^\s*read\('([^']*?)'\)/.exec(value)[1];
-               result.readSingle = token;
-                    result.code = `readToken(tokens.TokenType.${tokens[token].field});`;
+                result.readSingle = token;
+                result.code = `readToken(tokens.TokenType.${tokens[token].field});`;
                 return result;
             }
 
@@ -1377,7 +1378,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
         function removeIndent(line, count) {
             return line.replace(/    /g, "\t").substring(count);
         }
-        
+
     });
 
     // 设置基类
@@ -1396,7 +1397,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
             }
         }
     });
-    
+
     // 展开 inline
     eachProduction(expandFields);
     function expandFields(production: ProductionInfo) {
@@ -1416,12 +1417,12 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
     eachProduction(p => {
         for (const f of p.fields) {
             if (productions[f.type] && productions[f.type].list) {
-                f.type = "nodes.NodeList<" + productions[f.type].list.element + ">";
+                f.type = "NodeList<" + productions[f.type].list.element + ">";
             }
         }
         for (const f of p.params) {
             if (productions[f.type] && productions[f.type].list) {
-                f.type = "nodes.NodeList<" + productions[f.type].list.element + ">";
+                f.type = "NodeList<" + productions[f.type].list.element + ">";
             }
         }
     });
@@ -1449,15 +1450,27 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
     });
     eachProduction(p => {
         for (const f of p.fields) {
-            f.comment = f.comment || comments[f.name];
-            f.type = f.type || types[f.name];
+            f.comment = (f.comment || comments[f.name] || "").trim();
+            f.type = (f.type || types[f.name] || "").trim();
         }
         for (const f of p.params) {
-            f.comment = f.comment || comments[f.name];
-            f.type = f.type || types[f.name];
+            f.comment = (f.comment || comments[f.name] || "").trim();
+            f.type = (f.type || types[f.name] || "").trim();
         }
     });
-    
+
+    // 修复字段信息。
+    eachProduction(p => {
+        for (let i = p.fields.length - 1; i >= 0; i--) {
+            for (var j = i - 1; j >= 0; j--) {
+                if (p.fields[i].name == p.fields[j].name) {
+                    p.fields.splice(i, 1);
+                    break;
+                }
+            }
+        }
+    });
+
     // 生成 parser。
     for (const region of allRegions) {
         let codes = [];
@@ -1470,7 +1483,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
                 codes.push(`     * @param ${param.name} ${param.comment}。`);
             }
             codes.push(`     */`);
-            const hasNotOptional = pp.params.length  && !pp.params[pp.params.length - 1].optional;
+            const hasNotOptional = pp.params.length && !pp.params[pp.params.length - 1].optional;
             codes.push(`    private parse${pp.name}(${formatCode(pp.params.map(t => `${t.name}${t.value ? " = " + t.value : (t.optional && !hasNotOptional ? "?" : "") + (t.type ? ": " + t.type : "")}`).join(", "))}) {`);
             const wrap = pp.fields.length && (!pp.params[0] || pp.params[0].name !== "_");
             if (wrap) {
@@ -1484,22 +1497,107 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
             }
             codes.push(`    }`);
         }
-        const regionD = region.start.replace(/\/\/\s*#region\s*/, "").trim();
-        
-       parserSource = setRegion(parserSource, regionD, codes.join("\n"));
+        parserSource = setRegion(parserSource, region.name, codes.join("\n"));
     }
-    
-        require("fs").writeFileSync("aa.ts",  parserSource);
 
     // 生成 nodes。
+    for (const region of allRegions) {
+        let codes = [];
+        for (const p of region.productions) {
+            const pp = productions[p];
+            if (pp.alias) {
+                codes.push(``);
+                codes.push(`/**`);
+                codes.push(` * 表示一个${/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment}。`);
+                codes.push(` */`);
+                codes.push(`export type ${pp.name} = ${pp.alias.replace(/,/g, " |")};`);
+                continue;
+            }
+            if (pp.fields.length === 0 && !pp.abstract || pp.params[0] && pp.params[0].name === "_") continue;
+            codes.push(``);
+            codes.push(`/**`);
+            codes.push(` * 表示一个${/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment}。`);
+            codes.push(` */`);
+            codes.push(`export ${pp.abstract ? "abstract " : ""}class ${pp.name} extends ${pp.extend} {`);
 
+            // 生成字段。
+            for (const f of pp.fields) {
+                codes.push(``);
+                codes.push(`    /**`);
+                codes.push(`     * 获取当前${(/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment).replace(/\(.*/, "")}的${f.comment}${f.optional ? "(可能不存在)" : ""}。`);
+                codes.push(`     */`);
+                codes.push(`    ${f.name}: ${f.type};`);
+            }
 
+            // 生成开始结束位置。
+            // todo
 
+            // 生成访问器。
+            if (!pp.abstract) {
+                const eachContentItems = [];
+                for (const f of pp.fields) {
+                    if (f.type === "number") continue;
+                    let tpl = f.type.indexOf("NodeList") >= 0 ? `this.${f.name}.each(callback, scope)` : `callback.call(scope, this.${f.name}, "${f.name}", this) !== false`;
+                    if (f.optional) {
+                        tpl = `(!this.${f.name} || ${tpl})`;
+                    }
+                    eachContentItems.push(tpl);
+                }
+                if (eachContentItems.length) {
+                    codes.push(`
+    /**
+     * 遍历当前节点的所有直接子节点，并对每个节点执行 *callback*。
+     * @param callback 处理每个子节点的函数。
+     * @param scope 设置 *callback* 执行时 this 的值。
+     * @returns 如果遍历是因为 *callback* 返回 false 而中止则返回 false，否则返回 true。
+     */
+    each(callback: EachCallback, scope?: any) {
+        return ${eachContentItems.join(" &&\n            ")};
+    }`);
+                }
+                codes.push(`
+    /**
+     * 使用指定的节点访问器处理当前节点。
+     * @param vistior 要使用的节点访问器。
+     * @returns 返回访问器的处理结果。
+     */
+    accept(vistior: NodeVisitor) {
+        return vistior.visit${pp.name}(this);
+    }`);
+
+            }
+
+            codes.push(``);
+            codes.push(`}`);
+        };
+        nodesSource = setRegion(nodesSource, region.name, codes.join("\n"));
+    }
 
     // 生成 nodesVisitor。
+    for (const region of allRegions) {
+        let codes = [];
+        for (const p of region.productions) {
+            const pp = productions[p];
+            if (pp.abstract || pp.alias) continue;
+            const memberList = [];
+            for (const f of pp.fields) {
+                memberList.push(`       ${f.optional ? "node." + f.name + " && " : ""}node.${f.name}.accept(this);`);
+            }
+            codes.push(`
+    /**
+     * 访问一个${/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment}。
+     * @param node 要访问的节点。
+     */
+    visit${pp.name}(node: nodes.${pp.name}) {
+${memberList.join("\n")}
+    }`);
+        }
+        nodeVisitorSource = setRegion(nodeVisitorSource, region.name, codes.join("\n"));
+    }
 
+    require("fs").writeFileSync("aa.ts", nodeVisitorSource);
     require("fs").writeFileSync("aa.json", JSON.stringify(productions, null, 4));
-    
+
     return {
         productions,
         allRegions,
@@ -1509,6 +1607,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
     };
 
     interface RegionInfo {
+        name: string;
         start: string;
         productions: string[];
         end: string;

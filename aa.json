@@ -5,6 +5,7 @@
         "params": [
             {
                 "name": "precedence",
+                "type": "",
                 "comment": "允许解析的最低操作符优先级",
                 "value": "tokens.Precedence.any",
                 "optional": false
@@ -79,7 +80,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "number",
-                "comment": " 类型"
+                "comment": "类型"
             }
         ],
         "params": [],
@@ -129,7 +130,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "TypeNode",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": false,
@@ -159,14 +160,15 @@
                 "inline": "",
                 "optional": true,
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "comment": "",
+                "type": "NodeList<TypeParameterDeclaration>"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "parameters",
                 "comment": "参数部分",
-                "type": "nodes.NodeList<ParameterDeclaration>"
+                "type": "NodeList<ParameterDeclaration>"
             },
             {
                 "optional": false,
@@ -179,19 +181,21 @@
                 "optional": false,
                 "inline": "",
                 "name": "return",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>",
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分",
                 "value": "",
                 "optional": true
@@ -243,7 +247,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "TypeNode",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -264,8 +268,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "elements",
-                "type": "nodes.NodeList<TypeMemberSignature>",
-                "comment": " 元素列表"
+                "type": "NodeList<TypeMemberSignature>",
+                "comment": "元素列表"
             }
         ],
         "params": [],
@@ -293,13 +297,14 @@
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -313,7 +318,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "return",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "comment": ""
             }
         ],
         "params": [],
@@ -348,7 +354,7 @@
                 "inline": "",
                 "name": "operand",
                 "type": "Expression",
-                "comment": " 操作数"
+                "comment": "操作数"
             }
         ],
         "params": [],
@@ -371,7 +377,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -411,7 +417,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "number",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -443,8 +449,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "typeArguments",
-                "type": "nodes.NodeList<TypeArgument>",
-                "comment": " 类型参数部分"
+                "type": "NodeList<TypeArgument>",
+                "comment": "类型参数部分"
             }
         ],
         "params": [
@@ -489,7 +495,7 @@
                 "inline": "",
                 "name": "argument",
                 "type": "Identifier",
-                "comment": " 参数部分"
+                "comment": "参数部分"
             }
         ],
         "params": [
@@ -574,14 +580,14 @@
                 "inline": "",
                 "name": "operator",
                 "type": "number",
-                "comment": " 运算类型"
+                "comment": "运算类型"
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "right",
                 "type": "TypeNode",
-                "comment": " 右值部分"
+                "comment": "右值部分"
             }
         ],
         "params": [
@@ -678,7 +684,7 @@
                 "inline": "",
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
@@ -691,7 +697,7 @@
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -706,14 +712,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "semicolonToken",
-                "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -721,6 +720,13 @@
                 "name": "commaToken",
                 "type": "number",
                 "comment": "标记 ',' 的位置"
+            },
+            {
+                "optional": true,
+                "inline": "",
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [
@@ -775,23 +781,9 @@
             {
                 "optional": false,
                 "inline": "",
-                "name": "argument",
-                "type": "Identifier",
-                "comment": " 参数部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "colonToken",
-                "type": "number",
-                "comment": "标记 ':' 的位置"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "type",
-                "type": "TypeNode",
-                "comment": " 类型部分"
+                "name": "parameter",
+                "type": "ParameterDecorator",
+                "comment": "参数部分"
             },
             {
                 "optional": false,
@@ -812,14 +804,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "semicolonToken",
-                "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -827,6 +812,13 @@
                 "name": "commaToken",
                 "type": "number",
                 "comment": "标记 ',' 的位置"
+            },
+            {
+                "optional": true,
+                "inline": "",
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [],
@@ -835,8 +827,7 @@
         "codes": [
             "this.parseDocComment(_);",
             "_.openBracketToken = readToken(tokens.TokenType.openBracket);",
-            "_.argument = Identifier();",
-            "this.parseTypeAnnotation(_);",
+            "_.parameter = ParameterDecorator();",
             "_.closeBracketToken = readToken(tokens.TokenType.closeBracket);",
             "this.parseTypeAnnotation(_);",
             "this.parseCommaOrSemicolon(_);"
@@ -853,13 +844,14 @@
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -874,14 +866,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "semicolonToken",
-                "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -889,6 +874,13 @@
                 "name": "commaToken",
                 "type": "number",
                 "comment": "标记 ',' 的位置"
+            },
+            {
+                "optional": true,
+                "inline": "",
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [],
@@ -917,13 +909,14 @@
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -938,14 +931,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "semicolonToken",
-                "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -953,6 +939,13 @@
                 "name": "commaToken",
                 "type": "number",
                 "comment": "标记 ',' 的位置"
+            },
+            {
+                "optional": true,
+                "inline": "",
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [],
@@ -975,7 +968,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "name",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "type": "PropertyName"
             },
             {
@@ -989,13 +982,14 @@
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -1010,14 +1004,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "semicolonToken",
-                "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -1025,13 +1012,20 @@
                 "name": "commaToken",
                 "type": "number",
                 "comment": "标记 ',' 的位置"
+            },
+            {
+                "optional": true,
+                "inline": "",
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [
             {
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "value": "",
                 "optional": false
             },
@@ -1065,7 +1059,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "name",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "type": "PropertyName"
             },
             {
@@ -1087,14 +1081,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "semicolonToken",
-                "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -1102,13 +1089,20 @@
                 "name": "commaToken",
                 "type": "number",
                 "comment": "标记 ',' 的位置"
+            },
+            {
+                "optional": true,
+                "inline": "",
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [
             {
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "value": "",
                 "optional": false
             },
@@ -1143,13 +1137,14 @@
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -1164,14 +1159,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "semicolonToken",
-                "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -1179,13 +1167,20 @@
                 "name": "commaToken",
                 "type": "number",
                 "comment": "标记 ',' 的位置"
+            },
+            {
+                "optional": true,
+                "inline": "",
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -1229,7 +1224,7 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
@@ -1242,7 +1237,8 @@
                 "optional": true,
                 "inline": "",
                 "name": "extends",
-                "type": "TypeNode"
+                "type": "TypeNode",
+                "comment": ""
             }
         ],
         "params": [],
@@ -1289,7 +1285,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "TypeNode",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -1331,20 +1327,22 @@
                 "optional": true,
                 "inline": "",
                 "name": "modifiers",
-                "type": "Modifiers"
+                "type": "Modifiers",
+                "comment": ""
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "dotDotDotToken",
-                "type": "number"
+                "type": "number",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "name",
                 "type": "BindingName",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
@@ -1365,7 +1363,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -1379,7 +1377,7 @@
                 "inline": "",
                 "name": "initializer",
                 "type": "Expression",
-                "comment": " 初始值部分"
+                "comment": "初始值部分"
             }
         ],
         "params": [],
@@ -1433,8 +1431,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "elements",
-                "type": "nodes.NodeList<ArrayBindingElement>",
-                "comment": " 元素列表"
+                "type": "NodeList<ArrayBindingElement>",
+                "comment": "元素列表"
             }
         ],
         "params": [],
@@ -1455,14 +1453,15 @@
                 "optional": true,
                 "inline": "",
                 "name": "dotDotDotToken",
-                "type": "number"
+                "type": "number",
+                "comment": ""
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "value",
                 "type": "BindingName",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -1489,8 +1488,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "elements",
-                "type": "nodes.NodeList<ObjectBindingElement>",
-                "comment": " 元素列表"
+                "type": "NodeList<ObjectBindingElement>",
+                "comment": "元素列表"
             }
         ],
         "params": [],
@@ -1511,7 +1510,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "key",
-                "type": "PropertyName"
+                "type": "PropertyName",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -1525,7 +1525,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "BindingName",
-                "comment": " 值部分"
+                "comment": "值部分"
             },
             {
                 "optional": true,
@@ -1539,7 +1539,7 @@
                 "inline": "",
                 "name": "initializer",
                 "type": "Expression",
-                "comment": " 初始值部分"
+                "comment": "初始值部分"
             }
         ],
         "params": [],
@@ -1576,14 +1576,14 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -1615,14 +1615,14 @@
                 "inline": "",
                 "name": "initializer",
                 "type": "Expression",
-                "comment": " 初始值部分"
+                "comment": "初始值部分"
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             },
             {
@@ -1683,7 +1683,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": false,
@@ -1712,23 +1712,23 @@
             {
                 "optional": true,
                 "inline": "",
-                "name": "semicolonToken",
+                "name": "commaToken",
                 "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "标记 ',' 的位置"
             },
             {
                 "optional": true,
                 "inline": "",
-                "name": "commaToken",
+                "name": "semicolonToken",
                 "type": "number",
-                "comment": "标记 ',' 的位置"
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -1736,11 +1736,11 @@
         "comment": "对象成员尾部",
         "codes": [
             "switch (peek) {",
-            "\tcase ';':",
-            "\t\t_.semicolonToken = readToken(tokens.TokenType.semicolon);",
             "\tcase ',':",
             "\t\t_.commaToken = readToken(tokens.TokenType.comma);",
             "\t\tbreak;",
+            "\tcase ';':",
+            "\t\t_.semicolonToken = readToken(tokens.TokenType.semicolon);",
             "\tdefault:",
             "\t\tif (sameLine) {",
             "\t\t\terror({ start: lexer.current.end, end: lexer.current.end }, \"Missing ';' after property.\");",
@@ -1759,6 +1759,7 @@
         "params": [
             {
                 "name": "precedence",
+                "type": "",
                 "comment": "允许解析的最低操作符优先级",
                 "value": "tokens.Precedence.any",
                 "optional": false
@@ -1897,7 +1898,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "number",
-                "comment": " 类型"
+                "comment": "类型"
             }
         ],
         "params": [],
@@ -1954,7 +1955,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": false,
@@ -1984,8 +1985,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "elements",
-                "type": "nodes.NodeList<ArrayLiteralElement>",
-                "comment": " 元素列表"
+                "type": "NodeList<ArrayLiteralElement>",
+                "comment": "元素列表"
             }
         ],
         "params": [],
@@ -2006,14 +2007,15 @@
                 "optional": true,
                 "inline": "",
                 "name": "dotDotDotToken",
-                "type": "number"
+                "type": "number",
+                "comment": ""
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -2039,8 +2041,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "elements",
-                "type": "nodes.NodeList<ObjectLiteralElement>",
-                "comment": " 元素列表"
+                "type": "NodeList<ObjectLiteralElement>",
+                "comment": "元素列表"
             }
         ],
         "params": [],
@@ -2096,6 +2098,7 @@
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -2117,19 +2120,20 @@
                 "inline": "",
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -2144,14 +2148,14 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "body",
                 "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": true,
@@ -2163,9 +2167,9 @@
             {
                 "optional": true,
                 "inline": "",
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "name": "commaToken",
+                "type": "number",
+                "comment": "标记 ',' 的位置"
             },
             {
                 "optional": true,
@@ -2173,19 +2177,13 @@
                 "name": "semicolonToken",
                 "type": "number",
                 "comment": "标记 ';' 的位置"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "commaToken",
-                "type": "number",
-                "comment": "标记 ',' 的位置"
             }
         ],
         "params": [
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
@@ -2234,6 +2232,7 @@
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -2247,20 +2246,21 @@
                 "inline": "",
                 "optional": false,
                 "name": "name",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "type": "PropertyName"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -2275,14 +2275,14 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "body",
                 "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": true,
@@ -2294,9 +2294,9 @@
             {
                 "optional": true,
                 "inline": "",
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "name": "commaToken",
+                "type": "number",
+                "comment": "标记 ',' 的位置"
             },
             {
                 "optional": true,
@@ -2304,19 +2304,13 @@
                 "name": "semicolonToken",
                 "type": "number",
                 "comment": "标记 ';' 的位置"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "commaToken",
-                "type": "number",
-                "comment": "标记 ',' 的位置"
             }
         ],
         "params": [
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
@@ -2330,7 +2324,7 @@
             {
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "value": "",
                 "optional": false
             }
@@ -2362,12 +2356,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
                 "inline": "",
                 "optional": false,
                 "name": "key",
+                "comment": "",
                 "type": "PropertyName"
             },
             {
@@ -2389,14 +2385,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "semicolonToken",
-                "type": "number",
-                "comment": "标记 ';' 的位置"
+                "comment": "值部分"
             },
             {
                 "optional": true,
@@ -2404,18 +2393,27 @@
                 "name": "commaToken",
                 "type": "number",
                 "comment": "标记 ',' 的位置"
+            },
+            {
+                "optional": true,
+                "inline": "",
+                "name": "semicolonToken",
+                "type": "number",
+                "comment": "标记 ';' 的位置"
             }
         ],
         "params": [
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "key",
                 "type": "PropertyName",
+                "comment": "",
                 "value": "",
                 "optional": false
             }
@@ -2536,7 +2534,8 @@
                 "optional": true,
                 "inline": "",
                 "name": "arguments",
-                "type": "nodes.NodeList<Argument>"
+                "type": "NodeList<Argument>",
+                "comment": ""
             }
         ],
         "params": [
@@ -2570,7 +2569,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "number",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -2591,8 +2590,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "spans",
-                "type": "nodes.NodeList<TemplateSpan || Expression>",
-                "comment": " 组成部分列表"
+                "type": "NodeList<TemplateSpan || Expression>",
+                "comment": "组成部分列表"
             }
         ],
         "params": [],
@@ -2626,7 +2625,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "number",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -2684,7 +2683,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型"
+                "comment": "类型"
             },
             {
                 "optional": false,
@@ -2698,7 +2697,7 @@
                 "inline": "",
                 "name": "operand",
                 "type": "Expression",
-                "comment": " 操作数"
+                "comment": "操作数"
             }
         ],
         "params": [],
@@ -2737,7 +2736,7 @@
                 "inline": "",
                 "name": "operand",
                 "type": "Expression",
-                "comment": " 操作数"
+                "comment": "操作数"
             }
         ],
         "params": [
@@ -2806,7 +2805,7 @@
                 "inline": "",
                 "name": "operand",
                 "type": "Expression",
-                "comment": " 操作数"
+                "comment": "操作数"
             }
         ],
         "params": [
@@ -2880,14 +2879,14 @@
                 "inline": "",
                 "name": "operator",
                 "type": "number",
-                "comment": " 操作符"
+                "comment": "操作符"
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "operand",
                 "type": "Expression",
-                "comment": " 操作数"
+                "comment": "操作数"
             }
         ],
         "params": [],
@@ -2956,7 +2955,7 @@
                 "optional": false,
                 "name": "typeArguments",
                 "comment": "类型参数部分",
-                "type": "nodes.NodeList<TypeArgument>"
+                "type": "NodeList<TypeArgument>"
             }
         ],
         "params": [
@@ -2969,7 +2968,7 @@
             },
             {
                 "name": "typeArguments",
-                "type": "nodes.NodeList<TypeArgument>",
+                "type": "NodeList<TypeArgument>",
                 "comment": "类型参数部分",
                 "value": "",
                 "optional": false
@@ -2993,6 +2992,7 @@
             {
                 "name": "start",
                 "type": "number/*标记的开始位置*/",
+                "comment": "",
                 "optional": false
             }
         ],
@@ -3018,7 +3018,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "arguments",
-                "type": "nodes.NodeList<Argument>"
+                "type": "NodeList<Argument>",
+                "comment": ""
             }
         ],
         "params": [
@@ -3063,7 +3064,7 @@
                 "inline": "",
                 "name": "argument",
                 "type": "Expression",
-                "comment": " 参数部分"
+                "comment": "参数部分"
             },
             {
                 "optional": false,
@@ -3102,6 +3103,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "condition",
+                "comment": "",
                 "type": "Expression"
             },
             {
@@ -3116,7 +3118,7 @@
                 "inline": "",
                 "name": "then",
                 "type": "Expression",
-                "comment": " 则部分"
+                "comment": "则部分"
             },
             {
                 "optional": false,
@@ -3130,13 +3132,14 @@
                 "inline": "",
                 "name": "else",
                 "type": "Expression",
-                "comment": " 否则部分"
+                "comment": "否则部分"
             }
         ],
         "params": [
             {
                 "name": "condition",
                 "type": "Expression",
+                "comment": "",
                 "value": "",
                 "optional": false
             },
@@ -3168,7 +3171,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "operand",
-                "comment": " 操作数",
+                "comment": "操作数",
                 "type": "Expression"
             },
             {
@@ -3176,14 +3179,14 @@
                 "inline": "",
                 "name": "operator",
                 "type": "number",
-                "comment": " 运算类型"
+                "comment": "运算类型"
             }
         ],
         "params": [
             {
                 "name": "operand",
                 "type": "Expression",
-                "comment": " 操作数",
+                "comment": "操作数",
                 "value": "",
                 "optional": false
             }
@@ -3213,7 +3216,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "argument",
-                "comment": " 参数部分",
+                "comment": "参数部分",
                 "type": "TemplateLiteral | StringLiteral"
             }
         ],
@@ -3228,7 +3231,7 @@
             {
                 "name": "argument",
                 "type": "TemplateLiteral | StringLiteral",
-                "comment": " 参数部分",
+                "comment": "参数部分",
                 "value": "",
                 "optional": false
             }
@@ -3259,14 +3262,14 @@
                 "inline": "",
                 "name": "operator",
                 "type": "number",
-                "comment": " 运算类型"
+                "comment": "运算类型"
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "right",
                 "type": "Expression",
-                "comment": " 右值部分"
+                "comment": "右值部分"
             }
         ],
         "params": [
@@ -3324,14 +3327,15 @@
                 "optional": true,
                 "inline": "",
                 "name": "dotDotDotToken",
-                "type": "number"
+                "type": "number",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -3355,13 +3359,15 @@
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "comment": "",
+                "type": "NodeList<TypeParameterDeclaration>"
             },
             {
                 "inline": "",
@@ -3382,19 +3388,21 @@
                 "inline": "",
                 "name": "body",
                 "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>",
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
@@ -3457,7 +3465,7 @@
                 "inline": "",
                 "name": "argument",
                 "type": "Identifier",
-                "comment": " 参数部分"
+                "comment": "参数部分"
             }
         ],
         "params": [
@@ -3489,7 +3497,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "number",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -3511,7 +3519,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "number",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -3533,12 +3541,13 @@
                 "inline": "",
                 "name": "value",
                 "type": "number",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [
             {
                 "name": "allowKeyword",
+                "type": "",
                 "comment": "是否允许解析关键字",
                 "value": "false",
                 "optional": false
@@ -3685,7 +3694,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -3699,7 +3709,7 @@
                 "inline": "",
                 "name": "then",
                 "type": "EmbeddedStatement",
-                "comment": " 则部分"
+                "comment": "则部分"
             },
             {
                 "optional": true,
@@ -3713,7 +3723,7 @@
                 "inline": "",
                 "name": "else",
                 "type": "EmbeddedStatement",
-                "comment": " 否则部分"
+                "comment": "否则部分"
             }
         ],
         "params": [],
@@ -3780,7 +3790,7 @@
                 "inline": "",
                 "optional": true,
                 "name": "initializer",
-                "comment": " 初始值部分",
+                "comment": "初始值部分",
                 "type": "VariableStatement | ExpressionStatement"
             },
             {
@@ -3794,7 +3804,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -3808,7 +3819,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [
@@ -3829,7 +3840,7 @@
             {
                 "name": "initializer",
                 "type": "VariableStatement | ExpressionStatement",
-                "comment": " 初始值部分",
+                "comment": "初始值部分",
                 "value": "",
                 "optional": true
             }
@@ -3877,7 +3888,7 @@
                 "inline": "",
                 "optional": true,
                 "name": "initializer",
-                "comment": " 初始值部分",
+                "comment": "初始值部分",
                 "type": "VariableStatement | ExpressionStatement"
             },
             {
@@ -3891,7 +3902,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -3905,7 +3917,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [
@@ -3926,7 +3938,7 @@
             {
                 "name": "initializer",
                 "type": "VariableStatement | ExpressionStatement",
-                "comment": " 初始值部分",
+                "comment": "初始值部分",
                 "value": "",
                 "optional": true
             }
@@ -3974,7 +3986,7 @@
                 "inline": "",
                 "optional": true,
                 "name": "initializer",
-                "comment": " 初始值部分",
+                "comment": "初始值部分",
                 "type": "VariableStatement | ExpressionStatement"
             },
             {
@@ -3988,7 +4000,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -4002,7 +4015,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [
@@ -4023,7 +4036,7 @@
             {
                 "name": "initializer",
                 "type": "VariableStatement | ExpressionStatement",
-                "comment": " 初始值部分",
+                "comment": "初始值部分",
                 "value": "",
                 "optional": true
             }
@@ -4071,7 +4084,7 @@
                 "inline": "",
                 "optional": true,
                 "name": "initializer",
-                "comment": " 初始值部分",
+                "comment": "初始值部分",
                 "type": "VariableStatement | ExpressionStatement"
             },
             {
@@ -4079,19 +4092,21 @@
                 "inline": "",
                 "name": "firstSemicolon",
                 "type": "number",
-                "comment": " 条件部分中首个分号"
+                "comment": "条件部分中首个分号"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "iterator",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -4105,7 +4120,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [
@@ -4126,7 +4141,7 @@
             {
                 "name": "initializer",
                 "type": "VariableStatement | ExpressionStatement",
-                "comment": " 初始值部分",
+                "comment": "初始值部分",
                 "value": "",
                 "optional": true
             }
@@ -4179,7 +4194,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -4193,7 +4209,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [],
@@ -4216,7 +4232,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "cases",
-                "type": "nodes.NodeList<CaseOrDefaultClause>"
+                "type": "NodeList<CaseOrDefaultClause>",
+                "comment": ""
             }
         ],
         "params": [],
@@ -4269,8 +4286,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "labels",
-                "type": "nodes.NodeList<CaseClauseLabel>",
-                "comment": " 标签列表"
+                "type": "NodeList<CaseClauseLabel>",
+                "comment": "标签列表"
             },
             {
                 "optional": false,
@@ -4283,7 +4300,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "statements",
-                "type": "nodes.NodeList<undefined>"
+                "type": "NodeList<undefined>",
+                "comment": ""
             }
         ],
         "params": [],
@@ -4314,7 +4332,8 @@
                 "optional": true,
                 "inline": "",
                 "name": "label",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             }
         ],
         "params": [],
@@ -4353,7 +4372,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "statements",
-                "type": "nodes.NodeList<undefined>"
+                "type": "NodeList<undefined>",
+                "comment": ""
             }
         ],
         "params": [],
@@ -4406,7 +4426,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": false,
@@ -4426,7 +4446,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -4472,14 +4493,15 @@
                 "inline": "",
                 "optional": false,
                 "name": "_",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "type": "BreakStatement | ContinueStatement"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "label",
-                "type": "Identifier"
+                "type": "Identifier",
+                "comment": ""
             }
         ],
         "params": [],
@@ -4508,14 +4530,15 @@
                 "inline": "",
                 "optional": false,
                 "name": "_",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "type": "BreakStatement | ContinueStatement"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "label",
-                "type": "Identifier"
+                "type": "Identifier",
+                "comment": ""
             }
         ],
         "params": [],
@@ -4537,21 +4560,22 @@
                 "inline": "",
                 "optional": false,
                 "name": "_",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "type": "BreakStatement | ContinueStatement"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "label",
-                "type": "Identifier"
+                "type": "Identifier",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "value": "",
                 "optional": false
             }
@@ -4585,7 +4609,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -4618,7 +4642,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -4650,7 +4674,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "try",
-                "type": "EmbeddedStatement"
+                "type": "EmbeddedStatement",
+                "comment": ""
             }
         ],
         "params": [],
@@ -4696,7 +4721,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [],
@@ -4743,7 +4768,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [],
@@ -4832,14 +4857,14 @@
                 "inline": "",
                 "name": "value",
                 "type": "VariableOrExpressionStatement",
-                "comment": " 值部分"
+                "comment": "值部分"
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "body",
                 "type": "EmbeddedStatement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [],
@@ -4876,7 +4901,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "condition",
-                "type": "Expression"
+                "type": "Expression",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -4890,7 +4916,7 @@
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -4950,6 +4976,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "label",
+                "comment": "",
                 "type": "Identifier"
             },
             {
@@ -4964,13 +4991,14 @@
                 "inline": "",
                 "name": "statement",
                 "type": "Statement",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [
             {
                 "name": "label",
                 "type": "Identifier",
+                "comment": "",
                 "value": "",
                 "optional": false
             }
@@ -4995,6 +5023,7 @@
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -5002,13 +5031,13 @@
                 "inline": "",
                 "name": "type",
                 "type": "number",
-                "comment": " 类型"
+                "comment": "类型"
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "variables",
-                "type": "nodes.NodeList<undefined>",
+                "type": "NodeList<undefined>",
                 "comment": "别名"
             }
         ],
@@ -5016,6 +5045,7 @@
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
@@ -5047,7 +5077,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "mame",
-                "type": "BindingName"
+                "type": "BindingName",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -5061,7 +5092,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             }
         ],
         "params": [
@@ -5129,7 +5160,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "statements",
-                "type": "nodes.NodeList<Statement>"
+                "type": "NodeList<Statement>",
+                "comment": ""
             }
         ],
         "params": [],
@@ -5158,7 +5190,7 @@
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -5274,7 +5306,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             }
         ],
         "params": [],
@@ -5341,7 +5373,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "number",
-                "comment": " 类型"
+                "comment": "类型"
             }
         ],
         "params": [],
@@ -5362,12 +5394,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             }
         ],
@@ -5375,12 +5409,14 @@
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -5408,6 +5444,7 @@
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             }
         ],
@@ -5415,6 +5452,7 @@
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -5439,13 +5477,14 @@
                 "inline": "",
                 "optional": false,
                 "name": "_",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "type": "FunctionDeclaration | FunctionExpression"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -5467,7 +5506,7 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
@@ -5481,41 +5520,28 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "colonToken",
-                "type": "number",
-                "comment": "标记 ':' 的位置"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "type",
-                "type": "TypeNode",
-                "comment": " 类型部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "body",
                 "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": true,
@@ -5523,26 +5549,20 @@
                 "name": "equalsGreaterThanToken",
                 "type": "number",
                 "comment": "标记 '=>' 的位置"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "FunctionDeclaration | FunctionExpression",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "value": "",
                 "optional": false
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -5578,13 +5598,14 @@
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -5599,14 +5620,14 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -5632,7 +5653,7 @@
                 "inline": "",
                 "name": "body",
                 "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": true,
@@ -5640,20 +5661,13 @@
                 "name": "equalsGreaterThanToken",
                 "type": "number",
                 "comment": "标记 '=>' 的位置"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -5685,19 +5699,21 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
                 "inline": "",
                 "optional": false,
                 "name": "_",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "type": "ClassDeclaration | ClassExpression"
             },
             {
@@ -5712,13 +5728,14 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -5731,7 +5748,8 @@
                 "optional": true,
                 "inline": "",
                 "name": "extends",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -5744,25 +5762,29 @@
                 "optional": true,
                 "inline": "",
                 "name": "implements",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "members",
-                "type": "nodes.NodeList<ClassElement>"
+                "type": "NodeList<ClassElement>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -5790,7 +5812,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "_",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "type": "ClassDeclaration | ClassExpression"
             },
             {
@@ -5805,13 +5827,14 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -5824,7 +5847,8 @@
                 "optional": true,
                 "inline": "",
                 "name": "extends",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -5837,13 +5861,15 @@
                 "optional": true,
                 "inline": "",
                 "name": "implements",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "members",
-                "type": "nodes.NodeList<ClassElement>"
+                "type": "NodeList<ClassElement>",
+                "comment": ""
             }
         ],
         "params": [],
@@ -5864,7 +5890,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "_",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "type": "ClassDeclaration | ClassExpression"
             },
             {
@@ -5879,13 +5905,14 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -5898,7 +5925,8 @@
                 "optional": true,
                 "inline": "",
                 "name": "extends",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -5911,20 +5939,22 @@
                 "optional": true,
                 "inline": "",
                 "name": "implements",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "members",
-                "type": "nodes.NodeList<ClassElement>"
+                "type": "NodeList<ClassElement>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "ClassDeclaration | ClassExpression",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "value": "",
                 "optional": false
             }
@@ -5957,14 +5987,15 @@
                 "optional": true,
                 "inline": "",
                 "name": "members",
-                "type": "nodes.NodeList<ClassElement>"
+                "type": "NodeList<ClassElement>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -6027,12 +6058,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -6054,7 +6087,7 @@
                 "inline": "",
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
@@ -6068,14 +6101,14 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "body",
                 "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": true,
@@ -6083,25 +6116,20 @@
                 "name": "equalsGreaterThanToken",
                 "type": "number",
                 "comment": "标记 '=>' 的位置"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
             }
         ],
         "params": [
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
@@ -6153,12 +6181,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -6172,20 +6202,21 @@
                 "inline": "",
                 "optional": false,
                 "name": "name",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "type": "PropertyName"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "parameters",
-                "type": "nodes.NodeList<ParameterDeclaration>",
+                "type": "NodeList<ParameterDeclaration>",
                 "comment": "参数部分"
             },
             {
@@ -6200,14 +6231,14 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "body",
                 "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
+                "comment": "主体部分"
             },
             {
                 "optional": true,
@@ -6215,25 +6246,20 @@
                 "name": "equalsGreaterThanToken",
                 "type": "number",
                 "comment": "标记 '=>' 的位置"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "body",
-                "type": "BlockStatement | Expression",
-                "comment": " 主体部分"
             }
         ],
         "params": [
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
@@ -6247,7 +6273,7 @@
             {
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "value": "",
                 "optional": false
             }
@@ -6281,19 +6307,21 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
                 "inline": "",
                 "optional": false,
                 "name": "name",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "type": "PropertyName"
             },
             {
@@ -6308,7 +6336,7 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型部分"
+                "comment": "类型部分"
             },
             {
                 "optional": true,
@@ -6322,26 +6350,28 @@
                 "inline": "",
                 "name": "initializer",
                 "type": "Expression",
-                "comment": " 初始值部分"
+                "comment": "初始值部分"
             }
         ],
         "params": [
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 ",
+                "comment": "名字部分",
                 "value": "",
                 "optional": false
             }
@@ -6372,12 +6402,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -6392,13 +6424,14 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -6411,25 +6444,29 @@
                 "optional": true,
                 "inline": "",
                 "name": "extends",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "members",
-                "type": "nodes.NodeList<TypeMemberSignature>"
+                "type": "NodeList<TypeMemberSignature>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -6464,12 +6501,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -6484,7 +6523,7 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
@@ -6497,25 +6536,29 @@
                 "optional": true,
                 "inline": "",
                 "name": "extends",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "members",
-                "type": "nodes.NodeList<EnumMemberDeclaration>"
+                "type": "NodeList<EnumMemberDeclaration>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -6548,7 +6591,7 @@
                 "inline": "",
                 "name": "name",
                 "type": "PropertyName",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
@@ -6562,7 +6605,7 @@
                 "inline": "",
                 "name": "initializer",
                 "type": "Expression",
-                "comment": " 初始值部分"
+                "comment": "初始值部分"
             }
         ],
         "params": [],
@@ -6584,12 +6627,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -6604,12 +6649,14 @@
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -6638,12 +6685,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -6658,12 +6707,14 @@
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -6692,19 +6743,21 @@
                 "inline": "",
                 "optional": false,
                 "name": "_",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "type": "NamespaceDeclaration | ModuleDeclaration"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -6712,39 +6765,35 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "name",
-                "type": "MemberCallExpression",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": false,
                 "inline": "",
                 "name": "statements",
-                "type": "nodes.NodeList<Statement>"
+                "type": "NodeList<Statement>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "NamespaceDeclaration | ModuleDeclaration",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "value": "",
                 "optional": false
             },
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -6782,12 +6831,14 @@
                 "inline": "",
                 "optional": true,
                 "name": "decorators",
+                "comment": "",
                 "type": "Decorators"
             },
             {
                 "inline": "",
                 "optional": true,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -6802,20 +6853,14 @@
                 "inline": "",
                 "name": "type",
                 "type": "TypeNode",
-                "comment": " 类型"
-            },
-            {
-                "optional": true,
-                "inline": "",
-                "name": "extendsToken",
-                "type": "number",
-                "comment": "标记 'extends' 的位置"
+                "comment": "类型"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "extends",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": true,
@@ -6828,25 +6873,29 @@
                 "optional": true,
                 "inline": "",
                 "name": "implements",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "members",
-                "type": "nodes.NodeList<ClassElement>"
+                "type": "NodeList<ClassElement>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "decorators",
                 "type": "Decorators",
+                "comment": "",
                 "value": "",
                 "optional": true
             },
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": true
             }
@@ -6886,14 +6935,15 @@
                 "optional": true,
                 "inline": "",
                 "name": "extends",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -6924,12 +6974,15 @@
                 "optional": true,
                 "inline": "",
                 "name": "implements",
-                "type": "nodes.NodeList<ClassHeritageNode>"
+                "type": "NodeList<ClassHeritageNode>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "result",
+                "type": "",
+                "comment": "",
                 "optional": false
             }
         ],
@@ -6954,7 +7007,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -6975,14 +7028,15 @@
                 "optional": false,
                 "inline": "",
                 "name": "statements",
-                "type": "nodes.NodeList<Statement>"
+                "type": "NodeList<Statement>",
+                "comment": ""
             }
         ],
         "params": [
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],
@@ -7011,13 +7065,14 @@
                 "inline": "",
                 "name": "name",
                 "type": "Identifier",
-                "comment": " 名字部分 "
+                "comment": "名字部分"
             },
             {
                 "optional": true,
                 "inline": "",
                 "name": "typeParameters",
-                "type": "nodes.NodeList<TypeParameterDeclaration>"
+                "type": "NodeList<TypeParameterDeclaration>",
+                "comment": ""
             },
             {
                 "optional": false,
@@ -7031,7 +7086,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "TypeNode",
-                "comment": " 值部分"
+                "comment": "值部分"
             }
         ],
         "params": [],
@@ -7100,7 +7155,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
+                "comment": "值部分"
             },
             {
                 "optional": true,
@@ -7155,7 +7210,7 @@
                 "optional": false,
                 "name": "variables",
                 "comment": "别名",
-                "type": "nodes.NodeList<Identifier>"
+                "type": "NodeList<Identifier>"
             },
             {
                 "optional": true,
@@ -7169,7 +7224,7 @@
                 "inline": "",
                 "name": "from",
                 "type": "StringLiteral",
-                "comment": " 导入模块名"
+                "comment": "导入模块名"
             },
             {
                 "optional": true,
@@ -7189,7 +7244,7 @@
             },
             {
                 "name": "variables",
-                "type": "nodes.NodeList<Identifier>",
+                "type": "NodeList<Identifier>",
                 "comment": "别名",
                 "value": "",
                 "optional": false
@@ -7278,8 +7333,8 @@
                 "optional": false,
                 "inline": "",
                 "name": "elements",
-                "type": "nodes.NodeList<undefined>",
-                "comment": " 元素列表"
+                "type": "NodeList<undefined>",
+                "comment": "元素列表"
             }
         ],
         "params": [],
@@ -7308,13 +7363,14 @@
                 "inline": "",
                 "name": "variable",
                 "type": "Identifier",
-                "comment": " 导入或导出的变量"
+                "comment": "导入或导出的变量"
             }
         ],
         "params": [
             {
                 "name": "importClause",
                 "type": "boolean/* 解析 import 分句*/",
+                "comment": "",
                 "optional": false
             }
         ],
@@ -7413,7 +7469,7 @@
                 "inline": "",
                 "name": "from",
                 "type": "StringLiteral",
-                "comment": " 导入模块名"
+                "comment": "导入模块名"
             },
             {
                 "optional": true,
@@ -7460,7 +7516,7 @@
                 "optional": false,
                 "inline": "",
                 "name": "variables",
-                "type": "nodes.NodeList<SimpleImportOrExportClause>",
+                "type": "NodeList<SimpleImportOrExportClause>",
                 "comment": "别名"
             },
             {
@@ -7475,7 +7531,7 @@
                 "inline": "",
                 "name": "from",
                 "type": "StringLiteral",
-                "comment": " 导入模块名"
+                "comment": "导入模块名"
             },
             {
                 "optional": true,
@@ -7530,7 +7586,7 @@
                 "inline": "",
                 "name": "value",
                 "type": "Expression",
-                "comment": " 值部分"
+                "comment": "值部分"
             },
             {
                 "optional": true,
@@ -7569,6 +7625,7 @@
                 "inline": "",
                 "optional": false,
                 "name": "modifiers",
+                "comment": "",
                 "type": "Modifiers"
             },
             {
@@ -7590,6 +7647,7 @@
             {
                 "name": "modifiers",
                 "type": "Modifiers",
+                "comment": "",
                 "value": "",
                 "optional": false
             }
@@ -7613,7 +7671,7 @@
             {
                 "name": "_",
                 "type": "BreakStatement | ContinueStatement",
-                "comment": " 解析的目标节点 ",
+                "comment": "解析的目标节点",
                 "optional": false
             }
         ],

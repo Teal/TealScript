@@ -816,6 +816,7 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
         // 处理 region
         if (/^\s*\/\/\s*#region/.test(line)) {
             currentRegion = {
+                name: line.replace(/\/\/\s*#region\s*/, "").trim(),
                 start: line,
                 end: "",
                 productions: []
@@ -879,7 +880,7 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
                                 }
                             }
                             else if (v.list) {
-                                type = "nodes.NodeList<" + v.list.element + ">";
+                                type = "NodeList<" + v.list.element + ">";
                             }
                             else if (v.expression) {
                                 type = v.expression;
@@ -890,7 +891,7 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
                         param.optional = !!optional;
                         param.type = type && type.trim();
                         param.value = value && value.trim();
-                        param.comment = comment;
+                        param.comment = comment && comment.trim();
                         if (v) {
                             currentProduction.fields.push({
                                 inline: "",
@@ -908,7 +909,7 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
                                 currentProduction.codes.push("_." + name + " = " + name + ";");
                             }
                         }
-                        param.comment = comment;
+                        param.comment = comment && comment.trim();
                         currentProduction.params.push(param);
                         return "";
                     }) === line) {
@@ -1026,7 +1027,7 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
                         optional: getIndent(line) > 0,
                         inline: "",
                         name: name,
-                        type: "nodes.NodeList<" + v.list.element + ">",
+                        type: "NodeList<" + v.list.element + ">",
                         comment: comment,
                     });
                     currentProduction.codes.push(indent + "_." + name + " = " + v.code);
@@ -1172,13 +1173,13 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
         for (var _i = 0, _a = p.fields; _i < _a.length; _i++) {
             var f = _a[_i];
             if (productions[f.type] && productions[f.type].list) {
-                f.type = "nodes.NodeList<" + productions[f.type].list.element + ">";
+                f.type = "NodeList<" + productions[f.type].list.element + ">";
             }
         }
         for (var _b = 0, _c = p.params; _b < _c.length; _b++) {
             var f = _c[_b];
             if (productions[f.type] && productions[f.type].list) {
-                f.type = "nodes.NodeList<" + productions[f.type].list.element + ">";
+                f.type = "NodeList<" + productions[f.type].list.element + ">";
             }
         }
     });
@@ -1208,13 +1209,24 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
     eachProduction(function (p) {
         for (var _i = 0, _a = p.fields; _i < _a.length; _i++) {
             var f = _a[_i];
-            f.comment = f.comment || comments[f.name];
-            f.type = f.type || types[f.name];
+            f.comment = (f.comment || comments[f.name] || "").trim();
+            f.type = (f.type || types[f.name] || "").trim();
         }
         for (var _b = 0, _c = p.params; _b < _c.length; _b++) {
             var f = _c[_b];
-            f.comment = f.comment || comments[f.name];
-            f.type = f.type || types[f.name];
+            f.comment = (f.comment || comments[f.name] || "").trim();
+            f.type = (f.type || types[f.name] || "").trim();
+        }
+    });
+    // 修复字段信息。
+    eachProduction(function (p) {
+        for (var i = p.fields.length - 1; i >= 0; i--) {
+            for (var j = i - 1; j >= 0; j--) {
+                if (p.fields[i].name == p.fields[j].name) {
+                    p.fields.splice(i, 1);
+                    break;
+                }
+            }
         }
     });
     // 生成 parser。
@@ -1250,12 +1262,84 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
             var p = _f[_e];
             _loop_1(p);
         }
-        var regionD = region.start.replace(/\/\/\s*#region\s*/, "").trim();
-        parserSource = setRegion(parserSource, regionD, codes.join("\n"));
+        parserSource = setRegion(parserSource, region.name, codes.join("\n"));
     }
-    require("fs").writeFileSync("aa.ts", parserSource);
     // 生成 nodes。
+    for (var _g = 0, allRegions_2 = allRegions; _g < allRegions_2.length; _g++) {
+        var region = allRegions_2[_g];
+        var codes = [];
+        for (var _h = 0, _j = region.productions; _h < _j.length; _h++) {
+            var p = _j[_h];
+            var pp = productions[p];
+            if (pp.alias) {
+                codes.push("");
+                codes.push("/**");
+                codes.push(" * \u8868\u793A\u4E00\u4E2A" + (/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment) + "\u3002");
+                codes.push(" */");
+                codes.push("export type " + pp.name + " = " + pp.alias.replace(/,/g, " |") + ";");
+                continue;
+            }
+            if (pp.fields.length === 0 && !pp.abstract || pp.params[0] && pp.params[0].name === "_")
+                continue;
+            codes.push("");
+            codes.push("/**");
+            codes.push(" * \u8868\u793A\u4E00\u4E2A" + (/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment) + "\u3002");
+            codes.push(" */");
+            codes.push("export " + (pp.abstract ? "abstract " : "") + "class " + pp.name + " extends " + pp.extend + " {");
+            // 生成字段。
+            for (var _k = 0, _l = pp.fields; _k < _l.length; _k++) {
+                var f = _l[_k];
+                codes.push("");
+                codes.push("    /**");
+                codes.push("     * \u83B7\u53D6\u5F53\u524D" + (/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment).replace(/\(.*/, "") + "\u7684" + f.comment + (f.optional ? "(可能不存在)" : "") + "\u3002");
+                codes.push("     */");
+                codes.push("    " + f.name + ": " + f.type + ";");
+            }
+            // 生成开始结束位置。
+            // todo
+            // 生成访问器。
+            if (!pp.abstract) {
+                var eachContentItems = [];
+                for (var _m = 0, _o = pp.fields; _m < _o.length; _m++) {
+                    var f = _o[_m];
+                    if (f.type === "number")
+                        continue;
+                    var tpl = f.type.indexOf("NodeList") >= 0 ? "this." + f.name + ".each(callback, scope)" : "callback.call(scope, this." + f.name + ", \"" + f.name + "\", this) !== false";
+                    if (f.optional) {
+                        tpl = "(!this." + f.name + " || " + tpl + ")";
+                    }
+                    eachContentItems.push(tpl);
+                }
+                if (eachContentItems.length) {
+                    codes.push("\n    /**\n     * \u904D\u5386\u5F53\u524D\u8282\u70B9\u7684\u6240\u6709\u76F4\u63A5\u5B50\u8282\u70B9\uFF0C\u5E76\u5BF9\u6BCF\u4E2A\u8282\u70B9\u6267\u884C *callback*\u3002\n     * @param callback \u5904\u7406\u6BCF\u4E2A\u5B50\u8282\u70B9\u7684\u51FD\u6570\u3002\n     * @param scope \u8BBE\u7F6E *callback* \u6267\u884C\u65F6 this \u7684\u503C\u3002\n     * @returns \u5982\u679C\u904D\u5386\u662F\u56E0\u4E3A *callback* \u8FD4\u56DE false \u800C\u4E2D\u6B62\u5219\u8FD4\u56DE false\uFF0C\u5426\u5219\u8FD4\u56DE true\u3002\n     */\n    each(callback: EachCallback, scope?: any) {\n        return " + eachContentItems.join(" &&\n            ") + ";\n    }");
+                }
+                codes.push("\n    /**\n     * \u4F7F\u7528\u6307\u5B9A\u7684\u8282\u70B9\u8BBF\u95EE\u5668\u5904\u7406\u5F53\u524D\u8282\u70B9\u3002\n     * @param vistior \u8981\u4F7F\u7528\u7684\u8282\u70B9\u8BBF\u95EE\u5668\u3002\n     * @returns \u8FD4\u56DE\u8BBF\u95EE\u5668\u7684\u5904\u7406\u7ED3\u679C\u3002\n     */\n    accept(vistior: NodeVisitor) {\n        return vistior.visit" + pp.name + "(this);\n    }");
+            }
+            codes.push("");
+            codes.push("}");
+        }
+        ;
+        nodesSource = setRegion(nodesSource, region.name, codes.join("\n"));
+    }
     // 生成 nodesVisitor。
+    for (var _p = 0, allRegions_3 = allRegions; _p < allRegions_3.length; _p++) {
+        var region = allRegions_3[_p];
+        var codes = [];
+        for (var _q = 0, _r = region.productions; _q < _r.length; _q++) {
+            var p = _r[_q];
+            var pp = productions[p];
+            if (pp.abstract || pp.alias)
+                continue;
+            var memberList = [];
+            for (var _s = 0, _t = pp.fields; _s < _t.length; _s++) {
+                var f = _t[_s];
+                memberList.push("       " + (f.optional ? "node." + f.name + " && " : "") + "node." + f.name + ".accept(this);");
+            }
+            codes.push("\n    /**\n     * \u8BBF\u95EE\u4E00\u4E2A" + (/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment) + "\u3002\n     * @param node \u8981\u8BBF\u95EE\u7684\u8282\u70B9\u3002\n     */\n    visit" + pp.name + "(node: nodes." + pp.name + ") {\n" + memberList.join("\n") + "\n    }");
+        }
+        nodeVisitorSource = setRegion(nodeVisitorSource, region.name, codes.join("\n"));
+    }
+    require("fs").writeFileSync("aa.ts", nodeVisitorSource);
     require("fs").writeFileSync("aa.json", JSON.stringify(productions, null, 4));
     return {
         productions: productions,

@@ -454,8 +454,7 @@ function TypeMemberSignature() { // 类型成员签名(`x： y`、`x() {...}`)
                 function IndexSignature() { // 索引器声明(`[key: string]: string``)
                     DocComment(_);
                     read('[');
-                    _.argument = Identifier;
-                    TypeAnnotation(_);
+                    _.parameter = ParameterDecorator; // 参数部分
                     read(']');
                     TypeAnnotation(_);
                     CommaOrSemicolon(_);
@@ -606,11 +605,11 @@ function PropertyName() { // 属性名称(`xx`、`"xx"`、`0`、`[xx]`)
 
 function CommaOrSemicolon(_) { // 对象成员尾部
     switch (peek) {
-        case ';':
-            read(';');
         case ',':
             read(',');
             break;
+        case ';':
+            read(';');
         default:
             if (sameLine) {
                 error({ start: lexer.current.end, end: lexer.current.end }, "Missing ';' after property.");
