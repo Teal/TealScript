@@ -7,6 +7,7 @@ import {CharCode} from './unicode';
 import * as tokens from './tokens';
 import {TextRange} from './location';
 import * as nodes from './nodes';
+import * as utility from './utility';
 import {Lexer, LexerOptions, Token} from './lexer';
 
 /**

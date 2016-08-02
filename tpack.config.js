@@ -9,11 +9,11 @@ tpack.task("gen-parser", function () {
         tpack.getFile("src/parser/tokens.ts").content = result.tokenSource;
         tpack.getFile("src/parser/tokens.ts").save();
         var result2 = parseNodes(file.content, result.tokens, tpack.getFile("src/parser/nodes.ts").content, tpack.getFile("src/parser/parser.ts").content, tpack.getFile("src/parser/nodeVisitor.ts").content);
-        //tpack.getFile("src/parser/nodes.ts").content = result2.nodesSource;
-        //tpack.getFile("src/parser/parser.ts").content = result2.parserSource;
+        tpack.getFile("src/parser/nodes.ts").content = result2.nodesSource;
+        tpack.getFile("src/parser/parser.ts").content = result2.parserSource;
         //tpack.getFile("src/parser/nodeVisitor.ts").content = result2.nodeVisitorSource;
         //tpack.getFile("src/parser/nodes.ts").save();
-        //tpack.getFile("src/parser/parser.ts").save();
+        tpack.getFile("src/parser/parser.ts").save();
         //tpack.getFile("src/parser/nodeVisitor.ts").save();
     });
 });
@@ -1086,8 +1086,8 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
                 return result;
             }
             // list()
-            if (/^\s*list\((.*?)\)/.exec(value)) {
-                var p = /\s*list\((.*?)\)/.exec(value)[1].split(/,\s+/);
+            if (/^\s*list\((.*)\)/.exec(value)) {
+                var p = /\s*list\((.*)\)/.exec(value)[1].split(/,\s+/);
                 result.list = {
                     element: p[0],
                     allowEmpty: !p[1] || p[1] == "true",
@@ -1104,10 +1104,14 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
                     result.list.element = /\/\*(.*)\*\//[1];
                     header = header.replace(/\/\*(.*)\*\//, "");
                 }
-                result.code = (result.list.seperator ? "this.parseDelimitedList(" + header + ", " + result.list.open + ", " + result.list.close + ", " + result.list.allowEmpty + ", " + result.list.continue + ");" : "this.parseNodeList(" + header + ", " + result.list.open + ", " + result.list.close + ")").replace(', undefined)', ');')
+                result.code = p.length === 1 ? "new nodes.NodeList<" + p[0] + ">();" : (result.list.seperator ? "this.parseDelimitedList(" + header + ", " + result.list.open + ", " + result.list.close + ", " + result.list.allowEmpty + ", " + result.list.continue + ");" : "this.parseNodeList(" + header + ", " + result.list.open + ", " + result.list.close + ")").replace(', undefined)', ');')
                     .replace(', false)', ')')
+                    .replace(', )', ')')
+                    .replace(', )', ')')
                     .replace(', undefined)', ')')
-                    .replace(', undefined)', ')');
+                    .replace(', undefined)', ')')
+                    .replace(/List\(([A-Z])/, "List(this.parse$1")
+                    .replace(/\|\|\s*([A-Z])/, "|| this.parse$1");
                 return result;
             }
             // Expression || Statement
@@ -1217,30 +1221,34 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
     for (var _i = 0, allRegions_1 = allRegions; _i < allRegions_1.length; _i++) {
         var region = allRegions_1[_i];
         var codes = [];
-        for (var _a = 0, _b = region.productions; _a < _b.length; _a++) {
-            var p = _b[_a];
+        var _loop_1 = function(p) {
             var pp = productions[p];
             codes.push("");
             codes.push("    /**");
             codes.push("     * \u89E3\u6790\u4E00\u4E2A" + (/^\w/.test(pp.comment) ? " " + pp.comment : pp.comment) + "\u3002");
-            for (var _c = 0, _d = pp.params; _c < _d.length; _c++) {
-                var param = _d[_c];
+            for (var _a = 0, _b = pp.params; _a < _b.length; _a++) {
+                var param = _b[_a];
                 codes.push("     * @param " + param.name + " " + param.comment + "\u3002");
             }
             codes.push("     */");
-            codes.push("    private parse" + pp.name + "(" + formatCode(pp.params.map(function (t) { return ("" + t.name + (t.value ? " = " + t.value : (t.optional ? "?" : "") + (t.type ? ": " + t.type : ""))); }).join(", ")) + ") {");
+            var hasNotOptional = pp.params.length && !pp.params[pp.params.length - 1].optional;
+            codes.push("    private parse" + pp.name + "(" + formatCode(pp.params.map(function (t) { return ("" + t.name + (t.value ? " = " + t.value : (t.optional && !hasNotOptional ? "?" : "") + (t.type ? ": " + t.type : ""))); }).join(", ")) + ") {");
             var wrap = pp.fields.length && (!pp.params[0] || pp.params[0].name !== "_");
             if (wrap) {
                 codes.push("        const result = new nodes." + pp.name + ";");
             }
-            for (var _e = 0, _f = pp.codes; _e < _f.length; _e++) {
-                var code = _f[_e];
+            for (var _c = 0, _d = pp.codes; _c < _d.length; _c++) {
+                var code = _d[_c];
                 codes.push("        " + formatCode(code));
             }
             if (wrap) {
                 codes.push("        return result;");
             }
             codes.push("    }");
+        };
+        for (var _e = 0, _f = region.productions; _e < _f.length; _e++) {
+            var p = _f[_e];
+            _loop_1(p);
         }
         var regionD = region.start.replace(/\/\/\s*#region\s*/, "").trim();
         parserSource = setRegion(parserSource, regionD, codes.join("\n"));
@@ -1262,7 +1270,7 @@ function parseNodes(source, tokens, nodesSource, parserSource, nodeVisitorSource
         }
     }
     function formatCode(code) {
-        return code.replace(/([:<|]\s*)([A-Z])/g, "$1nodes.$2")
+        return code.replace(/([:<|]\s*|constructor\s*===\s*)([A-Z])/g, "$1nodes.$2")
             .replace(/(^|[^\.\w])([A-Z]\w*)/g, "$1this.parse$2()")
             .replace(/(this.parse\w+)\(\)(\()/g, "$1$2")
             .replace(/(^|[^\.\w])lexer\b/g, "$1this.lexer")

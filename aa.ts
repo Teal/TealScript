@@ -7,6 +7,7 @@ import {CharCode} from './unicode';
 import * as tokens from './tokens';
 import {TextRange} from './location';
 import * as nodes from './nodes';
+import * as utility from './utility';
 import {Lexer, LexerOptions, Token} from './lexer';
 
 /**
@@ -303,7 +304,7 @@ export class Parser {
      * 解析一个元祖类型节点(`[string, number]`)。
      */
     private parseTupleTypeNode() {
-        return this.parseDelimitedList(this.parseTupleTypeElement(), tokens.TokenType.openBracket, tokens.TokenType.closeBracket, true, tokens.isTypeNodeStart);
+        return this.parseDelimitedList(this.parseTupleTypeElement, tokens.TokenType.openBracket, tokens.TokenType.closeBracket, true, tokens.isTypeNodeStart);
     }
 
     /**
@@ -320,7 +321,7 @@ export class Parser {
      */
     private parseObjectTypeNode() {
         const result = new nodes.ObjectTypeNode;
-        result.elements = this.parseNodeList(this.parseTypeMemberSignature(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
+        result.elements = this.parseNodeList(this.parseTypeMemberSignature, tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
         return result;
     }
 
@@ -579,7 +580,7 @@ export class Parser {
      * 解析一个类型参数列表(`<T>`)。
      */
     private parseTypeParameters() {
-        return this.parseDelimitedList(this.parseTypeParameterDeclaration(), tokens.TokenType.lessThan, tokens.TokenType.greaterThan, false, tokens.isIdentifierName);
+        return this.parseDelimitedList(this.parseTypeParameterDeclaration, tokens.TokenType.lessThan, tokens.TokenType.greaterThan, false, tokens.isIdentifierName);
     }
 
     /**
@@ -599,7 +600,7 @@ export class Parser {
      * 解析一个类型参数列表(`<number>`)。
      */
     private parseTypeArguments() {
-        return this.parseDelimitedList(this.parseTypeArgument(), tokens.TokenType.lessThan, tokens.TokenType.greaterThan, false, tokens.isTypeNodeStart);
+        return this.parseDelimitedList(this.parseTypeArgument, tokens.TokenType.lessThan, tokens.TokenType.greaterThan, false, tokens.isTypeNodeStart);
     }
 
     /**
@@ -615,7 +616,7 @@ export class Parser {
      * 解析一个参数列表(`(x, y)`)。
      */
     private parseParameters() {
-        return this.parseNodeList(this.parseParameterDeclaration(), tokens.TokenType.openParen, ')
+        return this.parseDelimitedList(this.parseParameterDeclaration, tokens.TokenType.openParen, tokens.TokenType.closeParen, true, tokens.isParameterStart);
     }
 
     /**
@@ -658,7 +659,7 @@ export class Parser {
      */
     private parseArrayBindingPattern() {
         const result = new nodes.ArrayBindingPattern;
-        result.elements = this.parseDelimitedList(this.parseArrayBindingElement(), tokens.TokenType.openBracket, tokens.TokenType.closeBracket, true, tokens.isArrayBindingElementStart);
+        result.elements = this.parseDelimitedList(this.parseArrayBindingElement, tokens.TokenType.openBracket, tokens.TokenType.closeBracket, true, tokens.isArrayBindingElementStart);
         return result;
     }
 
@@ -682,7 +683,7 @@ export class Parser {
      */
     private parseObjectBindingPattern() {
         const result = new nodes.ObjectBindingPattern;
-        result.elements = this.parseDelimitedList(this.parseObjectBindingElement(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isPropertyNameStart);
+        result.elements = this.parseDelimitedList(this.parseObjectBindingElement, tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isPropertyNameStart);
         return result;
     }
 
@@ -932,7 +933,7 @@ export class Parser {
      */
     private parseArrayLiteral() {
         const result = new nodes.ArrayLiteral;
-        result.elements = this.parseDelimitedList(this.parseArrayLiteralElement(), tokens.TokenType.openBracket, tokens.TokenType.closeBracket, true, tokens.isExpressionStart);
+        result.elements = this.parseDelimitedList(this.parseArrayLiteralElement, tokens.TokenType.openBracket, tokens.TokenType.closeBracket, true, tokens.isExpressionStart);
         return result;
     }
 
@@ -955,7 +956,7 @@ export class Parser {
      */
     private parseObjectLiteral() {
         const result = new nodes.ObjectLiteral;
-        result.elements = this.parseDelimitedList(this.parseObjectLiteralElement(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isPropertyNameStart);
+        result.elements = this.parseDelimitedList(this.parseObjectLiteralElement, tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isPropertyNameStart);
         return result;
     }
 
@@ -1018,7 +1019,7 @@ export class Parser {
      * @param asteriskToken 标记 '*' 的位置。
      * @param name  名字部分 。
      */
-    private parseObjectMethodDeclaration(modifiers?: nodes.Modifiers, asteriskToken?: number, name: nodes.PropertyName) {
+    private parseObjectMethodDeclaration(modifiers: nodes.Modifiers, asteriskToken: number, name: nodes.PropertyName) {
         const result = new nodes.ObjectMethodDeclaration;
         if (modifiers != undefined) {
         	result.modifiers = modifiers;
@@ -1039,7 +1040,7 @@ export class Parser {
      * @param modifiers undefined。
      * @param key undefined。
      */
-    private parseObjectPropertyDeclaration(modifiers?: nodes.Modifiers, key: nodes.PropertyName) {
+    private parseObjectPropertyDeclaration(modifiers: nodes.Modifiers, key: nodes.PropertyName) {
         const result = new nodes.ObjectPropertyDeclaration;
         if (modifiers != undefined) {
         	result.modifiers = modifiers;
@@ -1053,8 +1054,8 @@ export class Parser {
         		result.equalsToken = this.readToken(tokens.TokenType.equals);
         	}
         	result.value = this.parseExpression(tokens.Precedence.assignment);
-        } else if (key.constructor === this.parseIdentifier() ? !utility.isIdentifier((<nodes.Identifier>key).value) :
-        	key.constructor === this.parseMemberCallExpression() ? !utility.isIdentifier((<nodes.MemberCallExpression>key).argument) :
+        } else if (key.constructor === nodes.Identifier ? !utility.isIdentifier((<nodes.Identifier>key).value) :
+        	key.constructor === nodes.MemberCallExpression ? !utility.isIdentifier((<nodes.MemberCallExpression>key).argument) :
         		true) {
         	this.readToken(tokens.TokenType.colon);
         }
@@ -1066,7 +1067,7 @@ export class Parser {
      * 解析一个 new.target(`new.target`) 或 new 表达式(`new x()`)。
      */
     private parseNewTargetOrNewExpression() {
-        const newToken = read(tokens.TokenType.new);
+        const newToken = this.readToken(tokens.TokenType.new);
         if (this.lexer.peek().type === tokens.TokenType.dot) {
         	return this.parseNewTargetExpression(newToken);
         }
@@ -1117,7 +1118,7 @@ export class Parser {
      */
     private parseTemplateLiteral() {
         const result = new nodes.TemplateLiteral;
-        result.spans = this.parseNodeList(this.parseTemplateSpan() || nodes.Expression, , )
+        result.spans = new nodes.NodeList<nodes.TemplateSpan || nodes.Expression>();
         while (true) {
         	result.spans.push(this.parseTemplateSpan());
         	result.spans.push(this.parseExpression());
@@ -1125,7 +1126,7 @@ export class Parser {
         		this.readToken(tokens.TokenType.closeBrace);
         		break;
         	}
-        	if (this.lexer.readAsTemplateMiddleOrTail().type === 'templateTail') {
+        	if (this.lexer.readAsTemplateMiddleOrTail().type === '<templateTail>') {
         		result.spans.push(this.parseTemplateSpan());
         		break;
         	}
@@ -1192,7 +1193,7 @@ export class Parser {
      */
     private parseAwaitExpressionOrIdentifier(allowIn: boolean) {
         const savedToken = this.lexer.current;
-        const awaitToken = read(tokens.TokenType.await);
+        const awaitToken = this.readToken(tokens.TokenType.await);
         if (!this.lexer.peek().hasLineBreakBeforeStart && tokens.isExpressionStart(this.lexer.peek().type)) {
         	return this.parseAwaitExpression(awaitToken, allowIn);
         }
@@ -1370,7 +1371,7 @@ export class Parser {
      * 解析一个函数调用参数列表。
      */
     private parseArguments() {
-        return this.parseDelimitedList(this.parseArgument(), , , true, tokens.isArgumentStart);
+        return this.parseDelimitedList(this.parseArgument, , , true, tokens.isArgumentStart);
     }
 
     /**
@@ -1698,7 +1699,7 @@ export class Parser {
         if (this.options.allowMissingSwitchCondition === false || this.lexer.peek().type !== tokens.TokenType.openBrace) {
         	this.parseCondition(result);
         }
-        result.cases = this.parseNodeList(this.parseCaseOrDefaultClause(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
+        result.cases = this.parseNodeList(this.parseCaseOrDefaultClause, tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
         return result;
     }
 
@@ -1723,9 +1724,9 @@ export class Parser {
     private parseCaseClause() {
         const result = new nodes.CaseClause;
         result.caseToken = this.readToken(tokens.TokenType.case);
-        result.labels = this.parseDelimitedList(this.parseCaseClauseLabel(), , , false, tokens.isCaseLabelStart);
+        result.labels = this.parseDelimitedList(this.parseCaseClauseLabel, , , false, tokens.isCaseLabelStart);
         result.colonToken = this.readToken(tokens.TokenType.colon);
-        result.statements = this.parseNodeList(this.parseCaseStatement(), , )
+        result.statements = new nodes.NodeList</*this.parseStatement()*/this.parseCaseStatement()>();
         return result;
     }
 
@@ -1749,7 +1750,7 @@ export class Parser {
         const result = new nodes.DefaultClause;
         result.defaultToken = this.readToken(tokens.TokenType.default);
         result.colonToken = this.readToken(tokens.TokenType.colon);
-        result.statements = this.parseNodeList(this.parseCaseStatement(), , )
+        result.statements = new nodes.NodeList</*this.parseStatement()*/this.parseCaseStatement()>();
         return result;
     }
 
@@ -1966,7 +1967,7 @@ export class Parser {
      */
     private parseLabeledOrExpressionStatement() {
         const parsed = this.parseExpression();
-        if (parsed.constructor === this.parseIdentifier() && this.lexer.peek().type === tokens.TokenType.colon) {
+        if (parsed.constructor === nodes.Identifier && this.lexer.peek().type === tokens.TokenType.colon) {
         	return this.parseLabelledStatement(<nodes.Identifier>parsed);
         }
         return this.parseExpressionStatement(parsed);
@@ -1996,7 +1997,7 @@ export class Parser {
         	result.modifiers = modifiers;
         }
         result.type = this.lexer.read(); // var、let、const
-        result.variables = this.parseNodeList(allowIn !== false ? this.parseVariableDeclaration() : (, , )
+        result.variables = this.parseDelimitedList(allowIn !== false ? this.parseVariableDeclaration() : () => this.parseVariableDeclaration(false), , , false, tokens.isBindingNameStart);
         return result;
     }
 
@@ -2028,7 +2029,7 @@ export class Parser {
      */
     private parseBlockStatement() {
         const result = new nodes.BlockStatement;
-        result.statements = this.parseNodeList(this.parseStatement(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
+        result.statements = this.parseNodeList(this.parseStatement, tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
         return result;
     }
 
@@ -2301,7 +2302,7 @@ export class Parser {
      */
     private parseClassBody(result: nodes.BreakStatement | nodes.ContinueStatement) {
         if (this.lexer.peek().type === tokens.TokenType.openBrace) {
-        	result.members = this.parseNodeList(this.parseClassElement(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
+        	result.members = this.parseNodeList(this.parseClassElement, tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
         } else {
         	this.parseSemicolon(result);
         }
@@ -2374,7 +2375,7 @@ export class Parser {
      * @param asteriskToken 标记 '*' 的位置。
      * @param name  名字部分 。
      */
-    private parseMethodDeclaration(decorators?: nodes.Decorators, modifiers?: nodes.Modifiers, asteriskToken?: number, name: nodes.PropertyName) {
+    private parseMethodDeclaration(decorators: nodes.Decorators, modifiers: nodes.Modifiers, asteriskToken: number, name: nodes.PropertyName) {
         const result = new nodes.MethodDeclaration;
         if (decorators != undefined) {
         	result.decorators = decorators;
@@ -2398,7 +2399,7 @@ export class Parser {
      * @param modifiers undefined。
      * @param name  名字部分 。
      */
-    private parsePropertyDeclaration(decorators?: nodes.Decorators, modifiers?: nodes.Modifiers, name: nodes.PropertyName) {
+    private parsePropertyDeclaration(decorators: nodes.Decorators, modifiers: nodes.Modifiers, name: nodes.PropertyName) {
         const result = new nodes.PropertyDeclaration;
         if (decorators != undefined) {
         	result.decorators = decorators;
@@ -2433,7 +2434,7 @@ export class Parser {
         	result.typeParameters = this.parseTypeParameters();
         }
         this.parseExtendsClause(result);
-        result.members = this.parseNodeList(this.parseTypeMemberSignature(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
+        result.members = this.parseNodeList(this.parseTypeMemberSignature, tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
         return result;
     }
 
@@ -2454,7 +2455,7 @@ export class Parser {
         result.enumToken = this.readToken(tokens.TokenType.enum);
         result.name = this.parseIdentifier(false);
         this.parseExtendsClause(result);
-        result.members = this.parseDelimitedList(this.parseEnumMemberDeclaration(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isPropertyNameStart);
+        result.members = this.parseDelimitedList(this.parseEnumMemberDeclaration, tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isPropertyNameStart);
         return result;
     }
 
@@ -2559,7 +2560,7 @@ export class Parser {
     private parseExtendsClause(result: nodes.BreakStatement | nodes.ContinueStatement) {
         if (this.lexer.peek().type === tokens.TokenType.extends) {
         	result.extendsToken = this.readToken(tokens.TokenType.extends);
-        	result.extends = this.parseDelimitedList(this.parseClassHeritageNode(), , , false, tokens.isExpressionStart);
+        	result.extends = this.parseDelimitedList(this.parseClassHeritageNode, , , false, tokens.isExpressionStart);
         }
     }
 
@@ -2571,7 +2572,7 @@ export class Parser {
         const result = new nodes.ImplementsClause;
         if (this.lexer.peek().type === tokens.TokenType.implements) {
         	result.implementsToken = this.readToken(tokens.TokenType.implements);
-        	result.implements = this.parseDelimitedList(this.parseClassHeritageNode(), , , false, tokens.isExpressionStart);
+        	result.implements = this.parseDelimitedList(this.parseClassHeritageNode, , , false, tokens.isExpressionStart);
         }
         return result;
     }
@@ -2590,7 +2591,7 @@ export class Parser {
      * @param _  解析的目标节点 。
      */
     private parseBlockBody(result: nodes.BreakStatement | nodes.ContinueStatement) {
-        result.statements = this.parseNodeList(this.parseStatement(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
+        result.statements = this.parseNodeList(this.parseStatement, tokens.TokenType.openBrace, tokens.TokenType.closeBrace)
     }
 
     /**
@@ -2615,7 +2616,7 @@ export class Parser {
     private parseImportAssignmentOrImportDeclaration() {
         const importToken = read;
         const imports = list(this.parseImportClause(), false, undefined, undefined, tokens.TokenType.comma, tokens.isBindingNameStart);
-        if (this.lexer.peek().type === tokens.TokenType.equals && imports.length === 1 && imports[0].constructor === this.parseSimpleImportOrExportClause() && (<nodes.SimpleImportOrExportClause>imports[0]).name == null) {
+        if (this.lexer.peek().type === tokens.TokenType.equals && imports.length === 1 && imports[0].constructor === nodes.SimpleImportOrExportClause && (<nodes.SimpleImportOrExportClause>imports[0]).name == null) {
         	return this.parseImportAssignmentDeclaration(importToken, (<nodes.SimpleImportOrExportClause>imports[0]).variable);
         }
         return this.parseImportDeclaration(importToken, imports);
@@ -2684,7 +2685,7 @@ export class Parser {
      */
     private parseNamedImportClause() {
         const result = new nodes.NamedImportClause;
-        result.elements = this.parseNodeList((, , )
+        result.elements = this.parseDelimitedList(() => this.parseSimpleImportOrExportClause(true), tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isIdentifierName);
         return result;
     }
 
@@ -2768,7 +2769,7 @@ export class Parser {
     private parseExportListDeclaration(exportToken: number) {
         const result = new nodes.ExportListDeclaration;
         result.exportToken = exportToken;
-        result.variables = this.parseDelimitedList(this.parseSimpleImportOrExportClause(), tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isKeyword);
+        result.variables = this.parseDelimitedList(this.parseSimpleImportOrExportClause, tokens.TokenType.openBrace, tokens.TokenType.closeBrace, true, tokens.isKeyword);
         result.fromToken = this.readToken(tokens.TokenType.from);
         result.from = this.parseStringLiteral();
         this.parseSemicolon(result);
@@ -2927,27 +2928,5 @@ export interface ParserOptions extends LexerOptions {
      * 允许不含 catch 和 finally 分句的 try 语句。
      */
     allowSimpleTryBlock?: boolean,
-
-}
-
-/**
- * 表示修饰符的使用场景。
- */
-const enum ModifierUsage {
-
-    /**
-     * 参数。
-     */
-    parameter,
-
-    /**
-     * 属性。
-     */
-    property,
-
-    /**
-     * 定义。
-     */
-    declaration,
 
 }

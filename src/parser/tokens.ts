@@ -12,7 +12,7 @@ import {CharCode} from './unicode';
  */
 export const enum TokenType {
 
-	// #region 控制符(Control)
+    // #region 控制符(Control)
 
     /**
      * 未知标记。
@@ -24,9 +24,9 @@ export const enum TokenType {
      */
     endOfFile = 1,
 
-	// #endregion
+    // #endregion
 
-	// #region 其它运算符(Other Operators)
+    // #region 其它运算符(Other Operators)
 
     /**
      * 闭圆括号(`)`)。
@@ -58,9 +58,9 @@ export const enum TokenType {
      */
     templateTail = 7,
 
-	// #endregion
+    // #endregion
 
-	// #region 字面量(Literal)
+    // #region 字面量(Literal)
 
     /**
      * 简单模板字符串字面量(`\`...\``)(在 EcmaScript 5 新增)。
@@ -107,9 +107,9 @@ export const enum TokenType {
      */
     false = 16,
 
-	// #endregion
+    // #endregion
 
-	// #region 内置类型(Predefined Types)
+    // #region 内置类型(Predefined Types)
 
     /**
      * 关键字 null。
@@ -221,9 +221,9 @@ export const enum TokenType {
      */
     question = 38,
 
-	// #endregion
+    // #endregion
 
-	// #region 修饰符(Modifiers)
+    // #region 修饰符(Modifiers)
 
     /**
      * 关键字 async(在 EcmaScript 7 新增)。
@@ -275,9 +275,9 @@ export const enum TokenType {
      */
     const = 48,
 
-	// #endregion
+    // #endregion
 
-	// #region 声明(Declarations)
+    // #region 声明(Declarations)
 
     /**
      * 关键字 function。
@@ -309,9 +309,9 @@ export const enum TokenType {
      */
     interface = 54,
 
-	// #endregion
+    // #endregion
 
-	// #region 单目运算符(Unary Operators)
+    // #region 单目运算符(Unary Operators)
 
     /**
      * 关键字 yield(在 EcmaScript 5 新增)。
@@ -363,9 +363,9 @@ export const enum TokenType {
      */
     tilde = 64,
 
-	// #endregion
+    // #endregion
 
-	// #region 单/双目运算符(Unary & Binary Operators)
+    // #region 单/双目运算符(Unary & Binary Operators)
 
     /**
      * 加(`+`)。
@@ -417,9 +417,9 @@ export const enum TokenType {
      */
     slashEquals = 74,
 
-	// #endregion
+    // #endregion
 
-	// #region 双目运算符(Binary Operators)
+    // #region 双目运算符(Binary Operators)
 
     /**
      * 乘乘(`**`)(在 EcmaScript 5 新增)。
@@ -606,9 +606,9 @@ export const enum TokenType {
      */
     is = 111,
 
-	// #endregion
+    // #endregion
 
-	// #region 语句头(Statement Headers)
+    // #region 语句头(Statement Headers)
 
     /**
      * 分号(`;`)。
@@ -695,9 +695,9 @@ export const enum TokenType {
      */
     type = 128,
 
-	// #endregion
+    // #endregion
 
-	// #region 其它语句(Other Statements)
+    // #region 其它语句(Other Statements)
 
     /**
      * 关键字 from(在 EcmaScript 5 新增)。
@@ -764,7 +764,7 @@ export const enum TokenType {
      */
     extends = 141,
 
-	// #endregion
+    // #endregion
 
 }
 

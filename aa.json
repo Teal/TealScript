@@ -221,7 +221,7 @@
         "name": "TupleTypeNode",
         "comment": "元祖类型节点(`[string, number]`)",
         "codes": [
-            "return this.parseDelimitedList(TupleTypeElement, '[', ']', true, tokens.isTypeNodeStart);"
+            "return this.parseDelimitedList(this.parseTupleTypeElement, '[', ']', true, tokens.isTypeNodeStart);"
         ],
         "extend": "TypeNode",
         "abstract": false,
@@ -272,7 +272,7 @@
         "name": "ObjectTypeNode",
         "comment": "对象类型节点(`{x: number}`)",
         "codes": [
-            "_.elements = this.parseNodeList(TypeMemberSignature, '{', '}')"
+            "_.elements = this.parseNodeList(this.parseTypeMemberSignature, '{', '}')"
         ],
         "extend": "TypeNode",
         "abstract": false,
@@ -1207,7 +1207,7 @@
         "name": "TypeParameters",
         "comment": "类型参数列表(`<T>`)",
         "codes": [
-            "return this.parseDelimitedList(TypeParameterDeclaration, '<', '>', false, tokens.isIdentifierName);"
+            "return this.parseDelimitedList(this.parseTypeParameterDeclaration, '<', '>', false, tokens.isIdentifierName);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -1267,7 +1267,7 @@
         "name": "TypeArguments",
         "comment": "类型参数列表(`<number>`)",
         "codes": [
-            "return this.parseDelimitedList(TypeArgument, '<', '>', false, tokens.isTypeNodeStart);"
+            "return this.parseDelimitedList(this.parseTypeArgument, '<', '>', false, tokens.isTypeNodeStart);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -1310,7 +1310,7 @@
         "name": "Parameters",
         "comment": "参数列表(`(x, y)`)",
         "codes": [
-            "return this.parseNodeList(ParameterDeclaration, '(', ')"
+            "return this.parseDelimitedList(this.parseParameterDeclaration, '(', ')', true, tokens.isParameterStart);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -1318,9 +1318,9 @@
             "element": "ParameterDeclaration",
             "allowEmpty": true,
             "open": "'('",
-            "close": "'",
-            "seperator": "",
-            "continue": ""
+            "close": "')'",
+            "seperator": "','",
+            "continue": "tokens.isParameterStart"
         },
         "alias": ""
     },
@@ -1441,7 +1441,7 @@
         "name": "ArrayBindingPattern",
         "comment": "数组绑定模式项(`[x]`)",
         "codes": [
-            "_.elements = this.parseDelimitedList(ArrayBindingElement, '[', ']', true, tokens.isArrayBindingElementStart);"
+            "_.elements = this.parseDelimitedList(this.parseArrayBindingElement, '[', ']', true, tokens.isArrayBindingElementStart);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -1497,7 +1497,7 @@
         "name": "ObjectBindingPattern",
         "comment": "对象绑定模式项(`{x: x}`)",
         "codes": [
-            "_.elements = this.parseDelimitedList(ObjectBindingElement, '{', '}', true, tokens.isPropertyNameStart);"
+            "_.elements = this.parseDelimitedList(this.parseObjectBindingElement, '{', '}', true, tokens.isPropertyNameStart);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -1992,7 +1992,7 @@
         "name": "ArrayLiteral",
         "comment": "数组字面量(`[x, y]`)",
         "codes": [
-            "_.elements = this.parseDelimitedList(ArrayLiteralElement, '[', ']', true, tokens.isExpressionStart);"
+            "_.elements = this.parseDelimitedList(this.parseArrayLiteralElement, '[', ']', true, tokens.isExpressionStart);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -2047,7 +2047,7 @@
         "name": "ObjectLiteral",
         "comment": "对象字面量(`{x: y}`)",
         "codes": [
-            "_.elements = this.parseDelimitedList(ObjectLiteralElement, '{', '}', true, tokens.isPropertyNameStart);"
+            "_.elements = this.parseDelimitedList(this.parseObjectLiteralElement, '{', '}', true, tokens.isPropertyNameStart);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -2454,7 +2454,7 @@
         "name": "NewTargetOrNewExpression",
         "comment": "new.target(`new.target`) 或 new 表达式(`new x()`)",
         "codes": [
-            "const newToken = read('new');",
+            "const newToken = readToken('new');",
             "if (peek === '.') {",
             "\treturn this.parseNewTargetExpression(newToken);",
             "}",
@@ -2599,7 +2599,7 @@
         "name": "TemplateLiteral",
         "comment": "模板字面量(`\\`abc\\``)",
         "codes": [
-            "_.spans = this.parseNodeList(TemplateSpan || Expression, , )",
+            "_.spans = new nodes.NodeList<TemplateSpan || Expression>();",
             "while (true) {",
             "\tresult.spans.push(TemplateSpan());",
             "\tresult.spans.push(Expression());",
@@ -2607,7 +2607,7 @@
             "\t\treadToken('}');",
             "\t\tbreak;",
             "\t}",
-            "\tif (lexer.readAsTemplateMiddleOrTail().type === 'templateTail') {",
+            "\tif (lexer.readAsTemplateMiddleOrTail().type === '<templateTail>') {",
             "\t\tresult.spans.push(TemplateSpan());",
             "\t\tbreak;",
             "\t}",
@@ -2779,7 +2779,7 @@
         "comment": "await 表达式(`await xx`)或标识符",
         "codes": [
             "const savedToken = lexer.current;",
-            "const awaitToken = read('await');",
+            "const awaitToken = readToken('await');",
             "if (sameLine && tokens.isExpressionStart(peek)) {",
             "\treturn this.parseAwaitExpression(awaitToken, allowIn);",
             "}",
@@ -3303,7 +3303,7 @@
         "name": "Arguments",
         "comment": "函数调用参数列表",
         "codes": [
-            "return this.parseDelimitedList(Argument, , , true, tokens.isArgumentStart);"
+            "return this.parseDelimitedList(this.parseArgument, , , true, tokens.isArgumentStart);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -4226,7 +4226,7 @@
             "if (options.allowMissingSwitchCondition === false || peek !== '{') {",
             "\tCondition(_);",
             "}",
-            "_.cases = this.parseNodeList(CaseOrDefaultClause, '{', '}')"
+            "_.cases = this.parseNodeList(this.parseCaseOrDefaultClause, '{', '}')"
         ],
         "extend": "Statement",
         "abstract": false,
@@ -4291,9 +4291,9 @@
         "comment": "case 分支(`case x: ...`)",
         "codes": [
             "_.caseToken = readToken(tokens.TokenType.case);",
-            "_.labels = this.parseDelimitedList(CaseClauseLabel, , , false, tokens.isCaseLabelStart);",
+            "_.labels = this.parseDelimitedList(this.parseCaseClauseLabel, , , false, tokens.isCaseLabelStart);",
             "_.colonToken = readToken(tokens.TokenType.colon);",
-            "_.statements = this.parseNodeList(CaseStatement, , )"
+            "_.statements = new nodes.NodeList</*Statement*/CaseStatement>();"
         ],
         "extend": "Node",
         "abstract": false,
@@ -4362,7 +4362,7 @@
         "codes": [
             "_.defaultToken = readToken(tokens.TokenType.default);",
             "_.colonToken = readToken(tokens.TokenType.colon);",
-            "_.statements = this.parseNodeList(CaseStatement, , )"
+            "_.statements = new nodes.NodeList</*Statement*/CaseStatement>();"
         ],
         "extend": "Node",
         "abstract": false,
@@ -5033,7 +5033,7 @@
             "\t_.modifiers = modifiers;",
             "}",
             "_.type = this.lexer.read(); // var、let、const",
-            "_.variables = this.parseNodeList(allowIn !== false ? VariableDeclaration : (, , )"
+            "_.variables = this.parseDelimitedList(allowIn !== false ? VariableDeclaration : () => VariableDeclaration(false), , , false, tokens.isBindingNameStart);"
         ],
         "extend": "Statement",
         "abstract": false,
@@ -5136,7 +5136,7 @@
         "name": "BlockStatement",
         "comment": "语句块(`{...}`)",
         "codes": [
-            "_.statements = this.parseNodeList(Statement, '{', '}')"
+            "_.statements = this.parseNodeList(this.parseStatement, '{', '}')"
         ],
         "extend": "Statement",
         "abstract": false,
@@ -5972,7 +5972,7 @@
         "comment": "类主体(`{...}`、``)",
         "codes": [
             "if (peek === '{') {",
-            "\t_.members = this.parseNodeList(ClassElement, '{', '}')",
+            "\t_.members = this.parseNodeList(this.parseClassElement, '{', '}')",
             "} else {",
             "\tSemicolon(_);",
             "}"
@@ -6450,7 +6450,7 @@
             "\t_.typeParameters = TypeParameters();",
             "}",
             "this.parseExtendsClause(_);",
-            "_.members = this.parseNodeList(TypeMemberSignature, '{', '}')"
+            "_.members = this.parseNodeList(this.parseTypeMemberSignature, '{', '}')"
         ],
         "extend": "Declaration",
         "abstract": false,
@@ -6533,7 +6533,7 @@
             "_.enumToken = readToken(tokens.TokenType.enum);",
             "_.name = Identifier(false);",
             "this.parseExtendsClause(_);",
-            "_.members = this.parseDelimitedList(EnumMemberDeclaration, '{', '}', true, tokens.isPropertyNameStart);"
+            "_.members = this.parseDelimitedList(this.parseEnumMemberDeclaration, '{', '}', true, tokens.isPropertyNameStart);"
         ],
         "extend": "Declaration",
         "abstract": false,
@@ -6902,7 +6902,7 @@
         "codes": [
             "if (peek === 'extends') {",
             "\t_.extendsToken = readToken(tokens.TokenType.extends);",
-            "\t_.extends = this.parseDelimitedList(ClassHeritageNode, , , false, tokens.isExpressionStart);",
+            "\t_.extends = this.parseDelimitedList(this.parseClassHeritageNode, , , false, tokens.isExpressionStart);",
             "}"
         ],
         "extend": "Node",
@@ -6938,7 +6938,7 @@
         "codes": [
             "if (peek === 'implements') {",
             "\t_.implementsToken = readToken(tokens.TokenType.implements);",
-            "\t_.implements = this.parseDelimitedList(ClassHeritageNode, , , false, tokens.isExpressionStart);",
+            "\t_.implements = this.parseDelimitedList(this.parseClassHeritageNode, , , false, tokens.isExpressionStart);",
             "}"
         ],
         "extend": "Node",
@@ -6989,7 +6989,7 @@
         "name": "BlockBody",
         "comment": "语句块主体(`{...}`)",
         "codes": [
-            "_.statements = this.parseNodeList(Statement, '{', '}')"
+            "_.statements = this.parseNodeList(this.parseStatement, '{', '}')"
         ],
         "extend": "Node",
         "abstract": false,
@@ -7286,7 +7286,7 @@
         "name": "NamedImportClause",
         "comment": "对象导入分句(`{x, x as y}`)",
         "codes": [
-            "_.elements = this.parseNodeList((, , )"
+            "_.elements = this.parseDelimitedList(() => SimpleImportOrExportClause(true), '{', '}', true, tokens.isIdentifierName);"
         ],
         "extend": "Node",
         "abstract": false,
@@ -7498,7 +7498,7 @@
         "comment": "导出列表声明(`export a from ...`)",
         "codes": [
             "_.exportToken = exportToken;",
-            "_.variables = this.parseDelimitedList(SimpleImportOrExportClause, '{', '}', true, tokens.isKeyword);",
+            "_.variables = this.parseDelimitedList(this.parseSimpleImportOrExportClause, '{', '}', true, tokens.isKeyword);",
             "_.fromToken = readToken(tokens.TokenType.from);",
             "_.from = StringLiteral();",
             "this.parseSemicolon(_);"

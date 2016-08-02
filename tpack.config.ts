@@ -15,11 +15,11 @@ tpack.task("gen-parser", function () {
             tpack.getFile("src/parser/parser.ts").content,
             tpack.getFile("src/parser/nodeVisitor.ts").content)
 
-        //tpack.getFile("src/parser/nodes.ts").content = result2.nodesSource;
-        //tpack.getFile("src/parser/parser.ts").content = result2.parserSource;
+        tpack.getFile("src/parser/nodes.ts").content = result2.nodesSource;
+        tpack.getFile("src/parser/parser.ts").content = result2.parserSource;
         //tpack.getFile("src/parser/nodeVisitor.ts").content = result2.nodeVisitorSource;
         //tpack.getFile("src/parser/nodes.ts").save();
-        //tpack.getFile("src/parser/parser.ts").save();
+        tpack.getFile("src/parser/parser.ts").save();
         //tpack.getFile("src/parser/nodeVisitor.ts").save();
     });
 });
@@ -1316,8 +1316,8 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
             }
 
             // list()
-            if (/^\s*list\((.*?)\)/.exec(value)) {
-                const p = /\s*list\((.*?)\)/.exec(value)[1].split(/,\s+/);
+            if (/^\s*list\((.*)\)/.exec(value)) {
+                const p = /\s*list\((.*)\)/.exec(value)[1].split(/,\s+/);
                 result.list = {
                     element: p[0],
                     allowEmpty: !p[1] || p[1] == "true",
@@ -1335,10 +1335,14 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
                     result.list.element = /\/\*(.*)\*\//[1];
                     header = header.replace(/\/\*(.*)\*\//, "");
                 }
-                result.code = (result.list.seperator ? `this.parseDelimitedList(${header}, ${result.list.open}, ${result.list.close}, ${result.list.allowEmpty}, ${result.list.continue});` : `this.parseNodeList(${header}, ${result.list.open}, ${result.list.close})`).replace(', undefined)', ');')
+                result.code = p.length === 1 ? `new nodes.NodeList<${p[0]}>();` : (result.list.seperator ? `this.parseDelimitedList(${header}, ${result.list.open}, ${result.list.close}, ${result.list.allowEmpty}, ${result.list.continue});` : `this.parseNodeList(${header}, ${result.list.open}, ${result.list.close})`).replace(', undefined)', ');')
                     .replace(', false)', ')')
+                    .replace(', )', ')')
+                    .replace(', )', ')')
                     .replace(', undefined)', ')')
-                    .replace(', undefined)', ')');
+                    .replace(', undefined)', ')')
+                    .replace(/List\(([A-Z])/, "List(this.parse$1")
+                    .replace(/\|\|\s*([A-Z])/, "|| this.parse$1");
                 return result;
             }
 
@@ -1466,7 +1470,8 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
                 codes.push(`     * @param ${param.name} ${param.comment}。`);
             }
             codes.push(`     */`);
-            codes.push(`    private parse${pp.name}(${formatCode(pp.params.map(t => `${t.name}${t.value ? " = " + t.value : (t.optional ? "?" : "") + (t.type ? ": " + t.type : "")}`).join(", "))}) {`);
+            const hasNotOptional = pp.params.length  && !pp.params[pp.params.length - 1].optional;
+            codes.push(`    private parse${pp.name}(${formatCode(pp.params.map(t => `${t.name}${t.value ? " = " + t.value : (t.optional && !hasNotOptional ? "?" : "") + (t.type ? ": " + t.type : "")}`).join(", "))}) {`);
             const wrap = pp.fields.length && (!pp.params[0] || pp.params[0].name !== "_");
             if (wrap) {
                 codes.push(`        const result = new nodes.${pp.name};`);
@@ -1516,7 +1521,7 @@ function parseNodes(source: string, tokens: { [key: string]: TokenInfo }, nodesS
     }
 
     function formatCode(code: string) {
-        return code.replace(/([:<|]\s*)([A-Z])/g, "$1nodes.$2")
+        return code.replace(/([:<|]\s*|constructor\s*===\s*)([A-Z])/g, "$1nodes.$2")
             .replace(/(^|[^\.\w])([A-Z]\w*)/g, "$1this.parse$2()")
             .replace(/(this.parse\w+)\(\)(\()/g, "$1$2")
             .replace(/(^|[^\.\w])lexer\b/g, "$1this.lexer")
